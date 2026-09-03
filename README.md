@@ -188,7 +188,7 @@ python -m derive_surface record depth   --duration 7200 &   # price levels near 
 python -m derive_surface depth-snapshot               # all resting orders of all options, now
 python -m derive_surface merge
 
-python -m derive_surface animate live  BTC                       # docs/media/BTC_live_en.gif + .mp4
+python -m derive_surface animate live  BTC --suffix _en           # docs/media/BTC_live_en.gif + .mp4
 python -m derive_surface animate live  BTC --color-by skew --suffix _skew
 python -m derive_surface animate tape  ETH --days 60 --step-hours 12
 python -m derive_surface animate shock HYPE --regime sticky_strike --color-by gamma
