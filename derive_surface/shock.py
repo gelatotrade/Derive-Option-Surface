@@ -57,7 +57,8 @@ def repriced_ladder(base: Frame, shocked: Surface) -> tuple[pd.DataFrame, float]
     K = lad["strike"].values
     iv = sm(np.log(K / sm.F))
     for side, kind in (("call", 1), ("put", -1)):
-        mid = pricing.price(sm.F, K, sm.T, iv, kind, sm.df)
+        quoted = (base.ladder[f"{side}_bid"].gt(0) & base.ladder[f"{side}_ask"].gt(0)).values  # only strikes the live book prices two-sided
+        mid = np.where(quoted, pricing.price(sm.F, K, sm.T, iv, kind, sm.df), np.nan)
         half = 0.5 * (lad[f"{side}_ask"] - lad[f"{side}_bid"]).fillna(0).values
         lad[f"{side}_mid"] = mid
         lad[f"{side}_bid"], lad[f"{side}_ask"] = np.maximum(mid - half, 0), mid + half
@@ -66,7 +67,7 @@ def repriced_ladder(base: Frame, shocked: Surface) -> tuple[pd.DataFrame, float]
 
 def animate_shock(
     data_dir: Path, currency: str, out_dir: Path, *, amplitude: float = 0.06, n_frames: int = 72, regime: str = "sticky_delta",
-    axis: str = "strike", color_by: str = "vanna", fps: float = 10, width: int = 960, height: int = 540, suffix: str = ""
+    axis: str = "strike", color_by: str = "mvdelta", fps: float = 10, width: int = 880, height: int = 496, suffix: str = ""
 ) -> Path:
     tk = load_live_tickers(data_dir, currency)
     last = int(tk["cycle_ts"].max())
@@ -79,9 +80,8 @@ def animate_shock(
     for i, e in enumerate(eps):
         s = shocked_surface(base.surface, float(e), regime)
         lad, F = repriced_ladder(base, s)
-        cap = (f"Szenario: Forward {F0:,.0f} → {F:,.0f} ({e:+.1%}) · Regime: {regime.replace('_', '-')} · "
-               f"Smile-Form aus dem Live-Orderbook, Ladder mit Black-76 neu bepreist")
-        frames.append(Frame(base.ts_ms + i * 1000, s, lad, base.ladder_expiry, F, caption=cap))
+        cap = f"Szenario: Forward {F0:,.0f} → {F:,.0f} ({e:+.1%}) · {regime.replace('_', '-')} · Smile-Form aus dem Live-Orderbook, Ladder per Black-76 neu bepreist"
+        frames.append(Frame(base.ts_ms, s, lad, base.ladder_expiry, F, caption=cap, cursor_x=float(i)))
     r = Renderer(currency, axis=axis, color_by=color_by, width=width, height=height,
                  title=f"{currency} · Derive Options · Spot-Schock ({regime.replace('_', '-')})")
     r.x_grid = x_grid
@@ -91,11 +91,7 @@ def animate_shock(
     spot_t = np.arange(n_frames, dtype=float)
     spot_p = base.surface.spot * (1 + eps)
     ladder_hi = max(f.ladder[["call_ask", "put_ask"]].max().max() for f in frames)
-    rgb = []
-    for i, f in enumerate(frames):
-        f.ts_ms = base.ts_ms  # the clock does not move in a what-if
-        img = r.render(f, spot_t, spot_p, (0, n_frames - 1), (spot_p.min() * 0.995, spot_p.max() * 1.005), (0, ladder_hi * 1.08))
-        rgb.append(img)
+    rgb = [r.render(f, spot_t, spot_p, (0, n_frames - 1), (spot_p.min() * 0.995, spot_p.max() * 1.005), (0, ladder_hi * 1.08)) for f in frames]
     tag = f"{currency}_shock_{regime}{suffix}"
     write_mp4(rgb, out_dir / f"{tag}.mp4", fps)
     return write_gif(rgb, out_dir / f"{tag}.gif", fps)
@@ -107,5 +103,5 @@ if __name__ == "__main__":  # python -m derive_surface.shock BTC [sticky_delta|s
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     ccy = sys.argv[1]
     regime = sys.argv[2] if len(sys.argv) > 2 else "sticky_delta"
-    color_by = sys.argv[3] if len(sys.argv) > 3 else "vanna"
-    animate_shock(Path("data"), ccy, Path("docs/media"), regime=regime, color_by=color_by, suffix="" if color_by == "vanna" else f"_{color_by}")
+    color_by = sys.argv[3] if len(sys.argv) > 3 else "mvdelta"
+    animate_shock(Path("data"), ccy, Path("docs/media"), regime=regime, color_by=color_by, suffix="" if color_by == "mvdelta" else f"_{color_by}")

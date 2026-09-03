@@ -63,6 +63,7 @@ def implied_vol(V, F, K, T, kind=1, df=1.0, *, lo=1e-3, hi=8.0, iters=64):
         b = np.where(too_high, m, b)
         a = np.where(too_high, a, m)
     iv = 0.5 * (a + b)
+    ok &= (iv > lo * (1 + 1e-6)) & (iv < hi * (1 - 1e-6))  # a root outside the bracket is not a root
     return np.where(ok, iv, np.nan)
 
 
@@ -70,7 +71,9 @@ def greeks(F, K, T, sigma, kind=1, df=1.0) -> dict[str, np.ndarray]:
     """First-, second- and third-order greeks under Black-76 (forward measure).
 
     First order:  delta, vega, theta (per year, calendar decay), rho (w.r.t. the
-    flat rate implied by ``df``, i.e. ``-T * V``).
+    flat rate implied by ``df``, i.e. ``-T * V``; Derive reports the opposite sign).
+    All are exact derivatives of the *discounted* premium; for the undiscounted
+    forward delta used on the delta axis see ``delta_of``.
     Second order: gamma, vanna (d delta / d sigma = d vega / dF), volga (d vega /
     d sigma), charm (d delta / dt).
     Third order:  speed (d gamma / dF), zomma (d gamma / d sigma), color (d gamma
@@ -105,15 +108,19 @@ def greeks(F, K, T, sigma, kind=1, df=1.0) -> dict[str, np.ndarray]:
 
 
 def delta_of(F, K, T, sigma, kind=1, df=1.0):
-    return greeks(F, K, T, sigma, kind, df)["delta"]
+    """*Forward delta* N(d1) (minus 1 for puts): the undiscounted market convention that Derive
+    reports and that the delta axis uses.  ``greeks()['delta']`` is the exact derivative of the
+    discounted premium and differs by the factor ``df``."""
+    F, K, T, sigma, kind, df, sig_t, d1, d2 = _prep(F, K, T, sigma, kind, df)
+    return ndtr(d1) - np.where(kind > 0, 0.0, 1.0)
 
 
 def strike_for_delta(delta, F, T, sigma, kind=1, df=1.0):
-    """Invert the Black-76 delta (forward measure) for the strike."""
+    """Invert the forward delta N(d1) (see ``delta_of``) for the strike."""
     delta, F, T, sigma, kind, df = np.broadcast_arrays(*(np.asarray(a, dtype=float) for a in (delta, F, T, sigma, kind, df)))
     from scipy.special import ndtri
 
-    n = delta / df + np.where(kind > 0, 0.0, 1.0)
+    n = delta + np.where(kind > 0, 0.0, 1.0)
     d1 = ndtri(np.clip(n, 1e-9, 1 - 1e-9))
     sig_t = sigma * np.sqrt(T)
     return F * np.exp(-(d1 * sig_t) + 0.5 * sig_t**2)
