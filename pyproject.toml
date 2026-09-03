@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "derive-option-surface"
+version = "0.1.0"
+description = "Orderbook-derived implied-volatility surfaces (BTC/ETH/HYPE) from the Derive DEX, with animations"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26", "scipy>=1.11", "pandas>=2.1", "pyarrow>=14", "requests>=2.31", "websockets>=12",
+  "matplotlib>=3.8", "pillow>=10", "imageio>=2.31", "imageio-ffmpeg>=0.4.9",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+include = ["derive_surface*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

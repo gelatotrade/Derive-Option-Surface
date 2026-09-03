@@ -1,0 +1,4 @@
+2026-09-03 07:44:22,481 WARNING IMAGEIO FFMPEG_WRITER WARNING: input image is not divisible by macro_block_size=16, resizing from (960, 540) to (960, 544) to ensure video compatibility with most codecs and players. To prevent resizing, make your input image divisible by the macro_block_size or set the macro_block_size to 1 (risking incompatibility).
+Multiple -pix_fmt options specified for stream 0, only the last option '-pix_fmt yuv420p' will be used.
+2026-09-03 07:44:22,757 INFO wrote docs/media/BTC_live.mp4 (0.1 MB)
+2026-09-03 07:44:23,191 INFO wrote docs/media/BTC_live.gif (14 frames, 0.5 MB)
