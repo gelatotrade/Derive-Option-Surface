@@ -29,8 +29,15 @@ log = logging.getLogger(__name__)
 # ------------------------------------------------------------------- tickers
 def snapshot_tickers(client: DeriveClient, currency: str, expiries: list[int], workers: int = 6) -> pd.DataFrame:
     """One full top-of-book snapshot of all options of ``currency``."""
+    def one(e: int) -> dict:
+        try:
+            return client.tickers(currency, expiry_date_str(e))
+        except Exception as exc:  # one dead expiry (e.g. just rolled) must not cost the whole cycle
+            log.warning("%s %s: %s", currency, expiry_date_str(e), exc)
+            return {}
+
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        books = pool.map(lambda e: client.tickers(currency, expiry_date_str(e)), expiries)
+        books = list(pool.map(one, expiries))
     rows = [slim_ticker_row(name, t) for book in books for name, t in book.items()]
     df = pd.DataFrame(rows)
     df.insert(0, "currency", currency)
@@ -75,15 +82,17 @@ def pick_depth_instruments(client: DeriveClient, currency: str, *, band: float =
     expiries = [e for e in client.option_expiries(currency) if e - now > 20 * 3600]
     chosen = expiries[:2] + [e for e in expiries if e - now > 20 * 86400][:1]
     names: list[str] = []
-    for e in dict.fromkeys(chosen):
+    chosen = list(dict.fromkeys(chosen))
+    per_expiry = max(2, max_per_ccy // max(len(chosen), 1))
+    for e in chosen:
         tk = client.tickers(currency, expiry_date_str(e))
         rows = [slim_ticker_row(n, t) for n, t in tk.items()]
         idx = next((r["index"] for r in rows if r["index"]), None)
         if not idx:
             continue
         near = sorted((r for r in rows if abs(r["strike"] / idx - 1) <= band), key=lambda r: abs(r["strike"] - idx))
-        names += [r["instrument_name"] for r in near]
-    return names[:max_per_ccy]
+        names += [r["instrument_name"] for r in near[:per_expiry]]
+    return names
 
 
 def record_depth(currencies: list[str], out_dir: Path, *, duration_s: float = 3600, flush_s: float = 10, depth: int = 10) -> None:
@@ -94,7 +103,7 @@ def record_depth(currencies: list[str], out_dir: Path, *, duration_s: float = 36
     log.info("subscribing to %d depth channels", len(channels))
     latest: dict[str, dict] = {}
     buffer: list[dict] = []
-    parts = 0
+    parts = len(list(out_dir.glob("depth_part*.parquet")))  # never overwrite an earlier run
     last_flush = time.time()
 
     def on_message(channel: str, data: dict) -> None:
@@ -116,9 +125,17 @@ def record_depth(currencies: list[str], out_dir: Path, *, duration_s: float = 36
                 parts += 1
                 buffer = []
 
-    asyncio.run(client.stream(channels, on_message, duration_s=duration_s))
-    if buffer:
-        _write_part(pd.DataFrame(buffer), out_dir, "depth", parts)
+    t_end = time.time() + duration_s
+    try:
+        while time.time() < t_end:  # reconnect on any socket error until the duration is up
+            try:
+                asyncio.run(client.stream(channels, on_message, duration_s=t_end - time.time()))
+            except Exception as exc:
+                log.warning("depth stream dropped (%s), reconnecting", exc)
+                time.sleep(3)
+    finally:
+        if buffer:
+            _write_part(pd.DataFrame(buffer), out_dir, "depth", parts)
 
 
 # ------------------------------------------------------------------- storage
@@ -137,8 +154,12 @@ def _write_part(df: pd.DataFrame, out_dir: Path, prefix: str, n: int) -> None:
 
 
 def merge_parts(out_dir: Path, prefix: str, target: Path) -> pd.DataFrame:
+    from .api import repair_strikes
+
     parts = sorted(out_dir.glob(f"{prefix}_part*.parquet"))
     df = pd.concat((pd.read_parquet(p) for p in parts), ignore_index=True)
+    if "strike" in df.columns:
+        df = repair_strikes(df)
     target.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(target, index=False, compression="zstd")
     return df
