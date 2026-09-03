@@ -1,0 +1,11 @@
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+pyarrow>=14
+requests>=2.31
+websockets>=12
+matplotlib>=3.8
+pillow>=10
+imageio>=2.31
+imageio-ffmpeg>=0.4.9
+pytest>=7
