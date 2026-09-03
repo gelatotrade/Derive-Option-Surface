@@ -40,10 +40,11 @@ CALL, PUT, SPOT = "#2a78d6", "#eb6834", "#4a3aa7"
 SEQ_BLUE = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b"]
 CMAP_SEQ = LinearSegmentedColormap.from_list("seq_blue", SEQ_BLUE)
 CMAP_DIV = LinearSegmentedColormap.from_list("div_blue_red", ["#0d366b", "#2a78d6", "#f0efec", "#e34948", "#7a1f1f"])
-SIGNED_GREEKS = {"vanna", "charm", "theta", "speed", "zomma", "color", "ultima", "rho", "volga"}
+SIGNED_GREEKS = {"vanna", "charm", "theta", "speed", "zomma", "color", "ultima", "rho", "volga", "skew", "mvdelta"}
 GREEK_LABEL = {
     "iv": "Implied Vol (%)", "delta": "Delta", "gamma": "Gamma", "vega": "Vega", "theta": "Theta", "vanna": "Vanna",
     "volga": "Volga", "charm": "Charm", "speed": "Speed", "zomma": "Zomma", "color": "Color", "ultima": "Ultima",
+    "skew": "Skew der Fläche ∂σ/∂k", "mvdelta": "Δ(min-var) − Δ(BS) = Vega·∂σ/∂S  [Delta-Punkte]",
 }
 DAY_TICKS = np.array([1, 2, 3, 5, 7, 14, 30, 60, 90, 180, 365])
 
@@ -58,6 +59,7 @@ class Frame:
     forward: float
     fills: pd.DataFrame | None = None  # strike, iv, weight (tape mode: the fills behind the front smile)
     caption: str | None = None
+    cursor_x: float | None = None  # what-if movies: x position of the cursor on the scenario path
 
     @property
     def when(self) -> dt.datetime:
@@ -127,16 +129,36 @@ class Renderer:
     x_grid: np.ndarray | None = None  # explicit axis grid (required for axis="strike")
     time_axis: bool = True  # False for what-if movies whose x is a scenario step, not a clock
 
-    mask_wings: bool = False  # strike/logm axes: hide nodes the orderbook does not quote
+    mask_wings: bool = False  # strike/logm/std axes: hide nodes the orderbook does not quote
+    show_quotes: bool = True  # overlay the fixed-strike mid quotes as tracers on the surface
+    ssr: float = 0.0  # skew-stickiness ratio used for the mvdelta colouring (0 = sticky-delta)
 
     def surface_arrays(self, surface: Surface):
         x, tenors, iv = surface.grid(self.axis, self.x_grid, mask_wings=self.mask_wings)
         if self.color_by == "iv":
             C = iv * 100
         else:
-            C = surface.greeks_grid(self.axis, self.x_grid)[self.color_by]
+            C = surface.greeks_grid(self.axis, self.x_grid, ssr=self.ssr)[self.color_by]
             C = np.where(np.isnan(iv), np.nan, C)
         return x, tenors, iv * 100, C
+
+    def quote_points(self, surface: Surface):
+        """(x, log10 days, iv%) of every quote each smile was fitted to — the fixed-strike tracers."""
+        xs, ys, zs = [], [], []
+        for sm in surface.smiles:
+            k = sm.k
+            if self.axis == "delta":
+                x = sm.call_delta(k)
+            elif self.axis == "strike":
+                x = sm.F * np.exp(k)
+            elif self.axis == "std":
+                x = k / (sm.atm_iv * np.sqrt(sm.T))
+            else:
+                x = k
+            xs.append(x)
+            ys.append(np.full_like(x, np.log10(sm.T * 365)))
+            zs.append(sm.iv * 100)
+        return np.concatenate(xs), np.concatenate(ys), np.concatenate(zs)
 
     def fit_limits(self, frames: list[Frame], pad: float = 0.06) -> None:
         """Set z/colour limits from the whole animation (2nd–98th percentile)."""
@@ -148,6 +170,8 @@ class Renderer:
         z, c = np.concatenate(zs), np.concatenate(cs)
         lo, hi = np.nanpercentile(z, [1, 99])
         self.zlim = (lo - pad * (hi - lo), hi + pad * (hi - lo))
+        days = np.concatenate([f.surface.tenors * 365 for f in frames])
+        self.ylim_days = (float(days.min()), float(days.max()))
         if self.color_by in SIGNED_GREEKS:
             m = np.nanpercentile(np.abs(c), 98)
             self.clim = (-m, m)
@@ -167,7 +191,8 @@ class Renderer:
     def draw_spot(self, ax, spot_t: np.ndarray, spot_p: np.ndarray, frame: Frame, xlim=None, ylim=None) -> None:
         self._style(ax)
         ax.plot(spot_t, spot_p, color=SPOT, linewidth=1.6, solid_capstyle="round")
-        i = int(np.searchsorted(spot_t, frame.ts_ms / 1000, side="right")) - 1
+        cursor = frame.cursor_x if frame.cursor_x is not None else frame.ts_ms / 1000
+        i = int(np.searchsorted(spot_t, cursor, side="right")) - 1
         i = max(0, min(i, len(spot_t) - 1))
         ax.plot(spot_t[i], spot_p[i], "o", ms=7, color=SPOT, markeredgecolor=SURFACE, markeredgewidth=1.5)
         ax.axvline(spot_t[i], color=AXIS, linewidth=0.8)
@@ -212,12 +237,13 @@ class Renderer:
         f = frame.fills[frame.fills["expiry"] == sm.expiry] if frame.fills is not None else None
         if f is not None and len(f):
             size = 12 + 40 * (f["weight"] / f["weight"].max())
-            ax.scatter(f["strike"] / frame.surface.spot * 100, f["iv"] * 100, s=size, color=CALL, alpha=0.55, edgecolor=SURFACE, linewidth=0.8, label="Fills (24h, Größe = Gewicht)")
+            xf = np.exp(f["k"]) * 100 if "k" in f.columns else f["strike"] / frame.surface.spot * 100
+            ax.scatter(xf, f["iv"] * 100, s=size, color=CALL, alpha=0.55, edgecolor=SURFACE, linewidth=0.8, label="Fills (24h, Größe = Gewicht)")
         m = np.linspace(sm.k.min() - 0.02, sm.k.max() + 0.02, 80)
-        ax.plot(np.exp(m) * sm.F / frame.surface.spot * 100, sm(m) * 100, color=PUT, linewidth=1.8, label="SVI-Fit")
+        ax.plot(np.exp(m) * 100, sm(m) * 100, color=PUT, linewidth=1.8, label="SVI-Fit")
         ax.axvline(100.0, color=INK2, linewidth=1.0)
         ax.set_title(f"Front-Smile · Verfall in {days:.0f}d · IV je Strike aus Fills", fontsize=9, color=INK2, loc="left")
-        ax.set_xlabel("Strike / Spot (%)", fontsize=8, color=INK2)
+        ax.set_xlabel("Strike / Forward zum Fill-Zeitpunkt (%)", fontsize=8, color=INK2)
         ax.set_ylabel("IV (%)", fontsize=8, color=INK2)
         ax.legend(loc="upper center", fontsize=7.5, frameon=False, ncol=2)
         if ylim:
@@ -234,6 +260,12 @@ class Renderer:
         colors = cmap(norm(np.nan_to_num(C, nan=0.0))) if norm is not None else cmap(Normalize()(np.nan_to_num(C, nan=0.0)))
         # matplotlib drops every face that touches a NaN vertex: the unquoted region simply is not drawn
         ax.plot_surface(X, Y, Z, facecolors=colors, rstride=1, cstride=1, linewidth=0.25, edgecolor=(0, 0, 0, 0.12), shade=False, antialiased=True)
+        if self.show_quotes:
+            qx, qy, qz = self.quote_points(frame.surface)
+            inside = (qx >= x.min()) & (qx <= x.max())
+            if self.zlim:
+                inside &= (qz >= self.zlim[0]) & (qz <= self.zlim[1])
+            ax.scatter(qx[inside], qy[inside], qz[inside], s=7, c=INK, depthshade=False, linewidths=0, alpha=0.85)
         ax.view_init(elev=self.elev, azim=self.azim)
         ax.set_facecolor(SURFACE)
         for axis_ in (ax.xaxis, ax.yaxis, ax.zaxis):
@@ -245,9 +277,12 @@ class Renderer:
             ax.set_xticks([0.1, 0.25, 0.5, 0.75, 0.9])
         elif self.axis == "strike":
             ax.set_xlabel("Strike", fontsize=8, color=INK2, labelpad=4)
+        elif self.axis == "std":
+            ax.set_xlabel("standardisierte Moneyness  ln(K/F) / (σ·√T)", fontsize=8, color=INK2, labelpad=4)
         else:
             ax.set_xlabel("log(K/F)", fontsize=8, color=INK2, labelpad=4)
-        ticks = DAY_TICKS[(DAY_TICKS >= days.min() * 0.95) & (DAY_TICKS <= days.max() * 1.05)]
+        y0_, y1_ = self.ylim_days or (days.min(), days.max())
+        ticks = DAY_TICKS[(DAY_TICKS >= y0_ * 0.95) & (DAY_TICKS <= y1_ * 1.05)]
         ax.set_yticks(np.log10(ticks))
         ax.set_yticklabels([f"{t:d}d" for t in ticks])
         ax.set_ylabel("Tage bis Verfall", fontsize=8, color=INK2, labelpad=4)
@@ -255,7 +290,8 @@ class Renderer:
         if self.zlim:
             ax.set_zlim(*self.zlim)
         ax.set_xlim(x.min(), x.max())
-        ax.set_ylim(np.log10(days.min()), np.log10(days.max()))
+        y0, y1 = self.ylim_days or (days.min(), days.max())
+        ax.set_ylim(np.log10(y0), np.log10(y1))
         atm = frame.surface.atm_term_structure() * 100
         T = frame.surface.tenors * 365
         picks = sorted({0, len(T) // 2, len(T) - 1})
@@ -263,6 +299,8 @@ class Renderer:
         ax.text2D(0.02, 0.97, info, transform=ax.transAxes, fontsize=8.5, color=INK, va="top")
         if self.color_by != "iv":
             ax.text2D(0.02, 0.92, f"Farbe: {GREEK_LABEL.get(self.color_by, self.color_by)}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
+        if self.show_quotes:
+            ax.text2D(0.98, 0.03, "Punkte = Orderbuch-Mids (fixe Strikes)", transform=ax.transAxes, fontsize=7.5, color=INK2, ha="right")
 
     # --- frame -------------------------------------------------------------
     def render(self, frame: Frame, spot_t: np.ndarray, spot_p: np.ndarray, spot_xlim=None, spot_ylim=None, ladder_ylim=None) -> np.ndarray:
@@ -292,7 +330,7 @@ def write_gif(frames: list[np.ndarray], path: Path, fps: float = 8, hold_last: i
     from PIL import Image
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    imgs = [Image.fromarray(f).quantize(colors=192, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE) for f in frames]
+    imgs = [Image.fromarray(f).quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE) for f in frames]
     imgs += [imgs[-1]] * hold_last
     imgs[0].save(path, save_all=True, append_images=imgs[1:], duration=int(1000 / fps), loop=0, optimize=True)
     log.info("wrote %s (%d frames, %.1f MB)", path, len(imgs), path.stat().st_size / 1e6)
@@ -316,16 +354,18 @@ def write_mp4(frames: list[np.ndarray], path: Path, fps: float = 8) -> Path | No
 
 # ---------------------------------------------------------------- live movie
 def load_live_tickers(data_dir: Path, currency: str) -> pd.DataFrame:
+    from .api import repair_strikes
+
     merged = data_dir / "live" / f"{currency}_tickers.parquet"
     if merged.exists():
-        return pd.read_parquet(merged)
+        return repair_strikes(pd.read_parquet(merged))
     parts = sorted((data_dir / "raw" / "live").glob(f"tickers_{currency}_part*.parquet"))
-    return pd.concat((pd.read_parquet(p) for p in parts), ignore_index=True)
+    return repair_strikes(pd.concat((pd.read_parquet(p) for p in parts), ignore_index=True))
 
 
 def animate_live(
-    data_dir: Path, currency: str, out_dir: Path, *, every: int = 3, max_frames: int = 150, axis: str = "delta",
-    color_by: str = "iv", fps: float = 8, width: int = 960, height: int = 540, suffix: str = ""
+    data_dir: Path, currency: str, out_dir: Path, *, every: int = 3, max_frames: int = 120, axis: str = "delta",
+    color_by: str = "iv", fps: float = 8, width: int = 880, height: int = 495, suffix: str = ""
 ) -> Path:
     tk = load_live_tickers(data_dir, currency)
     cycles = np.sort(tk["cycle_ts"].unique())
@@ -373,7 +413,7 @@ def render_still(data_dir: Path, currency: str, out_path: Path, *, axis: str = "
 # ---------------------------------------------------------------- tape movie
 def animate_tape(
     data_dir: Path, currency: str, out_dir: Path, *, days: int = 60, step_h: int = 12, axis: str = "delta", color_by: str = "iv",
-    fps: float = 8, width: int = 960, height: int = 540, suffix: str = ""
+    fps: float = 8, width: int = 880, height: int = 495, suffix: str = ""
 ) -> Path:
     """Surfaces reconstructed from the trade tape, one frame every ``step_h`` hours over the last ``days`` days."""
     from .tape import load_spot, load_trades, surface_at, trade_ivs
@@ -390,7 +430,7 @@ def animate_tape(
         lo = ts - 86400 * 1000
         w = fills[(fills["timestamp"] > lo) & (fills["timestamp"] <= ts) & fills["otm"]]
         age = (ts - w["timestamp"].values) / 1000.0
-        f = pd.DataFrame({"expiry": w["expiry"].values, "strike": w["strike"].values, "iv": w["iv"].values,
+        f = pd.DataFrame({"expiry": w["expiry"].values, "strike": w["strike"].values, "k": w["k"].values, "iv": w["iv"].values,
                           "weight": w["trade_amount"].values * np.exp(-age * np.log(2) / (6 * 3600))})
         frames.append(Frame(int(ts), s, None, s.smiles[0].expiry, s.spot, fills=f,
                             caption="Quelle: Derive Trade-Tape (jeder Fill = gekreuzte Quote), SVI-Fit über 24h-Fenster, zeit- und größengewichtet"))

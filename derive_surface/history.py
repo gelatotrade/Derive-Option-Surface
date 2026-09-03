@@ -39,6 +39,8 @@ def download_trades(
     out = raw_dir / currency
     out.mkdir(parents=True, exist_ok=True)
     manifest_path = out / "manifest.json"
+    # The manifest pins ``to_timestamp`` so pagination is stable; to extend the tape later,
+    # delete the manifest (cached pages are kept and re-validated by page number).
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text())
     else:
@@ -67,8 +69,11 @@ def download_trades(
 
 
 def _write_page(out: Path, page: int, res: dict) -> None:
-    with gzip.open(out / f"p{page:05d}.json.gz", "wt") as fh:
+    final = out / f"p{page:05d}.json.gz"
+    tmp = final.with_suffix(".tmp")
+    with gzip.open(tmp, "wt") as fh:
         json.dump(res["trades"], fh)
+    tmp.replace(final)  # atomic: a crash never leaves a truncated page that resume would skip
 
 
 def trades_to_parquet(raw_dir: Path, currency: str, out_path: Path) -> pd.DataFrame:

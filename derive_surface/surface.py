@@ -34,6 +34,7 @@ MAX_REL_SPREAD = 0.8  # (ask - bid) / mid; wider books are noise, not price disc
 WING_PAD = 0.05  # cap on how far (in log-moneyness) a smile is followed beyond its last quote before being held flat
 DELTA_AXIS = np.linspace(0.05, 0.95, 37)  # call-delta axis (put delta = call delta - 1)
 LOGM_AXIS = np.linspace(-0.6, 0.6, 49)
+STD_AXIS = np.linspace(-2.5, 2.5, 41)  # standardised moneyness z = k / (sigma_atm * sqrt(T))
 
 
 # --------------------------------------------------------------------- quotes
@@ -64,7 +65,7 @@ def quotes_from_snapshot(df: pd.DataFrame, ts_ms: int | None = None) -> pd.DataF
     )
     d = d[ok].copy()
     width = (d["iv_ask"] - d["iv_bid"]).fillna(0.25).clip(lower=0.005)
-    d["weight"] = 1.0 / width
+    d["weight"] = 1.0 / width**2  # inverse-variance style: a book twice as tight counts four times
     cols = ["instrument_name", "expiry", "T", "F", "df", "index", "strike", "k", "kind", "bid", "ask", "mid",
             "iv_bid", "iv_mid", "iv_ask", "weight", "delta", "iv"]
     return d[[c for c in cols if c in d.columns]].sort_values(["expiry", "strike"]).reset_index(drop=True)
@@ -102,10 +103,18 @@ class Smile:
             x0 = np.array([0.8 * atm, 0.5 * atm / max(np.ptp(k), 0.1), -0.2, 0.0, 0.1])
             lo = np.array([-1.0, 0.0, -0.999, -2.0, 1e-3])
             hi = np.array([5.0, 20.0, 0.999, 2.0, 3.0])
-            res = least_squares(lambda p: sw * (cls._svi(p, k) - w_obs), np.clip(x0, lo, hi), bounds=(lo, hi), loss="soft_l1", f_scale=0.01)
+            f_scale = max(1e-5, 0.05 * float(np.median(w_obs)))  # robust-loss knee: 5 % of typical total variance
+            res = least_squares(lambda p: sw * (cls._svi(p, k) - w_obs), np.clip(x0, lo, hi), bounds=(lo, hi), loss="soft_l1", f_scale=f_scale, max_nfev=2000)
             p = res.x
             probe = np.linspace(k.min() - 0.3, k.max() + 0.3, 101)
-            if np.all(cls._svi(p, probe) > 0) and p[1] * (1 + abs(p[2])) <= 4.0:
+            sane = (
+                res.success
+                and np.all(cls._svi(p, probe) > 0)
+                and p[1] * (1 + abs(p[2])) <= 4.0
+                and abs(p[2]) < 0.995  # rho pinned at the bound = degenerate corner, not a smile
+                and k.min() - 1.0 < p[3] < k.max() + 1.0
+            )
+            if sane:
                 sm.model, sm.params = "svi", p
                 return sm
         if len(k) >= 3:
@@ -144,6 +153,34 @@ class Smile:
 
     def __call__(self, k: np.ndarray) -> np.ndarray:
         return np.sqrt(self.total_variance(k) / self.T)
+
+    def dw_dk(self, k: np.ndarray) -> np.ndarray:
+        """Slope of total variance; zero on the flat wings."""
+        k = np.asarray(k, float)
+        pad = self.wing_pad
+        inside = (k >= self.k.min() - pad) & (k <= self.k.max() + pad)
+        kc = np.clip(k, self.k.min() - pad, self.k.max() + pad)
+        if self.model == "svi":
+            a, b, rho, m, sg = self.params
+            d = b * (rho + (kc - m) / np.sqrt((kc - m) ** 2 + sg**2))
+        elif self.model == "quad":
+            d = 2 * self.params[0] * kc + self.params[1]
+        else:
+            d = np.zeros_like(kc)
+        return np.where(inside, d, 0.0)
+
+    def skew(self, k: np.ndarray) -> np.ndarray:
+        """d sigma / d k — the smile's own slope, the market quantity behind vanna P&L."""
+        return self.dw_dk(k) / (2.0 * self(k) * self.T)
+
+    @property
+    def atm_iv(self) -> float:
+        return float(self(np.zeros(1))[0])
+
+    def call_delta(self, k: np.ndarray) -> np.ndarray:
+        """Smile-consistent Black-76 call delta of the strike at log-moneyness ``k``."""
+        k = np.asarray(k, float)
+        return pricing.delta_of(self.F, self.F * np.exp(k), self.T, self(k), 1, self.df)
 
     def strike_for_call_delta(self, delta: np.ndarray, iters: int = 12) -> np.ndarray:
         """Strike whose *smile-consistent* Black-76 call delta equals ``delta`` (fixed-point)."""
@@ -187,57 +224,83 @@ class Surface:
         if x is None:
             if axis == "strike":
                 raise ValueError("axis='strike' needs an explicit strike grid")
-            x = DELTA_AXIS if axis == "delta" else LOGM_AXIS
+            x = {"delta": DELTA_AXIS, "std": STD_AXIS}.get(axis, LOGM_AXIS)
         x = np.asarray(x, float)
-        rows = []
-        for s in self.smiles:
-            if axis == "delta":
-                k = np.log(s.strike_for_call_delta(x) / s.F)
-            elif axis == "strike":
-                k = np.log(x / s.F)
-            else:
-                k = x
-            rows.append(s(k))
+        rows = [s(self.k_of(s, axis, x)) for s in self.smiles]
         return x, np.array(rows)
 
-    def grid(self, axis: str = "delta", x: np.ndarray | None = None, tenors: np.ndarray | None = None, n_tenors: int = 24, mask_wings: bool = False):
+    @staticmethod
+    def k_of(s: Smile, axis: str, x: np.ndarray) -> np.ndarray:
+        """Log-moneyness of axis coordinate ``x`` on smile ``s``."""
+        if axis == "delta":
+            return np.log(s.strike_for_call_delta(x) / s.F)
+        if axis == "strike":
+            return np.log(x / s.F)
+        if axis == "std":
+            return x * s.atm_iv * np.sqrt(s.T)
+        return x
+
+    def grid(self, axis: str = "delta", x: np.ndarray | None = None, tenors: np.ndarray | None = None, n_tenors: int = 24,
+             mask_wings: bool = False, calendar: bool = True):
         """Gridded surface: returns (x, tenor_years, iv[tenor, x]) with total variance linear in T.
 
-        ``mask_wings=True`` (strike / log-moneyness axes) sets nodes outside the
-        quoted range of the neighbouring expiries to ``nan`` so a plot shows only
-        what the orderbook actually prices.
+        ``calendar=True`` enforces the calendar no-arbitrage condition on the grid
+        (total variance non-decreasing in T at fixed coordinate) by a monotone
+        pass; the share of nodes it had to lift is kept in ``self.calendar_lifted``.
+        ``mask_wings=True`` (strike / log-moneyness / std axes) sets nodes outside
+        the quoted range of the neighbouring expiries to ``nan`` so a plot shows
+        only what the orderbook actually prices.
         """
         x, iv_exp = self.iv_at_expiries(axis, x)
         T_exp = self.tenors
         if tenors is None:
             tenors = np.geomspace(T_exp.min(), T_exp.max(), n_tenors) if len(T_exp) > 1 else T_exp
         w_exp = iv_exp**2 * T_exp[:, None]
+        if calendar and axis != "delta" and len(T_exp) > 1:  # at fixed delta the condition does not apply
+            lifted = np.maximum.accumulate(w_exp, axis=0)
+            self.calendar_lifted = float(np.mean(lifted > w_exp + 1e-12))
+            w_exp = lifted
         w = np.empty((len(tenors), len(x)))
         for j in range(len(x)):
             w[:, j] = np.interp(tenors, T_exp, w_exp[:, j])
         iv = np.sqrt(np.maximum(w, 1e-10) / tenors[:, None])
-        if mask_wings and axis in ("strike", "logm"):
-            lo = np.array([s.k_range[0] for s in self.smiles])
-            hi = np.array([s.k_range[1] for s in self.smiles])
-            lo_t, hi_t = np.interp(tenors, T_exp, lo), np.interp(tenors, T_exp, hi)
-            F_t = np.interp(tenors, T_exp, [s.F for s in self.smiles])
-            k = np.log(x[None, :] / F_t[:, None]) if axis == "strike" else np.broadcast_to(x[None, :], iv.shape)
-            iv = np.where((k >= lo_t[:, None]) & (k <= hi_t[:, None]), iv, np.nan)
+        if mask_wings and axis in ("strike", "logm", "std"):
+            k_lo = np.array([np.interp(tenors, T_exp, [s.k_range[0] for s in self.smiles])]).T
+            k_hi = np.array([np.interp(tenors, T_exp, [s.k_range[1] for s in self.smiles])]).T
+            k_exp = np.array([self.k_of(s, axis, x) for s in self.smiles])
+            k = np.empty_like(iv)
+            for j in range(len(x)):
+                k[:, j] = np.interp(tenors, T_exp, k_exp[:, j])
+            iv = np.where((k >= k_lo) & (k <= k_hi), iv, np.nan)
         return x, tenors, iv
 
-    def greeks_grid(self, axis: str = "delta", x: np.ndarray | None = None, tenors: np.ndarray | None = None, n_tenors: int = 24) -> dict[str, np.ndarray]:
-        """Every greek of the OTM option at each grid node (so the surface can be coloured by any of them)."""
+    calendar_lifted: float = 0.0
+
+    def greeks_grid(self, axis: str = "delta", x: np.ndarray | None = None, tenors: np.ndarray | None = None, n_tenors: int = 24,
+                    ssr: float = 0.0) -> dict[str, np.ndarray]:
+        """Every greek of the OTM option at each grid node, plus two *surface* quantities:
+
+        ``skew``    d sigma / d k of the fitted smile (interpolated across tenor) — the
+                    market's own information, not a Black-Scholes function of the coordinates;
+        ``mvdelta`` minimum-variance delta minus Black-76 delta = vega * d sigma_K / dS with
+                    d sigma_K / d ln S = (ssr - 1) * skew  (Bergomi's skew-stickiness ratio:
+                    0 = sticky-delta, 1 = sticky-strike, ~2 = stochastic-vol short end).
+        """
         x, tenors, iv = self.grid(axis, x, tenors, n_tenors)
         F = np.interp(tenors, self.tenors, [s.F for s in self.smiles])
         df = np.interp(tenors, self.tenors, [s.df for s in self.smiles])
         Tm, Fm, dfm = tenors[:, None], F[:, None], df[:, None]
-        if axis == "delta":
-            K = pricing.strike_for_delta(x[None, :], Fm, Tm, iv, 1, dfm)
-        elif axis == "strike":
-            K = np.broadcast_to(x[None, :], iv.shape)
-        else:
-            K = Fm * np.exp(x[None, :])
+        k_exp = np.array([self.k_of(s, axis, x) for s in self.smiles])
+        sk_exp = np.array([s.skew(k_exp[i]) for i, s in enumerate(self.smiles)])
+        k = np.empty_like(iv)
+        skew = np.empty_like(iv)
+        for j in range(len(x)):
+            k[:, j] = np.interp(tenors, self.tenors, k_exp[:, j])
+            skew[:, j] = np.interp(tenors, self.tenors, sk_exp[:, j])
+        K = pricing.strike_for_delta(x[None, :], Fm, Tm, iv, 1, dfm) if axis == "delta" else Fm * np.exp(k)
         kind = np.where(K >= Fm, 1, -1)
         g = pricing.greeks(Fm, K, Tm, iv, kind, dfm)
-        g.update(x=x, tenors=tenors, iv=iv, strike=K)
+        g["skew"] = skew
+        g["mvdelta"] = g["vega"] * (ssr - 1.0) * skew / Fm
+        g.update(x=x, tenors=tenors, iv=iv, strike=K, k=k)
         return g

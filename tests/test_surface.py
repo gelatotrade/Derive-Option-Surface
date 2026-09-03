@@ -80,3 +80,28 @@ def test_thin_book_falls_back_gracefully():
     # wings are held flat beyond the quoted range, never extrapolated into nonsense
     assert sm(np.array([2.0]))[0] == pytest.approx(sm(np.array([0.1 + sm.wing_pad]))[0])
     assert 0 < sm.wing_pad <= 0.05
+
+
+def test_smile_skew_matches_finite_difference_and_is_zero_on_flat_wings():
+    df, F = synthetic_snapshot()
+    sm = Surface.from_snapshot(df, "X").smiles[2]
+    k = np.linspace(sm.k.min() + 0.02, sm.k.max() - 0.02, 9)
+    h = 1e-5
+    fd = (sm(k + h) - sm(k - h)) / (2 * h)
+    assert np.allclose(sm.skew(k), fd, rtol=1e-4, atol=1e-6)
+    assert sm.skew(np.array([sm.k.max() + 1.0]))[0] == 0.0
+
+
+def test_calendar_pass_makes_total_variance_monotone_and_std_axis_works():
+    df, F = synthetic_snapshot()
+    s = Surface.from_snapshot(df, "X")
+    x, T, iv = s.grid("logm", n_tenors=12)
+    w = iv**2 * T[:, None]
+    assert np.all(np.diff(w, axis=0) >= -1e-12)
+    x, T, iv = s.grid("std", n_tenors=6)
+    assert iv.shape == (6, 41) and np.all(np.isfinite(iv))
+    g = s.greeks_grid("std", n_tenors=6, ssr=0.0)
+    # sticky-delta (ssr=0): a negatively skewed smile makes min-variance delta smaller than BS delta on the put side ... sign = -vega*skew/F
+    assert np.allclose(g["mvdelta"], -g["vega"] * g["skew"] / np.interp(g["tenors"], s.tenors, [sm.F for sm in s.smiles])[:, None])
+    g1 = s.greeks_grid("std", n_tenors=6, ssr=1.0)
+    assert np.allclose(g1["mvdelta"], 0.0)  # sticky-strike: Black-76 delta is already minimum-variance

@@ -6,5 +6,5 @@ python -m derive_surface merge
 for c in BTC ETH HYPE; do
   python -m derive_surface animate live  "$c"
   python -m derive_surface animate tape  "$c" --days 60 --step-hours 12
-  python -m derive_surface animate shock "$c" --regime sticky_delta --color-by vanna
+  python -m derive_surface animate shock "$c" --regime sticky_delta --color-by mvdelta
 done
