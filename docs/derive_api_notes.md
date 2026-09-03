@@ -31,5 +31,10 @@ liefert vergangene Bid/Ask-Stände oder vergangene IVs. Was es stattdessen gibt:
 
 * Optionen verfallen 08:00 UTC; `expiry` ist Unix-Sekunden, `timestamp` in Tickern/Trades Millisekunden.
 * Preise in USDC je Kontrakt (1 Kontrakt = 1 Einheit Underlying). Delta ist w. r. t. **Forward**.
-* Instrumentname: `BTC-20260904-110000-C`.
+* Instrumentname: `BTC-20260904-110000-C`; Bruch-Strikes mit Unterstrich: `HYPE-20260904-77_5-C` (= 77,5; Vorsicht,
+  `float("77_5")` liest in Python 775).
+* WebSocket `orderbook.*`: die Verbindung wird serverseitig gelegentlich ohne Close-Frame beendet (nach ~90 min beobachtet);
+  der Recorder verbindet neu und schreibt den Puffer in jedem Fall weg.
+* `depth-snapshot` über alle 2 166 lebenden Optionen: nur 1 184 Bücher hatten ruhende Orders; die übrigen sind leer
+  (die Market-Maker quotieren dort nur per RFQ oder gar nicht).
 * Rate-Limits: mit 4–6 parallelen Requests keine 429 beobachtet; der Client wartet exponentiell bei 429/5xx.

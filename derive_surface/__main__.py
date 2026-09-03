@@ -32,8 +32,8 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("animate", help="render GIF/MP4 (or a PNG still)")
     s.add_argument("kind", choices=["live", "tape", "shock", "still"])
     s.add_argument("currency")
-    s.add_argument("--axis", default=None, help="delta | logm | strike")
-    s.add_argument("--color-by", default=None, help="iv | delta | gamma | vega | theta | vanna | volga | charm | speed | zomma | color | ultima")
+    s.add_argument("--axis", default=None, help="delta | std | logm | strike")
+    s.add_argument("--color-by", default=None, help="iv | skew | mvdelta | delta | gamma | vega | theta | vanna | volga | charm | speed | zomma | color | ultima")
     s.add_argument("--regime", default="sticky_delta", help="shock only: sticky_delta | sticky_strike")
     s.add_argument("--every", type=int, default=3, help="live only: use every n-th recorded cycle")
     s.add_argument("--days", type=int, default=60, help="tape only: trailing window in days")
@@ -60,12 +60,14 @@ def main(argv: list[str] | None = None) -> None:
 
         for c in a.currencies:
             merge_parts(a.data / "raw" / "live", f"tickers_{c}", a.data / "live" / f"{c}_tickers.parquet")
+        if list((a.data / "raw" / "live").glob("depth_part*.parquet")):
+            merge_parts(a.data / "raw" / "live", "depth", a.data / "live" / "depth.parquet")
     elif a.cmd == "depth-snapshot":
         from .recorder import depth_snapshot
 
         depth_snapshot(a.currencies, a.data / "live" / "depth_snapshot.parquet")
     elif a.cmd == "animate":
-        color_by = a.color_by or ("vanna" if a.kind == "shock" else "iv")
+        color_by = a.color_by or ("mvdelta" if a.kind == "shock" else "iv")
         axis = a.axis or ("strike" if a.kind == "shock" else "delta")
         if a.kind == "still":
             from .animate import render_still

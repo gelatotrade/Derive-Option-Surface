@@ -62,8 +62,9 @@ def surface_at(
         if T <= MIN_TENOR_YEARS or g["strike"].nunique() < min_strikes:
             continue
         age = (ts_ms - g["timestamp"].values) / 1000.0
-        weight = g["trade_amount"].values * np.exp(-age * np.log(2) / half_life_s)
-        weight = np.maximum(weight, 1e-6)
+        amt = g["trade_amount"].values
+        size = np.clip(np.sqrt(amt / max(np.median(amt), 1e-9)), 0.25, 4.0)  # size matters, but no single block owns the fit
+        weight = np.maximum(size * np.exp(-age * np.log(2) / half_life_s), 1e-3)
         # merge repeated strikes into one weighted quote so a busy strike does not dominate the fit
         agg = pd.DataFrame({"k": g["k"].values, "w": weight, "iv": g["iv"].values}).groupby(g["strike"].values)
         k = agg.apply(lambda d: np.average(d["k"], weights=d["w"])).values

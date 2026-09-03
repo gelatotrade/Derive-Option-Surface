@@ -44,7 +44,9 @@ class OptionName:
     @classmethod
     def parse(cls, name: str) -> "OptionName":
         ccy, date, strike, kind = name.split("-")
-        return cls(ccy, date, float(strike), kind)
+        # fractional strikes are written with an underscore (HYPE-20260904-77_5-C);
+        # float("77_5") would silently read 775.0 (PEP 515 digit separator)
+        return cls(ccy, date, float(strike.replace("_", ".")), kind)
 
     @property
     def expiry_ts(self) -> int:
@@ -98,8 +100,9 @@ class DeriveClient:
                             raise DeriveError(method, err)
                     else:
                         return payload["result"]
-            time.sleep(delay + random.uniform(0, 0.5))
-            delay = min(delay * 2, 30)
+            if attempt < self.max_retries - 1:
+                time.sleep(delay + random.uniform(0, 0.5))
+                delay = min(delay * 2, 30)
         raise RuntimeError(f"{method}: giving up after {self.max_retries} attempts")
 
     # typed helpers --------------------------------------------------------
@@ -226,6 +229,15 @@ def slim_ticker_row(name: str, t: dict) -> dict:
         "discount_factor": f(op.get("df")),
         "open_interest": f((t.get("stats") or {}).get("oi")),
     }
+
+
+def repair_strikes(df):
+    """Re-derive ``strike``/``expiry`` from ``instrument_name`` (fixes rows recorded before the underscore fix)."""
+    parsed = df["instrument_name"].map(OptionName.parse)
+    df = df.copy()
+    df["strike"] = parsed.map(lambda o: o.strike).astype(float)
+    df["expiry"] = parsed.map(lambda o: o.expiry_ts).astype("int64")
+    return df
 
 
 def _f(x: Any) -> float | None:
