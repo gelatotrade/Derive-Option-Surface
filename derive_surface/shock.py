@@ -67,7 +67,7 @@ def repriced_ladder(base: Frame, shocked: Surface) -> tuple[pd.DataFrame, float]
 
 def animate_shock(
     data_dir: Path, currency: str, out_dir: Path, *, amplitude: float = 0.06, n_frames: int = 72, regime: str = "sticky_delta",
-    axis: str = "strike", color_by: str = "mvdelta", fps: float = 10, width: int = 880, height: int = 495, suffix: str = ""
+    axis: str = "strike", color_by: str = "mvdelta", fps: float = 10, width: int = 880, height: int = 496, suffix: str = ""
 ) -> Path:
     tk = load_live_tickers(data_dir, currency)
     last = int(tk["cycle_ts"].max())
@@ -80,8 +80,7 @@ def animate_shock(
     for i, e in enumerate(eps):
         s = shocked_surface(base.surface, float(e), regime)
         lad, F = repriced_ladder(base, s)
-        cap = (f"Szenario: Forward {F0:,.0f} → {F:,.0f} ({e:+.1%}) · Regime: {regime.replace('_', '-')} · "
-               f"Smile-Form aus dem Live-Orderbook, Ladder mit Black-76 neu bepreist")
+        cap = f"Szenario: Forward {F0:,.0f} → {F:,.0f} ({e:+.1%}) · {regime.replace('_', '-')} · Smile-Form aus dem Live-Orderbook, Ladder per Black-76 neu bepreist"
         frames.append(Frame(base.ts_ms, s, lad, base.ladder_expiry, F, caption=cap, cursor_x=float(i)))
     r = Renderer(currency, axis=axis, color_by=color_by, width=width, height=height,
                  title=f"{currency} · Derive Options · Spot-Schock ({regime.replace('_', '-')})")

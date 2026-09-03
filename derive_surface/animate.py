@@ -197,7 +197,8 @@ class Renderer:
         ax.plot(spot_t[i], spot_p[i], "o", ms=7, color=SPOT, markeredgecolor=SURFACE, markeredgewidth=1.5)
         ax.axvline(spot_t[i], color=AXIS, linewidth=0.8)
         chg = spot_p[i] / spot_p[0] - 1
-        ax.set_title(f"{spot_p[i]:,.2f}  ({chg:+.2%})", fontsize=9, color=INK, loc="right")
+        ax.text(0.98, 0.95, f"{spot_p[i]:,.2f}  ({chg:+.2%})", transform=ax.transAxes, fontsize=9, color=INK, ha="right", va="top",
+                bbox=dict(facecolor=SURFACE, edgecolor="none", alpha=0.85, pad=1.5))
         if xlim:
             ax.set_xlim(*xlim)
         if ylim:
@@ -297,10 +298,13 @@ class Renderer:
         picks = sorted({0, len(T) // 2, len(T) - 1})
         info = "ATM IV  " + "  ·  ".join(f"{T[i]:.0f}d {atm[i]:.1f}%" for i in picks)
         ax.text2D(0.02, 0.97, info, transform=ax.transAxes, fontsize=8.5, color=INK, va="top")
+        line = 0.92
         if self.color_by != "iv":
-            ax.text2D(0.02, 0.92, f"Farbe: {GREEK_LABEL.get(self.color_by, self.color_by)}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
+            ax.text2D(0.02, line, f"Farbe: {GREEK_LABEL.get(self.color_by, self.color_by)}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
+            line -= 0.05
         if self.show_quotes:
-            ax.text2D(0.98, 0.03, "Punkte = Orderbuch-Mids (fixe Strikes)", transform=ax.transAxes, fontsize=7.5, color=INK2, ha="right")
+            what = "Fills (24h)" if frame.fills is not None else "Orderbuch-Mids (fixe Strikes)"
+            ax.text2D(0.02, line, f"Punkte = {what}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
 
     # --- frame -------------------------------------------------------------
     def render(self, frame: Frame, spot_t: np.ndarray, spot_p: np.ndarray, spot_xlim=None, spot_ylim=None, ladder_ylim=None) -> np.ndarray:
@@ -342,9 +346,11 @@ def write_mp4(frames: list[np.ndarray], path: Path, fps: float = 8) -> Path | No
         import imageio
 
         path.parent.mkdir(parents=True, exist_ok=True)
+        h, w_ = frames[0].shape[:2]
+        h2, w2 = h - h % 2, w_ - w_ % 2  # yuv420p needs even dimensions
         with imageio.get_writer(path, fps=fps, codec="libx264", macro_block_size=1, pixelformat="yuv420p", ffmpeg_params=["-crf", "23"]) as w:
             for f in frames:
-                w.append_data(f)
+                w.append_data(f[:h2, :w2])
         log.info("wrote %s (%.1f MB)", path, path.stat().st_size / 1e6)
         return path
     except Exception as exc:  # ffmpeg missing -> GIF only
@@ -365,7 +371,7 @@ def load_live_tickers(data_dir: Path, currency: str) -> pd.DataFrame:
 
 def animate_live(
     data_dir: Path, currency: str, out_dir: Path, *, every: int = 3, max_frames: int = 120, axis: str = "delta",
-    color_by: str = "iv", fps: float = 8, width: int = 880, height: int = 495, suffix: str = ""
+    color_by: str = "iv", fps: float = 8, width: int = 880, height: int = 496, suffix: str = ""
 ) -> Path:
     tk = load_live_tickers(data_dir, currency)
     cycles = np.sort(tk["cycle_ts"].unique())
@@ -413,7 +419,7 @@ def render_still(data_dir: Path, currency: str, out_path: Path, *, axis: str = "
 # ---------------------------------------------------------------- tape movie
 def animate_tape(
     data_dir: Path, currency: str, out_dir: Path, *, days: int = 60, step_h: int = 12, axis: str = "delta", color_by: str = "iv",
-    fps: float = 8, width: int = 880, height: int = 495, suffix: str = ""
+    fps: float = 8, width: int = 880, height: int = 496, suffix: str = ""
 ) -> Path:
     """Surfaces reconstructed from the trade tape, one frame every ``step_h`` hours over the last ``days`` days."""
     from .tape import load_spot, load_trades, surface_at, trade_ivs
