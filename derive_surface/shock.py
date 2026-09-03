@@ -80,10 +80,10 @@ def animate_shock(
     for i, e in enumerate(eps):
         s = shocked_surface(base.surface, float(e), regime)
         lad, F = repriced_ladder(base, s)
-        cap = f"Szenario: Forward {F0:,.0f} → {F:,.0f} ({e:+.1%}) · {regime.replace('_', '-')} · Smile-Form aus dem Live-Orderbook, Ladder per Black-76 neu bepreist"
+        cap = f"Scenario: forward {F0:,.0f} → {F:,.0f} ({e:+.1%}) · {regime.replace('_', '-')} · smile shape from the live orderbook, ladder re-priced with Black-76"
         frames.append(Frame(base.ts_ms, s, lad, base.ladder_expiry, F, caption=cap, cursor_x=float(i)))
     r = Renderer(currency, axis=axis, color_by=color_by, width=width, height=height,
-                 title=f"{currency} · Derive Options · Spot-Schock ({regime.replace('_', '-')})")
+                 title=f"{currency} · Derive options · spot shock ({regime.replace('_', '-')})")
     r.x_grid = x_grid
     r.time_axis = False
     r.mask_wings = axis in ("strike", "logm")
