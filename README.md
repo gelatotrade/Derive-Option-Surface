@@ -140,17 +140,17 @@ Ask-IV-Fläche (liquider Bereich 10Δ–90Δ, vorzeichenwechselnde Greeks auf ih
 | Ordnung | Greek | BTC (Spread 1,35 vp) | ETH (1,53 vp) | HYPE (7,6 vp) |
 |---|---|---|---|---|
 | | | Median (75. Perzentil) der relativen Abweichung Bid- vs. Ask-Fläche | | |
-| 1 | Delta | 1.7 % (3.4 %) | 1.7 % (3.0 %) | 6.6 % (13.1 %) |
-| 1 | Vega | 0.9 % (2.2 %) | 0.9 % (2.0 %) | 3.0 % (7.8 %) |
-| 1 | Theta | 2.4 % (3.4 %) | 2.5 % (3.4 %) | 11.4 % (14.2 %) |
-| 2 | Gamma | 1.3 % (1.7 %) | 1.5 % (2.0 %) | 6.7 % (8.6 %) |
-| 2 | Vanna | 1.6 % (2.5 %) | 1.9 % (2.5 %) | 8.9 % (11.7 %) |
-| 2 | Volga | 2.2 % (3.4 %) | 2.4 % (3.6 %) | 12.5 % (17.4 %) |
-| 2 | Charm | 0.6 % (1.1 %) | 0.7 % (1.1 %) | 2.9 % (5.1 %) |
-| 3 | Speed | 3.0 % (4.5 %) | 3.3 % (4.6 %) | 14.8 % (19.4 %) |
-| 3 | Zomma | 2.2 % (3.2 %) | 2.4 % (3.6 %) | 10.3 % (13.7 %) |
-| 3 | Color | 1.6 % (2.4 %) | 1.7 % (2.5 %) | 7.0 % (10.4 %) |
-| 3 | Ultima | 2.8 % (4.2 %) | 3.2 % (4.7 %) | 15.6 % (23.3 %) |
+| 1 | Delta | 1,7 % (3,4 %) | 1,7 % (3,0 %) | 6,6 % (13,1 %) |
+| 1 | Vega | 0,9 % (2,2 %) | 0,9 % (2,0 %) | 3,0 % (7,8 %) |
+| 1 | Theta | 2,4 % (3,4 %) | 2,5 % (3,4 %) | 11,4 % (14,2 %) |
+| 2 | Gamma | 1,3 % (1,7 %) | 1,5 % (2,0 %) | 6,7 % (8,6 %) |
+| 2 | Vanna | 1,6 % (2,5 %) | 1,9 % (2,5 %) | 8,9 % (11,7 %) |
+| 2 | Volga | 2,2 % (3,4 %) | 2,4 % (3,6 %) | 12,5 % (17,4 %) |
+| 2 | Charm | 0,6 % (1,1 %) | 0,7 % (1,1 %) | 2,9 % (5,1 %) |
+| 3 | Speed | 3,0 % (4,5 %) | 3,3 % (4,6 %) | 14,8 % (19,4 %) |
+| 3 | Zomma | 2,2 % (3,2 %) | 2,4 % (3,6 %) | 10,3 % (13,7 %) |
+| 3 | Color | 1,6 % (2,4 %) | 1,7 % (2,5 %) | 7,0 % (10,4 %) |
+| 3 | Ultima | 2,8 % (4,2 %) | 3,2 % (4,7 %) | 15,6 % (23,3 %) |
 
 Bei BTC und ETH ist bis zur zweiten Ordnung alles Signal, die dritte liegt beim Doppelten. Bei HYPE mit 8 Vol-Punkten
 Spread sind schon Gamma und Vanna nur aus der geglätteten Fläche lesbar, Volga und alles darüber nicht mehr.
