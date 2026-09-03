@@ -22,11 +22,11 @@ was fitted to: on a delta axis they **slide** when spot moves, while the surface
 *relative to spot*. That separation is the regime information (section 6). In these two hours spot moved by only
 0.6 % (BTC 77,570–78,045, ETH 2,395–2,412, HYPE 81.8–82.4), so the motion is subtle; the big moves are in section 2.
 
-![BTC live](docs/media/BTC_live.gif)
+![BTC live](docs/media/BTC_live_en.gif)
 
-![ETH live](docs/media/ETH_live.gif)
+![ETH live](docs/media/ETH_live_en.gif)
 
-![HYPE live](docs/media/HYPE_live.gif)
+![HYPE live](docs/media/HYPE_live_en.gif)
 
 ## 2 · Tape: 60 days of surface history from the trade tape
 
@@ -35,11 +35,11 @@ demonstrably *was*. From the complete trade tape (590,378 fills since January 20
 12 h: Black-76 inversion of every fill, time- and size-weighted SVI fit over a 24-hour window. Bottom left: the fills
 behind the front smile.
 
-![BTC tape](docs/media/BTC_tape.gif)
+![BTC tape](docs/media/BTC_tape_en.gif)
 
-![ETH tape](docs/media/ETH_tape.gif)
+![ETH tape](docs/media/ETH_tape_en.gif)
 
-![HYPE tape](docs/media/HYPE_tape.gif)
+![HYPE tape](docs/media/HYPE_tape_en.gif)
 
 ## 3 · Shock: what happens to ladder and surface when *only* spot moves
 
@@ -49,11 +49,11 @@ the ladder is re-priced with Black-76. The surface is drawn in **strike coordina
 quoted strikes. The colour is **Δ_MV − Δ_BS = vega · ∂σ/∂S**, the amount by which a Black-Scholes delta hedge is wrong
 because of the skew (section 6): blue where the skew lowers the delta, red where it raises it.
 
-![BTC shock](docs/media/BTC_shock_sticky_delta.gif)
+![BTC shock](docs/media/BTC_shock_sticky_delta_en.gif)
 
-![ETH shock](docs/media/ETH_shock_sticky_delta.gif)
+![ETH shock](docs/media/ETH_shock_sticky_delta_en.gif)
 
-![HYPE shock](docs/media/HYPE_shock_sticky_delta.gif)
+![HYPE shock](docs/media/HYPE_shock_sticky_delta_en.gif)
 
 `--regime sticky_strike` renders the counterpart (vol per strike frozen, smile slides in moneyness).
 
@@ -188,7 +188,7 @@ python -m derive_surface record depth   --duration 7200 &   # price levels near 
 python -m derive_surface depth-snapshot               # all resting orders of all options, now
 python -m derive_surface merge
 
-python -m derive_surface animate live  BTC                       # docs/media/BTC_live.gif + .mp4
+python -m derive_surface animate live  BTC                       # docs/media/BTC_live_en.gif + .mp4
 python -m derive_surface animate live  BTC --color-by skew --suffix _skew
 python -m derive_surface animate tape  ETH --days 60 --step-hours 12
 python -m derive_surface animate shock HYPE --regime sticky_strike --color-by gamma
