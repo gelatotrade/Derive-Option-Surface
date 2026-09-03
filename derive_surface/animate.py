@@ -42,9 +42,9 @@ CMAP_SEQ = LinearSegmentedColormap.from_list("seq_blue", SEQ_BLUE)
 CMAP_DIV = LinearSegmentedColormap.from_list("div_blue_red", ["#0d366b", "#2a78d6", "#f0efec", "#e34948", "#7a1f1f"])
 SIGNED_GREEKS = {"vanna", "charm", "theta", "speed", "zomma", "color", "ultima", "rho", "volga", "skew", "mvdelta"}
 GREEK_LABEL = {
-    "iv": "Implied Vol (%)", "delta": "Delta", "gamma": "Gamma", "vega": "Vega", "theta": "Theta", "vanna": "Vanna",
+    "iv": "Implied vol (%)", "delta": "Delta", "gamma": "Gamma", "vega": "Vega", "theta": "Theta", "vanna": "Vanna",
     "volga": "Volga", "charm": "Charm", "speed": "Speed", "zomma": "Zomma", "color": "Color", "ultima": "Ultima",
-    "skew": "Skew der Fläche ∂σ/∂k", "mvdelta": "Δ(min-var) − Δ(BS) = Vega·∂σ/∂S  [Delta-Punkte]",
+    "skew": "surface skew ∂σ/∂k", "mvdelta": "Δ(min-var) − Δ(BS) = vega·∂σ/∂S  [delta points]",
 }
 DAY_TICKS = np.array([1, 2, 3, 5, 7, 14, 30, 60, 90, 180, 365])
 
@@ -123,7 +123,7 @@ class Renderer:
         self.currency, self.axis, self.color_by = currency, axis, color_by
         self.figsize, self.dpi = (width / dpi, height / dpi), dpi
         self.zlim, self.clim, self.elev, self.azim = zlim, clim, elev, azim
-        self.title = title or f"{currency} · Derive Options · Orderbook-Mid Surface"
+        self.title = title or f"{currency} · Derive options · orderbook-mid surface"
 
     # --- helpers -----------------------------------------------------------
     x_grid: np.ndarray | None = None  # explicit axis grid (required for axis="strike")
@@ -197,7 +197,7 @@ class Renderer:
         ax.plot(spot_t[i], spot_p[i], "o", ms=7, color=SPOT, markeredgecolor=SURFACE, markeredgewidth=1.5)
         ax.axvline(spot_t[i], color=AXIS, linewidth=0.8)
         chg = spot_p[i] / spot_p[0] - 1
-        ax.text(0.98, 0.95, f"{spot_p[i]:,.2f}  ({chg:+.2%})", transform=ax.transAxes, fontsize=9, color=INK, ha="right", va="top",
+        ax.text(0.98, 0.95, f"{spot_p[i]:,.2f}  ({chg:+.2%} vs. start)", transform=ax.transAxes, fontsize=9, color=INK, ha="right", va="top",
                 bbox=dict(facecolor=SURFACE, edgecolor="none", alpha=0.85, pad=1.5))
         if xlim:
             ax.set_xlim(*xlim)
@@ -209,10 +209,10 @@ class Renderer:
             span = (spot_t[-1] - spot_t[0]) if len(spot_t) > 1 else 0
             fmt = "%H:%M" if span < 3 * 86400 else "%d.%m"
             ax.set_xticklabels([dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime(fmt) for t in ticks])
-            ax.set_title("Underlying · Derive Index (UTC)", fontsize=9, color=INK2, loc="left")
+            ax.set_title("Underlying · Derive index (UTC)", fontsize=9, color=INK2, loc="left")
         else:
-            ax.set_xlabel("Szenario-Schritt", fontsize=8, color=INK2)
-            ax.set_title("Underlying · Szenario-Pfad", fontsize=9, color=INK2, loc="left")
+            ax.set_xlabel("Scenario step", fontsize=8, color=INK2)
+            ax.set_title("Underlying · scenario path", fontsize=9, color=INK2, loc="left")
 
     def draw_ladder(self, ax, frame: Frame, ylim=None) -> None:
         self._style(ax)
@@ -221,10 +221,10 @@ class Renderer:
         for side, color, label in (("call", CALL, "Call"), ("put", PUT, "Put")):
             ok = lad[f"{side}_mid"].notna()
             ax.fill_between(lad["strike"][ok], lad[f"{side}_bid"][ok], lad[f"{side}_ask"][ok], color=color, alpha=0.18, linewidth=0)
-            ax.plot(lad["strike"][ok], lad[f"{side}_mid"][ok], "-o", color=color, ms=4.5, linewidth=1.6, label=f"{label} Mid (Band = Bid/Ask)")
+            ax.plot(lad["strike"][ok], lad[f"{side}_mid"][ok], "-o", color=color, ms=4.5, linewidth=1.6, label=f"{label} mid (band = bid/ask)")
         ax.axvline(frame.forward, color=INK2, linewidth=1.0)
         ax.text(frame.forward, 0.04, f" Fwd {frame.forward:,.0f}", transform=ax.get_xaxis_transform(), fontsize=8, color=INK2, va="bottom")
-        ax.set_title(f"Option-Orderbook · Verfall in {days:.1f}d · Mid je Strike (USDC)", fontsize=9, color=INK2, loc="left")
+        ax.set_title(f"Option orderbook · expiry in {days:.1f}d · mid per strike (USDC)", fontsize=9, color=INK2, loc="left")
         ax.set_xlabel("Strike", fontsize=8, color=INK2)
         ax.legend(loc="upper center", fontsize=7.5, frameon=False, ncol=2)
         if ylim:
@@ -239,12 +239,12 @@ class Renderer:
         if f is not None and len(f):
             size = 12 + 40 * (f["weight"] / f["weight"].max())
             xf = np.exp(f["k"]) * 100 if "k" in f.columns else f["strike"] / frame.surface.spot * 100
-            ax.scatter(xf, f["iv"] * 100, s=size, color=CALL, alpha=0.55, edgecolor=SURFACE, linewidth=0.8, label="Fills (24h, Größe = Gewicht)")
+            ax.scatter(xf, f["iv"] * 100, s=size, color=CALL, alpha=0.55, edgecolor=SURFACE, linewidth=0.8, label="Fills (24h, size = weight)")
         m = np.linspace(sm.k.min() - 0.02, sm.k.max() + 0.02, 80)
-        ax.plot(np.exp(m) * 100, sm(m) * 100, color=PUT, linewidth=1.8, label="SVI-Fit")
+        ax.plot(np.exp(m) * 100, sm(m) * 100, color=PUT, linewidth=1.8, label="SVI fit")
         ax.axvline(100.0, color=INK2, linewidth=1.0)
-        ax.set_title(f"Front-Smile · Verfall in {days:.0f}d · IV je Strike aus Fills", fontsize=9, color=INK2, loc="left")
-        ax.set_xlabel("Strike / Forward zum Fill-Zeitpunkt (%)", fontsize=8, color=INK2)
+        ax.set_title(f"Front smile · expiry in {days:.0f}d · IV per strike from fills", fontsize=9, color=INK2, loc="left")
+        ax.set_xlabel("Strike / forward at fill time (%)", fontsize=8, color=INK2)
         ax.set_ylabel("IV (%)", fontsize=8, color=INK2)
         ax.legend(loc="upper center", fontsize=7.5, frameon=False, ncol=2)
         if ylim:
@@ -274,7 +274,7 @@ class Renderer:
             axis_._axinfo["grid"]["color"] = GRID
         ax.tick_params(colors=INK2, labelsize=7.5, pad=0)
         if self.axis == "delta":
-            ax.set_xlabel("Call-Delta (Put = Δ−1)", fontsize=8, color=INK2, labelpad=4)
+            ax.set_xlabel("Call delta (put = Δ−1)", fontsize=8, color=INK2, labelpad=4)
             ax.set_xticks([0.1, 0.25, 0.5, 0.75, 0.9])
         elif self.axis == "strike":
             ax.set_xlabel("Strike", fontsize=8, color=INK2, labelpad=4)
@@ -286,8 +286,8 @@ class Renderer:
         ticks = DAY_TICKS[(DAY_TICKS >= y0_ * 0.95) & (DAY_TICKS <= y1_ * 1.05)]
         ax.set_yticks(np.log10(ticks))
         ax.set_yticklabels([f"{t:d}d" for t in ticks])
-        ax.set_ylabel("Tage bis Verfall", fontsize=8, color=INK2, labelpad=4)
-        ax.set_zlabel("Implied Vol (%)", fontsize=8, color=INK2, labelpad=2)
+        ax.set_ylabel("Days to expiry", fontsize=8, color=INK2, labelpad=4)
+        ax.set_zlabel("Implied vol (%)", fontsize=8, color=INK2, labelpad=2)
         if self.zlim:
             ax.set_zlim(*self.zlim)
         ax.set_xlim(x.min(), x.max())
@@ -300,11 +300,11 @@ class Renderer:
         ax.text2D(0.02, 0.97, info, transform=ax.transAxes, fontsize=8.5, color=INK, va="top")
         line = 0.92
         if self.color_by != "iv":
-            ax.text2D(0.02, line, f"Farbe: {GREEK_LABEL.get(self.color_by, self.color_by)}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
+            ax.text2D(0.02, line, f"Colour: {GREEK_LABEL.get(self.color_by, self.color_by)}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
             line -= 0.05
         if self.show_quotes:
-            what = "Fills (24h)" if frame.fills is not None else "Orderbuch-Mids (fixe Strikes)"
-            ax.text2D(0.02, line, f"Punkte = {what}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
+            what = "fills (24h)" if frame.fills is not None else "orderbook mids (fixed strikes)"
+            ax.text2D(0.02, line, f"Dots = {what}", transform=ax.transAxes, fontsize=8, color=INK2, va="top")
 
     # --- frame -------------------------------------------------------------
     def render(self, frame: Frame, spot_t: np.ndarray, spot_p: np.ndarray, spot_xlim=None, spot_ylim=None, ladder_ylim=None) -> np.ndarray:
@@ -439,8 +439,8 @@ def animate_tape(
         f = pd.DataFrame({"expiry": w["expiry"].values, "strike": w["strike"].values, "k": w["k"].values, "iv": w["iv"].values,
                           "weight": w["trade_amount"].values * np.exp(-age * np.log(2) / (6 * 3600))})
         frames.append(Frame(int(ts), s, None, s.smiles[0].expiry, s.spot, fills=f,
-                            caption="Quelle: Derive Trade-Tape (jeder Fill = gekreuzte Quote), SVI-Fit über 24h-Fenster, zeit- und größengewichtet"))
-    r = Renderer(currency, axis=axis, color_by=color_by, width=width, height=height, title=f"{currency} · Derive Options · Surface aus dem Trade-Tape")
+                            caption="Source: Derive trade tape (every fill = a crossed quote), SVI fit over a 24h window, time- and size-weighted"))
+    r = Renderer(currency, axis=axis, color_by=color_by, width=width, height=height, title=f"{currency} · Derive options · surface from the trade tape")
     r.fit_limits(frames)
     sub = spot[(spot.index >= times[0] / 1000 - 3600) & (spot.index <= times[-1] / 1000 + 3600)]
     spot_t, spot_p = sub.index.values.astype(float), sub.values
