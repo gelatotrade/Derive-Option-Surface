@@ -120,12 +120,17 @@ def ref_section() -> list:
     auctions = pd.read_parquet(ROOT / "ref/liquidation_auctions.parquet")
     lines = ["", "## Referenzdaten", "", f"Abruf {r['fetched_utc']} UTC.", "",
              "- Settlement-Preise je Underlying: " + ", ".join(f"{k} {v}" for k, v in sorted(r["settlement_prices"].items())) + ".",
-             f"- Liquidationen: {liq.get('unique_auctions')} Auktionen aus {liq.get('windows')} Tagesfenstern, {liq.get('bids')} Gebote; "
-             f"verbleibende Lücken: {len(liq.get('gaps', []))}"
-             + (" (" + ", ".join(f"{utc(a)} bis {utc(b)}" for a, b in liq["gaps"][:10]) + ")" if liq.get("gaps") else "") + "."]
+             f"- Liquidationen: {de(liq.get('unique_auctions', 0))} Auktionen, {de(liq.get('bids', 0))} Gebote"
+             + (f" aus {de(liq['windows'])} Tagesfenstern" if liq.get("windows") else " (aus den vorhandenen Dateien übernommen)")
+             + f"; verbleibende Lücken: {len(liq.get('gaps') or [])}"
+             + (" (" + ", ".join(f"{utc(a)} bis {utc(b)}" for a, b in liq["gaps"][:10]) + ")" if liq.get("gaps") else "")
+             + ". Die Gebote sind seitengrössenabhängig unvollständig (10.10.2025: 242 Auktionen, 34 Gebote bei Seitengrösse 100, "
+               "4 bei Grösse 5); vollständige Gebote nur aus den Chain-Events."]
     if len(auctions):
-        lines.append(f"  Zeitraum der Auktionen {utc(auctions['start_timestamp'].min())} bis {utc(auctions['start_timestamp'].max())}; "
-                     "Liquidationen übertragen Positionen ausserhalb des Trade-Tapes, deshalb trägt kaum ein Options-Fill eine Liquidations-Transaktion.")
+        fills_liq = int(pd.read_parquet(ROOT / "derived/fills.parquet", columns=["is_liquidation"])["is_liquidation"].sum())
+        lines.append(f"  Zeitraum der Auktionen {utc(auctions['start_timestamp'].min())} bis {utc(auctions['start_timestamp'].max())}. "
+                     f"Von {de(len(auctions))} Auktionen trägt kein einziger Options-Fill die Transaktion ({fills_liq} Treffer): "
+                     "Liquidationen übertragen Positionen ausserhalb des Trade-Tapes. Die Klasse „liquidation“ bleibt daher leer.")
     mp = r["maker_programmes"]
     lines += [f"- Maker-Programme: {mp['programmes']} Epochen-Programme, {mp['option_score_rows']} Score-Zeilen für Options-Programme, "
               f"{mp['active_wallets']} Wallets mit Score > 0.",
