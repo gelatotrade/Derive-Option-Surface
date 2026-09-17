@@ -404,7 +404,7 @@ def condense(out_dir: Path, manifest: dict) -> pd.DataFrame:
     if len(df) != before:
         log.warning("dropped %d duplicate rows", before - len(df))
     for col in NUMERIC:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype("float64")
     df["timestamp"] = df["timestamp"].astype("int64")
     df["subaccount_id"] = pd.to_numeric(df["subaccount_id"]).astype("int64")
     df["wallet"] = df["wallet"].str.lower()
