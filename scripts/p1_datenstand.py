@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -134,8 +135,9 @@ def ref_section() -> list:
 
 def volfeed_section() -> list:
     lines = ["", "## SVI-Historie (Vol-Feeds)", "",
-             "| Underlying | Events | erster Block | letzter Block | erste Kurve | letzte Kurve | Verfälle | Median Push minus Signatur (s) |",
-             "|---|---|---|---|---|---|---|---|"]
+             "| Underlying | Events | erster Block | letzter Block | erste Kurve | letzte Kurve | Verfälle | Median Push minus Signatur (s) | "
+             "Abstand zwischen Pushes je Verfall, Median / 90. Perzentil (s) |",
+             "|---|---|---|---|---|---|---|---|---|"]
     monthly = {}
     for ccy in CORE:
         df = load_feed(ROOT / "raw/volfeed", ccy)
@@ -143,14 +145,53 @@ def volfeed_section() -> list:
             lines.append(f"| {ccy} | 0 | – | – | – | – | – | – |")
             continue
         push = (df["block_ts"] - df["feed_ts"])[df["block_ts"] > 0]
+        by_push = df[df["block_ts"] > 0].sort_values(["expiry", "block_ts"])
+        gaps = by_push.groupby("expiry")["block_ts"].diff().dropna()
         lines.append(f"| {ccy} | {de(len(df))} | {de(df['block'].min())} | {de(df['block'].max())} | {utc(df['feed_ts'].min() * 1000)} | "
-                     f"{utc(df['feed_ts'].max() * 1000)} | {df['expiry'].nunique()} | {de(push.median(), 0)} |")
+                     f"{utc(df['feed_ts'].max() * 1000)} | {df['expiry'].nunique()} | {de(push.median(), 0)} | "
+                     f"{de(gaps.median(), 0)} / {de(gaps.quantile(0.9), 0)} |")
         monthly[ccy] = df.groupby(pd.to_datetime(df["feed_ts"], unit="s").dt.strftime("%Y-%m")).size()
     if monthly:
         tab = pd.DataFrame(monthly).fillna(0).astype(int)
         lines += ["", "Events je Monat:", "", "| Monat | " + " | ".join(tab.columns) + " |", "|---|" + "---|" * len(tab.columns)]
         for m, row in tab.iterrows():
             lines.append(f"| {m} | " + " | ".join(de(v) for v in row) + " |")
+    return lines
+
+
+def mark_check_section() -> list:
+    """Mark price at fill time rebuilt from the on-chain SVI vs the tape's mark_price (no future data: not a markout)."""
+    from derive_surface import pricing
+    from derive_surface.markpath import attach_svi, mark_from_svi
+
+    f = pd.read_parquet(ROOT / "derived/fills.parquet",
+                        columns=["trade_id", "ts", "currency", "expiry", "strike", "option_type", "mark_price", "tx_status", "pair_ok"])
+    f = f[(f["tx_status"] == "settled") & f["pair_ok"] & (f["expiry"] * 1000 - f["ts"] > 30 * 60_000)]
+    lines = ["", "## Gegenprobe: Mark zum Fill-Zeitpunkt aus der onchain SVI-Kurve", "",
+             "Für jeden Kern-Fill (settled, mehr als 30 min vor Verfall) wird die letzte SVI-Kurve desselben Verfalls gesucht, "
+             "einmal nach Push-Zeit (`block_ts`), einmal nach Signaturzeit (`feed_ts`), und der Black-76-Preis mit Forward `SVI_fwd` "
+             "berechnet. Verglichen wird mit dem `mark_price` der Taker-Zeile, umgerechnet in Vol-Punkte über denselben Forward.", "",
+             "| Underlying | Uhr | Fills mit Kurve | Median Alter (s) | Median abs. Δ IV (vp) | Anteil ≤ 0,5 vp | Anteil ≤ 2 vp | Median rel. Preisfehler |",
+             "|---|---|---|---|---|---|---|---|"]
+    for ccy in CORE:
+        svi = load_feed(ROOT / "raw/volfeed", ccy)
+        rows = f[f["currency"] == ccy]
+        if svi.empty or rows.empty:
+            continue
+        for clock in ("block_ts", "feed_ts"):
+            m = attach_svi(rows, svi, at_ms="ts", clock=clock)
+            m = m[m["svi_fwd"].notna()]
+            model = mark_from_svi(m, at_ms="ts")
+            T = (m["expiry"] - m["ts"] / 1000) / pricing.YEAR
+            kind = np.where(m["option_type"] == "C", 1, -1)
+            iv_tape = pricing.implied_vol(m["mark_price"].to_numpy(float), m["svi_fwd"].to_numpy(float), m["strike"].to_numpy(float), T.to_numpy(float), kind)
+            iv_model = pricing.implied_vol(model.to_numpy(float), m["svi_fwd"].to_numpy(float), m["strike"].to_numpy(float), T.to_numpy(float), kind)
+            dv = np.abs(iv_tape - iv_model) * 100
+            ok = np.isfinite(dv)
+            rel = np.abs(model.to_numpy() / m["mark_price"].to_numpy() - 1)
+            lines.append(f"| {ccy} | {clock} | {de(len(m))} ({de(100 * len(m) / len(rows), 1)} %) | {de(m['svi_age_s'].median(), 0)} | "
+                         f"{de(np.median(dv[ok]), 3)} | {de(100 * np.mean(dv[ok] <= 0.5), 1)} % | {de(100 * np.mean(dv[ok] <= 2), 1)} % | "
+                         f"{de(100 * np.nanmedian(rel), 2)} % |")
     return lines
 
 
@@ -164,7 +205,7 @@ def main() -> None:
              f"Erzeugt {dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} mit `scripts/p1_datenstand.py`. "
              "Enthält nur Zählungen und Prüfungen, keine Markouts (Präregistrierung). Pilot-Stichtag 2026-09-17 12:00 UTC; "
              "der finale Stichtag ist 2026-09-30 08:00 UTC.", ""]
-    for section in (tape_section, fills_section, vault_section, ref_section, volfeed_section, disk_section):
+    for section in (tape_section, fills_section, vault_section, ref_section, volfeed_section, mark_check_section, disk_section):
         lines += section()
     check = Path("docs/paper1/feed_check.md")
     lines += ["", "## Vol-Feed-Prüfung", "", "Siehe `docs/paper1/feed_check.md`." if check.exists() else "Noch nicht gelaufen."]
