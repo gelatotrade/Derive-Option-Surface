@@ -68,7 +68,8 @@ def main(argv: Optional[List[str]] = None) -> None:
         from .api import DeriveClient
         from .refdata import save_all
 
-        print(json.dumps(save_all(DeriveClient(), a.root / "ref"), indent=1, default=str))
+        # few retries: some liquidation windows fail deterministically and are handled by smaller pages instead
+        print(json.dumps(save_all(DeriveClient(max_retries=3), a.root / "ref"), indent=1, default=str))
     elif a.cmd == "fills":
         from .classify import build_fills
 
