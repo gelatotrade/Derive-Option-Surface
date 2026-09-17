@@ -48,15 +48,12 @@ def _liquidation_pages(client, lo: int, hi: int, page_size: int, found: dict) ->
 
 
 def _liquidation_window(client, lo: int, hi: int, page_sizes: Sequence[int], min_window_ms: int, found: dict, gaps: list) -> None:
-    ok = 0
-    for size in page_sizes:  # union over every page size that works
+    for size in page_sizes:  # first page size that works; all sizes return the same auctions
         try:
             _liquidation_pages(client, lo, hi, size, found)
-            ok += 1
+            return
         except RuntimeError as err:
             log.warning("liquidations [%d, %d] page_size %d failed: %s", lo, hi, size, err)
-    if ok:
-        return
     if hi - lo + 1 > min_window_ms:
         mid = (lo + hi) // 2
         _liquidation_window(client, lo, mid, page_sizes, min_window_ms, found, gaps)
@@ -72,15 +69,17 @@ def _merge_auctions(into: dict, other: dict) -> None:
         cur["bids"].extend(b for b in a["bids"] if (b.get("tx_hash"), b.get("timestamp")) not in seen)
 
 
-def liquidations(client, start_ms: int, end_ms: int, *, window_ms: int = DAY_MS, page_sizes: Sequence[int] = (20, 5),
+def liquidations(client, start_ms: int, end_ms: int, *, window_ms: int = DAY_MS, page_sizes: Sequence[int] = (100, 20, 5),
                  min_window_ms: int = 3_600_000, workers: int = 6) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
     """Liquidation auctions in [start_ms, end_ms], walked in short windows (in parallel).
 
     Measured 2026-09-17: without time filters the endpoint returns only the last seven days; ``count`` and
     ``num_pages`` only say whether another page follows; some windows fail with HTTP 500 for page size 100 but
-    work with small pages.  Every window is read with each page size and the results are united; a window
-    that fails for all sizes is halved down to ``min_window_ms`` and otherwise returned as a gap.  Auctions
-    split across pages or windows are merged.
+    work with small pages.  All page sizes return the same auctions, but the ``bids`` are incomplete and the
+    more so the smaller the page (2025-10-10: 242 auctions, 34 bids at size 100, 4 at size 5), so the largest
+    working size is used; a window that fails for all sizes is halved down to ``min_window_ms`` and otherwise
+    returned as a gap.  Auctions split across pages or windows are merged.  Complete bid data would have to
+    come from the on-chain DutchAuction events.
     """
     windows = [(lo, min(lo + window_ms - 1, end_ms)) for lo in range(start_ms, end_ms + 1, window_ms)]
 

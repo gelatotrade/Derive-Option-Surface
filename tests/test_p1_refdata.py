@@ -104,14 +104,17 @@ def test_merge_append_dedupes(tmp_path):
     assert list(out["timestamp"]) == [1, 2, 3] and list(out["funding_rate"]) == [0.1, 0.25, 0.3]
 
 
-def test_liquidations_union_over_page_sizes():
+def test_liquidations_use_the_first_working_page_size():
     book = [auction(i) for i in range(6)]
+    sizes = []
 
     def liq(page, page_size, start_timestamp, end_timestamp):
-        rows = [a for i, a in enumerate(book) if (i % 2 == 0) == (page_size == 20)]  # each size sees a different subset
-        return {"auctions": rows[(page - 1) * page_size: page * page_size],
-                "pagination": {"num_pages": max(1, -(-len(rows) // page_size)), "count": len(rows)}}
+        sizes.append(page_size)
+        if page_size == 100:
+            raise RuntimeError("get_liquidation_history: giving up after 3 attempts")
+        return {"auctions": book[(page - 1) * page_size: page * page_size],
+                "pagination": {"num_pages": max(1, -(-len(book) // page_size)), "count": len(book)}}
 
-    auctions, _, info = refdata.liquidations(Fake({"get_liquidation_history": liq}), 0, 10, window_ms=100, page_sizes=(20, 5))
-    assert sorted(auctions["auction_id"]) == [f"a{i}" for i in range(6)]
-    assert info["gaps"] == []
+    auctions, _, info = refdata.liquidations(Fake({"get_liquidation_history": liq}), 0, 10, window_ms=100, workers=1)
+    assert sorted(auctions["auction_id"]) == [f"a{i}" for i in range(6)] and info["gaps"] == []
+    assert sizes == [100, 20]  # page size 5 is never needed

@@ -1932,7 +1932,7 @@ Der Code im Repo ist massgeblich; die Blöcke oben zeigen den Stand vor diesen �
 
 - `fulltape`: Zahltypen erzwungen float64 (Ganzzahl-Strings ergaben int64). Die Gesamtzahl der API ist nicht additiv; statt dessen `recount_days` mit Neuladen abweichender Tage (`download_tape(max_refetch=2)`), `day_mismatches` und `api_count_full_range` im Manifest. `SETTLE_MS = 60 min` (RFQ-Maker-Zeilen bis 28 min vor dem Fill gestempelt): Stichtag muss zurückliegen, Cache nur nach Ablauf gültig. CLI schreibt nichts bei abweichenden Tagen. Tape-Start 2023-12-01 (erster Fill 06.12.2023).
 - `api.DeriveClient.call`: unlesbare Antworten (leerer Body bei HTTP 200) werden wiederholt statt abzustürzen.
-- `refdata.liquidations`: Zeitfenster (Tag), Vereinigung über Seitengrössen (20, 5), Halbierung bis 1 h, Lücken im Ergebnis; CLI nutzt `max_retries=3`.
+- `refdata.liquidations`: Tagesfenster parallel (6 Worker), Seitengrösse 100 mit Rückfall 20/5 (erster Erfolg gilt; alle Grössen liefern dieselben Auktionen, Gebote unvollständig), Halbierung bis 1 h, Lücken im Ergebnis; CLI nutzt `max_retries=3`. Eine zwischenzeitliche Vereinigung über Seitengrössen war unnötig und sehr langsam.
 - `classify.in_mm_programme`: prüft jede Epoche, die den Fill enthält (überlappende Programme).
 - `chainfeeds`: Spalte `block_ts` (Push-Zeit), `OTHER_FEEDS`, Startblöcke BTC/ETH 800 000 und HYPE 29 000 000.
 - `p1cli.to_ms`: akzeptiert `Z`.
