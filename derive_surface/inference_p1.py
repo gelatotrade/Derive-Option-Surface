@@ -331,7 +331,11 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
     for name, g in frame.groupby("taker_class"):
         ci = cluster_mean_ci(g["y_usd"].to_numpy(), g["cluster"].to_numpy(), b=min(b, 1999), seed=seed)
         ci.update({"class": name, "fills": int(len(g)), "mean_dn": float(np.nanmean(g["y_dn"])),
-                   "mean_vol": float(np.nanmean(g["y_vol"])), "mean_ne": float(np.nanmean(g["net_edge"]))})
+                   "mean_vol": float(np.nanmean(g["y_vol"])), "mean_ne": float(np.nanmean(g["net_edge"])),
+                   "mean_hs": float(np.nanmean(g["hs"])), "mean_as": float(np.nanmean(g["as_usd"])),
+                   "mean_hedge": float(np.nanmean(g["hedge"])), "mean_fee": float(np.nanmean(g["fee_maker"])),
+                   "mean_rebate": float(np.nanmean(g["rebate_maker"])), "mean_notional": float(np.nanmean(g["notional"])),
+                   "share_negative": float(np.nanmean(g["y_usd"] < 0))})
         classes.append(ci)
     pd.DataFrame(classes).to_csv(out_dir / "class_means.csv", index=False)
     horizons = []
