@@ -128,7 +128,7 @@ def maker_scores(client, programs: pd.DataFrame, asset_type: str = "option") -> 
     for name, start_ms, end_ms in zip(selected["name"], selected["start_ms"], selected["end_ms"]):
         try:
             res = client.call("get_maker_program_scores", program_name=name, epoch_start_timestamp=int(start_ms))
-        except DeriveError as err:
+        except (DeriveError, RuntimeError) as err:  # RuntimeError: the client gave up (network)
             log.warning("scores %s@%s unavailable: %s", name, start_ms, err)
             continue
         for s in res.get("scores") or []:
@@ -171,7 +171,8 @@ def merge_append(path: Path, new: pd.DataFrame, key: List[str]) -> pd.DataFrame:
     return new
 
 
-def save_all(client, ref_dir: Path, currencies: Iterable[str] = OPTION_CURRENCIES, end_ms: Optional[int] = None) -> dict:
+def save_all(client, ref_dir: Path, currencies: Iterable[str] = OPTION_CURRENCIES, end_ms: Optional[int] = None,
+             skip_liquidations: bool = False) -> dict:
     ref_dir.mkdir(parents=True, exist_ok=True)
     end_ms = int(time.time() * 1000) if end_ms is None else end_ms
     currencies = list(currencies)
@@ -180,10 +181,15 @@ def save_all(client, ref_dir: Path, currencies: Iterable[str] = OPTION_CURRENCIE
     sp = settlement_prices(client, currencies)
     sp.to_parquet(ref_dir / "settlement_prices.parquet", index=False)
     out["settlement_prices"] = sp.groupby("currency").size().to_dict()
-    auctions, bids, info = liquidations(client, HISTORY_START_MS, end_ms)
-    auctions.to_parquet(ref_dir / "liquidation_auctions.parquet", index=False)
-    bids.to_parquet(ref_dir / "liquidation_bids.parquet", index=False)
-    out["liquidations"] = {**info, "bids": len(bids)}
+    auction_path, bid_path = ref_dir / "liquidation_auctions.parquet", ref_dir / "liquidation_bids.parquet"
+    if skip_liquidations and auction_path.exists() and bid_path.exists():
+        out["liquidations"] = {"source": "existing files", "unique_auctions": len(pd.read_parquet(auction_path)),
+                               "bids": len(pd.read_parquet(bid_path))}
+    else:
+        auctions, bids, info = liquidations(client, HISTORY_START_MS, end_ms)
+        auctions.to_parquet(auction_path, index=False)
+        bids.to_parquet(bid_path, index=False)
+        out["liquidations"] = {**info, "bids": len(bids)}
     programs = maker_programs(client)
     programs.to_parquet(ref_dir / "maker_programs.parquet", index=False)
     scores = maker_scores(client, programs)

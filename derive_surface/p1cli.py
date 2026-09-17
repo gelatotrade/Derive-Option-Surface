@@ -39,7 +39,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     s.add_argument("--window", type=int, default=5_000)
     s = sub.add_parser("compact", help="monthly SVI parquet files from the fetched chunks")
     s.add_argument("currencies", nargs="*", default=CORE)
-    sub.add_parser("ref", help="settlements, liquidations, maker programmes, vaults, fees, funding")
+    s = sub.add_parser("ref", help="settlements, liquidations, maker programmes, vaults, fees, funding")
+    s.add_argument("--skip-liquidations", action="store_true", help="keep the liquidation files already on disk")
     s = sub.add_parser("fills", help="pair rows into fills and classify takers")
     s.add_argument("--vaults", type=Path, default=VAULTS)
     s = sub.add_parser("markouts", help="markouts of the pre-registered sample (paths a/b/c)")
@@ -76,7 +77,8 @@ def main(argv: Optional[List[str]] = None) -> None:
         from .refdata import save_all
 
         # few retries: some liquidation windows fail deterministically and are handled by smaller pages instead
-        print(json.dumps(save_all(DeriveClient(max_retries=3), a.root / "ref"), indent=1, default=str))
+        print(json.dumps(save_all(DeriveClient(max_retries=3), a.root / "ref", skip_liquidations=a.skip_liquidations),
+                         indent=1, default=str))
     elif a.cmd == "fills":
         from .classify import build_fills
 

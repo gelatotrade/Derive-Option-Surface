@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pandas as pd
 
 from derive_surface import refdata
@@ -118,3 +120,27 @@ def test_liquidations_use_the_first_working_page_size():
     auctions, _, info = refdata.liquidations(Fake({"get_liquidation_history": liq}), 0, 10, window_ms=100, workers=1)
     assert sorted(auctions["auction_id"]) == [f"a{i}" for i in range(6)] and info["gaps"] == []
     assert sizes == [100, 20]  # page size 5 is never needed
+
+
+def test_save_all_can_reuse_existing_liquidation_files(tmp_path):
+    ref = tmp_path / "ref"
+    ref.mkdir()
+    pd.DataFrame({"auction_id": ["a", "b"], "tx_hash": ["0x1", "0x2"]}).to_parquet(ref / "liquidation_auctions.parquet")
+    pd.DataFrame({"auction_id": ["a"], "tx_hash": ["0x9"]}).to_parquet(ref / "liquidation_bids.parquet")
+
+    def boom(**kw):
+        raise AssertionError("liquidations must not be fetched again")
+
+    handlers = {
+        "get_liquidation_history": boom,
+        "get_option_settlement_prices": lambda currency: {"expiries": [{"utc_expiry_sec": 1, "expiry_date": "x", "price": "2"}]},
+        "get_maker_programs": lambda: [{"name": "OPTIONS-MAJ", "asset_types": ["option"], "currencies": ["BTC"],
+                                        "min_notional": "1", "start_timestamp": 1, "end_timestamp": 2, "rewards": {}}],
+        "get_maker_program_scores": lambda program_name, epoch_start_timestamp: {"scores": []},
+        "get_vault_statistics": lambda: [{"vault_name": "v", "usd_tvl": "1"}],
+        "get_instruments": lambda currency, instrument_type, expired: [{"instrument_name": "BTC-1-2-C", "tick_size": "1"}],
+        "get_funding_rate_history": lambda instrument_name: {"funding_rate_history": [{"timestamp": 1, "funding_rate": "0.1"}]},
+    }
+    out = refdata.save_all(Fake(handlers), ref, currencies=["BTC"], skip_liquidations=True)
+    assert out["liquidations"] == {"source": "existing files", "unique_auctions": 2, "bids": 1}
+    assert json.loads((ref / "REFDATA.json").read_text())["liquidations"]["unique_auctions"] == 2
