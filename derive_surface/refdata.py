@@ -1,8 +1,7 @@
 """Reference data for paper 1: settlement prices, liquidations, maker programmes, vaults, fees, funding.
 
-``get_liquidation_history`` returned different subsets for different page sizes on 2026-09-17 (count 76,
-page size 100 → 23 auctions), so auctions are collected as the union over several page sizes and the
-reported count is kept next to the number actually found.
+``get_liquidation_history`` covers only the last seven days unless a time window is given, so the full
+history is walked in seven-day windows (see ``liquidations``).
 """
 from __future__ import annotations
 
@@ -10,7 +9,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -20,6 +19,8 @@ log = logging.getLogger(__name__)
 
 OPTION_CURRENCIES = ["BTC", "ETH", "HYPE", "SOL", "XRP", "ZEC", "ADA", "XAUT", "CC", "VVV", "LIT", "PUMP"]
 PERPS = ("BTC-PERP", "ETH-PERP", "HYPE-PERP")
+DAY_MS = 86_400_000
+HISTORY_START_MS = 1_704_067_200_000  # 2024-01-01 00:00 UTC
 SCORE_FIELDS = ["total_score", "coverage_score", "quality_score", "volume_multiplier", "holder_boost", "volume"]
 
 
@@ -33,29 +34,41 @@ def settlement_prices(client, currencies: Iterable[str]) -> pd.DataFrame:
     return df.sort_values(["currency", "expiry"]).reset_index(drop=True)
 
 
-def liquidations(client, page_sizes: Sequence[int] = (5, 20, 50, 100)) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
-    found = {}
-    reported = None
-    for size in page_sizes:
+def liquidations(client, start_ms: int, end_ms: int, *, window_ms: int = 7 * DAY_MS,
+                 page_size: int = 100) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
+    """Liquidation auctions in [start_ms, end_ms], walked in short windows.
+
+    Measured 2026-09-17: without time filters the endpoint returns only the last seven days; ``count`` counts
+    rows (one per bid), pages split those rows, and very long windows return far fewer auctions than the sum
+    of short windows.  Auctions whose bids straddle two pages or windows are merged.
+    """
+    found: dict = {}
+    windows = rows = 0
+    for lo in range(start_ms, end_ms + 1, window_ms):
+        hi = min(lo + window_ms - 1, end_ms)
+        windows += 1
         page, pages = 1, 1
         while page <= pages:
-            res = client.call("get_liquidation_history", page=page, page_size=size)
+            res = client.call("get_liquidation_history", page=page, page_size=page_size, start_timestamp=lo, end_timestamp=hi)
             pages = int(res["pagination"]["num_pages"])
-            reported = int(res["pagination"]["count"])
+            if page == 1:
+                rows += int(res["pagination"]["count"])
             for a in res["auctions"]:
-                found[a["auction_id"]] = a
+                cur = found.setdefault(a["auction_id"], {**a, "bids": []})
+                seen = {(b.get("tx_hash"), b.get("timestamp")) for b in cur["bids"]}
+                cur["bids"].extend(b for b in a.get("bids") or [] if (b.get("tx_hash"), b.get("timestamp")) not in seen)
             page += 1
     auction_cols = ["auction_id", "subaccount_id", "start_timestamp", "end_timestamp", "auction_type", "fee", "tx_hash"]
     bid_cols = ["auction_id", "subaccount_id", "timestamp", "tx_hash", "percent_liquidated", "cash_received", "discount_pnl", "instruments"]
     arows, brows = [], []
     for a in found.values():
         arows.append({k: a.get(k) for k in auction_cols})
-        for b in a.get("bids") or []:
+        for b in a["bids"]:
             brows.append({"auction_id": a["auction_id"], "subaccount_id": a["subaccount_id"], "timestamp": b.get("timestamp"),
                           "tx_hash": b.get("tx_hash"), "percent_liquidated": b.get("percent_liquidated"),
                           "cash_received": b.get("cash_received"), "discount_pnl": b.get("discount_pnl"),
                           "instruments": json.dumps(b.get("amounts_liquidated") or {})})
-    info = {"reported_count": reported, "unique_auctions": len(found)}
+    info = {"windows": windows, "rows_reported": rows, "unique_auctions": len(found)}
     return pd.DataFrame(arows, columns=auction_cols), pd.DataFrame(brows, columns=bid_cols), info
 
 
@@ -119,15 +132,16 @@ def merge_append(path: Path, new: pd.DataFrame, key: List[str]) -> pd.DataFrame:
     return new
 
 
-def save_all(client, ref_dir: Path, currencies: Iterable[str] = OPTION_CURRENCIES) -> dict:
+def save_all(client, ref_dir: Path, currencies: Iterable[str] = OPTION_CURRENCIES, end_ms: Optional[int] = None) -> dict:
     ref_dir.mkdir(parents=True, exist_ok=True)
+    end_ms = int(time.time() * 1000) if end_ms is None else end_ms
     currencies = list(currencies)
     stamp = time.strftime("%Y%m%d", time.gmtime())
     out: dict = {"fetched_utc": time.strftime("%Y-%m-%d %H:%M", time.gmtime())}
     sp = settlement_prices(client, currencies)
     sp.to_parquet(ref_dir / "settlement_prices.parquet", index=False)
     out["settlement_prices"] = sp.groupby("currency").size().to_dict()
-    auctions, bids, info = liquidations(client)
+    auctions, bids, info = liquidations(client, HISTORY_START_MS, end_ms)
     auctions.to_parquet(ref_dir / "liquidation_auctions.parquet", index=False)
     bids.to_parquet(ref_dir / "liquidation_bids.parquet", index=False)
     out["liquidations"] = {**info, "bids": len(bids)}
