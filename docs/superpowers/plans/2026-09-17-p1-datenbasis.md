@@ -1926,8 +1926,22 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
+## Abweichungen während der Ausführung (17.09.2026)
+
+Der Code im Repo ist massgeblich; die Blöcke oben zeigen den Stand vor diesen Änderungen.
+
+- `fulltape`: Zahltypen erzwungen float64 (Ganzzahl-Strings ergaben int64). Die Gesamtzahl der API ist nicht additiv; statt dessen `recount_days` mit Neuladen abweichender Tage (`download_tape(max_refetch=2)`), `day_mismatches` und `api_count_full_range` im Manifest. `SETTLE_MS = 15 min`: Stichtag muss zurückliegen, Cache nur nach Ablauf gültig. CLI schreibt nichts bei abweichenden Tagen. Tape-Start 2023-12-01 (erster Fill 06.12.2023).
+- `api.DeriveClient.call`: unlesbare Antworten (leerer Body bei HTTP 200) werden wiederholt statt abzustürzen.
+- `refdata.liquidations`: Zeitfenster (Tag), Vereinigung über Seitengrössen (20, 5), Halbierung bis 1 h, Lücken im Ergebnis; CLI nutzt `max_retries=3`.
+- `classify.in_mm_programme`: prüft jede Epoche, die den Fill enthält (überlappende Programme).
+- `chainfeeds`: Spalte `block_ts` (Push-Zeit), `OTHER_FEEDS`, Startblöcke BTC/ETH 800 000 und HYPE 29 000 000.
+- `p1cli.to_ms`: akzeptiert `Z`.
+- `scripts/p1_check_feeds.py`: Stichproben ab Block 800 000 alle 250 000; führt den letzten Kern-Forward mit, listet Lücken und unbekannte Emitter.
+- Kalibrierung Vol-Feed: 5 800 Events/s mit 4 Workern, 43 Bytes je Event; zwei Prozesse parallel lösen anfangs HTTP 429 aus, danach stabil.
+- Adversariale Prüfung (2 Prüfer, 11 Befunde, 6 bestätigt) vor den langen Läufen; alle 6 eingearbeitet, Regressionstests ergänzt (68 Tests).
+
 ## Folgepläne
 
-- **Plan 2 (Markouts und Inferenz):** `markouts.py` (Pfade a/b/c/d, drei Einheiten, Zellen, Ausschlüsse, Sweeps), `inference_p1.py` (Panel mit FE, Wild-Cluster-Bootstrap, Placebo, Lorenz, Netto-Edge), Tardis-Monatserste mit Grössenprobe, HYPE-Listungsdatum belegen. Voraussetzung: Präregistrierung committet, finaler Lauf zum Stichtag 30.09.2026 08:00 UTC (`p1 tape --end 2026-09-30T08:00:00`, `p1 volfeed … --end 2026-09-30T08:00:00`).
+- **Plan 2 (Markouts und Inferenz):** beim Laden der SVI-Historie nach `block <= to_block` des Stichtags filtern (die Stück-Dateien können über den Stichtag hinausreichen); `markouts.py` (Pfade a/b/c/d, drei Einheiten, Zellen, Ausschlüsse, Sweeps), `inference_p1.py` (Panel mit FE, Wild-Cluster-Bootstrap, Placebo, Lorenz, Netto-Edge), Tardis-Monatserste mit Grössenprobe, HYPE-Listungsdatum belegen. Voraussetzung: Präregistrierung committet, finaler Lauf zum Stichtag 30.09.2026 08:00 UTC (`p1 tape --end 2026-09-30T08:00:00`, `p1 volfeed … --end 2026-09-30T08:00:00`).
 - **Plan 3:** Abbildungen T1, T2, 1–5, A.
 - **Plan 4:** Manuskript (CAS), Zahlenblatt, zwei Prüfer, SSRN.
