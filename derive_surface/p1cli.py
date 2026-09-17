@@ -42,6 +42,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     sub.add_parser("ref", help="settlements, liquidations, maker programmes, vaults, fees, funding")
     s = sub.add_parser("fills", help="pair rows into fills and classify takers")
     s.add_argument("--vaults", type=Path, default=VAULTS)
+    s = sub.add_parser("markouts", help="markouts of the pre-registered sample (paths a/b/c)")
+    s.add_argument("--cutoff", default="2026-09-17T12:00:00Z", help="sample cut-off (taker time), ISO")
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -83,3 +85,9 @@ def main(argv: Optional[List[str]] = None) -> None:
         summary = build_fills(a.root / "tape", a.root / "ref", a.vaults, out)
         (a.root / "derived" / "fills_summary.json").write_text(json.dumps(summary, indent=1, default=str))
         print(json.dumps({k: v for k, v in summary.items() if k != "classes"}, indent=1))
+    elif a.cmd == "markouts":
+        from .markouts import build_markouts
+
+        out = a.root / "derived" / "markouts.parquet"
+        summary = build_markouts(a.root, to_ms(a.cutoff), out)
+        print(json.dumps(summary, indent=1))
