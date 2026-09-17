@@ -25,6 +25,12 @@ def test_markouts_command_is_listed(capsys):
     assert "markouts" in capsys.readouterr().out
 
 
+def test_inference_command_is_listed(capsys):
+    with pytest.raises(SystemExit):
+        main(["p1", "--help"])
+    assert "inference" in capsys.readouterr().out
+
+
 def test_existing_cli_still_parses():
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
