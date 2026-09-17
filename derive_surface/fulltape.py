@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 
 PAGE_SIZE = 1000
 DAY_MS = 86_400_000
-SETTLE_MS = 15 * 60_000
+SETTLE_MS = 60 * 60_000  # RFQ maker rows are stamped up to 28 min before the fill (max seen 1 689 s)
 FIELDS = [
     "trade_id", "timestamp", "instrument_name", "direction", "liquidity_role", "trade_price", "trade_amount",
     "mark_price", "index_price", "wallet", "subaccount_id", "rfq_id", "quote_id", "trade_fee", "expected_rebate",
