@@ -7,3 +7,6 @@ build/
 dist/
 .venv/
 logs/
+
+# paper 1 data (large, regenerable)
+data/p1/
