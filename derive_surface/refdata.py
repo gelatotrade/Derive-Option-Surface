@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Tuple
 
@@ -64,22 +65,39 @@ def _liquidation_window(client, lo: int, hi: int, page_sizes: Sequence[int], min
         gaps.append([lo, hi])
 
 
+def _merge_auctions(into: dict, other: dict) -> None:
+    for aid, a in other.items():
+        cur = into.setdefault(aid, {**a, "bids": []})
+        seen = {(b.get("tx_hash"), b.get("timestamp")) for b in cur["bids"]}
+        cur["bids"].extend(b for b in a["bids"] if (b.get("tx_hash"), b.get("timestamp")) not in seen)
+
+
 def liquidations(client, start_ms: int, end_ms: int, *, window_ms: int = DAY_MS, page_sizes: Sequence[int] = (20, 5),
-                 min_window_ms: int = 3_600_000) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
-    """Liquidation auctions in [start_ms, end_ms], walked in short windows.
+                 min_window_ms: int = 3_600_000, workers: int = 6) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
+    """Liquidation auctions in [start_ms, end_ms], walked in short windows (in parallel).
 
     Measured 2026-09-17: without time filters the endpoint returns only the last seven days; ``count`` and
     ``num_pages`` only say whether another page follows; some windows fail with HTTP 500 for page size 100 but
     work with small pages.  Every window is read with each page size and the results are united; a window
     that fails for all sizes is halved down to ``min_window_ms`` and otherwise returned as a gap.  Auctions
-    split across pages are merged.
+    split across pages or windows are merged.
     """
+    windows = [(lo, min(lo + window_ms - 1, end_ms)) for lo in range(start_ms, end_ms + 1, window_ms)]
+
+    def run(window: Tuple[int, int]) -> Tuple[dict, list]:
+        part: dict = {}
+        part_gaps: list = []
+        _liquidation_window(client, window[0], window[1], page_sizes, min_window_ms, part, part_gaps)
+        return part, part_gaps
+
     found: dict = {}
     gaps: list = []
-    windows = 0
-    for lo in range(start_ms, end_ms + 1, window_ms):
-        windows += 1
-        _liquidation_window(client, lo, min(lo + window_ms - 1, end_ms), page_sizes, min_window_ms, found, gaps)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for i, (part, part_gaps) in enumerate(pool.map(run, windows), 1):
+            _merge_auctions(found, part)
+            gaps.extend(part_gaps)
+            if i % 50 == 0 or i == len(windows):
+                log.info("liquidations: %d/%d windows, %d auctions, %d gaps", i, len(windows), len(found), len(gaps))
     auction_cols = ["auction_id", "subaccount_id", "start_timestamp", "end_timestamp", "auction_type", "fee", "tx_hash"]
     bid_cols = ["auction_id", "subaccount_id", "timestamp", "tx_hash", "percent_liquidated", "cash_received", "discount_pnl", "instruments"]
     arows, brows = [], []
@@ -90,7 +108,7 @@ def liquidations(client, start_ms: int, end_ms: int, *, window_ms: int = DAY_MS,
                           "tx_hash": b.get("tx_hash"), "percent_liquidated": b.get("percent_liquidated"),
                           "cash_received": b.get("cash_received"), "discount_pnl": b.get("discount_pnl"),
                           "instruments": json.dumps(b.get("amounts_liquidated") or {})})
-    info = {"windows": windows, "unique_auctions": len(found), "gaps": gaps}
+    info = {"windows": len(windows), "unique_auctions": len(found), "gaps": gaps}
     return pd.DataFrame(arows, columns=auction_cols), pd.DataFrame(brows, columns=bid_cols), info
 
 
