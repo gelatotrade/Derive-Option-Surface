@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+import pandas as pd
+
+from derive_surface import refdata
+from derive_surface.api import DeriveError
+
+
+class Fake:
+    def __init__(self, handlers):
+        self.handlers = handlers
+
+    def call(self, method, **p):
+        return self.handlers[method](**p)
+
+
+def auction(i, bids=1):
+    return {"auction_id": f"a{i}", "subaccount_id": 100 + i, "start_timestamp": i, "end_timestamp": i + 1,
+            "auction_type": "solvent", "fee": "1", "tx_hash": f"0xA{i}",
+            "bids": [{"timestamp": i + 1, "tx_hash": f"0xB{i}{j}", "percent_liquidated": "0.1", "cash_received": "5",
+                      "discount_pnl": "-1", "amounts_liquidated": {"ETH-PERP": "1"}} for j in range(bids)]}
+
+
+def test_liquidations_union_across_page_sizes():
+    subsets = {5: [0, 1, 2, 3, 4, 5, 6], 20: [5, 6, 7], 50: [], 100: [8]}
+
+    def liq(page, page_size):
+        ids = subsets[page_size]
+        chunk = ids[(page - 1) * page_size: page * page_size]
+        pages = max(1, -(-len(ids) // page_size))
+        return {"auctions": [auction(i) for i in chunk], "pagination": {"num_pages": pages, "count": 12}}
+
+    auctions, bids, info = refdata.liquidations(Fake({"get_liquidation_history": liq}))
+    assert sorted(auctions["auction_id"]) == [f"a{i}" for i in range(9)]
+    assert len(bids) == 9 and bids["instruments"].iloc[0] == '{"ETH-PERP": "1"}'
+    assert info == {"reported_count": 12, "unique_auctions": 9}
+
+
+def test_maker_scores_only_option_programmes_and_lowercase_wallets():
+    programs = pd.DataFrame([
+        {"name": "OPTIONS-MAJ", "asset_types": "option", "currencies": "BTC", "min_notional": 0.0, "start_ms": 1, "end_ms": 2, "rewards": "{}"},
+        {"name": "PERPS-MAJ", "asset_types": "perp", "currencies": "BTC", "min_notional": 0.0, "start_ms": 1, "end_ms": 2, "rewards": "{}"},
+        {"name": "OPTIONS-OLD", "asset_types": "option", "currencies": "ETH", "min_notional": 0.0, "start_ms": 0, "end_ms": 1, "rewards": "{}"},
+    ])
+    seen = []
+
+    def scores(program_name, epoch_start_timestamp):
+        seen.append(program_name)
+        if program_name == "OPTIONS-OLD":
+            raise DeriveError("get_maker_program_scores", {"code": 19000})
+        return {"scores": [{"wallet": "0xAbC", "total_score": "3.5", "coverage_score": "1", "quality_score": "2",
+                            "volume_multiplier": "1", "holder_boost": "1", "volume": "10"}]}
+
+    out = refdata.maker_scores(Fake({"get_maker_program_scores": scores}), programs)
+    assert seen == ["OPTIONS-MAJ", "OPTIONS-OLD"]
+    assert out.to_dict("records") == [{"program": "OPTIONS-MAJ", "start_ms": 1, "end_ms": 2, "wallet": "0xabc", "total_score": 3.5,
+                                       "coverage_score": 1.0, "quality_score": 2.0, "volume_multiplier": 1.0, "holder_boost": 1.0, "volume": 10.0}]
+
+
+def test_settlement_prices_frame():
+    def sp(currency):
+        return {"expiries": [{"utc_expiry_sec": 20, "expiry_date": "20260102", "price": "2.5"},
+                             {"utc_expiry_sec": 10, "expiry_date": "20260101", "price": "1.5"}]}
+
+    df = refdata.settlement_prices(Fake({"get_option_settlement_prices": sp}), ["HYPE", "BTC"])
+    assert list(df["currency"]) == ["BTC", "BTC", "HYPE", "HYPE"]
+    assert list(df["expiry"][:2]) == [10, 20] and df["settlement_price"].dtype == "float64"
+
+
+def test_merge_append_dedupes(tmp_path):
+    path = tmp_path / "f.parquet"
+    a = pd.DataFrame({"instrument_name": ["X", "X"], "timestamp": [1, 2], "funding_rate": [0.1, 0.2]})
+    b = pd.DataFrame({"instrument_name": ["X", "X"], "timestamp": [2, 3], "funding_rate": [0.25, 0.3]})
+    refdata.merge_append(path, a, ["instrument_name", "timestamp"])
+    out = refdata.merge_append(path, b, ["instrument_name", "timestamp"])
+    assert list(out["timestamp"]) == [1, 2, 3] and list(out["funding_rate"]) == [0.1, 0.25, 0.3]
