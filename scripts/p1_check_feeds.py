@@ -88,6 +88,9 @@ def reproduction(chain: ChainClient, head: int) -> list:
         for expiry in sorted(e for e in latest if e > now + 3600)[:3]:
             d = latest[expiry]
             tickers = api.tickers(ccy, expiry_date_str(expiry))
+            if not tickers:
+                lines.append(f"| {ccy} | {expiry_date_str(expiry)} | 0 | – | – | {now - d['feed_ts']:.0f} |")
+                continue
             strikes = np.array([OptionName.parse(n).strike for n in tickers])
             marks = np.array([float(t["option_pricing"]["i"]) for t in tickers.values()])
             model = svi_vol(strikes, d["svi_a"], d["svi_b"], d["svi_rho"], d["svi_m"], d["svi_sigma"], d["svi_fwd"], d["svi_ref_tau"])
@@ -97,13 +100,40 @@ def reproduction(chain: ChainClient, head: int) -> list:
     return lines
 
 
+def formula_check() -> list:
+    """svi_vol on the freshest signed curve (public/get_latest_signed_feeds) against the ticker mark IV."""
+    lines = ["| Underlying | Verfall | Optionen | Alter der signierten Kurve (s) | max. abs. Δ IV | Median abs. Δ IV |", "|---|---|---|---|---|---|"]
+    api = DeriveClient()
+    for ccy in VOL_FEEDS:
+        signed = api.call("get_latest_signed_feeds", currency=ccy)["vol_data"].get(ccy, {})
+        now = time.time()
+        for expiry in sorted(int(e) for e in signed if int(e) > now + 3600)[:3]:
+            entry = signed[str(expiry)]
+            d = entry["vol_data"]
+            tickers = api.tickers(ccy, expiry_date_str(expiry))
+            if not tickers:
+                continue
+            strikes = np.array([OptionName.parse(n).strike for n in tickers])
+            marks = np.array([float(t["option_pricing"]["i"]) for t in tickers.values()])
+            model = svi_vol(strikes, *(float(d[k]) for k in ["SVI_a", "SVI_b", "SVI_rho", "SVI_m", "SVI_sigma", "SVI_fwd", "SVI_refTau"]))
+            diff = np.abs(model - marks)
+            lines.append(f"| {ccy} | {expiry_date_str(expiry)} | {len(marks)} | {now - entry['timestamp']:.0f} | "
+                         f"{np.nanmax(diff):.5f} | {np.nanmedian(diff):.5f} |")
+    return lines
+
+
 def main() -> None:
     chain = ChainClient()
     head = chain.block_number()
     lines = ["# Vol-Feed-Prüfung", "", f"Lauf {time.strftime('%Y-%m-%d %H:%M UTC', time.gmtime())}, Kopf-Block {head:,}.", "",
              "## Kontinuität", ""]
     lines += continuity(chain, head)
-    lines += ["", "## Gegenprobe SVI gegen Live-Mark-IV", ""]
+    lines += ["", "## Formel: neueste signierte Kurve gegen Live-Mark-IV", "",
+              "Prüft `svi_vol` (Referenz-Tau, SVI-Forward) ohne Zeitverzug. Δ IV in Vol-Einheiten (0,01 = 1 Vol-Punkt).", ""]
+    lines += formula_check()
+    lines += ["", "## Gegenprobe: letzte onchain gepushte Kurve gegen Live-Mark-IV", "",
+              "Die onchain Kurve läuft dem Backend-Mark um die angegebene Zeit hinterher; die Abweichung misst diesen Verzug, "
+              "nicht die Formel.", ""]
     lines += reproduction(chain, head)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines) + "\n")
