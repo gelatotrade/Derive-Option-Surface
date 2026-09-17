@@ -45,6 +45,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     s.add_argument("--vaults", type=Path, default=VAULTS)
     s = sub.add_parser("markouts", help="markouts of the pre-registered sample (paths a/b/c)")
     s.add_argument("--cutoff", default="2026-09-17T12:00:00Z", help="sample cut-off (taker time), ISO")
+    s = sub.add_parser("inference", help="pre-registered hypotheses, net edge, robustness")
+    s.add_argument("--results", type=Path, default=Path("results/p1"))
+    s.add_argument("--half-spread-bp", type=float, default=1.0)
+    s.add_argument("--bootstrap", type=int, default=9999)
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -87,6 +91,11 @@ def main(argv: Optional[List[str]] = None) -> None:
         summary = build_fills(a.root / "tape", a.root / "ref", a.vaults, out)
         (a.root / "derived" / "fills_summary.json").write_text(json.dumps(summary, indent=1, default=str))
         print(json.dumps({k: v for k, v in summary.items() if k != "classes"}, indent=1))
+    elif a.cmd == "inference":
+        from .inference_p1 import run_all
+
+        summary = run_all(a.root, a.results, half_spread_bp=a.half_spread_bp, b=a.bootstrap)
+        print(json.dumps(summary, indent=1, default=str))
     elif a.cmd == "markouts":
         from .markouts import build_markouts
 
