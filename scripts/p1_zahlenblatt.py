@@ -80,12 +80,12 @@ def main() -> None:
     for r in sens.itertuples():
         lines.append(f"| {de(r.half_spread_bp, 1)} | {r.cells} | {de(100 * r.share_positive, 1)} % |")
     lines += ["", "## Gegenparteiklassen (30 min, Pfad b)", "",
-              "| Klasse | Fills | Markout USDC | 95-%-Intervall | delta-neutral | Vol-Punkte | Netto-Edge |",
-              "|---|---|---|---|---|---|---|"]
+              "| Klasse | Fills | Halbspread | Adverse Selection | Markout USDC | 95-%-Intervall | Gebühr | Rebate | Hedge | Netto-Edge | Anteil negativ |",
+              "|---|---|---|---|---|---|---|---|---|---|---|"]
     for _, r in classes.sort_values("mean").iterrows():
-        lines.append(f"| {r['class']} | {di(r['fills'])} | {de(r['mean'], 3)} | "
-                     f"{de(r['lo'], 3)} bis {de(r['hi'], 3)} | {de(r['mean_dn'], 3)} | {de(r['mean_vol'], 3)} | "
-                     f"{de(r['mean_ne'], 3)} |")
+        lines.append(f"| {r['class']} | {di(r['fills'])} | {de(r['mean_hs'])} | {de(r['mean_as'])} | {de(r['mean'])} | "
+                     f"{de(r['lo'])} bis {de(r['hi'])} | {de(r['mean_fee'])} | {de(r['mean_rebate'])} | "
+                     f"{de(r['mean_hedge'])} | {de(r['mean_ne'])} | {de(100 * r['share_negative'], 1)} % |")
     lines += ["", "## Horizonte (Pfad b, Mittelwerte)", "",
               "| Horizont | Fills | USDC | delta-neutral | Vol-Punkte | Pfad (a) USDC |", "|---|---|---|---|---|---|"]
     for r in horizons.itertuples():
