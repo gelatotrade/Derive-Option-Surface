@@ -1,0 +1,14 @@
+# Derive vault TSA tokens (Tokenized SubAccounts) on Derive Chain mainnet, curated 2026-09-17.
+# Source table: help.derive.xyz "Vault Smart Contracts", rows with Chain = "Derive" (testnet rows and plain collateral tokens weETH/rswETH/rsETH/sUSDe/LBTC excluded).
+# vault_name = name reported by public/get_vault_statistics on 2026-09-17 (10 vaults, one-to-one with these tokens).
+wallet,vault_name,token,source
+0x513Dc0e3407CA3A6E073A2f2d43fd61498db5739,weETH Basis Trade,bweETH,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0xec68928bd83B2E52fF5A8e8c215B6ea72879F521,weETH Covered Call,weETHC,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0x12ab0242b3e8d4502FebCED6C2d52fD23F7262af,weETH Covered Call Spread,weETHCS,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0xe48cdbe3A233Ea577c9ee6959801e7730e516d1A,weETHPrincipal Protected Bull Call Spread,weETHBULL,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0x5bbef94dcee8f087D5146d2815bC4955C76B2794,rswETH Covered Call,rswETHC,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0xd35bb8582809b4BDa4F8bCCE1bde48559f63eCbf,rsETH Covered Call,rsETHC,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0x0b4eD379da8eF4FCF06F697c5782CA7b4c3E505E,sUSDePrincipal Protected Bull Call Spread,sUSDeBULL,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0x2104654d6Da663961a86AC3Cf1751981C5dc62E8,LBTC Basis Trade,bLBTC,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0xbCab1f8BbA323BC55EA8cfaC34edAcf8DBE92dD4,LBTC Covered Call Spread,LBTCCS,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
+0x5Fc48A32437Ff4BBab2A22646c3c9344ba003971,LBTC Covered Put Spread,LBTCPS,https://help.derive.xyz/en/articles/9351681-vault-smart-contracts
