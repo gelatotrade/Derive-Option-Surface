@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from derive_surface import inference_p1 as inf
+
+
+def panel(n_cluster=40, per=25, effect=0.0, seed=0):
+    """Panel with cluster-correlated noise and one binary regressor."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for c in range(n_cluster):
+        shock = rng.normal(0, 1.0)
+        for i in range(per):
+            x = float((c + i) % 2)
+            g = f"inst{i % 5}-day{i % 7}"
+            rows.append({"cluster": f"w{c}", "x": x, "fe_key": g,
+                         "y": effect * x + shock + rng.normal(0, 0.5)})
+    return pd.DataFrame(rows)
+
+
+def test_within_removes_group_means():
+    df = pd.DataFrame({"g": ["a", "a", "b"], "v": [1.0, 3.0, 7.0]})
+    got = inf.within(df["v"].to_numpy(), df["g"].to_numpy())
+    assert got == pytest.approx([-1.0, 1.0, 0.0])
+
+
+def test_ols_fe_recovers_beta_with_group_offsets():
+    rng = np.random.default_rng(1)
+    g = np.repeat(["a", "b", "c"], 200)
+    x = rng.normal(size=600)
+    offsets = {"a": 5.0, "b": -3.0, "c": 0.0}
+    y = 2.5 * x + np.array([offsets[k] for k in g]) + rng.normal(0, 0.01, 600)
+    beta, resid, _ = inf.ols_fe(y, x.reshape(-1, 1), g)
+    assert beta[0] == pytest.approx(2.5, abs=0.01) and abs(resid).max() < 0.1
+
+
+def test_wild_cluster_p_is_large_without_effect_and_small_with_one():
+    zero = panel(effect=0.0, seed=2)
+    out0 = inf.wild_cluster_p(zero["y"].to_numpy(), zero[["x"]].to_numpy(), zero["fe_key"].to_numpy(),
+                              zero["cluster"].to_numpy(), 0, b=199, seed=inf.SEED)
+    assert out0["p"] > 0.2 and out0["clusters"] == 40 and out0["n"] == 1000
+    strong = panel(effect=2.0, seed=2)
+    out1 = inf.wild_cluster_p(strong["y"].to_numpy(), strong[["x"]].to_numpy(), strong["fe_key"].to_numpy(),
+                              strong["cluster"].to_numpy(), 0, b=199, seed=inf.SEED)
+    assert out1["p"] < 0.05 and out1["beta"] == pytest.approx(2.0, abs=0.1) and abs(out1["t"]) > 2
+
+
+def test_wild_cluster_p_is_deterministic():
+    df = panel(effect=1.0, seed=3)
+    args = (df["y"].to_numpy(), df[["x"]].to_numpy(), df["fe_key"].to_numpy(), df["cluster"].to_numpy(), 0)
+    a = inf.wild_cluster_p(*args, b=99, seed=7)
+    b = inf.wild_cluster_p(*args, b=99, seed=7)
+    assert a == b
+
+
+def test_cluster_mean_ci_brackets_the_mean_and_flags_a_shift():
+    rng = np.random.default_rng(4)
+    clusters = np.repeat([f"w{i}" for i in range(30)], 20)
+    values = rng.normal(0, 1, 600)
+    out = inf.cluster_mean_ci(values, clusters, b=299, seed=inf.SEED)
+    assert out["lo"] < out["mean"] < out["hi"] and out["lo"] < 0 < out["hi"] and out["p"] > 0.1
+    shifted = inf.cluster_mean_ci(values - 3.0, clusters, b=299, seed=inf.SEED)
+    assert shifted["hi"] < 0 and shifted["p"] < 0.05
+
+
+def test_top_loss_share_and_lorenz():
+    wallets = np.array(["a", "b", "c", "d", "e", "f"])
+    values = np.array([-40.0, -30.0, -20.0, -5.0, -5.0, 100.0])  # f is profitable for the maker
+    out = inf.top_loss_share(values, wallets, top=2, b=199, seed=inf.SEED)
+    assert out["loss_total"] == pytest.approx(-100.0) and out["share"] == pytest.approx(0.7)
+    assert 0.0 <= out["lo"] <= out["share"] <= out["hi"] <= 1.0 and out["wallets"] == 6
+    curve = inf.lorenz(values, wallets)
+    assert curve["loss_share"].iloc[-1] == pytest.approx(1.0) and curve["wallet_share"].iloc[-1] == pytest.approx(1.0)
+    assert curve["loss_share"].iloc[0] == pytest.approx(0.4)  # the worst wallet alone
+
+
+def test_did_finds_a_treatment_effect_and_ranks_placebos():
+    rng = np.random.default_rng(5)
+    rows = []
+    event = 1_000_000_000_000
+    day = 86_400_000
+    for d in range(-40, 40):
+        for ccy in ("BTC", "ETH", "HYPE"):
+            for k in range(6):
+                post = d >= 0
+                treated = ccy == "HYPE"
+                rows.append({"ts": event + d * day + k, "currency": ccy, "taker_wallet": f"w{k}",
+                             "instrument_name": f"{ccy}-{k}", "day": d,
+                             "y_vol": (0.8 if (post and treated) else 0.0) + rng.normal(0, 0.2)})
+    frame = pd.DataFrame(rows)
+    frame["fe_key"] = frame["instrument_name"] + "|" + frame["day"].astype(str)
+    frame["cluster"] = frame["taker_wallet"]
+    out = inf.did(frame, "y_vol", event, placebos=20, seed=inf.SEED, b=199)
+    assert out["beta"] == pytest.approx(0.8, abs=0.1) and out["p"] < 0.05
+    assert out["placebo_share_more_extreme"] <= 0.05 and out["placebos"] == 20
+
+
+def test_cell_table_respects_the_minimum_and_marks_positive_cells():
+    rng = np.random.default_rng(6)
+    rows = []
+    for cell, (mean, n) in {("BTC", "40-60", "<=2d"): (-1.0, 400), ("BTC", "25-40", "7-30d"): (2.0, 400),
+                            ("ETH", "10-25", ">90d"): (5.0, 50)}.items():
+        for i in range(n):
+            rows.append({"currency": cell[0], "delta_bucket": cell[1], "tenor_bucket": cell[2],
+                         "cluster": f"w{i % 20}", "net_edge": mean + rng.normal(0, 0.5)})
+    table = inf.cell_table(pd.DataFrame(rows), "net_edge", min_fills=200, b=199, seed=inf.SEED)
+    assert len(table) == 2  # the 50-fill cell is dropped
+    pos = table.set_index(["currency", "delta_bucket", "tenor_bucket"])
+    assert not pos.loc[("BTC", "40-60", "<=2d"), "positive"]
+    assert pos.loc[("BTC", "25-40", "7-30d"), "positive"]
+
+
+def test_hedge_cost_scales_with_delta_and_horizon():
+    base = inf.hedge_cost(np.array([0.5]), np.array([100_000.0]), 1_800, np.array([1e-5]), half_spread_bp=1.0)
+    twice = inf.hedge_cost(np.array([1.0]), np.array([100_000.0]), 1_800, np.array([1e-5]), half_spread_bp=1.0)
+    longer = inf.hedge_cost(np.array([0.5]), np.array([100_000.0]), 86_400, np.array([1e-5]), half_spread_bp=1.0)
+    free = inf.hedge_cost(np.array([0.5]), np.array([100_000.0]), 1_800, np.array([0.0]), half_spread_bp=0.0)
+    assert twice[0] == pytest.approx(2 * base[0]) and longer[0] > base[0]
+    assert free[0] == pytest.approx(0.5 * 100_000 * 3e-4)
+
+
+def test_analysis_frame_decomposes_the_markout():
+    rows = pd.DataFrame([{
+        "trade_id": "a", "ts": 1_700_000_000_000, "currency": "BTC", "instrument_name": "BTC-1-2-C",
+        "taker_wallet": "0xt", "maker_wallet": "0xm", "taker_class": "other", "delta_bucket": "40-60",
+        "tenor_bucket": "7-30d", "is_sweep": False, "size_above_p90": False, "price": 100.0, "mark_b_t": 105.0,
+        "mark_b_30m": 110.0, "iv_fill": 0.5, "iv_b_30m": 0.55, "fwd_t": 50_000.0, "fwd_b_30m": 50_500.0,
+        "delta_t": 0.5, "maker_side": 1, "fee_maker": 0.4, "rebate_maker": 0.1, "mo_usd_30m": 10.0,
+        "mo_dn_30m": 9.0, "mo_vol_30m": 5.0, "mo_set": 3.0, "mo_set_vrp": 1.0, "amount": 1.0,
+    }])
+    funding = pd.DataFrame({"instrument_name": ["BTC-PERP"], "timestamp": [1], "funding_rate": [1e-5]})
+    out = inf.analysis_frame(rows, funding, horizon="30m", half_spread_bp=1.0)
+    r = out.iloc[0]
+    assert r.hs == pytest.approx(5.0) and r.as_usd == pytest.approx(5.0) and r.y_usd == pytest.approx(10.0)
+    assert r.net_edge == pytest.approx(10.0 - 0.4 + 0.1 - r.hedge)
+    assert r.fe_key == "BTC-1-2-C|2023-11-14" and r.cluster == "0xt"
