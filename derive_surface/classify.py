@@ -107,14 +107,15 @@ def mm_programme_lookup(scores: pd.DataFrame) -> MMLookup:
 
 
 def in_mm_programme(ts: np.ndarray, wallets: np.ndarray, lookup: MMLookup) -> np.ndarray:
+    """True where the wallet is active in any options epoch that contains the fill (epochs may overlap)."""
     starts, ends, sets = lookup
+    ts = np.asarray(ts)
+    wallets = np.asarray(wallets, dtype=object)
     out = np.zeros(len(ts), dtype=bool)
-    if len(starts) == 0:
-        return out
-    idx = np.searchsorted(starts, ts, side="right") - 1
-    for i, (j, wallet) in enumerate(zip(idx, wallets)):
-        if j >= 0 and ts[i] < ends[j] and wallet in sets[j]:
-            out[i] = True
+    for start, end, members in zip(starts, ends, sets):
+        inside = (ts >= start) & (ts < end)
+        if inside.any():
+            out |= inside & np.isin(wallets, list(members))
     return out
 
 

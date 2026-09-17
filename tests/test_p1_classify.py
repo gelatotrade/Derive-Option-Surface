@@ -104,6 +104,21 @@ def test_mm_programme_lookup_and_membership():
     assert not cl.in_mm_programme(np.array([150]), np.array(["0xa"]), empty).any()
 
 
+def test_mm_programme_overlapping_epochs():
+    nested = pd.DataFrame([
+        {"program": "A", "start_ms": 100, "end_ms": 400, "wallet": "0xa", "total_score": 1.0},
+        {"program": "B", "start_ms": 200, "end_ms": 300, "wallet": "0xb", "total_score": 1.0},
+    ])
+    got = cl.in_mm_programme(np.array([250, 250, 350]), np.array(["0xa", "0xb", "0xb"]), cl.mm_programme_lookup(nested))
+    assert list(got) == [True, True, False]
+    same_start = pd.DataFrame([
+        {"program": "A", "start_ms": 100, "end_ms": 400, "wallet": "0xa", "total_score": 1.0},
+        {"program": "B", "start_ms": 100, "end_ms": 300, "wallet": "0xb", "total_score": 1.0},
+    ])
+    got = cl.in_mm_programme(np.array([150, 350]), np.array(["0xb", "0xb"]), cl.mm_programme_lookup(same_start))
+    assert list(got) == [True, False]
+
+
 def test_load_vault_wallets_validates(tmp_path):
     good = tmp_path / "v.csv"
     good.write_text("# comment\nwallet,vault_name,source\n0xAbCdEf0123456789abcdef0123456789ABCDEF01,Test,https://x\n")

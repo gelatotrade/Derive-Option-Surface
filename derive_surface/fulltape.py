@@ -8,6 +8,9 @@ Measured against api.lyra.finance on 2026-09-17:
 * ``from_timestamp`` and ``to_timestamp`` are both inclusive (count[a, m-1] + count[m, b] == count[a, b]).
 * Every fill has a maker row and a taker row with the same ``trade_id``; each row carries wallet,
   subaccount_id, rfq_id, fees, rebate and realised PnL.
+* The API's ``count`` over long ranges is not additive (a 61-day range reported 16 rows fewer than its two
+  halves), while day counts agree exactly with the rows returned.  Integrity is therefore checked by
+  recounting every day (``recount_days``), not against the full-range count.
 
 Window files ``<from>_<to>.json.gz`` are written atomically, so an interrupted download resumes where
 it stopped.  The manifest lists the leaf windows of one run; ``condense`` reads exactly those, so
@@ -22,7 +25,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 
@@ -32,6 +35,7 @@ log = logging.getLogger(__name__)
 
 PAGE_SIZE = 1000
 DAY_MS = 86_400_000
+SETTLE_MS = 15 * 60_000
 FIELDS = [
     "trade_id", "timestamp", "instrument_name", "direction", "liquidity_role", "trade_price", "trade_amount",
     "mark_price", "index_price", "wallet", "subaccount_id", "rfq_id", "quote_id", "trade_fee", "expected_rebate",
@@ -45,9 +49,9 @@ ROW_KEY = ["trade_id", "liquidity_role", "subaccount_id"]
 Window = Tuple[int, int, int]  # (from_ms, to_ms, rows); both bounds inclusive
 
 
-def _query(client, lo_ms: int, hi_ms: int, page: int, instrument_type: str) -> dict:
+def _query(client, lo_ms: int, hi_ms: int, page: int, instrument_type: str, page_size: int = 0) -> dict:
     return client.call(
-        "get_trade_history", instrument_type=instrument_type, page=page, page_size=PAGE_SIZE,
+        "get_trade_history", instrument_type=instrument_type, page=page, page_size=page_size or PAGE_SIZE,
         from_timestamp=lo_ms, to_timestamp=hi_ms,
     )
 
@@ -68,16 +72,23 @@ def _read_window(path: Path) -> dict:
         return json.load(fh)
 
 
-def fetch_range(client, lo_ms: int, hi_ms: int, out_dir: Path, instrument_type: str = "option") -> List[Window]:
-    """Fetch every row in [lo_ms, hi_ms] into single-page window files and return the leaf windows."""
+def fetch_range(client, lo_ms: int, hi_ms: int, out_dir: Path, instrument_type: str = "option",
+                force: bool = False) -> List[Window]:
+    """Fetch every row in [lo_ms, hi_ms] into single-page window files and return the leaf windows.
+
+    A cached window is reused only if it was fetched at least ``SETTLE_MS`` after its end (rows can appear
+    minutes after their timestamp, e.g. the maker row of an RFQ fill); ``force`` ignores the cache.
+    """
     leaves: List[Window] = []
     stack = [(lo_ms, hi_ms)]
     while stack:
         a, b = stack.pop()
         path = window_path(out_dir, a, b)
-        if path.exists():
-            leaves.append((a, b, int(_read_window(path)["count"])))
-            continue
+        if path.exists() and not force:
+            doc = _read_window(path)
+            if int(doc.get("fetched_ms", 0)) >= b + SETTLE_MS:
+                leaves.append((a, b, int(doc["count"])))
+                continue
         res = _query(client, a, b, 1, instrument_type)
         n = int(res["pagination"]["count"])
         if n > PAGE_SIZE and a < b:
@@ -97,32 +108,72 @@ def fetch_range(client, lo_ms: int, hi_ms: int, out_dir: Path, instrument_type: 
     return leaves
 
 
-def download_tape(
-    client, out_dir: Path, start_ms: int, end_ms: int, *, instrument_type: str = "option", workers: int = 6
-) -> dict:
-    """Fetch [start_ms, end_ms] day by day (parallel) and write a manifest listing the leaf windows."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    days = [(d, min(d + DAY_MS - 1, end_ms)) for d in range(start_ms, end_ms + 1, DAY_MS)]
+def _fetch_days(client, days: List[Tuple[int, int]], out_dir: Path, kind: str, workers: int, force: bool) -> List[Window]:
     leaves: List[Window] = []
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = [pool.submit(fetch_range, client, a, b, out_dir, instrument_type) for a, b in days]
+        futures = [pool.submit(fetch_range, client, a, b, out_dir, kind, force) for a, b in days]
         for i, fut in enumerate(as_completed(futures), 1):
             leaves.extend(fut.result())
             if i % 50 == 0 or i == len(futures):
-                log.info("tape %s: %d/%d days, %d rows, %.0f s", instrument_type, i, len(futures),
-                         sum(w[2] for w in leaves), time.time() - t0)
-    leaves.sort()
-    api_count = int(_query(client, start_ms, end_ms, 1, instrument_type)["pagination"]["count"])
-    manifest = {
-        "instrument_type": instrument_type, "from_ms": start_ms, "to_ms": end_ms,
-        "rows_in_windows": sum(w[2] for w in leaves), "api_count": api_count, "windows": len(leaves),
-        "leaves": [list(w) for w in leaves], "finished_ms": int(time.time() * 1000),
-    }
+                log.info("tape %s: %d/%d days, %d rows, %.0f s", kind, i, len(futures), sum(w[2] for w in leaves), time.time() - t0)
+    return sorted(leaves)
+
+
+def _day_of(start_ms: int, t_ms: int) -> int:
+    return start_ms + (t_ms - start_ms) // DAY_MS * DAY_MS
+
+
+def download_tape(
+    client, out_dir: Path, start_ms: int, end_ms: int, *, instrument_type: str = "option", workers: int = 6,
+    max_refetch: int = 2,
+) -> dict:
+    """Fetch [start_ms, end_ms] day by day, recount every day and refetch days whose rows changed.
+
+    The manifest lists the leaf windows and ``day_mismatches`` (empty when every day matches the API).
+    """
+    if end_ms > time.time() * 1000 - SETTLE_MS:
+        raise ValueError(f"end_ms must lie at least {SETTLE_MS // 60_000} min in the past so that late rows can settle")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    days = [(d, min(d + DAY_MS - 1, end_ms)) for d in range(start_ms, end_ms + 1, DAY_MS)]
+    leaves = _fetch_days(client, days, out_dir, instrument_type, workers, force=False)
+    mismatches: List[list] = []
+    for attempt in range(max_refetch + 1):
+        manifest = {"instrument_type": instrument_type, "from_ms": start_ms, "to_ms": end_ms, "leaves": [list(w) for w in leaves]}
+        mismatches = recount_days(client, manifest, workers=workers)
+        if not mismatches or attempt == max_refetch:
+            break
+        bad = {m[0] for m in mismatches}
+        log.warning("refetching %d days whose rows changed: %s", len(bad), sorted(bad)[:5])
+        kept = [w for w in leaves if _day_of(start_ms, w[0]) not in bad]
+        leaves = sorted(kept + _fetch_days(client, [(m[0], m[1]) for m in mismatches], out_dir, instrument_type, workers, force=True))
+    manifest.update({
+        "rows_in_windows": sum(w[2] for w in leaves), "windows": len(leaves), "day_mismatches": mismatches,
+        # informational only: the API's count is not additive over long ranges
+        "api_count_full_range": int(_query(client, start_ms, end_ms, 1, instrument_type, 1)["pagination"]["count"]),
+        "finished_ms": int(time.time() * 1000),
+    })
     (out_dir / f"manifest_{start_ms}_{end_ms}.json").write_text(json.dumps(manifest))
-    if manifest["rows_in_windows"] != api_count:
-        log.warning("row count mismatch: windows %d vs API %d", manifest["rows_in_windows"], api_count)
+    if mismatches:
+        log.warning("%d days still differ from the API after refetching: %s", len(mismatches), mismatches[:5])
     return manifest
+
+
+def recount_days(client, manifest: dict, workers: int = 6) -> List[list]:
+    """Recount every day of a manifest; return ``[day_from, day_to, api_count, rows_in_windows]`` where they differ."""
+    start, end, kind = manifest["from_ms"], manifest["to_ms"], manifest["instrument_type"]
+    have: Dict[int, int] = {}
+    for a, _, n in manifest["leaves"]:
+        day = start + (a - start) // DAY_MS * DAY_MS
+        have[day] = have.get(day, 0) + n
+    days = [(d, min(d + DAY_MS - 1, end)) for d in range(start, end + 1, DAY_MS)]
+
+    def count(window: Tuple[int, int]) -> int:
+        return int(_query(client, window[0], window[1], 1, kind, 1)["pagination"]["count"])
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        counts = list(pool.map(count, days))
+    return [[a, b, n, have.get(a, 0)] for (a, b), n in zip(days, counts) if n != have.get(a, 0)]
 
 
 def condense(out_dir: Path, manifest: dict) -> pd.DataFrame:

@@ -3,7 +3,8 @@
 The mark IV of every Derive option is an SVI curve per expiry that Derive signs off-chain and pushes to
 ``LyraVolFeed``.  Each push emits ``VolDataUpdated(uint64 indexed expiry, VolDetails)`` with nine words:
 SVI_a, SVI_b, SVI_rho, SVI_m, SVI_sigma, SVI_fwd (all 1e18), SVI_refTau (1e18 years), confidence (1e18),
-timestamp (s).  The feed addresses below were identified on 2026-09-17 by matching SVI_fwd against the
+timestamp (s, signing time).  Each row also keeps ``block_ts``, the time the push landed on chain.
+The feed addresses below were identified on 2026-09-17 by matching SVI_fwd against the
 live forward of each currency; BTC and ETH never changed address since January 2024.
 
 ``svi_vol`` reproduces ``lyra-utils/src/math/SVI.sol``: k = ln(K / SVI_fwd) clipped to
@@ -28,14 +29,26 @@ log = logging.getLogger(__name__)
 RPC_URL = "https://rpc.derive.xyz"
 VOL_DATA_UPDATED = "0x0b6ec9c174360425894fd5ff56d14f3450d70f2c9cde3a25983d652a72b84606"
 VOL_FEEDS: Dict[str, dict] = {
-    "BTC": {"address": "0x388341d9e5a7d7d5accd738b2a31b0622e0c1b87", "from_block": 2_400_000},
-    "ETH": {"address": "0xb27cb6b08e6c298c8634d73d5f6649665e90d160", "from_block": 2_400_000},
-    "HYPE": {"address": "0x481916590863053ea2d8f21b64ee9429820512d1", "from_block": 30_000_000},
+    "BTC": {"address": "0x388341d9e5a7d7d5accd738b2a31b0622e0c1b87", "from_block": 800_000},  # chain live 12/2023
+    "ETH": {"address": "0xb27cb6b08e6c298c8634d73d5f6649665e90d160", "from_block": 800_000},
+    "HYPE": {"address": "0x481916590863053ea2d8f21b64ee9429820512d1", "from_block": 29_000_000},
+}
+# other live vol feeds, identified the same way on 2026-09-17 (not downloaded; used to label emitters)
+OTHER_FEEDS: Dict[str, str] = {
+    "0x74230ec35a64000874a8ce6c5c7a9ae6368282b3": "SOL",
+    "0x52aa5ddf548f02047859a91ef8b70788cf673634": "ZEC",
+    "0x665b63672b2d993e78e16afeaace91c55638901a": "XAUT",
+    "0xbf2e14dff4d31ed906c504c0742da6db3ad146c0": "XRP",
+    "0x8df07f5842fc1bef159fd62137b422cfda9b627e": "VVV",
+    "0xe7b58cb6b1fc4d19e300d4bb068aea158c85ae80": "ADA",
+    "0x6a0df36b9107bead8509f1535c3512ea7ea9b363": "CC",
+    "0xc9b3ac7e837688ea7e8a6a54bd5c57f7b078d82e": "LIT",
+    "0x0105e202bb709c69570de3c6c84528360111e6d4": "PUMP",
 }
 CHUNK_BLOCKS = 50_000
 MAX_WINDOW = 50_000
 LOG_LIMIT = 10_000
-COLUMNS = ["block", "log_index", "expiry", "feed_ts", "svi_a", "svi_b", "svi_rho", "svi_m", "svi_sigma",
+COLUMNS = ["block", "block_ts", "log_index", "expiry", "feed_ts", "svi_a", "svi_b", "svi_rho", "svi_m", "svi_sigma",
            "svi_fwd", "svi_ref_tau", "confidence"]
 FLOAT32 = ["svi_a", "svi_b", "svi_rho", "svi_m", "svi_sigma", "svi_ref_tau", "confidence"]
 E18 = 1e18
@@ -144,6 +157,7 @@ def decode_vol_log(entry: dict) -> dict:
         raise ValueError(f"unexpected VolDataUpdated payload of {len(data)} bytes")
     return {
         "block": int(entry["blockNumber"], 16),
+        "block_ts": int(entry["blockTimestamp"], 16) if entry.get("blockTimestamp") else -1,  # push time
         "log_index": int(entry["logIndex"], 16),
         "expiry": int(entry["topics"][1], 16),
         "feed_ts": _word(data, 8),
@@ -160,7 +174,7 @@ def decode_vol_log(entry: dict) -> dict:
 
 def logs_to_frame(entries: list) -> pd.DataFrame:
     df = pd.DataFrame([decode_vol_log(e) for e in entries], columns=COLUMNS)
-    dtypes = {"block": "int64", "log_index": "int32", "expiry": "int64", "feed_ts": "int64", "svi_fwd": "float64"}
+    dtypes = {"block": "int64", "block_ts": "int64", "log_index": "int32", "expiry": "int64", "feed_ts": "int64", "svi_fwd": "float64"}
     dtypes.update({c: "float32" for c in FLOAT32})
     return df.astype(dtypes)
 
