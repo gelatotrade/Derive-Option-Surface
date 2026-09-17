@@ -10,12 +10,15 @@ from typing import List, Optional
 
 ROOT = Path("data/p1")
 VAULTS = Path("docs/paper1/meta/vault_wallets.csv")
-TAPE_START = "2024-01-01T00:00:00"
+TAPE_START = "2023-12-01T00:00:00"  # first option fill on the tape: 2023-12-06 03:13 UTC
 CORE = ["BTC", "ETH", "HYPE"]
 
 
 def to_ms(iso: str) -> int:
-    d = dt.datetime.fromisoformat(iso)
+    text = iso.strip()
+    if text[-1:] in ("Z", "z"):  # fromisoformat accepts "Z" only from Python 3.11 on
+        text = text[:-1] + "+00:00"
+    d = dt.datetime.fromisoformat(text)
     if d.tzinfo is None:
         d = d.replace(tzinfo=dt.timezone.utc)
     return int(d.timestamp() * 1000)
@@ -48,9 +51,11 @@ def main(argv: Optional[List[str]] = None) -> None:
 
         raw = a.root / "raw" / "tape" / "option"
         manifest = download_tape(DeriveClient(), raw, to_ms(a.start), to_ms(a.end), workers=a.workers)
-        files = write_tape(condense(raw, manifest), a.root / "tape")
         report = {k: v for k, v in manifest.items() if k != "leaves"}
-        report["files"] = files
+        if manifest["day_mismatches"]:
+            print(json.dumps(report, indent=1))
+            raise SystemExit("tape not written: some days still differ from the API (see day_mismatches)")
+        report["files"] = write_tape(condense(raw, manifest), a.root / "tape")
         print(json.dumps(report, indent=1))
     elif a.cmd == "volfeed":
         from .chainfeeds import ChainClient, block_at, sync_feed

@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import json
 import random
+import time
 
 import pandas as pd
 import pytest
@@ -86,7 +87,8 @@ def test_download_tape_manifest_and_condense(tmp_path, monkeypatch):
     t0 = 1_704_931_200_000
     rows = make_rows(20, t0=t0, spread_ms=2 * day, seed=1) + make_rows(3, t0=t0 + 5, seed=2, instrument="HYPE-20240126-77_5-P")
     man = fulltape.download_tape(FakeTape(rows), tmp_path, t0, t0 + 2 * day - 1, workers=2)
-    assert man["rows_in_windows"] == man["api_count"] == 46
+    assert man["rows_in_windows"] == man["api_count_full_range"] == 46
+    assert man["day_mismatches"] == []
     assert len(man["leaves"]) == man["windows"]
     df = fulltape.condense(tmp_path, man)
     assert len(df) == 46
@@ -114,3 +116,45 @@ def test_condense_rejects_window_with_missing_rows(tmp_path, monkeypatch):
         json.dump(doc, fh)
     with pytest.raises(ValueError, match="row count"):
         fulltape.condense(tmp_path, man)
+
+
+def test_recount_days_reports_rows_added_after_download(tmp_path, monkeypatch):
+    monkeypatch.setattr(fulltape, "PAGE_SIZE", 5)
+    t0 = 1_704_931_200_000
+    fake = FakeTape(make_rows(6, t0=t0))
+    man = fulltape.download_tape(fake, tmp_path, t0, t0 + 2 * fulltape.DAY_MS - 1, workers=2)
+    assert fulltape.recount_days(fake, man) == []
+    fake.rows.extend(make_rows(1, t0=t0 + fulltape.DAY_MS + 7, seed=9))
+    assert fulltape.recount_days(fake, man) == [[t0 + fulltape.DAY_MS, t0 + 2 * fulltape.DAY_MS - 1, 2, 0]]
+
+
+def test_download_tape_refuses_unsettled_end(tmp_path):
+    now = int(time.time() * 1000)
+    with pytest.raises(ValueError, match="settle"):
+        fulltape.download_tape(FakeTape([]), tmp_path, now - fulltape.DAY_MS, now - 60_000)
+
+
+def test_window_fetched_before_it_settled_is_refetched(tmp_path, monkeypatch):
+    monkeypatch.setattr(fulltape, "PAGE_SIZE", 5)
+    t0 = 1_704_931_200_000
+    rows = make_rows(2, t0=t0)
+    lo, hi = t0, t0 + 10_000
+    path = fulltape.window_path(tmp_path, lo, hi)
+    with gzip.open(path, "wt") as fh:  # cached while the window was still open: one row missing
+        json.dump({"from_ms": lo, "to_ms": hi, "count": 3, "fetched_ms": hi + 1_000, "trades": rows[:3]}, fh)
+    fake = FakeTape(rows)
+    leaves = fulltape.fetch_range(fake, lo, hi, tmp_path)
+    assert fake.calls == 1 and leaves == [(lo, hi, 4)]
+    assert len(json.load(gzip.open(path, "rt"))["trades"]) == 4
+
+
+def test_download_tape_refetches_days_that_changed(tmp_path, monkeypatch):
+    monkeypatch.setattr(fulltape, "PAGE_SIZE", 5)
+    t0 = 1_704_931_200_000
+    fake = FakeTape(make_rows(6, t0=t0))
+    first = fulltape.download_tape(fake, tmp_path, t0, t0 + 2 * fulltape.DAY_MS - 1, workers=2)
+    assert first["rows_in_windows"] == 12
+    fake.rows.extend(make_rows(1, t0=t0 + 3, seed=9))  # a late row inside an already cached, settled day
+    second = fulltape.download_tape(fake, tmp_path, t0, t0 + 2 * fulltape.DAY_MS - 1, workers=2)
+    assert second["rows_in_windows"] == 14 and second["day_mismatches"] == []
+    assert len(fulltape.condense(tmp_path, second)) == 14

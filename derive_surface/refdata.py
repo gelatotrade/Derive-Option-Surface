@@ -47,12 +47,15 @@ def _liquidation_pages(client, lo: int, hi: int, page_size: int, found: dict) ->
 
 
 def _liquidation_window(client, lo: int, hi: int, page_sizes: Sequence[int], min_window_ms: int, found: dict, gaps: list) -> None:
-    for size in page_sizes:
+    ok = 0
+    for size in page_sizes:  # union over every page size that works
         try:
             _liquidation_pages(client, lo, hi, size, found)
-            return
+            ok += 1
         except RuntimeError as err:
             log.warning("liquidations [%d, %d] page_size %d failed: %s", lo, hi, size, err)
+    if ok:
+        return
     if hi - lo + 1 > min_window_ms:
         mid = (lo + hi) // 2
         _liquidation_window(client, lo, mid, page_sizes, min_window_ms, found, gaps)
@@ -67,8 +70,9 @@ def liquidations(client, start_ms: int, end_ms: int, *, window_ms: int = DAY_MS,
 
     Measured 2026-09-17: without time filters the endpoint returns only the last seven days; ``count`` and
     ``num_pages`` only say whether another page follows; some windows fail with HTTP 500 for page size 100 but
-    work with small pages.  A failing window is retried with smaller pages, then halved down to
-    ``min_window_ms``; windows that still fail are returned as gaps.  Auctions split across pages are merged.
+    work with small pages.  Every window is read with each page size and the results are united; a window
+    that fails for all sizes is halved down to ``min_window_ms`` and otherwise returned as a gap.  Auctions
+    split across pages are merged.
     """
     found: dict = {}
     gaps: list = []

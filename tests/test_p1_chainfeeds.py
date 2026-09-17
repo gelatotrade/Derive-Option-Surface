@@ -51,6 +51,11 @@ def test_decode_real_log():
     assert d["svi_a"] == pytest.approx(9.7272545053122e-05, rel=1e-9)
     assert d["svi_ref_tau"] == pytest.approx(0.0021803652968, rel=1e-9)
     assert d["confidence"] == pytest.approx(0.95)
+    assert d["block_ts"] == 1_789_649_739  # pushed 45 s after it was signed
+
+
+def test_decode_without_block_timestamp():
+    assert cf.decode_vol_log(make_log(5, 0, 1))["block_ts"] == -1
 
 
 def test_decode_rejects_wrong_payload():
