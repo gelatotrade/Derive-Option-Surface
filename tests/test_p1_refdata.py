@@ -21,19 +21,28 @@ def auction(i, bids=1):
                       "discount_pnl": "-1", "amounts_liquidated": {"ETH-PERP": "1"}} for j in range(bids)]}
 
 
-def test_liquidations_union_across_page_sizes():
-    subsets = {5: [0, 1, 2, 3, 4, 5, 6], 20: [5, 6, 7], 50: [], 100: [8]}
+def test_liquidations_walks_time_windows_and_merges_pages():
+    day = 86_400_000
+    # auction i starts on day i; the endpoint paginates rows (one row per bid), auctions are grouped per page
+    book = {i: auction(i * day, bids=2 if i == 3 else 1) for i in range(10)}
+    calls = []
 
-    def liq(page, page_size):
-        ids = subsets[page_size]
-        chunk = ids[(page - 1) * page_size: page * page_size]
-        pages = max(1, -(-len(ids) // page_size))
-        return {"auctions": [auction(i) for i in chunk], "pagination": {"num_pages": pages, "count": 12}}
+    def liq(page, page_size, start_timestamp, end_timestamp):
+        calls.append((start_timestamp, end_timestamp, page))
+        rows = [(i, j) for i, a in sorted(book.items()) if start_timestamp <= a["start_timestamp"] <= end_timestamp for j in range(len(a["bids"]))]
+        chunk = rows[(page - 1) * page_size: page * page_size]
+        grouped = {}
+        for i, j in chunk:
+            a = grouped.setdefault(i, {**book[i], "bids": []})
+            a["bids"].append(book[i]["bids"][j])
+        pages = max(1, -(-len(rows) // page_size))
+        return {"auctions": list(grouped.values()), "pagination": {"num_pages": pages, "count": len(rows)}}
 
-    auctions, bids, info = refdata.liquidations(Fake({"get_liquidation_history": liq}))
-    assert sorted(auctions["auction_id"]) == [f"a{i}" for i in range(9)]
-    assert len(bids) == 9 and bids["instruments"].iloc[0] == '{"ETH-PERP": "1"}'
-    assert info == {"reported_count": 12, "unique_auctions": 9}
+    auctions, bids, info = refdata.liquidations(Fake({"get_liquidation_history": liq}), 0, 10 * day - 1, window_ms=4 * day, page_size=1)
+    assert sorted(auctions["auction_id"]) == sorted(f"a{i * day}" for i in range(10))
+    assert len(bids) == 11 and bids["instruments"].iloc[0] == '{"ETH-PERP": "1"}'
+    assert info == {"windows": 3, "rows_reported": 11, "unique_auctions": 10}
+    assert {c[:2] for c in calls} == {(0, 4 * day - 1), (4 * day, 8 * day - 1), (8 * day, 10 * day - 1)}
 
 
 def test_maker_scores_only_option_programmes_and_lowercase_wallets():
