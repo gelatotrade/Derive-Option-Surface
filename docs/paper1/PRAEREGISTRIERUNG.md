@@ -32,3 +32,12 @@ Festgelegt am 17.09.2026, bevor eine Markout-Zahl berechnet wurde. Der Git-Commi
 
 ## Datenstand vor diesem Commit
 - Pilotdaten bis 17.09.2026 12:00 UTC dürfen zum Bau der Pipeline geladen, gepaart und klassifiziert werden. Markouts werden erst nach diesem Commit berechnet.
+
+## Nachtrag 1 (17.09.2026, vor der ersten Markout-Berechnung)
+
+1. **Delta-neutraler Markout:** S(t) und S(t+τ) sind beide der Forward (`SVI_fwd`) der jeweils gültigen SVI-Kurve. Die ursprüngliche Formulierung („`index_price` des Fills bzw. `SVI_fwd` zum Zeitpunkt t+τ“) hätte die Basis zwischen Index und Forward, bis mehrere 100 bp bei langen Laufzeiten, in den Markout getragen.
+2. **Datenstand über den Stichtag hinaus:** Tape und SVI-Historie werden bis 01.10.2026 09:00 UTC geladen (Stichtag + 25 h), damit Fills der letzten 24 h vor dem Stichtag alle Horizonte erhalten. Die Stichprobe bleibt auf Taker-Zeitstempel ≤ 30.09.2026 08:00 UTC begrenzt. Settlement-Markouts existieren nur für Verfälle bis zum Datenstand; ein Horizont, der den Verfall erreicht oder überschreitet, ist für Pfad (b) nicht definiert.
+3. **Tape-Beginn:** Der Tape beginnt am 06.12.2023; die Stichprobe beginnt unverändert am 11.01.2024.
+4. **Pfad (a):** Mark der ersten Fill desselben Instruments mit Zeitstempel ≥ t+τ; der Abstand zum Zielzeitpunkt wird mitgespeichert, damit Auswertungen auf nahe Fills (z. B. ≤ 10 % von τ oder ≤ 5 min) beschränkt werden können.
+5. **Sweeps** werden je (Taker-Wallet, Underlying) bestimmt: ein Fill gehört zu einem Sweep, wenn ein 10-s-Fenster ab einem Fill desselben Takers mindestens 5 Fills über mindestens 3 Strikes enthält und der Fill darin liegt.
+6. **Grössenmerkmal:** „über dem 90. Perzentil der Grösse“ bezieht sich auf das Notional (Menge × Index) innerhalb des Underlyings über die ganze Stichprobe.
