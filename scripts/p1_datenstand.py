@@ -16,7 +16,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from derive_surface.chainfeeds import VOL_FEEDS, load_feed  # noqa: E402
+from derive_surface.chainfeeds import VOL_FEEDS, load_feed, svi_vol  # noqa: E402
 from derive_surface.classify import load_vault_wallets  # noqa: E402
 
 ROOT = Path("data/p1")
@@ -162,17 +162,21 @@ def volfeed_section() -> list:
 def mark_check_section() -> list:
     """Mark price at fill time rebuilt from the on-chain SVI vs the tape's mark_price (no future data: not a markout)."""
     from derive_surface import pricing
-    from derive_surface.markpath import attach_svi, mark_from_svi
+    from derive_surface.markpath import attach_svi
 
     f = pd.read_parquet(ROOT / "derived/fills.parquet",
-                        columns=["trade_id", "ts", "currency", "expiry", "strike", "option_type", "mark_price", "tx_status", "pair_ok"])
-    f = f[(f["tx_status"] == "settled") & f["pair_ok"] & (f["expiry"] * 1000 - f["ts"] > 30 * 60_000)]
+                        columns=["trade_id", "ts", "currency", "expiry", "strike", "option_type", "mark_price", "index_price",
+                                 "tx_status", "pair_ok"])
+    f = f[(f["tx_status"] == "settled") & f["pair_ok"] & (f["expiry"] * 1000 - f["ts"] > 30 * 60_000) & (f["mark_price"] > 0)]
     lines = ["", "## Gegenprobe: Mark zum Fill-Zeitpunkt aus der onchain SVI-Kurve", "",
              "Für jeden Kern-Fill (settled, mehr als 30 min vor Verfall) wird die letzte SVI-Kurve desselben Verfalls gesucht, "
-             "einmal nach Push-Zeit (`block_ts`), einmal nach Signaturzeit (`feed_ts`), und der Black-76-Preis mit Forward `SVI_fwd` "
-             "berechnet. Verglichen wird mit dem `mark_price` der Taker-Zeile, umgerechnet in Vol-Punkte über denselben Forward.", "",
-             "| Underlying | Uhr | Fills mit Kurve | Median Alter (s) | Median abs. Δ IV (vp) | Anteil ≤ 0,5 vp | Anteil ≤ 2 vp | Median rel. Preisfehler |",
-             "|---|---|---|---|---|---|---|---|"]
+             "nach Push-Zeit (`block_ts`, präregistriert) und nach Signaturzeit (`feed_ts`). Vol aus der Kurve (exakt wie `SVI.sol`), "
+             "Preis mit Black-76. Verglichen wird mit dem `mark_price` der Taker-Zeile: als Vol-Abstand (beide Preise über denselben "
+             "Forward `SVI_fwd` invertiert) und als relativer Preisfehler, einmal mit Forward `SVI_fwd`, einmal mit dem Index des Fills.", "",
+             "| Underlying | Uhr | Fills mit Kurve | Median Alter (s) | Median abs. Δ IV (vp) | Anteil ≤ 0,5 vp | Anteil ≤ 2 vp |",
+             "|---|---|---|---|---|---|---|"]
+    fwd_rows = []
+    quarter_rows = {}
     for ccy in CORE:
         svi = load_feed(ROOT / "raw/volfeed", ccy)
         rows = f[f["currency"] == ccy]
@@ -181,17 +185,40 @@ def mark_check_section() -> list:
         for clock in ("block_ts", "feed_ts"):
             m = attach_svi(rows, svi, at_ms="ts", clock=clock)
             m = m[m["svi_fwd"].notna()]
-            model = mark_from_svi(m, at_ms="ts")
-            T = (m["expiry"] - m["ts"] / 1000) / pricing.YEAR
+            T = ((m["expiry"] - m["ts"] / 1000) / pricing.YEAR).to_numpy(float)
             kind = np.where(m["option_type"] == "C", 1, -1)
-            iv_tape = pricing.implied_vol(m["mark_price"].to_numpy(float), m["svi_fwd"].to_numpy(float), m["strike"].to_numpy(float), T.to_numpy(float), kind)
-            iv_model = pricing.implied_vol(model.to_numpy(float), m["svi_fwd"].to_numpy(float), m["strike"].to_numpy(float), T.to_numpy(float), kind)
-            dv = np.abs(iv_tape - iv_model) * 100
+            K = m["strike"].to_numpy(float)
+            vol = svi_vol(K, *(m[c].to_numpy(float) for c in ["svi_a", "svi_b", "svi_rho", "svi_m", "svi_sigma", "svi_fwd", "svi_ref_tau"]))
+            tape = m["mark_price"].to_numpy(float)
+            with np.errstate(all="ignore"):
+                iv_tape = pricing.implied_vol(tape, m["svi_fwd"].to_numpy(float), K, T, kind)
+                dv = np.abs(iv_tape - vol) * 100
             ok = np.isfinite(dv)
-            rel = np.abs(model.to_numpy() / m["mark_price"].to_numpy() - 1)
             lines.append(f"| {ccy} | {clock} | {de(len(m))} ({de(100 * len(m) / len(rows), 1)} %) | {de(m['svi_age_s'].median(), 0)} | "
-                         f"{de(np.median(dv[ok]), 3)} | {de(100 * np.mean(dv[ok] <= 0.5), 1)} % | {de(100 * np.mean(dv[ok] <= 2), 1)} % | "
-                         f"{de(100 * np.nanmedian(rel), 2)} % |")
+                         f"{de(np.median(dv[ok]), 3)} | {de(100 * np.mean(dv[ok] <= 0.5), 1)} % | {de(100 * np.mean(dv[ok] <= 2), 1)} % |")
+            if clock != "block_ts":
+                continue
+            with np.errstate(all="ignore"):
+                rel_curve = np.abs(pricing.price(m["svi_fwd"].to_numpy(float), K, T, vol, kind, 1.0) / tape - 1)
+                rel_index = np.abs(pricing.price(m["index_price"].to_numpy(float), K, T, vol, kind, 1.0) / tape - 1)
+            for label, sel in [("≤ 3 d", T <= 3 / 365), ("3–30 d", (T > 3 / 365) & (T <= 30 / 365)), ("> 30 d", T > 30 / 365)]:
+                a, b = rel_curve[sel & np.isfinite(rel_curve)], rel_index[sel & np.isfinite(rel_index)]
+                if len(a):
+                    fwd_rows.append(f"| {ccy} | {label} | {de(len(a))} | {de(100 * np.median(a), 2)} % | {de(100 * np.median(b), 2)} % |")
+            quarter = pd.to_datetime(m["ts"], unit="ms").dt.to_period("Q").astype(str).to_numpy()
+            quarter_rows[ccy] = pd.Series(rel_curve).groupby(quarter).median() * 100
+    lines += ["", "Median relativer Preisfehler nach Restlaufzeit (Push-Zeit):", "",
+              "| Underlying | Restlaufzeit | Fills | Forward = `SVI_fwd` | Forward = Index des Fills |", "|---|---|---|---|---|"] + fwd_rows
+    if quarter_rows:
+        tab = pd.DataFrame(quarter_rows)
+        lines += ["", "Median relativer Preisfehler je Quartal (Forward = `SVI_fwd`, Push-Zeit):", "",
+                  "| Quartal | " + " | ".join(tab.columns) + " |", "|---|" + "---|" * len(tab.columns)]
+        for q, row in tab.iterrows():
+            lines.append(f"| {q} | " + " | ".join("–" if pd.isna(v) else de(v, 2) + " %" for v in row) + " |")
+    lines += ["", "Lesart: Der Tape-Mark rechnet mit einem aktuellen Forward (bei kurzen Laufzeiten liegt der Index näher), die "
+              "onchain Kurve mit ihrem eigenen, bis zu Minuten alten Forward; dazu kommt der Verzug der Kurve selbst. Pfad (b) ist "
+              "deshalb ein verzögerter, forward-fixierter Mark. Die delta-neutrale und die Vol-Einheit sind davon weniger betroffen "
+              "als der USDC-Markout auf kurzen Horizonten."]
     return lines
 
 
