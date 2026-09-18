@@ -45,6 +45,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     s.add_argument("--vaults", type=Path, default=VAULTS)
     s = sub.add_parser("markouts", help="markouts of the pre-registered sample (paths a/b/c)")
     s.add_argument("--cutoff", default="2026-09-17T12:00:00Z", help="sample cut-off (taker time), ISO")
+    s = sub.add_parser("figures", help="draw the manuscript figures")
+    s.add_argument("--results", type=Path, default=Path("results/p1"))
+    s.add_argument("--out", type=Path, default=Path("paper/figures"))
+    s.add_argument("--only", default=None, help="comma separated keys, e.g. T1,F5")
     s = sub.add_parser("inference", help="pre-registered hypotheses, net edge, robustness")
     s.add_argument("--results", type=Path, default=Path("results/p1"))
     s.add_argument("--half-spread-bp", type=float, default=1.0)
@@ -96,6 +100,11 @@ def main(argv: Optional[List[str]] = None) -> None:
 
         summary = run_all(a.root, a.results, half_spread_bp=a.half_spread_bp, b=a.bootstrap)
         print(json.dumps(summary, indent=1, default=str))
+    elif a.cmd == "figures":
+        from .figures_p1 import build
+
+        written = build(a.root, a.results, a.out, only=a.only.split(",") if a.only else None)
+        print(json.dumps({k: [str(q) for q in v] for k, v in written.items()}, indent=1))
     elif a.cmd == "markouts":
         from .markouts import build_markouts
 
