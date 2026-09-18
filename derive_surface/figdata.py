@@ -7,6 +7,8 @@ taker wallets; ``stat="mean"`` gives the pre-registered quantity.
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Dict, Iterable, Sequence, Tuple
 
 import numpy as np
@@ -17,6 +19,41 @@ from .inference_p1 import HORIZON_SECONDS, cluster_mean_ci
 from .markouts import DELTA_LABELS, TENOR_LABELS
 
 UNIT_COLUMN = {"usd": "mo_usd_{}", "dn": "mo_dn_{}", "vol": "mo_vol_{}", "path_a": "mo_usd_a_{}"}
+RESULT_TABLES = {"classes": "class_means.csv", "horizons": "horizon_means.csv", "cells": "h4_cells.csv",
+                 "sensitivity": "h4_sensitivity.csv", "lorenz": "h1_lorenz.csv", "paths": "path_agreement.csv"}
+
+
+def load_results(results_dir) -> Dict[str, object]:
+    """The registered results: ``summary`` plus one frame per CSV, empty where a table is absent.
+
+    A figure must never quietly invent a number, so the tables come from the inference run rather than from
+    a second computation.  A table that the run did not write yields an empty frame, which lets a figure
+    skip its panel instead of crashing halfway through a batch.
+    """
+    results_dir = Path(results_dir)
+    if not results_dir.is_dir():
+        raise FileNotFoundError("results directory not found: {}".format(results_dir))
+    summary_path = results_dir / "summary.json"
+    out: Dict[str, object] = {"summary": json.loads(summary_path.read_text()) if summary_path.exists() else {}}
+    for key, name in RESULT_TABLES.items():
+        path = results_dir / name
+        out[key] = pd.read_csv(path) if path.exists() else pd.DataFrame()
+    return out
+
+
+def cells_matrix(cells: pd.DataFrame, currency: str, value: str = "mean"):
+    """Tenor x delta matrix of the registered cell table, its fill counts and which cells exclude zero."""
+    g = cells[cells["currency"] == currency]
+    values = g.pivot_table(index="tenor_bucket", columns="delta_bucket", values=value, aggfunc="first")
+    counts = g.pivot_table(index="tenor_bucket", columns="delta_bucket", values="fills", aggfunc="first")
+    lo = g.pivot_table(index="tenor_bucket", columns="delta_bucket", values="lo", aggfunc="first")
+    hi = g.pivot_table(index="tenor_bucket", columns="delta_bucket", values="hi", aggfunc="first")
+    rows_order = [t for t in TENOR_LABELS if t in values.index]
+    cols_order = [d for d in DELTA_LABELS if d in values.columns]
+    values, counts = values.loc[rows_order, cols_order], counts.loc[rows_order, cols_order]
+    lo, hi = lo.loc[rows_order, cols_order], hi.loc[rows_order, cols_order]
+    significant = ((lo > 0) | (hi < 0)).fillna(False)
+    return values, counts.fillna(0).astype(int), significant
 
 
 def _median_ci(values: np.ndarray, clusters: np.ndarray, b: int = 999, seed: int = 20260917,

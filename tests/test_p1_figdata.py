@@ -164,3 +164,37 @@ def test_median_cluster_bootstrap_is_fast_on_many_rows():
     t0 = time.time()
     figdata._median_ci(values, clusters, b=199, seed=1)
     assert time.time() - t0 < 20
+
+
+def test_load_results_reads_every_table_and_the_summary(tmp_path):
+    (tmp_path / "summary.json").write_text('{"fills": 7, "H4": {"cells": 97}}')
+    pd.DataFrame({"class": ["other"], "mean": [1.0]}).to_csv(tmp_path / "class_means.csv", index=False)
+    pd.DataFrame({"horizon": ["30m"], "mean": [2.0]}).to_csv(tmp_path / "horizon_means.csv", index=False)
+    got = figdata.load_results(tmp_path)
+    assert got["summary"]["fills"] == 7 and got["summary"]["H4"]["cells"] == 97
+    assert got["classes"]["mean"].iloc[0] == 1.0 and got["horizons"]["mean"].iloc[0] == 2.0
+    assert got["cells"].empty and got["lorenz"].empty      # missing files are empty, never missing keys
+    assert set(figdata.RESULT_TABLES) <= set(got)
+
+
+def test_load_results_complains_about_a_missing_directory(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        figdata.load_results(tmp_path / "nope")
+
+
+def test_cells_matrix_pivots_the_registered_cell_table():
+    cells = pd.DataFrame({
+        "currency": ["BTC", "BTC", "BTC", "ETH"],
+        "delta_bucket": ["40-60", "25-40", "40-60", "40-60"],
+        "tenor_bucket": ["<=2d", "<=2d", "7-30d", "<=2d"],
+        "fills": [8902, 3000, 500, 23718],
+        "mean": [23.95, -2.0, 4.0, 0.36],
+        "lo": [7.24, -5.0, -1.0, -0.41],
+        "hi": [44.83, 1.0, 9.0, 1.34],
+    })
+    values, counts, sig = figdata.cells_matrix(cells, "BTC")
+    assert list(values.columns) == ["25-40", "40-60"] and list(values.index) == ["<=2d", "7-30d"]
+    assert values.loc["<=2d", "40-60"] == pytest.approx(23.95)
+    assert np.isnan(values.loc["7-30d", "25-40"])         # a cell the run never produced stays empty
+    assert counts.loc["<=2d", "40-60"] == 8902
+    assert bool(sig.loc["<=2d", "40-60"]) and not bool(sig.loc["<=2d", "25-40"])
