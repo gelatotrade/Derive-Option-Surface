@@ -12,6 +12,7 @@ from typing import Dict, Iterable, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
+from .chainfeeds import svi_vol
 from .inference_p1 import HORIZON_SECONDS, cluster_mean_ci
 from .markouts import DELTA_LABELS, TENOR_LABELS
 
@@ -113,11 +114,38 @@ def waterfall_components(rows: pd.DataFrame, taker_class: str = None) -> pd.Data
 
 
 def example_fill(rows: pd.DataFrame, taker_class: str = "other", horizon: str = "30m") -> pd.Series:
-    """A median-sized fill with a positive half spread and a negative markout: the schematic's example."""
+    """A median-sized fill that earned the half spread and then lost it: the schematic's example.
+
+    The schematic only teaches the decomposition if the example shows both parts with the sign the paper
+    argues about, so the search is narrowed to fills with ``hs > 0`` and a negative markout before the
+    median-size rule picks one.  Without such a fill the narrowing is dropped rather than returning nothing.
+    """
     col = UNIT_COLUMN["usd"].format(horizon)
     g = rows[(rows["taker_class"] == taker_class) & np.isfinite(rows[col])]
     if g.empty:
         g = rows[np.isfinite(rows[col])]
+    teaching = g[(g["hs"] > 0) & (g[col] < 0)] if "hs" in g else g.iloc[:0]
+    if not teaching.empty:
+        g = teaching
     target = g["notional"].median()
     order = (g["notional"] - target).abs()
     return g.loc[order.sort_values().index[0]]
+
+
+def curve_at(svi: pd.DataFrame, expiry: int, at_s: float, points: int = 96,
+             span: Tuple[float, float] = (0.6, 1.6)) -> Dict[str, object]:
+    """The last on-chain SVI curve pushed for one expiry at or before ``at_s``, on a strike grid.
+
+    Derive's mark is this curve, so a figure that wants to show what the maker was quoting against has to
+    take the curve as of the fill, not the freshest one.  ``None`` when nothing had been pushed yet.
+    """
+    pushed = svi[(svi["expiry"] == expiry) & (svi["block_ts"] <= at_s)]
+    if pushed.empty:
+        return None
+    c = pushed.sort_values("block_ts").iloc[-1]
+    strike = np.linspace(span[0], span[1], points) * float(c["svi_fwd"])
+    vol = svi_vol(strike, c["svi_a"], c["svi_b"], c["svi_rho"], c["svi_m"], c["svi_sigma"],
+                  c["svi_fwd"], c["svi_ref_tau"])
+    return {"strike": strike, "k": np.log(strike / float(c["svi_fwd"])), "vol": vol,
+            "forward": float(c["svi_fwd"]), "block_ts": int(c["block_ts"]),
+            "age_s": float(at_s - float(c["block_ts"])), "ref_tau": float(c["svi_ref_tau"])}
