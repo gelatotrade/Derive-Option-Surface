@@ -131,15 +131,16 @@ def wild_cluster_mean_p(values: np.ndarray, clusters: np.ndarray, b: int = B, se
     t = mean / se if se > 0 else np.nan
     rng = np.random.default_rng(seed)
     extreme, drawn = 0, 0
-    while drawn < b:
-        size = min(chunk, b - drawn)
-        w = rng.choice(np.array([-1.0, 1.0]), size=(size, n_cluster))
-        beta = w @ sums / n                                   # under H0 the residuals are the values themselves
-        score = w * sums - counts[None, :] * beta[:, None]
-        se_star = np.sqrt((score ** 2).sum(axis=1) * correction) / n
-        t_star = np.where(se_star > 0, beta / np.where(se_star > 0, se_star, 1.0), np.nan)
-        extreme += int(np.nansum(np.abs(t_star) >= abs(t)))
-        drawn += size
+    with np.errstate(all="ignore"):                           # numpy 2.0 reports spurious FP errors from BLAS matmul
+        while drawn < b:
+            size = min(chunk, b - drawn)
+            w = rng.choice(np.array([-1.0, 1.0]), size=(size, n_cluster))
+            beta = w @ sums / n                               # under H0 the residuals are the values themselves
+            score = w * sums - counts[None, :] * beta[:, None]
+            se_star = np.sqrt((score ** 2).sum(axis=1) * correction) / n
+            t_star = np.where(se_star > 0, beta / np.where(se_star > 0, se_star, 1.0), np.nan)
+            extreme += int(np.nansum(np.abs(t_star) >= abs(t)))
+            drawn += size
     return t, (1 + extreme) / (b + 1), se
 
 

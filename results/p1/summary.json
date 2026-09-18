@@ -108,5 +108,47 @@
   ],
   "rejected": true
  },
- "missing_vol_unit": 10745
+ "missing_vol_unit": 10745,
+ "path_agreement": [
+  {
+   "group": "all",
+   "fills": 540531,
+   "correlation": 0.39008101778291776,
+   "sign_agreement": 0.6906264395566581,
+   "median_gap": 0.022113788767780473,
+   "median_lag_a_s": 15026.296
+  },
+  {
+   "group": "lag_a <= 300 s",
+   "fills": 26885,
+   "correlation": 0.89635860704289,
+   "sign_agreement": 0.9125162730146922,
+   "median_gap": -0.004747019702064065,
+   "median_lag_a_s": 117.561
+  },
+  {
+   "group": "lag_a <= 3600 s",
+   "fills": 135971,
+   "correlation": 0.938713728484299,
+   "sign_agreement": 0.8350604172948644,
+   "median_gap": 0.007222359350521401,
+   "median_lag_a_s": 1144.828
+  },
+  {
+   "group": "svi_age <= 60 s",
+   "fills": 501384,
+   "correlation": 0.3965419999878782,
+   "sign_agreement": 0.6884284301054681,
+   "median_gap": 0.022701343531046025,
+   "median_lag_a_s": 15047.3215
+  },
+  {
+   "group": "svi_age > 60 s",
+   "fills": 39147,
+   "correlation": 0.23967991460095592,
+   "sign_agreement": 0.7187779395611413,
+   "median_gap": 0.01654337465895983,
+   "median_lag_a_s": 14726.92
+  }
+ ]
 }
