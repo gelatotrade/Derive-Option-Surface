@@ -229,7 +229,143 @@ beantworten muss, und jede Abbildung beantwortet genau eine davon.
 | F6 | Ist die Stichprobe ein Markt oder zwei, und was sagt H3? | neu, aus der Lückenanalyse | zweispaltig, 4,2 Zoll |
 | A1 | Ist der Mark gut genug? | EA1 ⊕ P-A1 | zweispaltig, 3,2 Zoll |
 
-Wird nach der Festlegung je Abbildung ausgeschrieben.
+Alle Zahlen unten sind an der Pilotstichprobe nachgerechnet. Wo ein Entwurf eine Zahl nannte, die die Nachrechnung
+nicht bestaetigt, steht hier die nachgerechnete; die Abweichungen sind in `docs/paper1/ABBILDUNGSWAHL.md` vermerkt.
+
+#### T1 — Anatomie eines Fills (zweispaltig, 2,8 Zoll)
+
+- **Daten:** ein Fill aus `example_fill`, die On-Chain-Kurven dazu aus `curve_at`, und als Streuung die 100 naechsten
+  Fills derselben Zelle als p25/p75-Band. Beispiel der Pilotstichprobe: BTC-20260807-64000-C am 01.08.2026, Maker
+  verkauft zu 496,68 gegen einen Mark von 473,98 (Halbspread +22,70), 30 Minuten spaeter steht der Mark bei 669,46
+  (Markout -172,78). Kurvenalter zum Fill 25 s.
+- **Panel A:** Preis gegen Zeit, Treppenform, die drei Marks als Punkte, Pfad (a) versetzt gezeichnet mit seinem
+  tatsaechlichen Abstand. Rechts daneben ein schmaler Klammerstreifen, der Halbspread und adverse Selektion als zwei
+  aneinanderstossende Klammern zeigt; darunter eine graue Zeile mit dem Klassenmittel.
+- **Panel B:** dieselbe Zeitachse in Vol-Punkten, also die implizite Vol des Fills gegen die Kurve.
+- **Panel C:** roher gegen delta-neutralen Markout, die Differenz als schraffierte Flaeche. Das ist die einzige Stelle,
+  an der delta-neutral erklaert wird.
+- **Fallgrube:** ein Einzelfall wirkt wie ein Beleg. Gegenmassnahme ist das p25/p75-Band und die Zeile mit dem
+  Klassenmittel. Keine Umrechnungsnotiz zwischen Vol-Punkten und USDC im Bildfeld.
+- **Test:** `hs` des gezeigten Fills ist positiv, sein Markout negativ, und die drei Panels teilen die x-Achse.
+
+#### T2 — Vom Halbspread zum Netto-Edge (zweispaltig, 3,0 Zoll)
+
+- **Daten:** `waterfall_components` auf dem Analyse-Rahmen, Intervalle je Baustein aus dem Cluster-Bootstrap ueber
+  Taker-Wallets. Nachgerechnet: Halbspread +15,7012, adverse Selektion -2,6506, Maker-Gebuehr -1,5617, Maker-Rabatt
+  +0,5930, Hedge -3,1495, Summe +8,9325, identisch mit dem direkt gerechneten Netto-Edge.
+- **Panel A:** Wasserfall mit sieben Saeulen, Zwischensumme Markout (+13,0506) und Endsumme auf der Nulllinie
+  beginnend. Abnahmen tragen Diagonalschraffur. Der Hedge-Balken ist gepunktet umrandet, weil er als einziger nicht
+  beobachtet, sondern nach Nachtrag 2 Ziffer 2 modelliert ist. Je Saeule ein 95-Prozent-Bootstrap-Intervall.
+- **Panel B:** Verteilung der Gebuehr als Anteil der Praemie, getrennt fuer Maker und Taker, mit Linien bei 12,5 und
+  100 Prozent. Nachgerechnet: der Maker zahlt auf 66,9 Prozent der Fills gar nichts, sein Median liegt bei 0,00
+  Prozent und sein q95 bei 11,54 Prozent. Der Taker zahlt im Median 2,59 Prozent der Praemie, auf 19,2 Prozent der
+  Fills mehr als 12,5 Prozent und auf 2,40 Prozent der Fills mehr als die ganze Praemie. Diese Fills sind klein, im
+  Median 0,1 Kontrakte, und zahlen 20,8 Basispunkte des Nominals gegen 3,5 Basispunkte insgesamt.
+- **Fallgrube:** die Mediane sind nicht additiv, der Median-Halbspread betraegt 1,21 gegen einen Mittelwert von 15,70.
+  Die Achse heisst deshalb ausdruecklich Mittelwert je Kontrakt, und eine Zeile nennt den Median als Kontrast.
+- **Test:** die fuenf Bausteine summieren sich auf den Netto-Edge; der Hedge-Balken ist der einzige mit gepunktetem
+  Rand.
+
+#### F1 — Wie die Zahl zu lesen ist (zweispaltig, 2,6 Zoll)
+
+- **Daten:** `mo_usd_30m`, `amount`, `notional`, `index_price`. Nachgerechnet: Median 0,98, fuenf Prozent getrimmt
+  6,36, Mittelwert 13,05, kontraktgewichtet 0,264 USDC je Kontrakt. In Praemienanteilen q25 -1,6 Prozent, Median
+  +1,1 Prozent, q75 +21,1 Prozent. Aggregierter Maker-Gewinn je Basiswert 3,67 / 3,68 / 3,20 Millionen USDC bei
+  mittleren Indexpreisen, die sich um den Faktor 1 599 unterscheiden.
+- **Panel A:** Verteilung des Markouts auf einer Symlog-Achse mit hinterlegtem linearem Kern, drei Lagelinien
+  (Median, fuenf Prozent getrimmt, Mittelwert). Der Achsentitel nennt, dass jede Dekade dieselbe Flaeche hat.
+- **Panel B:** drei fast gleich lange Balken fuer den aggregierten Dollargewinn je Basiswert, daneben die Fillzahl und
+  der mittlere Indexpreis. Das ist der Beweis, dass USDC je Kontrakt eine Aussage ueber Kontraktgroessen ist.
+- **Panel C:** Markout in Praemienanteilen als Verteilung mit q25, Median und q75.
+- **Fallgrube:** eine Symlog-Achse ohne Kennzeichnung taeuscht. Der lineare Kern wird hinterlegt und beschriftet.
+- **Test:** die drei Lagemasse stehen in der richtigen Reihenfolge und die drei Dollarsummen weichen um weniger als
+  20 Prozent voneinander ab, waehrend die Indexpreise sich um mehr als das Tausendfache unterscheiden.
+
+#### F2 — Wie lange adverse Selektion dauert (zweispaltig, 2,6 Zoll)
+
+- **Daten:** balancierte Teilmenge mit allen fuenf Horizonten, 511 237 von 603 940 Fills. Nachgerechnet, USDC je
+  Kontrakt: 15,96 / 13,96 / 13,75 / 13,87 / 12,97 im Mittel und 1,36 / 1,15 / 1,01 / 0,80 / 0,81 im Median; in
+  Vol-Punkten 2,088 / 2,083 / 2,064 / 2,043 / 1,891.
+- **Aufbau:** drei Panels nebeneinander, je eine Einheit (USDC je Kontrakt, Vol-Punkte, Praemienanteil). Je Panel zwei
+  Linien: professioneller Fluss (dominante Maker, MM-Programm, gross) gegen uebrigen Fluss, mit p25/p75-Band. Die
+  volle Stichprobe laeuft als duenne graue Linie mit, damit sichtbar ist, was Effekt und was Zusammensetzung ist.
+- **Fallgrube:** ohne die balancierte Teilmenge waere der Abfall von 2,088 auf 1,891 Vol-Punkten nicht von der
+  schrumpfenden Stichprobe zu trennen. Die Fillzahl je Horizont steht unter der Achse.
+- **Test:** die balancierte Teilmenge hat je Horizont dieselbe Fillzahl, und beide Linien sind vorhanden.
+
+#### F3 — Wer welchen Teil des Spreads zurueckholt (zweispaltig, 3,4 Zoll)
+
+- **Daten:** `class_means.csv` und der Analyse-Rahmen. Nachgerechnete Mediane in Vol-Punkten: dominante Maker
+  Halbspread -1,335 und adverse Selektion -0,910; MM-Programm -0,572 und -0,481; gross +0,963 und -0,006; sonstige
+  +2,514 und -0,001; RFQ +0,694 und 0,000; Vault +1,641 und -0,091.
+- **Panel A:** die Zuteilungskaskade als Leiter mit echten Fillzahlen, darunter eine Zeitleiste mit dem Start des
+  MM-Programms am 20.11.2024 und dem Eintritt von HYPE am 10.11.2025.
+- **Panel B:** ein waagerechter Balken je Klasse, geteilt in Halbspread und adverse Selektion, Mediane in
+  Vol-Punkten, der Mittelwert als offener Kreis daneben, sodass die Schiefe als Abstand sichtbar wird. An jeder Zeile
+  stehen G und der Wild-Cluster-p-Wert; Klassen mit G unter 40 sind hinterlegt.
+- **Panel C:** zwei Zeilen Punkte mit dem Anteil der Fills, der von den zehn Verlust-Wallets aus H1 stammt:
+  98,8 Prozent bei den dominanten Makern, 92,4 Prozent beim MM-Programm. Damit sind Klassen- und Konzentrationsbefund
+  erkennbar derselbe Befund.
+- **Fallgrube:** die beiden auffaelligen Klassen haben p-Werte von 0,1065 und 0,0940. Sie stehen im Bild.
+- **Test:** jede Klassenzeile traegt ihre Clusterzahl, und die beiden Klassen mit G unter 40 sind hinterlegt.
+
+#### F4 — Konzentration und warum Groesse und Sweep nichts erklaeren (einspaltig, 4,2 Zoll)
+
+- **Daten:** `h1_lorenz.csv` und die beiden Koeffizienten aus `summary.json`. Nachgerechnet: Top-10-Anteil 90,5
+  Prozent mit Intervall 69,8 bis 94,3; ein einziges Wallet traegt 39,0 Prozent; 1 388 von 11 573 Wallets sind fuer den
+  Maker verlustig.
+- **Panel A:** Lorenz-Kurve des Maker-Verlusts ueber Taker-Wallets mit Bootstrap-Band ueber die ganze Kurve, der
+  50-Prozent-Ablehnungsschwelle als beschrifteter Linie und dem Top-10-Punkt markiert. Darunter ein beschrifteter
+  Streifen mit der Klassenzusammensetzung der zehn Wallets.
+- **Panel B:** roher gegen kontrollierten Effekt fuer Groesse und Sweep, offene gegen gefuellte Marker, verbunden
+  durch eine Klammer, an der die Kompositionszahl steht. Koeffizienten unter Instrument-mal-Tag-Fixeffekten: Groesse
+  -0,765 mit t -0,74, Sweep -0,357 mit t -0,10.
+- **Fallgrube:** Mehrfachadressen machen die Konzentration zu einer Untergrenze; das steht als Zeile im Bild.
+- **Test:** die Lorenz-Kurve ist monoton, beginnt bei null und endet bei eins, und das Band umschliesst die Kurve.
+
+#### F5 — Wo der Edge ueberlebt (zweispaltig, 4,0 Zoll)
+
+- **Daten:** `h4_cells.csv` und der Analyse-Rahmen. Nachgerechnet: 48 Zellen positiv, 3 negativ, alle drei ETH mit
+  niedrigem Delta, 46 uneindeutig; Intervallbreiten von 0,12 bis 507,89 USDC; acht Zellen unter 200 Fills.
+- **Panel A:** Delta mal Laufzeit je Basiswert in Vol-Punkten, eine Zahl je Zelle, die Fillzahl im Rahmenstil.
+- **Panel B:** dieselbe Anordnung mit ternaerer Zeichencodierung, Dreieck nach oben fuer positiv, Kreis fuer
+  uneindeutig, Dreieck nach unten fuer negativ; Zellen unter 200 Fills als leeres Kreuz.
+- **Panel C:** die 50-Prozent-Ablehnungsschwelle von H4 neben den drei Sensitivitaetswerten. Nach der Vereinheitlichung
+  der Bootstrap-Groesse lauten sie 57,7 / 49,5 / 38,1 Prozent bei Perp-Halbspreads von 0, 1 und 3 Basispunkten. Der
+  Befund kippt zwischen null und einem Basispunkt, und das gehoert ins Bild.
+- **Zusatzpanel:** dieselbe Karte in Basispunkten des Nominals, weil die registrierte Groesse in USDC vor allem das
+  Preisniveau langer Optionen abbildet. Je Nominal ist die Ordnung in allen drei Basiswerten dieselbe.
+- **Test:** genau acht Zellen tragen ein Kreuz, und die Zahl positiver Zellen stimmt mit `summary.json` ueberein.
+
+#### F6 — Die Stichprobe ueber 33 Monate und H3 (zweispaltig, 4,2 Zoll)
+
+- **Daten:** der Analyse-Rahmen nach Monaten, und die DiD-Groessen aus `summary.json`. Diese Abbildung schliesst die
+  Luecke, die alle 21 Entwuerfe hatten.
+- **Panel A:** Monatsmedian und Monatsmittel des 30-Minuten-Markouts in Vol-Punkten je Basiswert, mit der Fillzahl je
+  Monat unter der Achse. HYPE beginnt sichtbar erst im November 2025.
+- **Panel B:** Monatsanteil der Fills je Taker-Klasse als gestapelte Flaeche, sodass die Stufe beim Start des
+  MM-Programms am 20.11.2024 sichtbar wird, plus eine schmale Zeile mit dem Monatsanteil der zehn Verlust-Wallets.
+- **Panel C:** das Ereignisfenster fuer H3, Monatskoeffizienten relativ zu BTC und ETH im Fenster von 90 Tagen um den
+  23.06.2026, mit der Verteilung der 100 Placebo-Fenster als grauem Band dahinter. Der geschaetzte Effekt von -1,046
+  Vol-Punkten liegt innerhalb der Placebo-Streuung, 46 Prozent der Placebos sind extremer.
+- **Fallgrube:** eine Monatsreihe verleitet zur Trendlesung. Die Fillzahl je Monat steht darunter, und Monate mit
+  weniger als 1 000 Fills werden blass gezeichnet.
+- **Test:** die Monatsachse ist lueckenlos, HYPE hat vor November 2025 keine Punkte, und das Placebo-Band enthaelt den
+  geschaetzten Effekt.
+
+#### A1 — Ist der Mark gut genug (zweispaltig, 3,2 Zoll, Anhang)
+
+- **Daten:** `svi_age_s_t`, `lag_a_30m_s`, `path_agreement.csv`. Nachgerechnet: der Markout ist ueber acht
+  Kurvenalter-Klassen flach, die Mittelwerte liegen zwischen 11,30 und 17,01 USDC bei Besetzungen von 4 747 bis
+  186 878 Fills. Die Pfade stimmen ueberein, sobald der Vergleich fair ist: Korrelation 0,390 insgesamt, aber 0,896
+  wenn der naechste Fill hoechstens 300 Sekunden entfernt ist, bei einem Median-Abstand von 15 026 Sekunden.
+- **Panel A:** Verteilung des Kurvenalters gegen die Verteilung des Pfad-(a)-Abstands auf einer Achse. Das sagt selbst,
+  dass Pfad (a) fuer 30 Minuten keine Gegenprobe ist.
+- **Panel B:** mittlerer Markout ueber acht Kurvenalter-Klassen mit Bootstrap-Intervall und Besetzung. Eine
+  Nullbeziehung mit dieser Praezision ist die Entlastung, auf die es ankommt.
+- **Panel C:** der Forward der Kurve gegen den Indexpreis je Restlaufzeit.
+- **Test:** die acht Klassen sind vollstaendig besetzt und ihre Intervalle ueberlappen.
+
 
 ---
 
