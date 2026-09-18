@@ -161,7 +161,7 @@ def example_fill(rows: pd.DataFrame, taker_class: str = "other", horizon: str = 
     g = rows[(rows["taker_class"] == taker_class) & np.isfinite(rows[col])]
     if g.empty:
         g = rows[np.isfinite(rows[col])]
-    teaching = g[(g["hs"] > 0) & (g[col] < 0)] if "hs" in g else g.iloc[:0]
+    teaching = g[(g["hs"] > 0) & (g[col] < -g["hs"])] if "hs" in g else g.iloc[:0]
     if not teaching.empty:
         g = teaching
     target = g["notional"].median()
