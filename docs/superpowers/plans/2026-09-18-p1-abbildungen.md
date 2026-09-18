@@ -48,7 +48,7 @@
   - `build(root: Path, results_dir: Path, out_dir: Path, only: Sequence[str] = None) -> dict[str, list[Path]]`
   - CLI `python3 -m derive_surface p1 figures [--only T1,F1] [--out paper/figures]`
 
-- [ ] **Step 1: Test schreiben** (`tests/test_p1_figures.py`)
+- [x] **Step 1: Test schreiben** (`tests/test_p1_figures.py`)
 
 ```python
 from __future__ import annotations
@@ -169,9 +169,9 @@ def test_build_runs_a_subset(tmp_path, monkeypatch):
     assert sorted(out) == ["F3", "T2"] and all(len(v) == 2 for v in out.values())
 ```
 
-- [ ] **Step 2: Test laufen lassen** → FAIL (`cannot import name 'figures_p1'`)
+- [x] **Step 2: Test laufen lassen** → FAIL (`cannot import name 'figures_p1'`)
 
-- [ ] **Step 3: Gerüst implementieren** — `derive_surface/figures_p1.py` mit `load_inputs`, `build`, `FIGURES` und den acht Funktionen (Inhalt in Task 2); CLI-Unterbefehl:
+- [x] **Step 3: Gerüst implementieren** — `derive_surface/figures_p1.py` mit `load_inputs`, `build`, `FIGURES` und den acht Funktionen (Inhalt in Task 2); CLI-Unterbefehl:
 
 ```python
     s = sub.add_parser("figures", help="build the manuscript figures")
@@ -189,7 +189,7 @@ def test_build_runs_a_subset(tmp_path, monkeypatch):
         print(json.dumps({k: [str(p) for p in v] for k, v in written.items()}, indent=1))
 ```
 
-- [ ] **Step 4: Tests grün, Commit**
+- [x] **Step 4: Tests grün, Commit**
 
 ---
 
@@ -371,9 +371,9 @@ nicht bestaetigt, steht hier die nachgerechnete; die Abweichungen sind in `docs/
 
 ### Task 3: Prüfskript und Einbau ins Manuskript
 
-- [ ] `scripts/p1_figure_check.py`: liest `results/p1/summary.json` und die Abbildungsdaten, vergleicht die Kernzahlen
+- [x] `scripts/p1_figure_check.py`: liest `results/p1/summary.json` und die Abbildungsdaten, vergleicht die Kernzahlen
       (Klassenmittelwerte, Top-10-Anteil, Zellenanteil, Horizontverlauf) und schreibt `docs/paper1/ABBILDUNGEN.md` mit
       einer Zeile je Abbildung: Kennung, Titel, Datenquelle, geprüfte Zahlen, Breite, Dateigrösse.
-- [ ] `paper/main.tex`: die neun Abbildungen mit Bildunterschriften einbauen, Platzhalter entfernen, mit tectonic bauen
+- [x] `paper/main.tex`: die neun Abbildungen mit Bildunterschriften einbauen, Platzhalter entfernen, mit tectonic bauen
       und prüfen, dass keine Abbildung über den Satzspiegel läuft.
-- [ ] Commit mit den erzeugten PDFs.
+- [x] Commit mit den erzeugten PDFs.
