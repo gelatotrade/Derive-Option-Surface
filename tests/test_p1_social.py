@@ -45,3 +45,13 @@ def test_takeaway_is_wrapped_so_it_cannot_leave_the_image(tmp_path):
     longest = max(len(line) for t in texts for line in t.split("\n"))
     assert longest <= 82
     matplotlib.pyplot.close(fig)
+
+
+def test_the_print_style_cannot_change_the_card_size(tmp_path):
+    """figstyle sets a tight bounding box for print; leaking it here silently resized every card."""
+    from derive_surface import figstyle
+    figstyle.use_style()
+    paths = figures_social.CARDS["S1"](inputs(), tmp_path)
+    from PIL import Image
+    with Image.open(paths[0]) as im:
+        assert im.size == (1600, 900), im.size

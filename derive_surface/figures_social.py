@@ -50,6 +50,11 @@ RC = {
     "savefig.dpi": DPI,
     "savefig.facecolor": "white",
     "figure.facecolor": "white",
+    # the print style sets a tight bounding box; a card must keep its exact 1600 x 900 frame, so every
+    # setting that can change the output size is pinned here rather than inherited
+    "savefig.bbox": None,
+    "savefig.pad_inches": 0.0,
+    "figure.autolayout": False,
 }
 
 
