@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Sieben Abbildungen plus eine Anhangsabbildung, die die Theorie und die Befunde des Papers tragen, sodass die Prosa auf das gekürzt werden kann, was die Abbildungen nicht zeigen. Jede Abbildung entsteht aus getesteten Aggregationen, baut im CAS-Layout und stimmt mit dem Zahlenblatt überein.
+**Goal:** Acht Abbildungen im Hauptteil plus eine im Anhang, die die Theorie und die Befunde des Papers tragen, sodass die Prosa auf das gekürzt werden kann, was die Abbildungen nicht zeigen. Jede Abbildung entsteht aus getesteten Aggregationen, baut im CAS-Layout und stimmt mit dem Zahlenblatt überein.
 
 **Architecture:** `derive_surface/figures_p1.py` hält eine Registry `FIGURES` mit einer Funktion je Abbildung; jede Funktion bekommt den Analyse-Rahmen, die Ergebnisdateien und ein Ausgabeverzeichnis und gibt die geschriebenen Pfade zurück. Gezeichnet wird mit `figstyle` (CAS-Breiten, feste Klassenfarben), gerechnet mit `figdata` (Median-Cluster-Bootstrap, Delta-Tenor-Matrix, Wochenreihe, Wasserfall). CLI `p1 figures`. Ein Prüfskript vergleicht die Zahlen in den Abbildungen gegen `results/p1`.
 
 **Tech Stack:** Python 3.9.6, matplotlib 3.9 (Agg), numpy, pandas; pytest; tectonic für den Einbau ins Manuskript.
 
-**Grundlage:** Entwurfs-Workflow vom 18.09.2026 (drei Blickwinkel: Mechanismus, Empirie, Praktiker; zwei Juroren: Referee, Gestaltung). Die Auswahl je Slot steht in Task 2.
+**Grundlage:** Entwurfs-Workflow vom 18.09.2026 (drei Blickwinkel: Mechanismus, Empirie, Praktiker; zwei Juroren: Referee, Gestaltung). Die Auswahl je Slot steht in Task 2, die Begründung der Zusammenlegungen in `docs/paper1/ABBILDUNGSWAHL.md`.
 
 ## Global Constraints
 
@@ -193,14 +193,51 @@ def test_build_runs_a_subset(tmp_path, monkeypatch):
 
 ---
 
-### Task 2: Die acht Abbildungen
 
-Wird nach der Jury-Auswahl ergänzt (Slots T1, T2, F1 bis F5, A1) — je Abbildung Datenquelle, Panels, Achsen, Annotationen, Fallgruben und der Prosa-Absatz, den sie ersetzt.
+## Auflagen beider Juroren, die für jede Abbildung gelten
+
+- Neben jedem Klassenintervall steht der Wild-Cluster-p-Wert gegen null. Die beiden auffälligen Klassen liegen bei
+  0,1065 und 0,0940, also über fünf Prozent, während ihre Perzentilintervalle die Null ausschliessen. Nachtrag 2
+  Ziffer 4 verlangt beides; eine Abbildung, die nur das Intervall zeigt, behauptet mehr als die Inferenz hergibt.
+- Keine Schrift unter 7 pt. Höchstens eine Zahl je Gitterzelle; alles Weitere wird zu Rahmenstil oder Zeichen.
+- Keine Streuung aus hundert Haarlinien mit Alpha 0,15. Streuung wird ein p25/p75-Band, also ein Objekt statt hundert,
+  sonst verschwindet sie im Vierfarbdruck oder moiriert.
+- Symlog-Achsen tragen den linearen Kern als hinterlegten Streifen, sind beidseitig beschriftet und nennen im
+  Achsentitel, dass jede Dekade dieselbe Fläche hat. Ohne diese Kennzeichnung wird die Achse nicht benutzt.
+- Keine versteckte zweite Achse. Eine Umrechnungsnotiz im Bildfeld ist eine zweite Achse und entfällt.
+- Klassen tragen ihre Clusterzahl G (17 / 33 / 8 / 104 / 4 512 / 10 749); Klassen mit G unter 40 werden hinterlegt.
+- Zellen unter 200 Fills bleiben als leeres Kreuz stehen, statt stillschweigend zu fehlen.
+- Jede Kodierung muss in Graustufen tragen: Zeichen, Strichart oder Schraffur zusätzlich zur Farbe.
+
+---
+
+### Task 2: Die neun Abbildungen
+
+Die Auswahl folgt zwei unabhängigen Juroren. Einig waren sie bei T1, bei der Zusammenlegung von T2, bei der
+Konzentrationsabbildung und bei der Zellenkarte. Wo sie auseinandergingen, entscheidet die Frage, die das Papier
+beantworten muss, und jede Abbildung beantwortet genau eine davon.
+
+| Slot | Frage | Quelle | Breite |
+|---|---|---|---|
+| T1 | Was genau wird gemessen? | P-T1 | zweispaltig, 2,8 Zoll |
+| T2 | Woraus besteht der Edge, und was davon ist angenommen? | E-T2 ⊕ P-T2 | zweispaltig, 3,0 Zoll |
+| F1 | Wie gross ist der Befund, und wie liest man die Zahl? | P4 ⊕ E1 Panel b | zweispaltig, 2,6 Zoll |
+| F2 | Wie lange dauert adverse Selektion? | P3 | zweispaltig, 2,6 Zoll |
+| F3 | Wer nimmt welchen Teil des Spreads zurück? | P2 ⊕ E3 | zweispaltig, 3,4 Zoll |
+| F4 | Wie konzentriert ist der Verlust, und warum erklären Grösse und Sweep ihn nicht? | E4 | einspaltig, 4,2 Zoll |
+| F5 | Wo überlebt der Edge? | E5 | zweispaltig, 4,0 Zoll |
+| F6 | Ist die Stichprobe ein Markt oder zwei, und was sagt H3? | neu, aus der Lückenanalyse | zweispaltig, 4,2 Zoll |
+| A1 | Ist der Mark gut genug? | EA1 ⊕ P-A1 | zweispaltig, 3,2 Zoll |
+
+Wird nach der Festlegung je Abbildung ausgeschrieben.
 
 ---
 
 ### Task 3: Prüfskript und Einbau ins Manuskript
 
-- [ ] `scripts/p1_figure_check.py`: liest `results/p1/summary.json` und die Abbildungsdaten, vergleicht die Kernzahlen (Klassenmittelwerte, Top-10-Anteil, Zellenanteil, Horizontverlauf) und schreibt `docs/paper1/ABBILDUNGEN.md` mit einer Zeile je Abbildung: Kennung, Titel, Datenquelle, geprüfte Zahlen, Breite, Dateigrösse.
-- [ ] `paper/main.tex`: die acht Abbildungen mit Bildunterschriften einbauen, Platzhalter entfernen, mit tectonic bauen und prüfen, dass keine Abbildung über den Satzspiegel läuft (keine Overfull-hbox-Warnung über 5 pt).
+- [ ] `scripts/p1_figure_check.py`: liest `results/p1/summary.json` und die Abbildungsdaten, vergleicht die Kernzahlen
+      (Klassenmittelwerte, Top-10-Anteil, Zellenanteil, Horizontverlauf) und schreibt `docs/paper1/ABBILDUNGEN.md` mit
+      einer Zeile je Abbildung: Kennung, Titel, Datenquelle, geprüfte Zahlen, Breite, Dateigrösse.
+- [ ] `paper/main.tex`: die neun Abbildungen mit Bildunterschriften einbauen, Platzhalter entfernen, mit tectonic bauen
+      und prüfen, dass keine Abbildung über den Satzspiegel läuft.
 - [ ] Commit mit den erzeugten PDFs.
