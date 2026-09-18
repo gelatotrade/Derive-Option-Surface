@@ -1,6 +1,6 @@
 # Zahlenblatt Paper 1
 
-Erzeugt 2026-09-17 22:08 UTC aus `results/p1` mit `scripts/p1_zahlenblatt.py`. Pilotdaten bis 17.09.2026 12:00 UTC. Primärer Horizont 30m, Mark-Pfad (b) nach Push-Zeit, Cluster Taker-Wallet, B = 9999, Seed 20260917, Perp-Halbspread 1,0 bp. 603 940 Fills; ohne Fill-IV (nur Vol-Einheit betroffen): 10 745.
+Erzeugt 2026-09-18 07:17 UTC aus `results/p1` mit `scripts/p1_zahlenblatt.py`. Pilotdaten bis 17.09.2026 12:00 UTC. Primärer Horizont 30m, Mark-Pfad (b) nach Push-Zeit, Cluster Taker-Wallet, B = 9999, Seed 20260917, Perp-Halbspread 1,0 bp. 603 940 Fills; ohne Fill-IV (nur Vol-Einheit betroffen): 10 745.
 
 ## H1 Konzentration der Toxizität
 
@@ -11,7 +11,7 @@ Erzeugt 2026-09-17 22:08 UTC aus `results/p1` mit `scripts/p1_zahlenblatt.py`. P
 
 ## H2 Vault-Flow uninformiert
 
-- 30-min-Markout der Vault-Fills: 4,220 USDC (95-%-Intervall 1,644 bis 8,550, p 0,0075, 1 994 Fills, 8 Wallets).
+- 30-min-Markout der Vault-Fills: 4,220 USDC (95-%-Intervall 1,644 bis 8,550, p 0,0092, 1 994 Fills, 8 Wallets).
 - VRP-bereinigter Settlement-Markout: -6,366 USDC (95-%-Intervall -17,789 bis 5,137).
 - Urteil: nicht abgelehnt.
 
@@ -33,20 +33,20 @@ Erzeugt 2026-09-17 22:08 UTC aus `results/p1` mit `scripts/p1_zahlenblatt.py`. P
 
 | Halbspread (bp) | Zellen | Anteil positiv |
 |---|---|---|
-| 0,0 | 97 | 55,7 % |
-| 1,0 | 97 | 50,5 % |
+| 0,0 | 97 | 57,7 % |
+| 1,0 | 97 | 49,5 % |
 | 3,0 | 97 | 38,1 % |
 
 ## Gegenparteiklassen (30 min, Pfad b)
 
 | Klasse | Fills | Halbspread | Adverse Selection | Markout USDC | 95-%-Intervall | Gebühr | Rebate | Hedge | Netto-Edge | Anteil negativ |
 |---|---|---|---|---|---|---|---|---|---|---|
-| dominant_maker | 56 274 | -16,60 | -8,81 | -25,41 | -28,12 bis -19,87 | 1,23 | 0,08 | 3,93 | -30,49 | 67,6 % |
-| mm_programme | 42 976 | -5,17 | -15,50 | -20,67 | -24,37 bis -1,90 | 1,13 | 1,59 | 4,94 | -25,15 | 66,1 % |
-| large | 52 200 | 6,40 | -2,51 | 3,89 | -8,90 bis 19,07 | 4,55 | 1,78 | 2,76 | -1,63 | 35,7 % |
-| vault | 1 994 | 4,32 | -0,10 | 4,22 | 1,55 bis 8,53 | 34,21 | 2,44 | 1,02 | -28,58 | 31,6 % |
-| rfq | 121 064 | 15,38 | -0,17 | 15,21 | 12,18 bis 18,96 | 0,91 | 0,00 | 3,11 | 11,19 | 34,5 % |
-| other | 329 432 | 25,60 | -0,87 | 24,73 | 21,95 bis 28,10 | 1,24 | 0,57 | 2,87 | 21,19 | 27,0 % |
+| dominant_maker | 56 274 | -16,60 | -8,81 | -25,41 | -28,35 bis -19,42 | 1,23 | 0,08 | 3,93 | -30,49 | 67,6 % |
+| mm_programme | 42 976 | -5,17 | -15,50 | -20,67 | -24,41 bis -2,16 | 1,13 | 1,59 | 4,94 | -25,15 | 66,1 % |
+| large | 52 200 | 6,40 | -2,51 | 3,89 | -8,73 bis 18,70 | 4,55 | 1,78 | 2,76 | -1,63 | 35,7 % |
+| vault | 1 994 | 4,32 | -0,10 | 4,22 | 1,64 bis 8,55 | 34,21 | 2,44 | 1,02 | -28,58 | 31,6 % |
+| rfq | 121 064 | 15,38 | -0,17 | 15,21 | 12,19 bis 19,05 | 0,91 | 0,00 | 3,11 | 11,19 | 34,5 % |
+| other | 329 432 | 25,60 | -0,87 | 24,73 | 22,05 bis 28,02 | 1,24 | 0,57 | 2,87 | 21,19 | 27,0 % |
 
 ## Horizonte (Pfad b, Mittelwerte)
 
