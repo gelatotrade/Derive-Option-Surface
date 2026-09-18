@@ -69,15 +69,74 @@ market microstructure \sep options \sep adverse selection \sep decentralised exc
 
 \maketitle
 
-\section{Placeholder}
-Figure~\ref{fig:placeholder} is a placeholder that will be replaced in plan 4.
+\section{Figures}
+This skeleton carries the nine figures of the paper. The text is written in plan~5; every figure below is
+already the final one, drawn from the registered run by \texttt{derive\_surface.figures\_p1}.
+Figures~\ref{fig:t1} and~\ref{fig:t2} define the measurement, Figures~\ref{fig:f1} to~\ref{fig:f6} carry
+the results, and Figure~\ref{fig:a1} is the appendix check on the mark.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/t1.pdf}
+  \caption{\textbf{What a markout measures.} Panels a and b stop at the registered 30 minute horizon, panel c carries every horizon. The shaded band is the interquartile range of the 100 nearest fills in the same cell, so the example can be read against its neighbours rather than on its own.}
+  \label{fig:t1}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/t2.pdf}
+  \caption{\textbf{From the half spread to the net edge.} Error bars in panel a are 95 percent cluster bootstrap intervals over taker wallets. The hedge bar is dotted because it is the only component that is modelled rather than observed. Panel b is the distribution of the fee as a share of the option premium, for both sides of the trade.}
+  \label{fig:t2}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/f1.pdf}
+  \caption{\textbf{How to read the headline number.} The shaded core of panel a is linear and everything outside it is logarithmic with equal area per decade. Panel b sets the aggregate dollar gain against the average index price, which is what makes a per-contract average a statement about contract size.}
+  \label{fig:f1}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/f2.pdf}
+  \caption{\textbf{How long adverse selection lasts.} The subsample is restricted to fills that have every horizon, so a falling line cannot be a shrinking sample. Bands are 95 percent cluster bootstrap intervals of the median, not dispersion.}
+  \label{fig:f2}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/f3.pdf}
+  \caption{\textbf{Who takes back which part of the spread.} G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are not additive, so the mean markout is marked separately.}
+  \label{fig:f3}
+\end{figure*}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{figures/placeholder.pdf}
-  \caption{Placeholder figure produced by \texttt{derive\_surface.figstyle}.}
-  \label{fig:placeholder}
+  \includegraphics[width=\linewidth]{figures/f4.pdf}
+  \caption{\textbf{Concentration, and why size and sweeps explain nothing.} The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the loss. Panel b sets the raw difference against the coefficient under instrument by day fixed effects, which is where the hypothesis fails.}
+  \label{fig:f4}
 \end{figure}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/f5.pdf}
+  \caption{\textbf{Where the edge survives.} The upper row is the median net edge per notional, the unit a quoting decision uses, shaded within each panel only. The lower row is the registered quantity in USDC and its verdict per cell, with an empty cross where a cell has fewer than 200 fills.}
+  \label{fig:f5}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/f6.pdf}
+  \caption{\textbf{The sample over 33 months, and the event study.} Panels a and b share a calendar axis; hollow markers mark months with fewer than 1000 fills. Panel c is the distribution of the 100 placebo estimates with the estimated effect marked.}
+  \label{fig:f6}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/a1.pdf}
+  \caption{\textbf{Is the on-chain mark good enough?.} Panel a puts the age of the curve and the distance of the next fill on one axis, which is why the next fill is no control at 30 minutes. A flat line in panel b is the reassurance: the markout does not move with the age of the curve.}
+  \label{fig:a1}
+\end{figure*}
 
 \bibliographystyle{cas-model2-names}
 \bibliography{refs}

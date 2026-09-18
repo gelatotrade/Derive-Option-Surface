@@ -71,26 +71,31 @@ def _side_note(ax, text: str, y: float, align: str = "left") -> None:
 
 
 CAPTIONS = {
-    "T1": "One fill, three mark paths and three units. Panels a and b stop at the registered 30 minute "
-          "horizon; panel c carries every horizon. The shaded band is the interquartile range of the 100 "
-          "nearest fills in the same cell, so the example can be read against its neighbours.",
-    "T2": "The identity behind the net edge, and who pays the fee. Error bars are 95 percent cluster "
-          "bootstrap intervals over taker wallets. The hedge bar is dotted because it is the only modelled "
-          "component.",
-    "F1": "The same result read four ways. The shaded core of panel a is linear, everything outside it is "
-          "logarithmic with equal area per decade.",
-    "F2": "How long adverse selection lasts, on the balanced subsample that has every horizon. Bands are "
-          "95 percent cluster bootstrap intervals of the median, not dispersion.",
-    "F3": "Who takes back which part of the spread. G is the number of taker wallets behind a class and p "
-          "is the wild cluster bootstrap p-value against zero; shaded rows carry fewer than 40 wallets.",
-    "F4": "The concentration behind H1 and the two coefficients on which H1 fails. The horizontal axis of "
-          "panel a is logarithmic because the first ten wallets carry most of the loss.",
-    "F5": "Where the edge survives. The upper row is the median net edge per notional, the unit a quoting "
-          "decision uses; the lower row is the registered quantity in USDC and its verdict per cell.",
-    "F6": "The sample over 33 months and the only event study in the paper. Panel c is the distribution of "
-          "the 100 placebo estimates with the estimated effect marked.",
-    "A1": "Whether the on-chain mark carries the measurement. A flat line in panel b is the reassurance: "
-          "the markout does not move with the age of the curve.",
+    "T1": "Panels a and b stop at the registered 30 minute horizon, panel c carries every horizon. The "
+          "shaded band is the interquartile range of the 100 nearest fills in the same cell, so the example "
+          "can be read against its neighbours rather than on its own.",
+    "T2": "Error bars in panel a are 95 percent cluster bootstrap intervals over taker wallets. The hedge "
+          "bar is dotted because it is the only component that is modelled rather than observed. Panel b is "
+          "the distribution of the fee as a share of the option premium, for both sides of the trade.",
+    "F1": "The shaded core of panel a is linear and everything outside it is logarithmic with equal area per "
+          "decade. Panel b sets the aggregate dollar gain against the average index price, which is what "
+          "makes a per-contract average a statement about contract size.",
+    "F2": "The subsample is restricted to fills that have every horizon, so a falling line cannot be a "
+          "shrinking sample. Bands are 95 percent cluster bootstrap intervals of the median, not dispersion.",
+    "F3": "G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value "
+          "against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are "
+          "not additive, so the mean markout is marked separately.",
+    "F4": "The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the "
+          "loss. Panel b sets the raw difference against the coefficient under instrument by day fixed "
+          "effects, which is where the hypothesis fails.",
+    "F5": "The upper row is the median net edge per notional, the unit a quoting decision uses, shaded "
+          "within each panel only. The lower row is the registered quantity in USDC and its verdict per "
+          "cell, with an empty cross where a cell has fewer than 200 fills.",
+    "F6": "Panels a and b share a calendar axis; hollow markers mark months with fewer than 1000 fills. "
+          "Panel c is the distribution of the 100 placebo estimates with the estimated effect marked.",
+    "A1": "Panel a puts the age of the curve and the distance of the next fill on one axis, which is why "
+          "the next fill is no control at 30 minutes. A flat line in panel b is the reassurance: the "
+          "markout does not move with the age of the curve.",
 }
 
 
