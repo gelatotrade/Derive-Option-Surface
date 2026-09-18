@@ -157,3 +157,85 @@ def test_path_agreement_reports_correlation_and_sign_agreement():
 
 def mk_inf_path(rows):
     return inf.path_agreement(rows, horizon="30m")
+
+
+def run_all_frame(n_per_cell=260, seed=11):
+    """A markouts frame with everything run_all touches: two currencies, two cells, five horizons."""
+    rng = np.random.default_rng(seed)
+    event = inf.HYPE_EVENT_MS
+    rows = []
+    for ccy in ("BTC", "HYPE"):
+        for tenor in ("<=2d", "7-30d"):
+            for i in range(n_per_cell):
+                ts = int(event + rng.integers(-60, 60) * 86_400_000 + rng.integers(0, 86_400_000))
+                rows.append({"ts": ts, "currency": ccy, "instrument_name": "{}-{}".format(ccy, i % 7),
+                             "taker_wallet": "0x{}".format(i % 23), "taker_class": ["other", "rfq", "vault"][i % 3],
+                             "delta_bucket": "40-60", "tenor_bucket": tenor, "is_sweep": bool(i % 10 == 0),
+                             "size_above_p90": bool(i % 12 == 0), "price": 100.0, "mark_b_t": 100.0 + rng.normal(0, 2),
+                             "delta_t": float(rng.uniform(-1, 1)), "fwd_t": 50_000.0, "maker_side": int(rng.choice([-1, 1])),
+                             "fee_maker": 0.4, "rebate_maker": 0.1, "amount": 1.0,
+                             "mo_set": float(rng.normal(1, 5)), "mo_set_vrp": float(rng.normal(0, 5)),
+                             "svi_age_s_t": float(abs(rng.normal(30, 10))), "notional": 50_000.0})
+    frame = pd.DataFrame(rows)
+    for h in inf.HORIZON_SECONDS:
+        frame["mo_usd_{}".format(h)] = rng.normal(2.0, 6.0, len(frame))
+        frame["mo_dn_{}".format(h)] = frame["mo_usd_{}".format(h)] - rng.normal(0, 0.5, len(frame))
+        frame["mo_vol_{}".format(h)] = rng.normal(1.0, 3.0, len(frame))
+        frame["mo_usd_a_{}".format(h)] = frame["mo_usd_{}".format(h)] + rng.normal(0, 1.0, len(frame))
+        frame["lag_a_{}_s".format(h)] = np.abs(rng.normal(600, 200, len(frame)))
+        frame["mark_b_{}".format(h)] = frame["mark_b_t"] + rng.normal(0, 1, len(frame))
+        frame["iv_b_{}".format(h)] = np.abs(rng.normal(0.6, 0.05, len(frame)))
+        frame["fwd_b_{}".format(h)] = 50_000.0 + rng.normal(0, 50, len(frame))
+    return frame
+
+
+def write_inputs(tmp_path, frame):
+    root = tmp_path / "data"
+    (root / "derived").mkdir(parents=True)
+    (root / "ref").mkdir(parents=True)
+    frame.to_parquet(root / "derived" / "markouts.parquet", index=False)
+    pd.DataFrame({"instrument_name": ["BTC-PERP", "HYPE-PERP"], "timestamp": [1, 2],
+                  "funding_rate": [1e-5, 2e-5]}).to_parquet(root / "ref" / "funding_history.parquet", index=False)
+    return root
+
+
+def test_run_all_writes_every_registered_table(tmp_path):
+    root = write_inputs(tmp_path, run_all_frame())
+    out = tmp_path / "results"
+    summary = inf.run_all(root, out, half_spread_bp=1.0, b=199, seed=5)
+    for name in ("h1_lorenz.csv", "h4_cells.csv", "h4_sensitivity.csv", "class_means.csv",
+                 "horizon_means.csv", "path_agreement.csv", "summary.json"):
+        assert (out / name).exists(), name
+    assert set(summary) >= {"H1", "H2", "H3", "H4", "path_agreement", "missing_vol_unit"}
+    assert summary["fills"] == 4 * 260
+
+
+def test_every_reported_number_uses_the_same_bootstrap_size(tmp_path, monkeypatch):
+    """A sensitivity row that varies around the registered case must be that case, not a cheaper approximation.
+
+    The pilot run showed why: the headline drew 9 999 times and the sensitivity 1 999, one cell flipped, and
+    the two reported shares of positive cells straddled the rejection threshold of H4 (49,5 % against 50,5 %).
+    Comparing the numbers cannot catch this reliably, because whether a cell flips depends on the data, so
+    the guard is on the mechanism: every interval in one run is drawn the same number of times.
+    """
+    sizes = []
+    real_ci, real_cells = inf.cluster_mean_ci, inf.cell_table
+
+    def spy_ci(values, clusters, b=inf.B, **kw):
+        sizes.append(b)
+        return real_ci(values, clusters, b=b, **kw)
+
+    def spy_cells(frame, y_col, min_fills=inf.MIN_CELL_FILLS, b=inf.B, **kw):
+        sizes.append(b)
+        return real_cells(frame, y_col, min_fills=min_fills, b=b, **kw)
+
+    monkeypatch.setattr(inf, "cluster_mean_ci", spy_ci)
+    monkeypatch.setattr(inf, "cell_table", spy_cells)
+    root = write_inputs(tmp_path, run_all_frame())
+    summary = inf.run_all(root, tmp_path / "results", half_spread_bp=1.0, b=2999, seed=5)
+    assert sizes, "run_all computed no interval at all"
+    assert set(sizes) == {2999}, "bootstrap sizes differ within one run: {}".format(sorted(set(sizes)))
+    sens = pd.read_csv(tmp_path / "results" / "h4_sensitivity.csv")
+    base = float(sens[sens["half_spread_bp"] == 1.0]["share_positive"].iloc[0])
+    assert base == pytest.approx(summary["H4"]["share_positive"], abs=1e-12)
+    assert int(sens[sens["half_spread_bp"] == 1.0]["cells"].iloc[0]) == summary["H4"]["cells"]

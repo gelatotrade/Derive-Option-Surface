@@ -63,8 +63,9 @@ def _cluster_stats(Xd: np.ndarray, resid: np.ndarray, codes: np.ndarray, n_clust
 
 
 def _cluster_robust_var(XtX_inv: np.ndarray, scores: np.ndarray, n_cluster: int) -> np.ndarray:
-    meat = scores.T @ scores * (n_cluster / max(n_cluster - 1, 1))
-    return XtX_inv @ meat @ XtX_inv
+    with np.errstate(all="ignore"):                           # numpy 2.0 reports spurious FP errors from BLAS matmul
+        meat = scores.T @ scores * (n_cluster / max(n_cluster - 1, 1))
+        return XtX_inv @ meat @ XtX_inv
 
 
 def wild_cluster_p(y: np.ndarray, X: np.ndarray, groups: np.ndarray, clusters: np.ndarray, test_col: int,
@@ -165,7 +166,7 @@ def cluster_mean_ci(values: np.ndarray, clusters: np.ndarray, b: int = B, seed: 
         draws[drawn:drawn + size] = sums[pick].sum(axis=1) / np.maximum(counts[pick].sum(axis=1), 1e-12)
         drawn += size
     alpha = (1 - level) / 2
-    t, p, se = wild_cluster_mean_p(values, clusters, b=min(b, 1999), seed=seed)
+    t, p, se = wild_cluster_mean_p(values, clusters, b=b, seed=seed)
     return {"mean": float(values.mean()), "lo": float(np.quantile(draws, alpha)), "hi": float(np.quantile(draws, 1 - alpha)),
             "p": p, "t": t, "se": se, "n": int(len(values)), "clusters": int(n_cluster), "level": level}
 
@@ -361,7 +362,7 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
     # descriptives and robustness (no hypothesis attached)
     classes = []
     for name, g in frame.groupby("taker_class"):
-        ci = cluster_mean_ci(g["y_usd"].to_numpy(), g["cluster"].to_numpy(), b=min(b, 1999), seed=seed)
+        ci = cluster_mean_ci(g["y_usd"].to_numpy(), g["cluster"].to_numpy(), b=b, seed=seed)
         ci.update({"class": name, "fills": int(len(g)), "mean_dn": float(np.nanmean(g["y_dn"])),
                    "mean_vol": float(np.nanmean(g["y_vol"])), "mean_ne": float(np.nanmean(g["net_edge"])),
                    "mean_hs": float(np.nanmean(g["hs"])), "mean_as": float(np.nanmean(g["as_usd"])),
@@ -376,7 +377,7 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
         if col not in markouts:
             continue
         sub = analysis_frame(markouts, funding, horizon=h, half_spread_bp=half_spread_bp)
-        ci = cluster_mean_ci(sub["y_usd"].to_numpy(), sub["cluster"].to_numpy(), b=min(b, 1999), seed=seed)
+        ci = cluster_mean_ci(sub["y_usd"].to_numpy(), sub["cluster"].to_numpy(), b=b, seed=seed)
         ci.update({"horizon": h, "mean_dn": float(np.nanmean(sub["y_dn"])), "mean_vol": float(np.nanmean(sub["y_vol"])),
                    "mean_path_a": float(np.nanmean(sub[f"mo_usd_a_{h}"])) if f"mo_usd_a_{h}" in sub else np.nan})
         horizons.append(ci)
@@ -384,7 +385,7 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
     sens = []
     for bp in PERP_HALF_SPREAD_BP:
         f2 = analysis_frame(markouts, funding, horizon=HORIZON, half_spread_bp=bp)
-        cells2 = cell_table(f2, "net_edge", b=min(b, 1999), seed=seed)
+        cells2 = cell_table(f2, "net_edge", b=b, seed=seed)
         sens.append({"half_spread_bp": bp, "cells": int(len(cells2)),
                      "share_positive": float(cells2["positive"].mean()) if len(cells2) else np.nan})
     pd.DataFrame(sens).to_csv(out_dir / "h4_sensitivity.csv", index=False)
