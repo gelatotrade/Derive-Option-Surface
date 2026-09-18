@@ -18,24 +18,46 @@ from .markouts import DELTA_LABELS, TENOR_LABELS
 UNIT_COLUMN = {"usd": "mo_usd_{}", "dn": "mo_dn_{}", "vol": "mo_vol_{}", "path_a": "mo_usd_a_{}"}
 
 
+def _median_ci(values: np.ndarray, clusters: np.ndarray, b: int = 999, seed: int = 20260917,
+               level: float = 0.95) -> Tuple[float, float, float]:
+    """Cluster bootstrap of the median, exact and fast.
+
+    A draw multiplies every cluster by how often it was drawn, so the pooled median is the weighted median
+    over the values sorted once up front: one gather, one cumulative sum and one search per draw instead of
+    concatenating thousands of arrays.
+    """
+    values = np.asarray(values, dtype=float)
+    codes = pd.factorize(pd.Series(clusters))[0]
+    n_cluster = int(codes.max()) + 1 if len(codes) else 0
+    if len(values) == 0:
+        return np.nan, np.nan, np.nan
+    order = np.argsort(values, kind="stable")
+    sorted_values, sorted_codes = values[order], codes[order]
+    rng = np.random.default_rng(seed)
+    draws = np.empty(b)
+    for i in range(b):
+        multiplicity = np.bincount(rng.integers(0, n_cluster, n_cluster), minlength=n_cluster).astype(float)
+        weights = multiplicity[sorted_codes]
+        cumulative = np.cumsum(weights)
+        if cumulative[-1] <= 0:
+            draws[i] = np.nan
+            continue
+        draws[i] = sorted_values[min(int(np.searchsorted(cumulative, cumulative[-1] / 2.0)), len(sorted_values) - 1)]
+    alpha = (1 - level) / 2
+    return (float(np.median(values)), float(np.nanquantile(draws, alpha)), float(np.nanquantile(draws, 1 - alpha)))
+
+
 def _cluster_stat_ci(values: np.ndarray, clusters: np.ndarray, stat: str, b: int, seed: int,
                      level: float = 0.95) -> Tuple[float, float, float, int]:
     ok = np.isfinite(values)
-    values, clusters = values[ok], clusters[ok]
+    values, clusters = values[ok], np.asarray(clusters)[ok]
     if len(values) == 0:
         return np.nan, np.nan, np.nan, 0
     if stat == "mean":
         ci = cluster_mean_ci(values, clusters, b=b, seed=seed, level=level)
         return ci["mean"], ci["lo"], ci["hi"], ci["n"]
-    codes, n_cluster = pd.factorize(pd.Series(clusters))
-    rng = np.random.default_rng(seed)
-    draws = np.empty(b)
-    by_cluster = [values[codes == g] for g in range(len(n_cluster))]
-    for i in range(b):
-        pick = rng.integers(0, len(by_cluster), len(by_cluster))
-        draws[i] = np.median(np.concatenate([by_cluster[j] for j in pick]))
-    alpha = (1 - level) / 2
-    return float(np.median(values)), float(np.quantile(draws, alpha)), float(np.quantile(draws, 1 - alpha)), int(len(values))
+    value, lo, hi = _median_ci(values, clusters, b=b, seed=seed, level=level)
+    return value, lo, hi, int(len(values))
 
 
 def horizon_curve(rows: pd.DataFrame, horizons: Sequence[str] = tuple(HORIZON_SECONDS), unit: str = "usd",
