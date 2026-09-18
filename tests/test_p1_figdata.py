@@ -85,6 +85,61 @@ def test_example_fill_picks_a_representative_trade():
     assert set(["ts", "hs", "as_usd", "mo_usd_30m"]) <= set(got.index)
 
 
+def test_example_fill_prefers_earned_spread_then_lost_it():
+    rows = frame()
+    rows["taker_class"] = "other"
+    rows["hs"] = -1.0            # nobody earns the spread ...
+    rows["mo_usd_30m"] = 5.0     # ... and nobody loses afterwards
+    want = rows["notional"].median()
+    rows.loc[7, ["hs", "mo_usd_30m", "notional"]] = [4.0, -9.0, want]
+    got = figdata.example_fill(rows, taker_class="other")
+    assert got["hs"] > 0 and got["mo_usd_30m"] < 0
+
+
+def test_example_fill_falls_back_when_no_such_fill_exists():
+    rows = frame()
+    rows["taker_class"] = "other"
+    rows["hs"] = -1.0
+    rows["mo_usd_30m"] = 5.0
+    got = figdata.example_fill(rows, taker_class="other")
+    assert np.isfinite(got["mo_usd_30m"])
+
+
+def curves():
+    """Two SVI pushes for one expiry, the later one at a higher level."""
+    return pd.DataFrame({
+        "expiry": [1_800_000_000, 1_800_000_000, 1_800_000_000, 1_700_000_000],
+        "block_ts": [1_799_000_000, 1_799_000_600, 1_799_001_200, 1_699_000_000],
+        "feed_ts": [1_799_000_000, 1_799_000_600, 1_799_001_200, 1_699_000_000],
+        "svi_a": [0.0002, 0.0003, 0.0004, 0.0002],
+        "svi_b": [0.004, 0.005, 0.006, 0.004],
+        "svi_rho": [-0.3, -0.3, -0.3, -0.3],
+        "svi_m": [0.002, 0.002, 0.002, 0.002],
+        "svi_sigma": [0.02, 0.02, 0.02, 0.02],
+        "svi_fwd": [60_000.0, 60_100.0, 60_200.0, 50_000.0],
+        "svi_ref_tau": [0.01, 0.01, 0.01, 0.01],
+    })
+
+
+def test_curve_at_takes_the_last_push_before_the_moment():
+    got = figdata.curve_at(curves(), expiry=1_800_000_000, at_s=1_799_000_900)
+    assert got["block_ts"] == 1_799_000_600
+    assert got["age_s"] == pytest.approx(300.0)
+    assert got["forward"] == pytest.approx(60_100.0)
+    assert np.isfinite(got["vol"]).all() and (got["vol"] > 0).all()
+    assert got["strike"][0] < got["forward"] < got["strike"][-1]
+    assert got["k"] == pytest.approx(np.log(got["strike"] / got["forward"]))
+
+
+def test_curve_at_ignores_other_expiries_and_later_pushes():
+    got = figdata.curve_at(curves(), expiry=1_800_000_000, at_s=1_799_000_000)
+    assert got["block_ts"] == 1_799_000_000 and got["forward"] == pytest.approx(60_000.0)
+
+
+def test_curve_at_returns_none_when_nothing_was_pushed_yet():
+    assert figdata.curve_at(curves(), expiry=1_800_000_000, at_s=1_798_000_000) is None
+
+
 def test_median_cluster_bootstrap_matches_brute_force():
     rng = np.random.default_rng(3)
     clusters = np.repeat([f"w{i}" for i in range(15)], 20)
