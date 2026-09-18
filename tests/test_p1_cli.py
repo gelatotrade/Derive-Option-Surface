@@ -35,3 +35,17 @@ def test_existing_cli_still_parses():
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
     assert exc.value.code == 0
+
+
+def test_every_subcommand_reaches_its_own_handler(monkeypatch, tmp_path, capsys):
+    """A mis-nested branch once let `inference` import its module and then do nothing, silently and with exit 0."""
+    from derive_surface import p1cli
+
+    calls = []
+    monkeypatch.setattr("derive_surface.inference_p1.run_all",
+                        lambda *a, **k: calls.append("inference") or {"ok": True})
+    monkeypatch.setattr("derive_surface.figures_p1.build",
+                        lambda *a, **k: calls.append("figures") or {"T1": [tmp_path / "t1.pdf"]})
+    p1cli.main(["--root", str(tmp_path), "inference", "--results", str(tmp_path)])
+    p1cli.main(["--root", str(tmp_path), "figures", "--results", str(tmp_path), "--out", str(tmp_path)])
+    assert calls == ["inference", "figures"]

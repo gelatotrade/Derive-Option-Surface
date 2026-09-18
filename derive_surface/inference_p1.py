@@ -251,7 +251,7 @@ def did(frame: pd.DataFrame, y_col: str, event_ms: int = HYPE_EVENT_MS, treated:
     pre = frame[(frame["ts"] < event_ms) & (frame["ts"] >= event_ms - 2 * window_days * day)]
     pre = pre[np.isfinite(pre[y_col].to_numpy())]
     rng = np.random.default_rng(seed)
-    placebo_t = []
+    placebo_t, placebo_beta = [], []
     if len(pre) and placebos:
         lo, hi = int(pre["ts"].min()) + 10 * day, int(pre["ts"].max()) - 10 * day
         fakes = rng.integers(lo, hi, placebos) if hi > lo else np.array([], dtype="int64")
@@ -265,9 +265,11 @@ def did(frame: pd.DataFrame, y_col: str, event_ms: int = HYPE_EVENT_MS, treated:
                                  sub["cluster"].to_numpy(), 0, b=99, seed=seed)
             if np.isfinite(res["t"]):
                 placebo_t.append(abs(res["t"]))
+                placebo_beta.append(float(res["beta"]))
     share = float(np.mean([pt >= abs(out["t"]) for pt in placebo_t])) if placebo_t else np.nan
     out.update({"event_ms": int(event_ms), "treated": treated, "y": y_col, "window_days": window_days,
-                "placebos": len(placebo_t), "placebo_share_more_extreme": share})
+                "placebos": len(placebo_t), "placebo_share_more_extreme": share,
+                "placebo_beta": placebo_beta, "placebo_t": [float(t) for t in placebo_t]})
     return out
 
 

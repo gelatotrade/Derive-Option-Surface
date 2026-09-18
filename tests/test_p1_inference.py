@@ -239,3 +239,21 @@ def test_every_reported_number_uses_the_same_bootstrap_size(tmp_path, monkeypatc
     base = float(sens[sens["half_spread_bp"] == 1.0]["share_positive"].iloc[0])
     assert base == pytest.approx(summary["H4"]["share_positive"], abs=1e-12)
     assert int(sens[sens["half_spread_bp"] == 1.0]["cells"].iloc[0]) == summary["H4"]["cells"]
+
+
+def test_did_keeps_the_placebo_estimates_not_just_their_count():
+    """The event study figure has to draw the placebo distribution, so the estimates must survive the run."""
+    rng = np.random.default_rng(7)
+    n = 4_000
+    event = 1_700_000_000_000
+    day = 86_400_000
+    frame = pd.DataFrame({
+        "ts": event + rng.integers(-150 * day, 80 * day, n),
+        "currency": rng.choice(["HYPE", "BTC"], n),
+        "cluster": rng.choice(["w{}".format(i) for i in range(40)], n),
+    })
+    frame["day"] = pd.to_datetime(frame["ts"], unit="ms", utc=True).dt.strftime("%Y-%m-%d")
+    frame["y_vol"] = rng.normal(0, 1, n) + (frame["currency"] == "HYPE") * (frame["ts"] >= event) * 0.4
+    out = inf.did(frame, "y_vol", event_ms=event, treated="HYPE", placebos=6, seed=3, b=99, window_days=45)
+    assert len(out["placebo_beta"]) == out["placebos"] == len(out["placebo_t"])
+    assert all(np.isfinite(b) for b in out["placebo_beta"])
