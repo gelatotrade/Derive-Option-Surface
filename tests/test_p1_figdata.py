@@ -83,3 +83,29 @@ def test_example_fill_picks_a_representative_trade():
     rows.loc[0, ["mo_usd_30m", "hs", "as_usd"]] = [3.0, 2.0, 1.0]
     got = figdata.example_fill(rows, taker_class="other")
     assert set(["ts", "hs", "as_usd", "mo_usd_30m"]) <= set(got.index)
+
+
+def test_median_cluster_bootstrap_matches_brute_force():
+    rng = np.random.default_rng(3)
+    clusters = np.repeat([f"w{i}" for i in range(15)], 20)
+    values = rng.normal(0, 1, 300)
+    fast = figdata._median_ci(values, clusters, b=400, seed=5)
+    # brute force: resample clusters, pool their values, take the median
+    codes, uniq = pd.factorize(pd.Series(clusters))
+    by = [values[codes == g] for g in range(len(uniq))]
+    r = np.random.default_rng(5)
+    draws = [np.median(np.concatenate([by[j] for j in r.integers(0, len(by), len(by))])) for _ in range(400)]
+    assert fast[0] == pytest.approx(float(np.median(values)))
+    assert fast[1] == pytest.approx(float(np.quantile(draws, 0.025)), abs=0.12)
+    assert fast[2] == pytest.approx(float(np.quantile(draws, 0.975)), abs=0.12)
+
+
+def test_median_cluster_bootstrap_is_fast_on_many_rows():
+    import time
+    rng = np.random.default_rng(4)
+    n = 200_000
+    clusters = rng.integers(0, 4_000, n).astype(str)
+    values = rng.normal(0, 1, n)
+    t0 = time.time()
+    figdata._median_ci(values, clusters, b=199, seed=1)
+    assert time.time() - t0 < 20
