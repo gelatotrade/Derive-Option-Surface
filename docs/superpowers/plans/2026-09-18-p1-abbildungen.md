@@ -197,7 +197,7 @@ def test_build_runs_a_subset(tmp_path, monkeypatch):
 ## Auflagen beider Juroren, die für jede Abbildung gelten
 
 - Neben jedem Klassenintervall steht der Wild-Cluster-p-Wert gegen null. Die beiden auffälligen Klassen liegen bei
-  0,1065 und 0,0940, also über fünf Prozent, während ihre Perzentilintervalle die Null ausschliessen. Nachtrag 2
+  0,1003 und 0,1013, also über fünf Prozent, während ihre Perzentilintervalle die Null ausschliessen. Nachtrag 2
   Ziffer 4 verlangt beides; eine Abbildung, die nur das Intervall zeigt, behauptet mehr als die Inferenz hergibt.
 - Keine Schrift unter 7 pt. Höchstens eine Zahl je Gitterzelle; alles Weitere wird zu Rahmenstil oder Zeichen.
 - Keine Streuung aus hundert Haarlinien mit Alpha 0,15. Streuung wird ein p25/p75-Band, also ein Objekt statt hundert,
@@ -306,7 +306,7 @@ nicht bestaetigt, steht hier die nachgerechnete; die Abweichungen sind in `docs/
 - **Panel C:** zwei Zeilen Punkte mit dem Anteil der Fills, der von den zehn Verlust-Wallets aus H1 stammt:
   98,8 Prozent bei den dominanten Makern, 92,4 Prozent beim MM-Programm. Damit sind Klassen- und Konzentrationsbefund
   erkennbar derselbe Befund.
-- **Fallgrube:** die beiden auffaelligen Klassen haben p-Werte von 0,1065 und 0,0940. Sie stehen im Bild.
+- **Fallgrube:** die beiden auffaelligen Klassen haben p-Werte von 0,1003 und 0,1013. Sie stehen im Bild.
 - **Test:** jede Klassenzeile traegt ihre Clusterzahl, und die beiden Klassen mit G unter 40 sind hinterlegt.
 
 #### F4 — Konzentration und warum Groesse und Sweep nichts erklaeren (einspaltig, 4,2 Zoll)

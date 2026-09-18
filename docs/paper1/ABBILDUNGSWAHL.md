@@ -46,4 +46,15 @@ HYPE-Fill der Stichprobe am 10.11.2025 22:06 UTC, davor null Fills.
 Der Referee hat einen Widerspruch gefunden, der nichts mit Abbildungen zu tun hat: die Kopfzahl zu H4 rechnete mit
 9 999 Bootstrap-Ziehungen, die Sensitivitaetstabelle mit 1 999, und genau eine Zelle kippte dadurch ueber die
 Ablehnungsschwelle. Behoben, neu gerechnet, mit einem Waechter auf den Mechanismus abgesichert. Die Urteile zu H1
-bis H4 aendern sich nicht.
+bis H4 aendern sich nicht. Nach dem Neulauf lauten die p-Werte der beiden auffaelligen Klassen 0,1003 und
+0,1013 statt 0,1065 und 0,0940, und die Sensitivitaet bei null Basispunkten 57,7 statt 55,7 Prozent.
+
+## Was die Nachrechnung an den Entwuerfen korrigiert hat
+
+| Behauptung eines Entwurfs | Nachgerechnet |
+|---|---|
+| HYPE tritt am 24.10.2025 in die Stichprobe ein | erster HYPE-Fill am 10.11.2025, davor null |
+| 3,6 Prozent der Fills zahlen mehr Gebuehr als Praemie | gilt fuer den Taker, und es sind 2,40 Prozent; der Maker zahlt auf 66,9 Prozent der Fills gar nichts |
+| fuenf Prozent getrimmtes Mittel 10,80 | 6,36 |
+| Markout in Praemienanteilen q25 -3,3 / Median +3,4 / q75 +13,5 Prozent | -1,6 / +1,1 / +21,1 |
+| Pro-Kontrakt-Faktor 426 zwischen den Basiswerten | 1 599 zwischen BTC und HYPE, gemessen am mittleren Indexpreis |
