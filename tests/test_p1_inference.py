@@ -137,3 +137,23 @@ def test_analysis_frame_decomposes_the_markout():
     assert r.hs == pytest.approx(5.0) and r.as_usd == pytest.approx(5.0) and r.y_usd == pytest.approx(10.0)
     assert r.net_edge == pytest.approx(10.0 - 0.4 + 0.1 - r.hedge)
     assert r.fe_key == "BTC-1-2-C|2023-11-14" and r.cluster == "0xt"
+
+
+def test_path_agreement_reports_correlation_and_sign_agreement():
+    rows = pd.DataFrame({
+        "mo_usd_30m": [1.0, -2.0, 3.0, -4.0, 5.0, np.nan],
+        "mo_usd_a_30m": [1.1, -1.8, -0.5, -4.4, 5.2, 1.0],
+        "lag_a_30m_s": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0],
+        "svi_age_s_t": [5.0, 5.0, 200.0, 200.0, 5.0, 5.0],
+        "currency": ["BTC"] * 6,
+    })
+    out = mk_inf_path(rows)
+    assert out.loc[out["group"] == "all", "fills"].iloc[0] == 5
+    assert out.loc[out["group"] == "all", "sign_agreement"].iloc[0] == pytest.approx(0.8)
+    assert 0.9 < out.loc[out["group"] == "all", "correlation"].iloc[0] <= 1.0
+    fresh = out[out["group"] == "svi_age <= 60 s"].iloc[0]
+    assert fresh["fills"] == 3 and fresh["sign_agreement"] == pytest.approx(1.0)
+
+
+def mk_inf_path(rows):
+    return inf.path_agreement(rows, horizon="30m")

@@ -285,6 +285,37 @@ def cell_table(frame: pd.DataFrame, y_col: str, min_fills: int = MIN_CELL_FILLS,
     return pd.DataFrame(rows)
 
 
+def path_agreement(rows: pd.DataFrame, horizon: str = HORIZON) -> pd.DataFrame:
+    """How well the two mark paths agree: correlation, sign agreement and median gap, overall and by curve age.
+
+    Path (b) is the last on-chain SVI curve, path (a) the mark of the next fill of the same instrument.  A
+    stale curve should show up as weaker agreement, so the table splits on the age of the curve at the fill.
+    """
+    b_col, a_col = f"mo_usd_{horizon}", f"mo_usd_a_{horizon}"
+    frame = rows[[b_col, a_col, "lag_a_{}_s".format(horizon), "svi_age_s_t"]].copy()
+    frame = frame[np.isfinite(frame[b_col]) & np.isfinite(frame[a_col])]
+    lag_col = "lag_a_{}_s".format(horizon)
+    groups = [("all", frame),
+              ("lag_a <= 300 s", frame[frame[lag_col] <= 300]),
+              ("lag_a <= 3600 s", frame[frame[lag_col] <= 3600])]
+    if "svi_age_s_t" in frame:
+        groups.append(("svi_age <= 60 s", frame[frame["svi_age_s_t"] <= 60]))
+        groups.append(("svi_age > 60 s", frame[frame["svi_age_s_t"] > 60]))
+    out = []
+    for name, g in groups:
+        if len(g) < 2:
+            out.append({"group": name, "fills": int(len(g)), "correlation": np.nan, "sign_agreement": np.nan,
+                        "median_gap": np.nan, "median_lag_a_s": np.nan})
+            continue
+        sign = np.mean(np.sign(g[b_col].to_numpy()) == np.sign(g[a_col].to_numpy()))
+        out.append({"group": name, "fills": int(len(g)),
+                    "correlation": float(np.corrcoef(g[b_col], g[a_col])[0, 1]),
+                    "sign_agreement": float(sign),
+                    "median_gap": float(np.median(g[a_col] - g[b_col])),
+                    "median_lag_a_s": float(np.median(g["lag_a_{}_s".format(horizon)]))})
+    return pd.DataFrame(out)
+
+
 def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, seed: int = SEED) -> dict:
     """All four hypotheses plus net edge, class means and robustness; writes CSV/JSON to ``out_dir``."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -356,6 +387,9 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
         sens.append({"half_spread_bp": bp, "cells": int(len(cells2)),
                      "share_positive": float(cells2["positive"].mean()) if len(cells2) else np.nan})
     pd.DataFrame(sens).to_csv(out_dir / "h4_sensitivity.csv", index=False)
+    paths = path_agreement(markouts, horizon=HORIZON)
+    paths.to_csv(out_dir / "path_agreement.csv", index=False)
+    summary["path_agreement"] = paths.to_dict("records")
     summary["missing_vol_unit"] = int((~np.isfinite(frame["y_vol"].to_numpy())).sum())
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=1, default=str))
     return summary
