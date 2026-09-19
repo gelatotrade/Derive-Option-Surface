@@ -3,6 +3,7 @@
 \usepackage[authoryear,longnamesfirst]{natbib}
 \usepackage{amsmath,amssymb,booktabs,array}
 \usepackage{graphicx}
+\usepackage{url}
 
 % Two narrow columns leave TeX little room; a small stretch avoids
 % overfull boxes of a few points without visibly loosening the type.
@@ -76,6 +77,7 @@ hypotheses were registered before any markout was computed; three are rejected.
 
 \begin{keywords}
 market microstructure \sep options \sep adverse selection \sep decentralised exchange \sep market making
+\sep pre-registration \sep JEL: G13, G14, G12, D47
 \end{keywords}
 
 \maketitle
@@ -397,6 +399,29 @@ Toxicity is concentrated but not identifiable from trade characteristics; the ve
 to the registered threshold that an unobserved hedging cost decides it; and an event study on a
 thirty-three month panel whose composition changes underneath it has no power. What remains is a
 measurement, a fact about identity, and a map that says where on this surface a maker is paid at all.
+
+
+\section*{Data, code and pre-registration}
+Every input to this paper is public. The trade tape and reference data come from the venue's public API, the
+volatility surfaces from the events of the feed contract on Derive Chain. The code that builds the sample,
+computes the markouts, runs the inference and draws every figure is at
+\url{https://github.com/gelatotrade/Derive-Option-Surface}, together with a test suite that covers it. The
+four hypotheses, their rejection rules and the inference were committed in
+\texttt{docs/paper1/PRAEREGISTRIERUNG.md} on 17 September 2026 at 15:47 UTC+2, in commit
+\texttt{3fd9caa}, before any markout had been computed; two dated addenda resolved definitional questions
+that arose while the sample was being built and are in the history of the same file. A reader who wants to
+check the order of events can read that history rather than take this paragraph on trust.
+
+\section*{Competing interest}
+I am building a market-making bot for the venue studied here and have been in contact with its team about
+obtaining order-level data for a follow-up paper. No data, funding or review was received from the venue
+for this paper, and every number in it comes from public sources. Readers should weigh the practitioner
+conclusions in Section~\ref{sec:maker} in that light.
+
+\section*{Use of generative tools}
+Large language models were used for code, for drafting and for checking the bibliography against publisher
+records. All results were produced by the code in the repository, and every reference was verified against
+the publisher, RePEc or the DOI. The author is responsible for the content.
 
 \bibliographystyle{cas-model2-names}
 \bibliography{refs}
