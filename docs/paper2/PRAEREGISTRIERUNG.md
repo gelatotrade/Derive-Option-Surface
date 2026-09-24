@@ -105,3 +105,15 @@ Zeitstempel. Änderungen danach nur als datierter Nachtrag am Ende, nie durch Ü
    bzw. als HMAC mit geheimem Salt. Ein unsalzter SHA-256 kleiner Kontonummern ist durch Durchprobieren umkehrbar.
 5. **Feststellung ohne Änderung:** Von den zehn dominanten Maker-Subaccounts werden vier unter PM2 geführt; die
    H2-Population besteht aus deren Fills im PM2-Fenster.
+
+## Nachtrag 2 (25.09.2026, vor der ersten Inferenz)
+
+1. **Einheit von Gebühr und Rabatt:** `trade_fee` und `expected_rebate` der Maker-Zeile sind Summen je Fill, nicht
+   je Kontrakt (die Taker-Gebühr steigt mit der Menge: Median 0,89 USDC bei ≤ 0,2 Kontrakten, 18,5 bei 1, 49,1 bei
+   5 Kontrakten; BTC-Stichprobe). Der Netto-Edge je Kontrakt ist deshalb
+   NE_i = MO_30min,i − (fee_maker,i − rebate_maker,i) / a_i − Hedge_i, und NE_i·a_i ist der Edge des Fills in USDC.
+   So ist die präregistrierte Definition („in USDC je Kontrakt“) gemeint. Der Code von Paper 1
+   (`inference_p1.analysis_frame`) zieht die Summen ungeteilt vom Markout je Kontrakt ab; über alle 603 940 Fills
+   ist die mittlere Gebühr dort 1,56 statt 1,09 USDC je Kontrakt und der mittlere Rabatt 0,59 statt 0,77. Paper 2
+   verwendet die Form je Kontrakt; die Form aus Paper 1 wird als Sensitivität berichtet. Der Befund geht als
+   Korrekturhinweis an Paper 1.
