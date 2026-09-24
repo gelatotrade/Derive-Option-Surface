@@ -1,0 +1,53 @@
+{
+ "source": "api.lyra.finance public/get_instrument, captured 2026-09-24T20:44:52+00:00",
+ "cases": [
+  {
+   "instrument_name": "BTC-20240329-60000-C",
+   "base_asset_address": "0xd0711b9eBE84b778483709CDe62BacFDBAE13623",
+   "base_asset_sub_id": "39614107026935944798483674368",
+   "option_details": {
+    "index": "BTC-USD",
+    "expiry": 1711699200,
+    "strike": "60000",
+    "option_type": "C",
+    "settlement_price": null
+   }
+  },
+  {
+   "instrument_name": "ETH-20250627-3000-P",
+   "base_asset_address": "0x4BB4C3CDc7562f08e9910A0C7D8bB7e108861eB4",
+   "base_asset_sub_id": "1288490188801751011200",
+   "option_details": {
+    "index": "ETH-USD",
+    "expiry": 1751011200,
+    "strike": "3000",
+    "option_type": "P",
+    "settlement_price": "2441.996901650551333333"
+   }
+  },
+  {
+   "instrument_name": "HYPE-20251121-38_75-P",
+   "base_asset_address": "0x7344Bf2aFFF9aFCd6d024865Fc0cA53bf03464D9",
+   "base_asset_sub_id": "16642998273763712000",
+   "option_details": {
+    "index": "HYPE-USD",
+    "expiry": 1763712000,
+    "strike": "38.75",
+    "option_type": "P",
+    "settlement_price": null
+   }
+  },
+  {
+   "instrument_name": "HYPE-20260925-50-C",
+   "base_asset_address": "0x7344Bf2aFFF9aFCd6d024865Fc0cA53bf03464D9",
+   "base_asset_sub_id": "39614081278607005278562298368",
+   "option_details": {
+    "index": "HYPE-USD",
+    "expiry": 1790323200,
+    "strike": "50",
+    "option_type": "C",
+    "settlement_price": null
+   }
+  }
+ ]
+}

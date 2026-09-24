@@ -1,0 +1,162 @@
+{
+ "source": "SM: data/p2/semantik_20260924/code-sm/srm_params_live.json (SRM market 2, block 45112955, 2026-09-24 10:58 UTC); legacy PM: data/p2/semantik_20260924/code-pm2/params_live.json (PMRM 0x45DA..., PMRMLib 0xfa7f..., lib1.*, 2026-09-24 10:54 UTC). Keys = v2-core struct and field names, values unscaled from 1e18 (dteFloor in seconds, volShock 0 None 1 Up 2 Down).",
+ "sm": {
+  "BTC": {
+   "OptionMarginParams": {
+    "maxSpotReq": 0.15,
+    "minSpotReq": 0.13,
+    "mmCallSpotReq": 0.09,
+    "mmPutSpotReq": 0.09,
+    "MMPutMtMReq": 0.09,
+    "unpairedIMScale": 1.2,
+    "unpairedMMScale": 1.1,
+    "mmOffsetScale": 1.05
+   },
+   "PerpMarginRequirements": {
+    "mmPerpReq": 0.05,
+    "imPerpReq": 0.066
+   },
+   "BaseMarginParams": {
+    "marginFactor": 0.75,
+    "IMScale": 0.93
+   },
+   "OracleContingencyParams": {
+    "perpThreshold": 0.55,
+    "optionThreshold": 0.55,
+    "baseThreshold": 0.55,
+    "OCFactor": 1.0
+   },
+   "DepegParams": {
+    "threshold": 0.99,
+    "depegFactor": 2.0
+   }
+  }
+ },
+ "pm": {
+  "BTC": {
+   "MarginParameters": {
+    "imFactor": 1.25,
+    "rateMultScale": 1.0,
+    "rateAddScale": 0.12,
+    "baseStaticDiscount": 0.95
+   },
+   "VolShockParameters": {
+    "volRangeUp": 0.5,
+    "volRangeDown": 0.275,
+    "shortTermPower": 0.3,
+    "longTermPower": 0.13,
+    "dteFloor": 86400.0
+   },
+   "BasisContingencyParameters": {
+    "scenarioSpotUp": 1.045,
+    "scenarioSpotDown": 0.955,
+    "basisContAddFactor": 0.5,
+    "basisContMultFactor": 2.0
+   },
+   "OtherContingencyParameters": {
+    "pegLossThreshold": 0.99,
+    "pegLossFactor": 4.0,
+    "confThreshold": 0.55,
+    "confMargin": 1.0,
+    "basePercent": 0.03,
+    "perpPercent": 0.03,
+    "optionPercent": 0.015
+   },
+   "scenarios": [
+    {
+     "spotShock": 1.18,
+     "volShock": 1
+    },
+    {
+     "spotShock": 1.135,
+     "volShock": 1
+    },
+    {
+     "spotShock": 1.135,
+     "volShock": 0
+    },
+    {
+     "spotShock": 1.135,
+     "volShock": 2
+    },
+    {
+     "spotShock": 1.09,
+     "volShock": 1
+    },
+    {
+     "spotShock": 1.09,
+     "volShock": 0
+    },
+    {
+     "spotShock": 1.09,
+     "volShock": 2
+    },
+    {
+     "spotShock": 1.045,
+     "volShock": 1
+    },
+    {
+     "spotShock": 1.045,
+     "volShock": 0
+    },
+    {
+     "spotShock": 1.045,
+     "volShock": 2
+    },
+    {
+     "spotShock": 1.0,
+     "volShock": 1
+    },
+    {
+     "spotShock": 1.0,
+     "volShock": 0
+    },
+    {
+     "spotShock": 1.0,
+     "volShock": 2
+    },
+    {
+     "spotShock": 0.955,
+     "volShock": 1
+    },
+    {
+     "spotShock": 0.955,
+     "volShock": 0
+    },
+    {
+     "spotShock": 0.955,
+     "volShock": 2
+    },
+    {
+     "spotShock": 0.91,
+     "volShock": 1
+    },
+    {
+     "spotShock": 0.91,
+     "volShock": 0
+    },
+    {
+     "spotShock": 0.91,
+     "volShock": 2
+    },
+    {
+     "spotShock": 0.865,
+     "volShock": 1
+    },
+    {
+     "spotShock": 0.865,
+     "volShock": 0
+    },
+    {
+     "spotShock": 0.865,
+     "volShock": 2
+    },
+    {
+     "spotShock": 0.82,
+     "volShock": 1
+    }
+   ],
+   "maxExpiries": 18
+  }
+ }
+}

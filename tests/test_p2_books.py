@@ -1,0 +1,720 @@
+from __future__ import annotations
+
+import calendar
+import datetime as dt
+import json
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
+from derive_surface import books
+from derive_surface.p2chain import Rpc, ts_at_block
+
+FIX = Path(__file__).parent / "fixtures" / "p2"
+
+
+def _snap_fixture() -> dict:
+    return json.loads((FIX / "books_chain_snapshot.json").read_text())
+
+
+def _registry(fx: dict) -> "books.AssetRegistry":
+    return books.AssetRegistry.from_dicts(fx["addresses_head_cur"], fx["all_currencies_result"], fx["managers"])
+
+
+def _day_ts(day: str) -> int:
+    return calendar.timegm(dt.date.fromisoformat(day).timetuple())
+
+
+# ---------------------------------------------------------------- sub id decoding (OptionEncoding.sol)
+
+def test_decode_option_subid_matches_api_instruments():
+    cases = json.loads((FIX / "books_subid_api.json").read_text())["cases"]
+    assert len(cases) >= 3
+    for c in cases:
+        od = c["option_details"]
+        expiry, strike, is_call = books.decode_option_subid(int(c["base_asset_sub_id"]))
+        assert expiry == od["expiry"]
+        assert strike == float(od["strike"])
+        assert is_call is (od["option_type"] == "C")
+        ccy, e2, k2, c2 = books.parse_instrument_name(c["instrument_name"])
+        assert (e2, k2, c2) == (expiry, strike, is_call)
+        assert books.instrument_name(ccy, expiry, strike, is_call) == c["instrument_name"]
+        assert books.encode_option_subid(expiry, strike, is_call) == int(c["base_asset_sub_id"])
+
+
+def test_decode_option_subid_bit_layout():
+    # [1 bit isCall][63 bits strike / 1e10 (8 decimals)][32 bits expiry]
+    sub = (1 << 95) | (8_543_210_000 << 32) | 1_790_323_200
+    assert books.decode_option_subid(sub) == (1_790_323_200, 85.4321, True)
+    assert books.decode_option_subid(7) == (7, 0.0, False)
+    with pytest.raises(ValueError):
+        books.decode_option_subid(1 << 96)  # SafeCast.toUint96 reverts
+
+
+# ---------------------------------------------------------------- ABI
+
+def test_encode_aggregate3_matches_reference_calldata():
+    fx = _snap_fixture()
+    calls = []
+    for acc in fx["encoder_reference"]["accounts"]:
+        calls += books.account_calls(acc)
+    assert books.encode_aggregate3(calls) == fx["encoder_reference"]["calldata"]
+
+
+def test_decode_aggregate3_and_balances_from_real_response():
+    fx = _snap_fixture()
+    res = books.decode_aggregate3(bytes.fromhex(fx["response_hex"][2:]))
+    assert len(res) == 2 and all(ok for ok, _ in res)
+    bals = books.decode_balances(res[0][1])
+    assert len(bals) == 38
+    assert books.decode_address(res[1][1]) == fx["manager"]
+    cash = [b for b in bals if b[0] == fx["cash_asset"]]
+    assert len(cash) == 1 and cash[0][1] == 0 and cash[0][2] < 0  # negative int256 balance decoded
+
+
+# ---------------------------------------------------------------- snapshot with a fake RPC
+
+class _FakeChain:
+    """Answers Multicall3.aggregate3 with a recorded response and manager.cashAsset() with the fixture address."""
+
+    def __init__(self, fx: dict, response_hex: str = None):
+        self.fx = fx
+        self.response_hex = response_hex or fx["response_hex"]
+        self.calls = []
+
+    def call(self, method, params):
+        self.calls.append((method, params))
+        tx, _blk = params
+        if tx["to"].lower() == books.MULTICALL3.lower():
+            return self.response_hex
+        if tx["data"] == "0x" + books.SEL_CASH_ASSET:
+            return "0x" + "00" * 12 + self.fx["cash_asset"][2:]
+        raise AssertionError(f"unexpected call {tx}")
+
+
+def test_snapshot_decodes_real_balances():
+    fx = _snap_fixture()
+    chain = _FakeChain(fx)
+    rpc = Rpc(client=chain, rate=1000.0)
+    rows = books.snapshot(rpc, 12345, fx["block"], registry=_registry(fx))
+    kinds = pd.Series([r["kind"] for r in rows]).value_counts().to_dict()
+    assert kinds == {"option": 33, "base": 4, "cash": 1}
+    assert {r["manager"] for r in rows} == {fx["manager"]}
+    opts = [r for r in rows if r["kind"] == "option"]
+    assert {r["ccy"] for r in opts} == {"BTC", "ETH"}
+    open_names = set(fx["open_tape_instruments"])
+    # every on-chain option leg decodes to an instrument this account traded before the block, except one leg
+    # (ETH-20260327-2800-C, -34.01) that reached the account without a tape fill (first tape row 2026-02-06)
+    missing = {books.instrument_name(r["ccy"], r["expiry"], r["strike"], r["is_call"]) for r in opts} - open_names
+    assert missing == {"ETH-20260327-2800-C"}
+    for r in opts:
+        assert r["amount"] == r["balance"] / 1e18
+    base = {r["ccy"] for r in rows if r["kind"] == "base"}
+    assert base == {"ETH", "USDT", "WEETH", "WSTETH"}
+    cash = [r for r in rows if r["kind"] == "cash"][0]
+    assert cash["ccy"] == "USDC" and cash["amount"] == pytest.approx(-23767.677972645975)
+    # one aggregate3 call and one cashAsset() call for the (new) manager
+    assert [c[0] for c in chain.calls] == ["eth_call", "eth_call"]
+
+
+def _aggregate3_response(entries) -> str:
+    """ABI-encode (bool,bytes)[] for tests."""
+    return "0x" + books._encode_bool_bytes_array(entries).hex()
+
+
+def test_snapshot_empty_and_missing_account():
+    fx = _snap_fixture()
+    empty_bal = books._encode_balances([])
+    mgr_word = bytes(12) + bytes.fromhex(fx["manager"][2:])
+    resp = _aggregate3_response([(True, empty_bal), (True, mgr_word)])
+    rpc = Rpc(client=_FakeChain(fx, resp), rate=1000.0)
+    rows = books.snapshot(rpc, 1, fx["block"], registry=_registry(fx))
+    assert len(rows) == 1 and rows[0]["kind"] == "none" and rows[0]["manager"] == fx["manager"]
+    resp0 = _aggregate3_response([(True, empty_bal), (True, bytes(32))])
+    rpc0 = Rpc(client=_FakeChain(fx, resp0), rate=1000.0)
+    assert books.snapshot(rpc0, 1, fx["block"], registry=_registry(fx)) == []  # not yet created
+
+
+def test_balances_roundtrip_negative():
+    rows = [("0x" + "11" * 20, 5, -3 * 10 ** 18), ("0x" + "22" * 20, (1 << 95) | 9, 10 ** 17)]
+    assert books.decode_balances(books._encode_balances(rows)) == rows
+
+
+# ---------------------------------------------------------------- top makers
+
+def test_top_maker_subaccounts_orders_by_fill_count_then_id():
+    m = pd.DataFrame({"maker_sub": [5, 5, 5, 9, 9, 9, 2, 2, 7]})
+    assert books.top_maker_subaccounts(n=3, markouts=m) == [5, 9, 2]
+    assert books.top_maker_subaccounts(n=10, markouts=m) == [5, 9, 2, 7]
+
+
+def test_first_block_of_day():
+    assert books.first_block_of_day(_day_ts("2024-01-11")) == 2_454_793
+    b = books.first_block_of_day(_day_ts("2025-12-01"))
+    assert ts_at_block(b) == _day_ts("2025-12-01") + 1 and ts_at_block(b - 1) < _day_ts("2025-12-01")
+
+
+# ---------------------------------------------------------------- book before a fill
+
+def _snap_rows(day: str, sub: int = 42) -> pd.DataFrame:
+    base = dict(subaccount=sub, day=pd.Timestamp(day), block=1, manager="0xm", asset="0xa", sub_id="0")
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600      # alive
+    e0 = _day_ts(day) + 8 * 3600                  # expires at 08:00 of the same day
+    rows = [
+        dict(base, kind="option", ccy="BTC", expiry=e1, strike=100000.0, is_call=True, amount=-2.0),
+        dict(base, kind="option", ccy="BTC", expiry=e1, strike=90000.0, is_call=False, amount=1.5),
+        dict(base, kind="option", ccy="ETH", expiry=e0, strike=3000.0, is_call=True, amount=4.0),
+        dict(base, kind="perp", ccy="BTC", expiry=None, strike=None, is_call=None, amount=-0.3),
+        dict(base, kind="cash", ccy="USDC", expiry=None, strike=None, is_call=None, amount=1e6),
+        dict(base, kind="base", ccy="ETH", expiry=None, strike=None, is_call=None, amount=3.0),
+    ]
+    return pd.DataFrame(rows)
+
+
+def _tape(day: str, sub: int = 42) -> pd.DataFrame:
+    d0 = _day_ts(day) * 1000
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    exp_name = dt.datetime.utcfromtimestamp(e1).strftime("%Y%m%d")
+    rows = [
+        # maker row: sells 0.5 more of the existing short call -> -2.5
+        dict(timestamp=d0 + 3_600_000, instrument_name=f"BTC-{exp_name}-100000-C", direction="sell",
+             liquidity_role="maker", trade_amount=0.5, subaccount_id=sub, currency="BTC", expiry=e1,
+             strike=100000.0, option_type="C"),
+        # taker row: buys a new ETH put
+        dict(timestamp=d0 + 7_200_000, instrument_name=f"ETH-{exp_name}-2500-P", direction="buy",
+             liquidity_role="taker", trade_amount=10.0, subaccount_id=sub, currency="ETH", expiry=e1,
+             strike=2500.0, option_type="P"),
+        # sells the whole long put leg -> leg vanishes (1.5 - 1.5 = 0)
+        dict(timestamp=d0 + 7_300_000, instrument_name=f"BTC-{exp_name}-90000-P", direction="sell",
+             liquidity_role="maker", trade_amount=1.5, subaccount_id=sub, currency="BTC", expiry=e1,
+             strike=90000.0, option_type="P"),
+        # after ts: ignored
+        dict(timestamp=d0 + 40_000_000, instrument_name=f"BTC-{exp_name}-100000-C", direction="buy",
+             liquidity_role="maker", trade_amount=9.0, subaccount_id=sub, currency="BTC", expiry=e1,
+             strike=100000.0, option_type="C"),
+        # other subaccount: ignored
+        dict(timestamp=d0 + 3_600_000, instrument_name=f"BTC-{exp_name}-100000-C", direction="buy",
+             liquidity_role="taker", trade_amount=0.5, subaccount_id=sub + 1, currency="BTC", expiry=e1,
+             strike=100000.0, option_type="C"),
+        # previous day: already in the day-start snapshot, ignored
+        dict(timestamp=d0 - 1_000, instrument_name=f"BTC-{exp_name}-100000-C", direction="sell",
+             liquidity_role="maker", trade_amount=7.0, subaccount_id=sub, currency="BTC", expiry=e1,
+             strike=100000.0, option_type="C"),
+    ]
+    return pd.DataFrame(rows)
+
+
+def test_book_at_adds_fills_before_ts_and_drops_expired():
+    day = "2025-07-01"
+    ts = _day_ts(day) * 1000 + 9 * 3_600_000  # 09:00 UTC, after the ETH expiry at 08:00
+    out = books.book_at(_snap_rows(day), _tape(day), ts)
+    assert set(out) == {"BTC", "ETH"}
+    btc = {leg.key: leg.amount for leg in out["BTC"].options}
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    assert btc == {(e1, 100000.0, True): -2.5}
+    assert out["BTC"].perp == -0.3 and out["BTC"].perp_entry is None and out["BTC"].cash == 0.0
+    eth = {leg.key: leg.amount for leg in out["ETH"].options}
+    assert eth == {(e1, 2500.0, False): 10.0}  # expired ETH call removed, taker fill added
+    assert out["ETH"].perp == 0.0
+
+
+def test_book_at_before_expiry_keeps_leg_and_excludes_fill_at_ts():
+    day = "2025-07-01"
+    ts = _day_ts(day) * 1000 + 3_600_000  # exactly the first fill's timestamp: strictly earlier fills only
+    out = books.book_at(_snap_rows(day), _tape(day), ts)
+    e0 = _day_ts(day) + 8 * 3600
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    assert {leg.key: leg.amount for leg in out["BTC"].options} == {(e1, 100000.0, True): -2.0, (e1, 90000.0, False): 1.5}
+    assert {leg.key: leg.amount for leg in out["ETH"].options} == {(e0, 3000.0, True): 4.0}
+
+
+def test_book_at_rejects_mixed_snapshots():
+    rows = pd.concat([_snap_rows("2025-07-01"), _snap_rows("2025-07-02")])
+    with pytest.raises(ValueError):
+        books.book_at(rows, _tape("2025-07-01"), _day_ts("2025-07-01") * 1000)
+
+
+# ---------------------------------------------------------------- resumable loader and compaction
+
+class _DayChain:
+    """Multicall answers for two accounts: account 1 always exists, account 2 only from the second day on."""
+
+    def __init__(self, fx: dict, second_day_block: int):
+        self.fx, self.second_day_block, self.calls = fx, second_day_block, []
+
+    def call(self, method, params):
+        self.calls.append((method, params))
+        tx, blk = params
+        blk = int(blk, 16)
+        if tx["to"].lower() == books.MULTICALL3.lower():
+            real = books.decode_aggregate3(bytes.fromhex(self.fx["response_hex"][2:]))
+            mgr = bytes(12) + bytes.fromhex(self.fx["manager"][2:])
+            acc2 = [(True, books._encode_balances([])), (True, mgr if blk >= self.second_day_block else bytes(32))]
+            return _aggregate3_response(list(real) + acc2)
+        if tx["data"] == "0x" + books.SEL_CASH_ASSET:
+            return "0x" + "00" * 12 + self.fx["cash_asset"][2:]
+        raise AssertionError(tx)
+
+
+def test_load_is_resumable_and_compacts(tmp_path):
+    fx = _snap_fixture()
+    days = ["2025-12-01", "2025-12-02", "2025-12-03"]
+    second = books.first_block_of_day(_day_ts("2025-12-02"))
+    chain = _DayChain(fx, second)
+    rpc = Rpc(client=chain, rate=1000.0)
+    reg = _registry(fx)
+    st = books.load_snapshots(rpc, [1, 2], days[0], days[-1], out_dir=tmp_path, registry=reg, max_days=2)
+    assert st["done"] == 2 and st["remaining"] == 1
+    st = books.load_snapshots(rpc, [1, 2], days[0], days[-1], out_dir=tmp_path, registry=reg)
+    assert st["done"] == 1 and st["remaining"] == 0
+    n_mc = sum(1 for _, p in chain.calls if p[0]["to"].lower() == books.MULTICALL3.lower())
+    assert n_mc == 3  # one aggregate3 per day, none repeated
+    df = books.compact(tmp_path, registry=reg)
+    assert list(df.columns[:12]) == ["subaccount", "day", "block", "manager", "asset", "sub_id", "kind", "ccy",
+                                      "expiry", "strike", "is_call", "amount"]
+    assert (tmp_path / "snapshots.parquet").exists()
+    per = df.groupby(["subaccount", "day"]).size()
+    assert per.loc[(1, pd.Timestamp("2025-12-01"))] == 38
+    assert (2, pd.Timestamp("2025-12-01")) not in per.index  # account 2 not yet created
+    two = df[(df.subaccount == 2)]
+    assert list(two.kind) == ["none", "none"] and set(two.manager) == {fx["manager"]}
+    assert df.block.min() == books.first_block_of_day(_day_ts("2025-12-01"))
+    assert set(df.manager_label) == {reg.manager_label(fx["manager"])} and "unknown" not in set(df.manager_label)
+
+
+# ---------------------------------------------------------------- reconciliation day -> next day
+
+def test_reconcile_day_counts_matches_and_breaks():
+    day, nxt = "2025-07-01", "2025-07-02"
+    snap = _snap_rows(day)
+    tape = _tape(day)
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    base = dict(subaccount=42, day=pd.Timestamp(nxt), block=2, manager="0xm", asset="0xa", sub_id="0")
+    # expected next day: BTC call -2.0-0.5+9.0 = 6.5, BTC put 0, ETH put 10 (ETH call expired)
+    nxt_rows = pd.DataFrame([
+        dict(base, kind="option", ccy="BTC", expiry=e1, strike=100000.0, is_call=True, amount=6.5),
+        dict(base, kind="option", ccy="ETH", expiry=e1, strike=2500.0, is_call=False, amount=9.0),  # transfer: off by 1
+    ])
+    r = books.reconcile_day(snap, nxt_rows, tape)
+    assert r["n_legs"] == 2 and r["n_match"] == 1 and r["day_match"] is False
+    assert r["max_abs_diff"] == pytest.approx(1.0)
+
+
+class _GasCapChain:
+    """Rejects Multicall batches with more than one account (as an RPC gas-cap error would)."""
+
+    def __init__(self, fx: dict):
+        self.fx, self.batches = fx, []
+
+    def call(self, method, params):
+        tx, _ = params
+        if tx["to"].lower() == books.MULTICALL3.lower():
+            body = tx["data"][2 + 8:]  # strip 0x and selector: [offset][n calls][...]
+            n_accounts = int(body[64:128], 16) // 2
+            self.batches.append(n_accounts)
+            if n_accounts > 1:
+                from derive_surface.chainfeeds import RpcError
+                raise RpcError({"code": -32000, "message": "gas required exceeds allowance"})
+            return self.fx["response_hex"]
+        if tx["data"] == "0x" + books.SEL_CASH_ASSET:
+            return "0x" + "00" * 12 + self.fx["cash_asset"][2:]
+        raise AssertionError(tx)
+
+
+def test_fetch_raw_splits_batch_on_rpc_error():
+    fx = _snap_fixture()
+    chain = _GasCapChain(fx)
+    rpc = Rpc(client=chain, rate=1000.0)
+    out = books.snapshot_many(rpc, [1, 2, 3], fx["block"], registry=_registry(fx))
+    assert sorted(out) == [1, 2, 3] and all(len(v) == 38 for v in out.values())
+    assert chain.batches == [3, 1, 2, 1, 1]  # halves until every batch fits
+
+
+def test_book_at_creation_day_without_snapshot_needs_subaccount():
+    day = "2025-07-01"
+    ts = _day_ts(day) * 1000 + 9 * 3_600_000
+    empty = pd.DataFrame(columns=["subaccount", "day", "kind", "ccy", "expiry", "strike", "is_call", "amount"])
+    with pytest.raises(ValueError):
+        books.book_at(empty, _tape(day), ts)  # tape holds two subaccounts: ambiguous
+    out = books.book_at(empty, _tape(day), ts, subaccount=42)
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    assert {leg.key: leg.amount for leg in out["BTC"].options} == {(e1, 100000.0, True): -0.5, (e1, 90000.0, False): -1.5}
+    assert {leg.key: leg.amount for leg in out["ETH"].options} == {(e1, 2500.0, False): 10.0}
+
+
+# ---------------------------------------------------------------- fix round: which timestamp cuts the book
+
+def _rfq_tape(day: str, sub: int = 42) -> pd.DataFrame:
+    """RFQ fill X: the maker row (this account) is 4 s older than the taker row (other account) that markouts.ts
+    carries; fill Y of the same account lies between the two; Z shares X's millisecond (second RFQ leg)."""
+    d0 = _day_ts(day) * 1000
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    t_m = d0 + 5 * 3_600_000
+    common = dict(currency="BTC", expiry=e1, option_type="C")
+    rows = [
+        dict(trade_id="X", timestamp=t_m, direction="sell", liquidity_role="maker", trade_amount=0.01,
+             subaccount_id=sub, strike=145000.0, **common),
+        dict(trade_id="X", timestamp=t_m + 4_000, direction="buy", liquidity_role="taker", trade_amount=0.01,
+             subaccount_id=sub + 1, strike=145000.0, **common),
+        dict(trade_id="Y", timestamp=t_m + 2_000, direction="sell", liquidity_role="maker", trade_amount=3.0,
+             subaccount_id=sub, strike=100000.0, **common),
+        dict(trade_id="Z", timestamp=t_m, direction="buy", liquidity_role="maker", trade_amount=1.0,
+             subaccount_id=sub, strike=150000.0, **common),
+    ]
+    return pd.DataFrame(rows)
+
+
+def test_book_before_fill_excludes_own_rfq_fill_and_later_fills():
+    day = "2025-10-30"
+    snap, tape = _snap_rows(day), _rfq_tape(day)
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    t_m = int(tape.loc[(tape.trade_id == "X") & (tape.subaccount_id == 42), "timestamp"].iloc[0])
+    t_taker = t_m + 4_000  # markouts.ts of this fill
+    start = {(e1, 100000.0, True): -2.0, (e1, 90000.0, False): 1.5}
+    by_trade = books.book_before_fill(snap, tape, "X")
+    assert {leg.key: leg.amount for leg in by_trade["BTC"].options} == start  # neither X, Y nor Z (same ms)
+    by_maker_ts = books.book_at(snap, tape, t_m)
+    assert {leg.key: leg.amount for leg in by_maker_ts["BTC"].options} == start
+    # the pitfall: markouts.ts (taker row) puts X itself and Y into the book "before" the fill
+    wrong = {leg.key: leg.amount for leg in books.book_at(snap, tape, t_taker)["BTC"].options}
+    assert wrong[(e1, 145000.0, True)] == -0.01 and wrong[(e1, 100000.0, True)] == -5.0
+    # explicit exclusion of the fill's trade id keeps Y (a genuinely earlier fill in that window) but never X
+    excl = {leg.key: leg.amount for leg in books.book_at(snap, tape, t_taker, exclude_trade_ids=["X"])["BTC"].options}
+    assert (e1, 145000.0, True) not in excl and excl[(e1, 100000.0, True)] == -5.0
+    with pytest.raises(KeyError):
+        books.book_before_fill(snap, tape, "unknown-trade")
+
+
+def test_book_at_rejects_ts_outside_the_snapshot_day_and_seconds():
+    day = "2025-07-01"
+    snap = _snap_rows(day)
+    with pytest.raises(ValueError):
+        books.book_at(snap, _tape(day), _day_ts(day) * 1000 - 1)  # before the snapshot day: book from the future
+    with pytest.raises(ValueError):
+        books.book_at(snap, _tape(day), (_day_ts(day) + 86400) * 1000)  # next day needs the next snapshot
+    with pytest.raises(ValueError):
+        books.book_at(snap, _tape(day), _day_ts(day) + 3600)  # seconds instead of milliseconds
+    books.book_at(snap, _tape(day), (_day_ts(day) + 86400) * 1000 - 1)  # last millisecond of the day is fine
+
+
+def test_fill_day_is_the_utc_day_of_the_given_row():
+    ts_maker = _day_ts("2025-10-30") * 1000 + 86_400_000 - 100  # 23:59:59.900
+    assert books.fill_day(ts_maker) == pd.Timestamp("2025-10-30")
+    assert books.fill_day(ts_maker + 4_000) == pd.Timestamp("2025-10-31")
+
+
+def test_book_at_perp_only_account():
+    day = "2025-07-01"
+    snap = _snap_rows(day)
+    snap = snap[snap.kind.isin(["perp", "cash"])]
+    out = books.book_at(snap, None, _day_ts(day) * 1000 + 1)
+    assert list(out) == ["BTC"]
+    assert out["BTC"].options == [] and out["BTC"].perp == -0.3 and out["BTC"].perp_entry is None
+
+
+def test_registry_labels_and_unknown_assets():
+    fx = _snap_fixture()
+    reg = _registry(fx)
+    assert reg.classify("0x" + "ab" * 20) == ("other", None)
+    assert reg.manager_label(books.ZERO_ADDRESS) == "none" and reg.manager_label(None) == "none"
+    assert reg.manager_label("0x" + "cd" * 20) == "unknown"
+    assert reg.manager_label("0xC755DAe3fd295A687adf3e192387163f813F0598") == "PM2:ETH"
+    btc = fx["addresses_head_cur"]["BTC"]
+    assert reg.classify(btc["option"]) == ("option", "BTC") and reg.classify(btc["perp"]) == ("perp", "BTC")
+
+
+class _NetDownChain:
+    def __init__(self):
+        self.n = 0
+
+    def call(self, method, params):
+        self.n += 1
+        raise RuntimeError("eth_call: giving up after 8 attempts")
+
+
+def test_fetch_raw_does_not_split_on_network_errors():
+    fx = _snap_fixture()
+    chain = _NetDownChain()
+    with pytest.raises(RuntimeError):
+        books.snapshot_many(Rpc(client=chain, rate=1000.0), [1, 2, 3, 4], fx["block"], registry=_registry(fx))
+    assert chain.n == 1
+
+
+# ---------------------------------------------------------------- fix round: exact on-chain book (BalanceAdjusted)
+
+def _ev_fixture() -> dict:
+    return json.loads((FIX / "books_events_day.json").read_text())
+
+
+def _ev_registry() -> "books.AssetRegistry":
+    fx, ev = _snap_fixture(), _ev_fixture()
+    reg = _registry(fx)
+    reg.cash_by_manager[ev["day_start"]["manager"].lower()] = fx["cash_asset"].lower()
+    return reg
+
+
+def _ev_frames():
+    ev, reg = _ev_fixture(), _ev_registry()
+    acc = ev["placeholder_account"]
+    nxt = (pd.Timestamp(ev["day"]) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+    s0 = books.snapshot_frame(acc, ev["day"], ev["day_start"]["block"], ev["day_start"]["manager"],
+                              ev["day_start"]["balances"], reg)
+    s1 = books.snapshot_frame(acc, nxt, ev["next_day"]["block"], ev["next_day"]["manager"], ev["next_day"]["balances"], reg)
+    events = books.events_frame([books.decode_balance_adjusted(lg) for lg in ev["logs"]], day=ev["day"])
+    return ev, reg, s0, s1, events
+
+
+def _nonzero(d: dict) -> dict:
+    return {k: v for k, v in d.items() if v != 0}
+
+
+def test_decode_balance_adjusted_real_logs():
+    ev, reg = _ev_fixture(), _ev_registry()
+    rows = [books.decode_balance_adjusted(lg) for lg in ev["logs"]]
+    assert books.T_BALANCE_ADJUSTED == ev["logs"][0]["topics"][0]
+    r, lg = rows[0], ev["logs"][0]
+    key = int(lg["topics"][3], 16)
+    assert r["subaccount"] == 4242 and r["manager"] == ev["day_start"]["manager"].lower()
+    assert int(r["asset"], 16) == key >> 96 and r["sub_id"] == key & ((1 << 96) - 1)
+    assert (r["block"], r["tx_index"], r["log_index"]) == tuple(int(lg[k], 16) for k in
+                                                               ("blockNumber", "transactionIndex", "logIndex"))
+    assert r["tx_hash"] == lg["transactionHash"].lower() and r["trade_id"] > 0
+    assert all(x["pre"] + x["amount"] == x["post"] for x in rows)  # v2-core emits delta = post - pre
+    kinds = pd.Series([reg.classify(x["asset"])[0] for x in rows]).value_counts().to_dict()
+    assert kinds == {"option": 57, "cash": 52}
+    assert len({x["tx_hash"] for x in rows}) == 27
+
+
+def test_replay_day_start_plus_events_equals_next_day_start():
+    ev, _, s0, _, events = _ev_frames()
+    got = _nonzero(books.replay_balances(s0, events))
+    exp = {(a.lower(), int(s)): int(b) for a, s, b in ev["next_day"]["balances"]}
+    assert got == exp  # every asset incl. cash and the 08:00 settlement, to the wei
+
+
+def test_replay_before_and_through_fill_tx_match_eth_call():
+    ev, _, s0, _, events = _ev_frames()
+    tx = ev["fill_tape_row"]["tx_hash"]
+    before = {(a, s): b for a, s, b in books.decode_balances(bytes.fromhex(ev["balances_before_fill_hex"][2:]))}
+    after = {(a, s): b for a, s, b in books.decode_balances(bytes.fromhex(ev["balances_after_fill_hex"][2:]))}
+    assert _nonzero(books.replay_balances(s0, events, tx_hash=tx)) == before
+    assert _nonzero(books.replay_balances(s0, events, tx_hash=tx, include_tx=True)) == after
+    with pytest.raises(KeyError):
+        books.replay_balances(s0, events, tx_hash="0x" + "00" * 32)
+
+
+def test_replay_detects_missing_events_and_missing_snapshot():
+    ev, reg, s0, _, events = _ev_frames()
+    cash = _snap_fixture()["cash_asset"].lower()
+    gap = events.drop(index=events.index[events.asset == cash][0])
+    with pytest.raises(ValueError):
+        books.replay_balances(s0, gap)
+    with pytest.raises(ValueError):
+        books.replay_balances(s0.iloc[0:0], events)  # the account held these legs at 00:00: pre balance != 0
+
+
+def test_onchain_book_before_fill_vs_tape_book():
+    ev, reg, s0, _, events = _ev_frames()
+    row = ev["fill_tape_row"]
+    tx = row["tx_hash"]
+    on = books.onchain_book_before(s0, events, tx, registry=reg)
+    blk = int(events.loc[events.tx_hash == tx, "block"].min())
+    assert blk == ev["fill_block"]
+    exp_legs, exp_perp = {}, 0.0
+    for a, s, b in books.decode_balances(bytes.fromhex(ev["balances_before_fill_hex"][2:])):
+        kind, ccy = reg.classify(a)
+        if kind == "option" and ccy == "ETH":
+            e, k, c = books.decode_option_subid(s)
+            if e > ts_at_block(blk):
+                exp_legs[(e, k, c)] = round(b / 1e18, 10)
+        elif kind == "perp" and ccy == "ETH":
+            exp_perp += b / 1e18
+    assert set(on) == {"ETH"}
+    assert {leg.key: leg.amount for leg in on["ETH"].options} == exp_legs
+    assert on["ETH"].perp == exp_perp != 0.0 and on["ETH"].perp_entry is None and on["ETH"].cash == 0.0
+    # the tape-based book (day start + tape fills) misses 24 trade-module transfers of the same operator
+    tape = pd.DataFrame([dict(row, subaccount_id=4242)])
+    tb = books.book_before_fill(s0, tape, row["trade_id"], subaccount=4242)
+    cmp = books.compare_books(tb.get("ETH"), on.get("ETH"))
+    assert cmp["options_equal"] is False and cmp["perp_equal"] is True and cmp["n_diff"] > 0
+    tape_keys = {leg.key for leg in tb["ETH"].options}
+    moved = set()
+    for r in events[(events.tx_hash != tx) & (events.block < blk)].itertuples():
+        if reg.classify(r.asset)[0] == "option":
+            e, k, c = books.decode_option_subid(int(r.sub_id))
+            if e > ts_at_block(blk):
+                moved.add((e, k, c))
+    diff_keys = {k for k in tape_keys | set(exp_legs)
+                 if abs({leg.key: leg.amount for leg in tb["ETH"].options}.get(k, 0.0) - exp_legs.get(k, 0.0)) > 1e-9}
+    assert diff_keys and diff_keys <= moved and cmp["n_diff"] == len(diff_keys)
+
+
+def test_onchain_book_applies_perp_events_before_the_fill_tx():
+    fx = _snap_fixture()
+    reg = _registry(fx)
+    btc = fx["addresses_head_cur"]["BTC"]
+    perp, opt = btc["perp"].lower(), btc["option"].lower()
+    day = "2025-12-01"
+    b0 = books.first_block_of_day(_day_ts(day))
+    e1 = _day_ts(day) + 86400 * 7 + 8 * 3600
+    sid = books.encode_option_subid(e1, 90000.0, False)
+    snap = books.snapshot_frame(7, day, b0, fx["manager"], [[perp, "0", str(-3 * 10 ** 17)], [opt, str(sid), str(2 * 10 ** 18)]], reg)
+
+    def ev(block, tx, li, asset, sub, pre, amt):
+        return dict(subaccount=7, manager=fx["manager"].lower(), block=block, tx_index=0, log_index=li, tx_hash=tx,
+                    asset=asset, sub_id=sub, amount=amt, pre=pre, post=pre + amt, trade_id=block)
+
+    events = books.events_frame([
+        ev(b0 + 10, "0xa", 0, perp, 0, -3 * 10 ** 17, 10 ** 17),
+        ev(b0 + 20, "0xb", 1, opt, sid, 2 * 10 ** 18, -10 ** 18),
+        ev(b0 + 20, "0xb", 2, perp, 0, -2 * 10 ** 17, 5 * 10 ** 17),
+    ], day=day)
+    before = books.onchain_book_before(snap, events, "0xb", registry=reg)
+    assert before["BTC"].perp == pytest.approx(-0.2) and [lg.amount for lg in before["BTC"].options] == [2.0]
+    through = books.onchain_book_before(snap, events, "0xb", registry=reg, include_tx=True)
+    assert through["BTC"].perp == pytest.approx(0.3) and [lg.amount for lg in through["BTC"].options] == [1.0]
+
+
+class _LogChain:
+    """eth_getLogs over the fixture logs; more than ``limit`` results raise the node's result-limit error."""
+
+    def __init__(self, logs, limit=None):
+        self.logs, self.limit, self.ranges = logs, limit, []
+
+    def call(self, method, params):
+        assert method == "eth_getLogs"
+        flt = params[0]
+        assert flt["address"] == books.SUBACCOUNTS and flt["topics"][0] == books.T_BALANCE_ADJUSTED
+        acc = int(flt["topics"][1], 16)
+        lo, hi = int(flt["fromBlock"], 16), int(flt["toBlock"], 16)
+        self.ranges.append((lo, hi))
+        sel = [lg for lg in self.logs if lo <= int(lg["blockNumber"], 16) <= hi and int(lg["topics"][1], 16) == acc]
+        if self.limit is not None and len(sel) > self.limit:
+            from derive_surface.chainfeeds import RpcError
+            raise RpcError({"code": -32005, "message": "query returns more than 10000 results"})
+        return sel
+
+
+def test_fetch_balance_events_splits_on_result_limit():
+    ev = _ev_fixture()
+    b0, b1 = ev["day_start"]["block"], ev["next_day"]["block"]
+    chain = _LogChain(ev["logs"], limit=40)
+    rows = books.fetch_balance_events(Rpc(client=chain, rate=1000.0), 4242, b0 + 1, b1)
+    assert len(rows) == 109 and len(chain.ranges) > 1
+    assert [(r["block"], r["log_index"]) for r in rows] == sorted((r["block"], r["log_index"]) for r in rows)
+    chain2 = _NetDownChain()
+    with pytest.raises(RuntimeError):
+        books.fetch_balance_events(Rpc(client=chain2, rate=1000.0), 4242, b0 + 1, b1)
+    assert chain2.n == 1
+
+
+def test_load_events_resumable_compact_and_index(tmp_path):
+    ev, reg, s0, _, _ = _ev_frames()
+    chain = _LogChain(ev["logs"])
+    rpc = Rpc(client=chain, rate=1000.0)
+    st = books.load_events(rpc, [(4242, ev["day"])], out_dir=tmp_path)
+    assert st == {"done": 1, "remaining": 0, "total": 1}
+    assert chain.ranges == [(ev["day_start"]["block"] + 1, ev["next_day"]["block"])]
+    assert books.load_events(rpc, [(4242, ev["day"])], out_dir=tmp_path)["done"] == 0
+    df = books.compact_events(tmp_path, path=tmp_path / "events.parquet", registry=reg)
+    assert len(df) == 109 and set(df.day) == {pd.Timestamp(ev["day"])}
+    assert df.kind.value_counts().to_dict() == {"option": 57, "cash": 52}
+    assert (tmp_path / "events.parquet").exists()
+    idx = books.OnchainBooks(s0, df, registry=reg)
+    tx = ev["fill_tape_row"]["tx_hash"]
+    assert idx.locate(4242, tx) == pd.Timestamp(ev["day"])
+    got, ref = idx.before(4242, tx), books.onchain_book_before(s0, df, tx, registry=reg)
+    assert {leg.key: leg.amount for leg in got["ETH"].options} == {leg.key: leg.amount for leg in ref["ETH"].options}
+    with pytest.raises(KeyError):
+        idx.before(4242, "0x" + "11" * 32)
+
+
+def test_perp_drift_counts_day_to_day_changes():
+    rows = []
+    for day, amt in [("2025-07-01", -1.0), ("2025-07-02", -1.0), ("2025-07-03", -0.5), ("2025-07-05", -0.5),
+                     ("2025-07-06", None)]:
+        base = dict(subaccount=1, day=pd.Timestamp(day), block=1, manager="0xm", asset="0xp", sub_id="0",
+                    expiry=None, strike=None, is_call=None)
+        if amt is None:
+            rows.append(dict(base, kind="none", ccy=None, amount=0.0))
+        else:
+            rows.append(dict(base, kind="perp", ccy="ETH", amount=amt))
+    out = books.perp_drift(pd.DataFrame(rows))
+    r = out.set_index("subaccount").loc[1]
+    # pairs: 01->02 same, 02->03 changed, 03->05 not consecutive, 05->06 closed (-0.5 -> 0)
+    assert r["day_pairs"] == 3 and r["days_changed"] == 2
+    assert r["median_abs_change"] == pytest.approx(0.5)
+
+
+def test_onchain_before_many_equals_single_replays():
+    ev, reg, s0, _, events = _ev_frames()
+    idx = books.OnchainBooks(s0, events, registry=reg)
+    txs = list(dict.fromkeys(events.sort_values(["block", "log_index"]).tx_hash))
+    pick = [txs[0], txs[7], txs[-1]]  # first trade, the 08:00 settlement, the fill
+    many = idx.before_many(4242, pick)
+    for tx in pick:
+        one = books.onchain_book_before(s0, events, tx, registry=reg)
+        assert set(many[tx]) == set(one)
+        for c in one:
+            assert many[tx][c].options == one[c].options and many[tx][c].perp == one[c].perp
+    # before the 08:00 settlement the legs expiring at 08:00 are already cut (block time >= expiry)
+    settle_blk = int(events.loc[events.tx_hash == txs[7], "block"].min())
+    assert all(leg.expiry > ts_at_block(settle_blk) for leg in many[txs[7]]["ETH"].options)
+
+
+def test_event_days_for_fills_and_gap_filling():
+    d = _day_ts("2026-02-13") * 1000
+    maker = pd.DataFrame({"subaccount_id": [5, 5, 6], "timestamp": [d + 1, d + 86_399_000, d + 5],
+                          "tx_hash": ["0xA", "0xB", "0xC"], "liquidity_role": ["maker"] * 3})
+    assert books.event_days_for_fills(maker) == {(5, "2026-02-13"), (6, "2026-02-13")}
+    ev = pd.DataFrame({"subaccount": [5, 6], "tx_hash": ["0xa", "0xc"]})
+    loaded = {(5, "2026-02-13"), (6, "2026-02-13")}
+    # 0xB settled after midnight: look in the next day, then the day after; nothing more once both are loaded
+    assert books.missing_fill_days(maker, ev, loaded) == {(5, "2026-02-14")}
+    assert books.missing_fill_days(maker, ev, loaded | {(5, "2026-02-14")}) == {(5, "2026-02-15")}
+    assert books.missing_fill_days(maker, ev, loaded | {(5, "2026-02-14"), (5, "2026-02-15")}) == set()
+
+
+def test_compare_tape_vs_chain_on_real_day():
+    ev, reg, s0, _, events = _ev_frames()
+    row = ev["fill_tape_row"]
+    tape = pd.DataFrame([dict(row, subaccount_id=4242)])
+    fills = pd.DataFrame([{"maker_sub": 4242, "trade_id": row["trade_id"], "ts_maker": row["timestamp"],
+                           "ts": row["timestamp"], "currency": "ETH", "tx_hash": row["tx_hash"]},
+                          {"maker_sub": 4242, "trade_id": row["trade_id"], "ts_maker": row["timestamp"],
+                           "ts": row["timestamp"] + 4000, "currency": "ETH", "tx_hash": "0x" + "ee" * 32}])
+    df = books.compare_tape_vs_chain(s0, events, tape, fills, registry=reg)
+    assert list(df.chain_found) == [True, False]
+    r = df.iloc[0]
+    assert r.options_equal == False and r.perp_equal == True and r.n_diff > 0  # noqa: E712
+    assert r.chain_day_differs == False and df.rfq_lag_ms.tolist() == [0, 4000]  # noqa: E712
+
+
+def test_fetch_balance_events_window_hint_avoids_repeated_failures():
+    ev = _ev_fixture()
+    b0, b1 = ev["day_start"]["block"], ev["next_day"]["block"]
+    chain = _LogChain(ev["logs"], limit=40)
+    rpc = Rpc(client=chain, rate=1000.0)
+    rows, w = books.fetch_balance_events_windowed(rpc, 4242, b0 + 1, b1, grow_below=10)
+    assert len(rows) == 109 and w <= b1 - b0
+    n_first = len(chain.ranges)
+    assert n_first < 40  # the window grows again after sparse stretches
+    ok = [r for r in chain.ranges]
+    chain.ranges.clear()
+    small = books.fetch_balance_events_windowed(rpc, 4242, b0 + 1, b1, window=2_000, grow_below=10)[0]
+    assert small == rows and len(chain.ranges) <= n_first  # a working start window saves refused requests
+    assert min(r[0] for r in ok) == b0 + 1 and max(r[1] for r in ok) == b1
+
+
+def test_verify_event_days_against_next_snapshot():
+    ev, reg, s0, s1, events = _ev_frames()
+    snaps = pd.concat([s0, s1], ignore_index=True)
+    out = books.verify_event_days(snaps, events)
+    assert len(out) == 1
+    r = out.iloc[0]
+    assert r.chain_ok == True and r.exact == True and r.n_events == 109 and r.n_diff == 0  # noqa: E712
+    cash = _snap_fixture()["cash_asset"].lower()
+    gap = events.drop(index=events.index[events.asset == cash][0])
+    r2 = books.verify_event_days(snaps, gap).iloc[0]
+    assert r2.chain_ok == False and r2.exact == False  # noqa: E712
