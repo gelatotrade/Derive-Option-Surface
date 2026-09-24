@@ -88,3 +88,20 @@ Zeitstempel. Änderungen danach nur als datierter Nachtrag am Ende, nie durch Ü
   74 bp bei Maker-Kauf).
 - Nicht berechnet wurden: PM2- und Legacy-PM-Kapital je Fill, Zellwerte für H1, Grenzkosten, Netting-Werte echter
   Maker-Bücher und Dosen.
+
+## Nachtrag 1 (25.09.2026, nach dem Bau der Datenbasis, vor der ersten Kapitalzahl)
+
+1. **Buch vor einem Fill (H2):** Statt „Buch zu Tagesbeginn plus Fills des Tages aus dem Tape“ gilt der exakte
+   on-chain Bestand: Snapshot am ersten Block des UTC-Tags plus alle `BalanceAdjusted`-Ereignisse des Kontos bis vor
+   die Transaktion des Fills (Optionen und Perps). Grund: Das Options-Tape enthält weder Perp-Fills noch Transfers.
+   An 5 000 Fills der H2-Population traf das Tape-Buch den on-chain Bestand nur zu 62,2 % (Optionen 88,4 %, Perps
+   70,2 %; `data/p2/books/compare_books.json`), während Snapshot plus Ereignisse an 1 165 von 1 165 Konto-Tagen den
+   Folgetag exakt ergibt. Das Tape-Buch wird als Sensitivität berichtet. Der Fill wird über den Zeitstempel der
+   eigenen Zeile des Kontos und seine Transaktion gefunden (bei RFQ liegt die Maker-Zeile vor der Taker-Zeile).
+2. **Zins je Manager:** PM2 rechnet mit dem PM2-Zins-Feed, der Legacy-PM mit seinem eigenen Zins-Feed (seit dem
+   Deploy konstant 0, geprüft per `eth_getLogs`), SM ohne Diskont.
+3. **Feed-Alter:** gemessen als Zeitpunkt minus Signaturzeit des Feed-Werts (`feed_ts`), der Uhr der Verträge.
+4. **Pseudonyme:** Konten erscheinen in `results/` und im Papier als Rang-Labels (M1 bis M10 nach Maker-Fills)
+   bzw. als HMAC mit geheimem Salt. Ein unsalzter SHA-256 kleiner Kontonummern ist durch Durchprobieren umkehrbar.
+5. **Feststellung ohne Änderung:** Von den zehn dominanten Maker-Subaccounts werden vier unter PM2 geführt; die
+   H2-Population besteht aus deren Fills im PM2-Fenster.
