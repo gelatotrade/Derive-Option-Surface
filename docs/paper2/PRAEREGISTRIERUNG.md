@@ -133,3 +133,26 @@ Zeitstempel. Änderungen danach nur als datierter Nachtrag am Ende, nie durch Ü
 4. **H4-Fixeffekte:** α je (Zelle, Ereignis), γ je (UTC-Tag, Basiswert); Schätzung durch wechselseitiges
    Herausmitteln (within), Wild-Cluster-Bootstrap mit restringierten Residuen (β = 0), Rademacher-Gewichte je
    UTC-Tag, einseitiges p für β > 0.
+
+## Nachtrag 4 (25.09.2026, nach der Validierung, vor der ersten Teststatistik)
+
+Die Validierung gegen `eth_call` ist bestanden (`docs/paper2/VALIDIERUNG.md`: unter IM Median |rel| 8,7e−10,
+p95 1,4e−8 bei Einzelkontrakten; Bücher mit 2 bis 245 Beinen Median 2,2e−9). Offene Lesarten werden hier festgelegt,
+bevor eine Teststatistik berechnet wird:
+
+1. **H2-Grösse:** ΔK umfasst den ganzen Fill (q = Maker-Seite × Menge); die Teststatistik ist
+   ratio = (ΔK / Menge) / K_PM2,Einzel, also die Grenzkosten je Kontrakt dieses Fills. Die Variante „nächster
+   einzelner Kontrakt“ (ratio_unit), die MM-Variante und das Tape-Buch sind Sensitivitäten. Die Stichprobe wurde vor
+   dem Ausschluss K_Einzel ≤ 0 gezogen (1 Fill betroffen).
+2. **H3:** K_SM und K_PM2 werden auf denselben Beinen gerechnet (Basiswerte mit offenem PM2-Fenster). An 1 431 von
+   1 943 Maker-Tagen hält das Buch mehr als 63 Optionen, die ein SM-Konto auf v2 halten kann; K_SM ist dort
+   kontrafaktisch. Das wird im Papier genannt, die Teststatistik bleibt unverändert. Legacy-PM nur als Sensitivität
+   auf BTC- und ETH-Beinen.
+3. **H4-Ereignisse:** Änderungen nur an `CollateralParameters` oder `maxExpiries` gehen nicht in die Ereignisliste
+   ein; sie ändern das Kapital eines Einzelkontrakts nicht und fielen unter der 1-%-Regel ohnehin weg. Für den
+   Mindestabstand der Placebo-Termine zählen dagegen alle Parameteränderungen des Basiswerts (jede Zeile der
+   Zeitlinie), auch weggefallene. Fills mit K ≤ 0 vor oder nach dem Ereignis (10 von 57 151) gehen nicht in das
+   Dosismittel ein. Bei zusammengefassten Änderungen eines Tages ist e der Zeitpunkt der ersten Änderung, K_nach
+   gilt mit dem Stand nach der letzten.
+4. **H1:** Keine Ausschlüsse; die 20 Fills mit K_PM2 ≤ 0 (weit vom Mark bepreiste RFQ-Beine) bleiben in den
+   Summen.
