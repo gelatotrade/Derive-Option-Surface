@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from derive_surface import p2ids
 from derive_surface import p2params as pp
 
 FIX = Path(__file__).parent / "fixtures" / "p2"
@@ -315,26 +316,196 @@ def test_month_blocks():
 
 
 # --------------------------------------------------------------------------------------------
-# Account lib overrides (accounts only as hash in results/)
+# Account lib overrides (accounts only as p2ids label in results/)
 # --------------------------------------------------------------------------------------------
 
-def test_overrides_are_hashed_and_resolved_by_time():
+LAB = p2ids.Labeler([5, 7], bytes(range(32)))  # 5 -> M1, 7 -> M2, everything else X + HMAC
+
+
+def test_overrides_are_labelled_and_resolved_by_time():
     events = [
         {"event": "LibOverrideUpdated", "block": 1_000, "log_index": 0, "account": 92718, "lib": "0xAbC"},
         {"event": "LibOverrideUpdated", "block": 2_000, "log_index": 1, "account": 92718,
          "lib": "0x0000000000000000000000000000000000000000"},
         {"event": "LibOverrideUpdated", "block": 1_500, "log_index": 0, "account": 5, "lib": "0xdef"},
     ]
-    rows = pp.overrides_from_events(events)
-    h = hashlib.sha256(b"92718").hexdigest()[:10]
-    assert rows[0] == {"account": h, "lib": "0xabc", "from_block": 1_000, "from_ts": pp.ts_at_block(1_000)}
+    rows = pp.overrides_from_events(events, label=LAB.label)
+    assert rows[0] == {"account": LAB.label(92718), "lib": "0xabc", "from_block": 1_000,
+                       "from_ts": pp.ts_at_block(1_000)}
+    assert rows[0]["account"].startswith("X") and rows[1]["account"] == "M1"
+    assert hashlib.sha256(b"92718").hexdigest()[:10] not in json.dumps(rows)
     assert rows[-1]["lib"] is None and rows[-1]["from_block"] == 2_000
-    assert all(isinstance(r["account"], str) and len(r["account"]) == 10 for r in rows)
-    assert pp.account_lib(rows, 92718, pp.ts_at_block(999)) is None
-    assert pp.account_lib(rows, 92718, pp.ts_at_block(1_000)) == "0xabc"
-    assert pp.account_lib(rows, 92718, pp.ts_at_block(2_000)) is None
-    assert pp.account_lib(rows, 5, pp.ts_at_block(1_600)) == "0xdef"
-    assert pp.account_lib(rows, 6, pp.ts_at_block(1_600)) is None
+    assert pp.account_lib(rows, 92718, pp.ts_at_block(999), label=LAB.label) is None
+    assert pp.account_lib(rows, 92718, pp.ts_at_block(1_000), label=LAB.label) == "0xabc"
+    assert pp.account_lib(rows, 92718, pp.ts_at_block(2_000), label=LAB.label) is None
+    assert pp.account_lib(rows, 5, pp.ts_at_block(1_600), label=LAB.label) == "0xdef"
+    assert pp.account_lib(rows, 6, pp.ts_at_block(1_600), label=LAB.label) is None
+
+
+def test_overrides_default_to_the_p2ids_label(monkeypatch):
+    monkeypatch.setattr(p2ids, "label", LAB.label)
+    ev = [{"event": "LibOverrideUpdated", "block": 1_000, "log_index": 0, "account": 7, "lib": "0xabc"}]
+    rows = pp.overrides_from_events(ev)
+    assert rows[0]["account"] == "M2"
+    assert pp.account_lib(rows, 7, pp.ts_at_block(1_000)) == "0xabc"
+
+
+def _raw_overrides():
+    return [{"account": 92718, "lib": "0xAbC", "from_block": 1_000, "from_ts": pp.ts_at_block(1_000)},
+            {"account": 5, "lib": "0xdef", "from_block": 1_500, "from_ts": pp.ts_at_block(1_500)},
+            {"account": 92718, "lib": pp.ZERO_ADDRESS, "from_block": 2_000, "from_ts": pp.ts_at_block(2_000)}]
+
+
+def test_overrides_from_raw_match_overrides_from_events():
+    raw = _raw_overrides()
+    ev = [{"event": "LibOverrideUpdated", "block": r["from_block"], "log_index": 0, "account": r["account"],
+           "lib": r["lib"]} for r in raw]
+    assert pp.overrides_from_raw(raw, label=LAB.label) == pp.overrides_from_events(ev, label=LAB.label)
+
+
+def test_relabel_rewrites_hashed_overrides_without_rpc(tmp_path):
+    data, out = tmp_path / "data", tmp_path / "out"
+    data.mkdir()
+    out.mkdir()
+    raw = _raw_overrides()
+    (data / "BTC_pm2_overrides_raw.json").write_text(json.dumps(raw))
+    old = [{"account": hashlib.sha256(str(r["account"]).encode()).hexdigest()[:10],
+            "lib": None if r["lib"] == pp.ZERO_ADDRESS else r["lib"].lower(),
+            "from_block": r["from_block"], "from_ts": r["from_ts"]} for r in raw]
+    (out / "BTC_pm2_overrides.json").write_text(json.dumps(old))
+    res = pp.relabel_overrides(data_dir=data, out_dir=out, ccys=("BTC",), label=LAB.label)
+    new = json.loads((out / "BTC_pm2_overrides.json").read_text())
+    assert [r["account"] for r in new] == [LAB.label(92718), "M1", LAB.label(92718)]
+    assert [(r["lib"], r["from_block"], r["from_ts"]) for r in new] == [(r["lib"], r["from_block"], r["from_ts"])
+                                                                         for r in old]
+    assert res == {"BTC": 3}
+    # a file that does not describe the same events is not overwritten
+    (out / "BTC_pm2_overrides.json").write_text(json.dumps(old[:2]))
+    with pytest.raises(ValueError):
+        pp.relabel_overrides(data_dir=data, out_dir=out, ccys=("BTC",), label=LAB.label)
+    assert json.loads((out / "BTC_pm2_overrides.json").read_text()) == old[:2]
+    # an unsalted hash that does not belong to the raw account is refused as well
+    bad = [dict(r) for r in old]
+    bad[1]["account"] = hashlib.sha256(b"6").hexdigest()[:10]
+    (out / "BTC_pm2_overrides.json").write_text(json.dumps(bad))
+    with pytest.raises(ValueError):
+        pp.relabel_overrides(data_dir=data, out_dir=out, ccys=("BTC",), label=LAB.label)
+
+
+# --------------------------------------------------------------------------------------------
+# Loader: end block (--to-block) and log caches, offline with a fake RPC
+# --------------------------------------------------------------------------------------------
+
+class FakeRpc:
+    def __init__(self, head: int = 999, logs=()):
+        self.head, self.logs, self.calls = head, list(logs), []
+
+    def raw(self, method, params):
+        self.calls.append(method)
+        if method == "eth_blockNumber":
+            return hex(self.head)
+        if method == "eth_getLogs":
+            f = params[0]
+            lo, hi = int(f["fromBlock"], 16), int(f["toBlock"], 16)
+            addrs = {a.lower() for a in f["address"]}
+            topics = {t.lower() for t in f["topics"][0]}
+            return [L for L in self.logs if lo <= int(L["blockNumber"], 16) <= hi
+                    and L["address"].lower() in addrs and L["topics"][0].lower() in topics]
+        raise AssertionError(method)
+
+
+def _log(block: int, address: str = pp.SRM, event: str = "OptionMarginParamsSet") -> dict:
+    return {"blockNumber": hex(block), "address": address, "topics": [pp.TOPICS[event]], "data": "0x",
+            "logIndex": "0x0", "transactionHash": "0x" + f"{block:064x}"}
+
+
+def _meta(d: Path) -> dict:
+    return json.loads((d / "meta.json").read_text())
+
+
+def test_loader_to_block_overrides_the_stored_end_block(tmp_path):
+    (tmp_path / "meta.json").write_text(json.dumps({"to_block": 100}))
+    rpc = FakeRpc()
+    ld = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out", to_block=200)
+    assert ld.to_block == 200 and _meta(tmp_path)["to_block"] == 200
+    assert pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out").to_block == 200  # resumed run
+    assert rpc.calls == []
+
+
+def test_loader_without_meta_or_to_block_uses_the_chain_head(tmp_path):
+    rpc = FakeRpc(head=999)
+    assert pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out").to_block == 999
+    assert rpc.calls == ["eth_blockNumber"] and _meta(tmp_path)["to_block"] == 999
+
+
+def test_log_caches_follow_a_new_end_block(tmp_path):
+    topics = [pp.TOPICS["OptionMarginParamsSet"]]
+    logs = [_log(150), _log(250)]
+    rpc = FakeRpc(logs=logs)
+    # state after the first A2 run: plain list cache that covers blocks up to meta.to_block = 200
+    (tmp_path / "meta.json").write_text(json.dumps({"to_block": 200}))
+    (tmp_path / "logs_srm.json").write_text(json.dumps([logs[0]]))
+    ld = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out")
+    assert ld._logs_cached("srm", [pp.SRM], topics, 100) == [logs[0]] and rpc.calls == []
+    ld = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out", to_block=300)
+    got = ld._logs_cached("srm", [pp.SRM], topics, 100)
+    assert [int(L["blockNumber"], 16) for L in got] == [150, 250] and "eth_getLogs" in rpc.calls
+    n = len(rpc.calls)
+    again = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out")
+    assert again.to_block == 300 and again._logs_cached("srm", [pp.SRM], topics, 100) == got
+    assert len(rpc.calls) == n
+
+
+def test_interrupted_run_does_not_take_an_old_cache_for_the_new_end_block(tmp_path):
+    topics = [pp.TOPICS["OptionMarginParamsSet"]]
+    logs = [_log(150), _log(250)]
+    rpc = FakeRpc(logs=logs)
+    (tmp_path / "meta.json").write_text(json.dumps({"to_block": 200}))
+    (tmp_path / "logs_srm.json").write_text(json.dumps([logs[0]]))
+    pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out", to_block=300)  # stops before any download
+    ld = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out")  # next call without --to-block
+    assert ld.to_block == 300
+    assert [int(L["blockNumber"], 16) for L in ld._logs_cached("srm", [pp.SRM], topics, 100)] == [150, 250]
+
+
+def test_log_cache_is_refetched_when_the_filter_changes(tmp_path):
+    lib_a, lib_b = "0x" + "a" * 40, "0x" + "b" * 40
+    topics = [pp.TOPICS["MarginParamsUpdated"]]
+    logs = [_log(150, lib_a, "MarginParamsUpdated"), _log(160, lib_b, "MarginParamsUpdated")]
+    rpc = FakeRpc(logs=logs)
+    ld = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out", to_block=300)
+    assert ld._logs_cached("override_libs", [lib_a], topics, 100) == [logs[0]]
+    n = len(rpc.calls)
+    assert ld._logs_cached("override_libs", [lib_a], topics, 100) == [logs[0]] and len(rpc.calls) == n
+    assert ld._logs_cached("override_libs", [lib_a, lib_b], topics, 100) == logs and len(rpc.calls) > n
+
+
+def test_cli_load_passes_to_block_and_relabel_needs_no_rpc(monkeypatch, capsys):
+    seen = {}
+
+    class FakeLoader:
+        def __init__(self, rpc, to_block=None, deadline=None, **kw):
+            seen["to_block"] = to_block
+
+        def run(self):
+            return {"to_block": seen["to_block"]}
+
+    monkeypatch.setattr(pp, "Loader", FakeLoader)
+    monkeypatch.setattr(pp, "Rpc", lambda **kw: object())
+    assert pp.main(["load", "--to-block", "45500000", "--max-seconds", "5"]) == 0
+    assert seen["to_block"] == 45_500_000 and "DONE" in capsys.readouterr().out
+    monkeypatch.setattr(pp, "relabel_overrides", lambda: {"BTC": 15})
+    monkeypatch.setattr(pp, "Rpc", lambda **kw: pytest.fail("relabel must not open an RPC client"))
+    assert pp.main(["relabel"]) == 0
+    assert '"BTC": 15' in capsys.readouterr().out
+
+
+def test_lower_end_block_cuts_cached_logs(tmp_path):
+    topics = [pp.TOPICS["OptionMarginParamsSet"]]
+    rpc = FakeRpc(logs=[_log(150), _log(250)])
+    pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out", to_block=300)._logs_cached("srm", [pp.SRM], topics, 1)
+    ld = pp.Loader(rpc, data_dir=tmp_path, out_dir=tmp_path / "out", to_block=200)
+    assert [int(L["blockNumber"], 16) for L in ld._logs_cached("srm", [pp.SRM], topics, 1)] == [150]
 
 
 # --------------------------------------------------------------------------------------------
@@ -396,11 +567,12 @@ def test_pm2_params_for_account_uses_override_lib(tmp_path):
             "params": {"MarginParameters": {"mmFactor": 0.35}}}]
     pp.Timeline("BTC", "pm2", entries=std).save(root=tmp_path)
     pp.Timeline("BTC", "pm2", lib="0x4e8ea8afeb", entries=ovr).save(root=tmp_path)
-    rows = [{"account": pp.account_hash(7), "lib": "0x4e8ea8afeb", "from_block": 30, "from_ts": 300}]
+    rows = [{"account": LAB.label(7), "lib": "0x4e8ea8afeb", "from_block": 30, "from_ts": 300}]
     (tmp_path / "BTC_pm2_overrides.json").write_text(json.dumps(rows))
-    assert pp.pm2_params_for_account("BTC", 7, 250, root=tmp_path)["MarginParameters"]["mmFactor"] == 0.8
-    assert pp.pm2_params_for_account("BTC", 7, 300, root=tmp_path)["MarginParameters"]["mmFactor"] == 0.35
-    assert pp.pm2_params_for_account("BTC", 8, 300, root=tmp_path)["MarginParameters"]["mmFactor"] == 0.8
+    at = lambda acc, ts: pp.pm2_params_for_account("BTC", acc, ts, root=tmp_path, label=LAB.label)  # noqa: E731
+    assert at(7, 250)["MarginParameters"]["mmFactor"] == 0.8
+    assert at(7, 300)["MarginParameters"]["mmFactor"] == 0.35
+    assert at(8, 300)["MarginParameters"]["mmFactor"] == 0.8
 
 
 def _sc(grid, tail_damp):

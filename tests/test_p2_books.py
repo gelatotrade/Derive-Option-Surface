@@ -718,3 +718,351 @@ def test_verify_event_days_against_next_snapshot():
     gap = events.drop(index=events.index[events.asset == cash][0])
     r2 = books.verify_event_days(snaps, gap).iloc[0]
     assert r2.chain_ok == False and r2.exact == False  # noqa: E712
+
+
+# ================================================================ task B3: marginal capital, netting value, holding time
+
+import math  # noqa: E402
+
+import numpy as np  # noqa: E402
+
+from derive_surface import margin_pm, margin_pm2, margin_sm  # noqa: E402
+from derive_surface.markpath import mark_from_svi  # noqa: E402
+from derive_surface.p2params import Timeline  # noqa: E402
+from derive_surface.p2types import YEAR, Book, ExpiryState, MarketState, OptionLeg, capital_from_net  # noqa: E402
+
+B3_TS = _day_ts("2026-01-15") + 1  # first block of a day inside every PM2 window
+
+
+def _b3_state(ccy: str = "ETH", ts: int = B3_TS, spot: float = 3000.0, n_exp: int = 2, perp: float = None) -> MarketState:
+    exps = {}
+    for i in range(n_exp):
+        e = ts - 1 + 86400 * (7 + 14 * i) + 8 * 3600
+        tau = (e - ts) / YEAR
+        fwd = spot * (1.0 + 0.001 * (i + 1))
+        svi = (0.01 * tau / 0.05, 0.04 * math.sqrt(tau / 0.05) * 0.2, -0.25, 0.01, 0.12, tau)
+        exps[e] = ExpiryState(expiry=e, forward=fwd, svi=svi, rate=0.03, svi_fwd=fwd * 0.9995)
+    return MarketState(currency=ccy, ts=ts, spot=spot, expiries=exps, perp=perp if perp is not None else spot * 1.0002)
+
+
+def _b3_params(ccy: str, mgr: str, ts: int = B3_TS) -> dict:
+    return Timeline(ccy, mgr).at(ts)
+
+
+def _b3_book(state: MarketState, perp: float = -1.5) -> Book:
+    e1, e2 = sorted(state.expiries)
+    s = state.spot
+    return Book(options=[OptionLeg(e1, round(s * 1.1, -1), True, -3.0), OptionLeg(e1, round(s * 0.9, -1), False, 2.0),
+                         OptionLeg(e2, round(s, -1), True, -1.0), OptionLeg(e2, round(s * 1.2, -1), True, 4.0)],
+                perp=perp, perp_entry=None, cash=0.0)
+
+
+def test_leg_vols_and_mark_b_match_svi_and_paper1_markpath():
+    st = _b3_state()
+    book = _b3_book(st)
+    vols = books.leg_vols(st, book.options)
+    for leg in book.options:
+        assert vols[(leg.expiry, leg.strike)] == pytest.approx(st.expiries[leg.expiry].vol(leg.strike), rel=1e-14)
+    marks = books.mark_b(st, book.options)
+    rows = []
+    for leg in book.options:
+        a, b, rho, m, sig, ref = st.expiries[leg.expiry].svi
+        rows.append(dict(expiry=leg.expiry, strike=leg.strike, option_type="C" if leg.is_call else "P", ts=st.ts * 1000,
+                         svi_a=a, svi_b=b, svi_rho=rho, svi_m=m, svi_sigma=sig, svi_ref_tau=ref,
+                         svi_fwd=st.expiries[leg.expiry].svi_fwd))
+    exp = mark_from_svi(pd.DataFrame(rows)).to_numpy()
+    assert np.allclose(marks, exp, rtol=1e-13, atol=0)  # Paper 1 mark: Black-76 on SVI_fwd, D = 1
+
+
+def test_marginal_capital_equals_difference_of_book_capital():
+    st = _b3_state()
+    prm = _b3_params("ETH", "pm2")
+    book = _b3_book(st)
+    e1 = min(st.expiries)
+    k_new, q_new, p = round(st.spot * 1.05, -1), -2.5, 41.7
+    res = books.marginal_capital(book, st, prm, e1, k_new, True, q_new, p)
+    net_b = margin_pm2.net_margin(book, st, prm)[0]
+    after = Book(options=book.options + [OptionLeg(e1, k_new, True, q_new)], perp=book.perp)
+    net_a = margin_pm2.net_margin(after, st, prm)[0]
+    assert res["net_before"] == pytest.approx(net_b, rel=1e-12) and res["net_after"] == pytest.approx(net_a, rel=1e-12)
+    assert res["dK"] == pytest.approx(p * q_new + net_b - net_a, rel=1e-12)
+    # identical to K(after) - K(before) for any marks of the existing legs (they cancel)
+    marks = {leg.key: 10.0 + 3.0 * i for i, leg in enumerate(book.options)}
+    k_before = capital_from_net(book.premium(marks), net_b)
+    k_after = capital_from_net(book.premium(marks) + p * q_new, net_a)
+    assert res["dK"] == pytest.approx(k_after - k_before, rel=1e-12)
+    # MM and the book's own perp enter; cash is always zero
+    mm = books.marginal_capital(book, st, prm, e1, k_new, True, q_new, p, is_initial=False)
+    assert mm["dK"] != res["dK"]
+    rich = Book(options=book.options, perp=book.perp, cash=5e6)
+    assert books.marginal_capital(rich, st, prm, e1, k_new, True, q_new, p)["dK"] == pytest.approx(res["dK"], rel=1e-12)
+    # a precomputed net(before) is used as given
+    assert books.marginal_capital(book, st, prm, e1, k_new, True, q_new, p, net_before=net_b)["dK"] == \
+        pytest.approx(res["dK"], rel=1e-12)
+
+
+def test_marginal_capital_on_empty_book_is_the_single_contract_capital():
+    st = _b3_state()
+    prm = _b3_params("ETH", "pm2")
+    e = max(st.expiries)
+    es = st.expiries[e]
+    for k, call, q, p in [(3300.0, True, -1.0, 55.0), (2700.0, False, 1.0, 30.0), (3000.0, True, -4.0, 120.0)]:
+        res = books.marginal_capital(None, st, prm, e, k, call, q, p)
+        assert res["net_before"] == 0.0
+        arrays = dict(spot=st.spot, forward=es.forward, sigma=es.vol(k), tau=(e - st.ts) / YEAR, rate=es.rate,
+                      strike=k, is_call=call, amount=np.sign(q), vol_conf=1.0, fwd_conf=1.0, spot_conf=1.0)
+        net1 = margin_pm2.single({kk: np.atleast_1d(v) for kk, v in arrays.items()}, prm)[0][0]
+        k_single = p * np.sign(q) - net1  # per contract, as B2
+        assert res["dK"] / abs(q) == pytest.approx(k_single, rel=1e-9)
+
+
+def test_marginal_capital_nets_the_same_instrument():
+    st = _b3_state()
+    prm = _b3_params("ETH", "pm2")
+    book = _b3_book(st, perp=0.0)
+    leg = book.options[0]  # short 3 calls; buying 3 closes the leg
+    res = books.marginal_capital(book, st, prm, leg.expiry, leg.strike, leg.is_call, 3.0, 20.0)
+    rest = Book(options=book.options[1:])
+    assert res["net_after"] == pytest.approx(margin_pm2.net_margin(rest, st, prm)[0], rel=1e-12)
+
+
+def test_filter_pm2_window_keeps_only_open_windows():
+    bk = Book(options=[OptionLeg(1_800_000_000, 1.0, True, 1.0)])
+    books_in = {"BTC": bk, "ETH": bk, "HYPE": bk, "SOL": bk}
+    assert books.PM2_WINDOW_START == {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_819_200}
+    assert set(books.filter_pm2_window(books_in, _day_ts("2025-06-12") + 1)) == set()
+    assert set(books.filter_pm2_window(books_in, 1_749_769_200)) == {"BTC", "ETH"}
+    assert set(books.filter_pm2_window(books_in, _day_ts("2025-11-10") + 1)) == {"BTC", "ETH"}
+    assert set(books.filter_pm2_window(books_in, _day_ts("2025-11-11") + 1)) == {"BTC", "ETH", "HYPE"}
+    assert books.pm2_window_open("HYPE", 1_762_819_200) and not books.pm2_window_open("HYPE", 1_762_819_199)
+    assert not books.pm2_window_open("SOL", B3_TS)
+
+
+def _b3_day_inputs():
+    sb, se = _b3_state("BTC", spot=90000.0), _b3_state("ETH")
+    books_in = {"BTC": _b3_book(sb, perp=0.2), "ETH": _b3_book(se)}
+    states = {"BTC": sb, "ETH": se}
+    params = {m: {c: _b3_params(c, m) for c in ("BTC", "ETH")} for m in ("sm", "pm", "pm2")}
+    return books_in, states, params
+
+
+def test_maker_day_capital_per_currency_and_summed():
+    books_in, states, params = _b3_day_inputs()
+    out = books.maker_day_capital(books_in, states, params)
+    for ccy in ("BTC", "ETH"):
+        bk, st = books_in[ccy], states[ccy]
+        prem = float(np.dot(books.mark_b(st, bk.options), [leg.amount for leg in bk.options]))
+        assert out[f"premium_{ccy}"] == pytest.approx(prem, rel=1e-12)
+        exp = {"pm2": prem - margin_pm2.net_margin(bk, st, params["pm2"][ccy])[0],
+               "pm": prem - margin_pm.net_margin(bk, st, params["pm"][ccy])[0],
+               "sm": prem - margin_sm.net_margin(bk, st, params["sm"][ccy])[0]}
+        for mgr, v in exp.items():
+            assert out[f"K_{mgr}_{ccy}"] == pytest.approx(v, rel=1e-12)
+        assert out[f"K_pm2_mm_{ccy}"] == pytest.approx(prem - margin_pm2.net_margin(bk, st, params["pm2"][ccy], False)[0],
+                                                       rel=1e-12)
+    for col in ("K_sm", "K_pm", "K_pm2", "K_sm_mm", "K_pm_mm", "K_pm2_mm"):
+        assert out[col] == pytest.approx(out[col + "_BTC"] + out[col + "_ETH"], rel=1e-12)
+    # PM2 does not net across currencies: the sum differs from one joint book is impossible to form, but each
+    # currency is its own portfolio, so moving the ETH book does not change the BTC part
+    only_btc = books.maker_day_capital({"BTC": books_in["BTC"]}, states, params)
+    assert only_btc["K_pm2"] == pytest.approx(out["K_pm2_BTC"], rel=1e-12)
+    assert out["n_legs"] == 8 and out["gross_contracts"] == pytest.approx(20.0)
+    assert out["perp_gross"] == pytest.approx(1.7) and out["ccys"] == "BTC,ETH"
+    assert out["K_pm2"] >= out["K_pm2_mm"]  # IM binds more capital than MM for this short book
+
+
+def test_maker_day_capital_legacy_pm_nan_on_too_many_expiries_and_without_btc_eth():
+    books_in, states, params = _b3_day_inputs()
+    st = _b3_state("BTC", spot=90000.0, n_exp=int(params["pm"]["BTC"]["maxExpiries"]) + 1)
+    legs = [OptionLeg(e, 90000.0, True, -1.0) for e in sorted(st.expiries)]
+    out = books.maker_day_capital({"BTC": Book(options=legs), "ETH": books_in["ETH"]}, {"BTC": st, "ETH": states["ETH"]},
+                                  params)
+    assert math.isnan(out["K_pm_BTC"]) and math.isnan(out["K_pm"]) and math.isnan(out["K_pm_mm"])
+    assert not math.isnan(out["K_pm_ETH"]) and out["pm_too_many_expiries"] is True
+    assert math.isfinite(out["K_sm"]) and math.isfinite(out["K_pm2"])
+    hs = _b3_state("HYPE", spot=40.0)
+    hp = {"sm": {"HYPE": _b3_params("HYPE", "sm")}, "pm": {}, "pm2": {"HYPE": _b3_params("HYPE", "pm2")}}
+    out_h = books.maker_day_capital({"HYPE": _b3_book(hs, perp=0.0)}, {"HYPE": hs}, hp)
+    assert math.isnan(out_h["K_pm"]) and out_h["n_legs_pm"] == 0 and math.isfinite(out_h["K_pm2"])
+
+
+def test_maker_day_capital_nan_when_a_leg_has_no_vol():
+    books_in, states, params = _b3_day_inputs()
+    st = states["ETH"]
+    e1 = min(st.expiries)
+    exps = dict(st.expiries)
+    exps[e1] = ExpiryState(expiry=e1, forward=exps[e1].forward, svi=None)
+    bad = MarketState(currency="ETH", ts=st.ts, spot=st.spot, expiries=exps, perp=st.perp)
+    out = books.maker_day_capital({"ETH": books_in["ETH"]}, {"ETH": bad}, params)
+    assert out["status"] == "no_state" and math.isnan(out["K_pm2"]) and math.isnan(out["K_sm"])
+
+
+def _b3_markouts():
+    d = _day_ts("2025-12-01") * 1000
+    rows = []
+    for i, (sub, ccy, t) in enumerate([(1, "ETH", d + 1000), (1, "ETH", d + 500), (2, "ETH", d + 2000),
+                                       (3, "ETH", d + 3000), (1, "HYPE", d + 4000), (1, "ETH", d - 86_400_000 * 200),
+                                       (1, "ETH", d + 86_400_000), (9, "ETH", d + 5000)]):
+        rows.append(dict(trade_id=f"t{i}", ts=t + 10, ts_maker=t, currency=ccy, maker_sub=sub))
+    return pd.DataFrame(rows)
+
+
+def _b3_snaps():
+    rows = []
+    for sub, lab in [(1, "PM2:ETH"), (2, "SM"), (3, "PM:ETH"), (9, "PM2:ETH")]:
+        for day in ("2025-05-15", "2025-12-01"):
+            rows.append(dict(subaccount=sub, day=pd.Timestamp(day), manager_label=lab))
+    return pd.DataFrame(rows)
+
+
+def test_h2_population_filters_accounts_manager_and_window():
+    pop = books.h2_population(_b3_markouts(), _b3_snaps(), top=[1, 2, 3])
+    # t5: before the ETH PM2 window; t6: no day-start snapshot (not under PM2 at 00:00); t7: not a top account
+    assert pop["trade_id"].tolist() == ["t1", "t0", "t4"]  # sorted by (ts, trade_id)
+    assert (pop["day_manager"] == "PM2:ETH").all()
+
+
+def test_h2_sample_is_a_seeded_simple_random_sample():
+    pop = pd.DataFrame({"trade_id": [f"x{i:03d}" for i in range(50)], "ts": np.arange(50)})
+    s = books.h2_sample(pop, n=7, seed=20260924)
+    idx = np.sort(np.random.default_rng(20260924).choice(50, size=7, replace=False))
+    assert s["trade_id"].tolist() == pop["trade_id"].iloc[idx].tolist()
+    assert books.h2_sample(pop, n=7, seed=20260924)["trade_id"].tolist() == s["trade_id"].tolist()
+    assert len(books.h2_sample(pop, n=80)) == 50
+    assert books.H2_N == 20_000 and books.H2_SEED == 20260924
+
+
+# ---------------------------------------------------------------- FIFO holding time
+
+H = 3_600_000
+INST = ("ETH", 1_800_000_000, 3000.0, True)
+
+
+def _pieces(inv) -> list:
+    return [(p[0], p[1], p[2], round(p[3], 9), p[4]) for p in inv.pieces]
+
+
+def test_fifo_closes_oldest_lots_first_and_opens_the_remainder():
+    inv = books.FifoInventory()
+    assert inv.trade(INST, 0, 2.0, "A") == 2.0
+    assert inv.trade(INST, 1 * H, 1.0, "B") == 1.0
+    assert inv.trade(INST, 3 * H, -2.5, "C") == 0.0  # closes A fully and half of B
+    assert _pieces(inv) == [("A", 0, 3 * H, 2.0, "fill"), ("B", H, 3 * H, 0.5, "fill")]
+    assert inv.position(INST) == pytest.approx(0.5)
+    assert inv.trade(INST, 4 * H, -1.5, "D") == pytest.approx(1.0)  # closes the rest of B, opens -1 for D
+    assert _pieces(inv)[-1] == ("B", H, 4 * H, 0.5, "fill") and inv.position(INST) == pytest.approx(-1.0)
+
+
+def test_fifo_expiry_transfer_and_censoring():
+    inv = books.FifoInventory()
+    other = ("ETH", 1_900_000_000, 3000.0, False)
+    inv.trade(INST, 0, -2.0, "A")
+    inv.trade(other, 0, 1.0, "B")
+    inv.set_position(INST, 2 * H, -0.5)  # 1.5 moved away (transfer), closed FIFO
+    inv.set_position(other, 2 * H, 3.0)  # 2 appeared: new lot of unknown origin
+    assert _pieces(inv) == [("A", 0, 2 * H, 1.5, "transfer")]
+    inv.expire(INST[1] * 1000 + 5)  # INST expired: closed at its expiry, other still open
+    assert _pieces(inv)[-1] == ("A", 0, INST[1] * 1000, 0.5, "expiry")
+    inv.close_all(1_850_000_000_000)
+    assert ("B", 0, 1_850_000_000_000, 1.0, "censored") in _pieces(inv)
+    assert all(p[0] is not None for p in inv.pieces)  # lots without a maker fill are not recorded
+    assert inv.position(other) == 0.0
+
+
+def test_fifo_account_reconciles_to_day_start_snapshots():
+    day0, day1 = _day_ts("2025-07-01"), _day_ts("2025-07-02")
+    e = _day_ts("2025-07-10") + 8 * 3600
+    inst = ("ETH", e, 3000.0, True)
+    snaps = pd.DataFrame([
+        dict(subaccount=5, day=pd.Timestamp("2025-07-01"), kind="option", ccy="ETH", expiry=e, strike=3000.0,
+             is_call=True, amount=1.0),
+        dict(subaccount=5, day=pd.Timestamp("2025-07-02"), kind="option", ccy="ETH", expiry=e, strike=3000.0,
+             is_call=True, amount=0.0 + 2.0),  # tape says 1 - 2 + 0 = -1 ... +3 transferred in
+        dict(subaccount=5, day=pd.Timestamp("2025-07-02"), kind="option", ccy="SOL", expiry=e, strike=100.0,
+             is_call=True, amount=5.0),
+    ])
+    tape = pd.DataFrame([
+        dict(trade_id="m1", timestamp=day0 * 1000 + 2 * H, direction="sell", liquidity_role="maker", trade_amount=2.0,
+             subaccount_id=5, currency="ETH", expiry=e, strike=3000.0, option_type="C"),
+        dict(trade_id="t1", timestamp=day0 * 1000 + 5 * H, direction="buy", liquidity_role="taker", trade_amount=0.5,
+             subaccount_id=5, currency="ETH", expiry=e, strike=3000.0, option_type="C"),
+        dict(trade_id="m2", timestamp=day1 * 1000 + 3 * H, direction="sell", liquidity_role="maker", trade_amount=1.0,
+             subaccount_id=5, currency="ETH", expiry=e, strike=3000.0, option_type="C"),
+    ])
+    pieces, opened = books.fifo_account(tape, snaps, end_ms=_day_ts("2025-07-05") * 1000)
+    assert opened == {"m1": pytest.approx(1.0), "m2": pytest.approx(0.0)}
+    got = sorted((r.key, r.open_ms, r.close_ms, round(r.qty, 9), r.how) for r in pieces.itertuples())
+    s1 = (day1 + 1) * 1000
+    # day 1: snapshot 1 (legacy lot); m1 sells 2: closes legacy 1, opens -1 (m1); t1 buys 0.5: closes 0.5 of m1;
+    # day 2 snapshot +2 vs FIFO -0.5: +2.5 transfer closes m1's 0.5 and opens +2 unknown; m2 sells 1 against it
+    assert got == [("m1", day0 * 1000 + 2 * H, day0 * 1000 + 5 * H, 0.5, "fill"),
+                   ("m1", day0 * 1000 + 2 * H, s1, 0.5, "transfer")]
+    ht = books.fill_holding_times(pieces, opened)
+    r = ht.set_index("trade_id").loc["m1"]
+    assert r.q_open == pytest.approx(1.0)
+    assert r.ht_days == pytest.approx((0.5 * 3 * H + 0.5 * (s1 - day0 * 1000 - 2 * H)) / 1.0 / 86_400_000)
+    assert r.ht_days_excl_transfer == pytest.approx(3 * H / 86_400_000)
+    assert r.c_fill == pytest.approx(0.5) and r.c_transfer == pytest.approx(0.5) and r.c_censored == 0.0
+    assert "m2" not in set(ht["trade_id"])  # m2 opened nothing
+
+
+def test_weighted_median_and_holding_cells():
+    assert books.weighted_median([1.0, 2.0, 10.0], [1.0, 1.0, 5.0]) == 10.0
+    assert books.weighted_median([1.0, 2.0, 10.0], [3.0, 1.0, 1.0]) == 1.0
+    assert math.isnan(books.weighted_median([], []))
+    fills = pd.DataFrame(dict(trade_id=["a", "b", "c", "d"], currency="ETH", maker_side=[-1, -1, -1, 1],
+                              delta_bucket="10-25", tenor_bucket="7-30d",
+                              ts=[1_700_000_000_000, 1_760_000_000_000, 1_760_000_000_001, 1_760_000_000_002]))
+    ht = pd.DataFrame(dict(trade_id=["a", "b", "d"], q_open=[1.0, 3.0, 2.0], ht_days=[1.0, 5.0, 2.0],
+                           ht_days_excl_transfer=[1.0, np.nan, 2.0], c_fill=[1.0, 1.0, 0.0], c_expiry=[0.0, 0.0, 2.0],
+                           c_transfer=[0.0, 2.0, 0.0], c_censored=[0.0, 0.0, 0.0]))
+    pieces = pd.DataFrame(dict(key=["a", "b", "b", "d"], qty=[1.0, 1.0, 2.0, 2.0], days=[1.0, 2.0, 6.5, 2.0],
+                               how=["fill", "fill", "transfer", "expiry"]))
+    cells = books.holding_cells(fills, ht, pieces)
+    row = cells[(cells.window == "all") & (cells.side == "sell")].iloc[0]
+    assert row.n_fills == 3 and row.n_opening == 2 and row.median_days == pytest.approx(3.0)
+    assert row.median_days_w == pytest.approx(2.0)  # 1 + 1 + 2 contracts: lower weighted median
+    assert row.share_transfer == pytest.approx(2.0 / 4.0) and row.share_fill == pytest.approx(2.0 / 4.0)
+    pm2 = cells[(cells.window == "pm2") & (cells.side == "sell")].iloc[0]
+    assert pm2.n_fills == 2 and pm2.n_opening == 1  # fill a lies before the ETH PM2 window
+    assert set(cells.columns) >= {"window", "ccy", "side", "delta_bucket", "tenor_bucket", "n_fills", "n_opening",
+                                  "median_days", "median_days_w", "median_days_excl_transfer", "share_fill",
+                                  "share_expiry", "share_transfer", "share_censored"}
+
+
+def test_fill_marginal_combines_chain_tape_unit_mm_and_single():
+    st = _b3_state()
+    prm_acct = dict(_b3_params("ETH", "pm2"))
+    prm_std = _b3_params("ETH", "pm2")
+    chain = _b3_book(st)
+    tape = Book(options=chain.options[:2], perp=-1.0)
+    e = max(st.expiries)
+    k, q, p = 3150.0, -2.0, 60.0
+    r = books.fill_marginal(chain, tape, st, prm_acct, prm_std, e, k, True, q, p)
+    assert r["status"] == "ok" and r["tape_ok"] is True
+    assert r["dK"] == pytest.approx(books.marginal_capital(chain, st, prm_acct, e, k, True, q, p)["dK"], rel=1e-12)
+    assert r["dK_mm"] == pytest.approx(
+        books.marginal_capital(chain, st, prm_acct, e, k, True, q, p, is_initial=False)["dK"], rel=1e-12)
+    assert r["dK_unit"] == pytest.approx(books.marginal_capital(chain, st, prm_acct, e, k, True, -1.0, p)["dK"], rel=1e-12)
+    assert r["dK_tape"] == pytest.approx(books.marginal_capital(tape, st, prm_acct, e, k, True, q, p)["dK"], rel=1e-12)
+    assert r["K_single_book"] == pytest.approx(books.marginal_capital(None, st, prm_std, e, k, True, -1.0, p)["dK"],
+                                               rel=1e-12)
+    assert r["n_legs_before"] == 4 and r["gross_before"] == pytest.approx(10.0) and r["perp_before"] == -1.5
+    assert r["n_legs_tape"] == 2 and r["perp_tape"] == -1.0
+    # no position in this currency before the fill: dK is the single-contract capital times |q|
+    r0 = books.fill_marginal(None, None, st, prm_std, prm_std, e, k, True, q, p)
+    assert r0["dK"] == pytest.approx(abs(q) * r0["K_single_book"], rel=1e-12)
+    assert r0["tape_ok"] is False and math.isnan(r0["dK_tape"])
+    exps = dict(st.expiries)
+    exps[e] = ExpiryState(expiry=e, forward=exps[e].forward, svi=None)
+    bad = MarketState(currency="ETH", ts=st.ts, spot=st.spot, expiries=exps, perp=st.perp)
+    rb = books.fill_marginal(chain, tape, bad, prm_acct, prm_std, e, k, True, q, p)
+    assert rb["status"] == "no_state" and math.isnan(rb["dK"])
+
+
+def test_maker_day_list_uses_maker_rows_of_top_accounts_in_the_pm2_window():
+    d = _day_ts("2025-06-13") * 1000
+    m = pd.DataFrame(dict(maker_sub=[1, 1, 1, 2, 9, 1],
+                          ts_maker=[d + 5, d + 9, d - 3_600_000, d + 86_400_000 * 2, d + 5, _day_ts("2026-09-18") * 1000]))
+    out = books.maker_day_list(m, top=[1, 2])
+    assert list(zip(out["subaccount"], out["day"].dt.strftime("%Y-%m-%d"))) == [(1, "2025-06-13"), (2, "2025-06-15")]

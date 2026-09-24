@@ -198,7 +198,8 @@ Override-Libs (`PMRM_2_1` seit 03.02.2026, `LibOverrideUpdated`): je Basiswert g
 03.02.2026 zwischen 21:19 und 22:01 UTC. Ab dann gleichen sie an jedem Änderungszeitpunkt der Standard-Lib Feld für
 Feld bis auf `mmFactor`: BTC `0x4e8ea8af…46c8` und ETH `0x902e3867…45f9` 0,35 statt 0,8; HYPE `0xf4caea4e…aa17`
 0,45 statt 0,95, ab 24.05.2026 0,40 statt 0,9 und ab 20.08.2026 0,40 statt 0,8. Zugewiesen: BTC 15, ETH 16, HYPE 10 Konten, erste Zuweisung 10.02.2026 (ETH) bzw. 17.02.2026, letzte
-21.09.2026, keine Aufhebung. In `results/` stehen die Konten nur als `sha256(str(id))[:10]`; die Rohzuordnung liegt in
+21.09.2026, keine Aufhebung. In `results/` stehen die Konten nur als Label aus `derive_surface.p2ids` (M1 bis M10,
+sonst HMAC mit geheimem Salt); die Rohzuordnung liegt in
 `data/p2/params/{CCY}_pm2_overrides_raw.json`. Die Zeitlinie einer Override-Lib enthält Szenarien und `maxExpiries`
 des Managers, ist also direkt als Parametersatz verwendbar.
 
@@ -213,7 +214,7 @@ Schnittstellen:
   `.changes(keys=None) -> list[int]` (`from_ts` jeder Änderung nach dem ersten Eintrag, optional nur für bestimmte
   Strukturen), `.save(root=None)`, `Timeline.path(ccy, mgr, lib=None, root=None)`.
 - `p2params.load_overrides(ccy)`, `p2params.account_lib(overrides, account_id, ts) -> str | None` (nimmt die rohe
-  Konto-ID, hasht intern), `p2params.pm2_params_for_account(ccy, account_id, ts) -> dict` (Override-Lib falls
+  Konto-ID, bildet intern das Label), `p2params.pm2_params_for_account(ccy, account_id, ts) -> dict` (Override-Lib falls
   gesetzt, sonst Standard-Lib).
 - `p2params.manager_oi_share(oi_json) -> DataFrame`, `p2params.report_markdown()`.
 
@@ -391,7 +392,7 @@ Zuweisungen: 10 Ereignisse für 10 Konten an 8 Tagen (2026-02-17 bis 2026-09-21)
 
 Stand 24.09.2026. Tests `tests/test_p2_books.py` (16, offline; Fixtures `tests/fixtures/p2/books_chain_snapshot.json`
 mit einer echten Multicall-Antwort und `books_subid_api.json` mit vier Antworten von `public/get_instrument`).
-RPC-Log `data/p2/logs/A5.jsonl`. Subaccounts hier nur als `sha256(str(id))[:10]`, rohe IDs in
+RPC-Log `data/p2/logs/A5.jsonl`. Subaccounts hier nur als Rang-Label M1 bis M10 (`derive_surface.p2ids`), rohe IDs in
 `data/p2/books/top_makers.json`.
 
 **Dominante Maker-Subaccounts** (meiste Maker-Fills in `data/p1/derived/markouts.parquet`, 603 940 Fills). Kein Konto

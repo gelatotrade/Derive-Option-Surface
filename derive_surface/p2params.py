@@ -12,7 +12,8 @@ booleans, ``maxExpiries`` and the scenario ``volShock`` enum stay integers.
   2 Down, 3 Linear, 4 Abs, ``dampeningFactor``) and ``maxExpiries``. Entries carry the lib address in ``lib``.
   Accounts with a lib override (``LibOverrideUpdated``, PMRM_2_1) get their lib's own timeline
   ``{CCY}_pm2_lib_<addr8>.json`` (same schema, scenarios and maxExpiries from the manager); the account to lib map is
-  ``{CCY}_pm2_overrides.json`` with accounts only as ``sha256(str(id))[:10]``.
+  ``{CCY}_pm2_overrides.json`` with accounts only as ``p2ids.label`` (``M1`` .. ``M10`` for the dominant makers,
+  else salted HMAC); the raw ids stay in ``data/p2/params/{CCY}_pm2_overrides_raw.json``.
 * Legacy PM (``PMRM`` + ``PMRMLib``): ``VolShockParameters``, ``MarginParameters`` (getter
   ``getStaticDiscountParams``), ``BasisContingencyParameters``, ``OtherContingencyParameters``, ``scenarios``
   (``spotShock``, ``volShock`` 0 None, 1 Up, 2 Down) and ``maxExpiries``. The lib emits no events: its state is
@@ -23,7 +24,9 @@ booleans, ``maxExpiries`` and the scenario ``volShock`` enum stay integers.
 
 The values at an event block are read with a historical ``eth_call`` at that block (state after the block), bundled
 through Multicall3 where it exists (from block 1 935 198). Downloads are resumable: every snapshot is cached under
-``data/p2/params/``. Run ``python3 -m derive_surface.p2params load --max-seconds 520`` until it prints ``DONE``.
+``data/p2/params/``. Run ``python3 -m derive_surface p2 params load --max-seconds 520`` until it prints ``DONE``.
+The end block is fixed at the first run (``data/p2/params/meta.json``); a later run with ``--to-block N`` moves it
+(e.g. the final data run), refetches the event logs up to N and keeps every cached snapshot.
 """
 from __future__ import annotations
 
@@ -40,6 +43,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import pandas as pd
 
+from . import p2ids
 from .chainfeeds import RpcError
 from .p2chain import Rpc, block_at_ts, ts_at_block
 
@@ -686,23 +690,38 @@ def find_changes(state: Callable[[int], object], samples: Sequence[int]) -> List
 # Account lib overrides
 # =====================================================================================================================
 
-def account_hash(account_id: int) -> str:
-    return hashlib.sha256(str(int(account_id)).encode()).hexdigest()[:10]
+LabelFn = Callable[[int], str]
 
 
-def overrides_from_events(events: Iterable[dict]) -> List[dict]:
+def _label_fn(label: Optional[LabelFn]) -> LabelFn:
+    return label if label is not None else p2ids.label  # looked up at call time (salt and ranking of the repo)
+
+
+def _norm_lib(lib) -> Optional[str]:
+    lib = str(lib).lower() if lib else None
+    return None if lib is None or int(lib, 16) == 0 else lib
+
+
+def overrides_from_raw(raw: Iterable[dict], label: Optional[LabelFn] = None) -> List[dict]:
+    """Labelled override list for ``results/`` from the raw rows (``account`` = subaccount id, as in ``data/p2``).
+
+    Accounts appear only as ``p2ids.label`` (``M1`` .. ``M10`` or salted HMAC); ``lib`` is lower case, ``None`` for
+    the zero address (override removed, standard lib again).
+    """
+    lab = _label_fn(label)
+    return [{"account": lab(int(r["account"])), "lib": _norm_lib(r["lib"]), "from_block": int(r["from_block"]),
+             "from_ts": int(r["from_ts"])} for r in raw]
+
+
+def overrides_from_events(events: Iterable[dict], label: Optional[LabelFn] = None) -> List[dict]:
     rows = sorted((e for e in events if e["event"] == "LibOverrideUpdated"), key=lambda e: (e["block"], e["log_index"]))
-    out = []
-    for e in rows:
-        lib = e["lib"].lower()
-        out.append({"account": account_hash(e["account"]), "lib": None if int(lib, 16) == 0 else lib,
-                    "from_block": int(e["block"]), "from_ts": ts_at_block(e["block"])})
-    return out
+    return overrides_from_raw([{"account": e["account"], "lib": e["lib"], "from_block": e["block"],
+                                "from_ts": ts_at_block(e["block"])} for e in rows], label)
 
 
-def account_lib(overrides: Sequence[dict], account_id: int, ts: int) -> Optional[str]:
+def account_lib(overrides: Sequence[dict], account_id: int, ts: int, label: Optional[LabelFn] = None) -> Optional[str]:
     """Override lib of an account at ``ts`` (``None`` = standard lib of the manager)."""
-    h = account_hash(account_id)
+    h = _label_fn(label)(int(account_id))
     lib = None
     for r in overrides:
         if r["account"] == h and int(r["from_ts"]) <= int(ts):
@@ -715,10 +734,44 @@ def load_overrides(ccy: str, root: Optional[Path] = None) -> List[dict]:
     return json.loads((root / f"{ccy}_pm2_overrides.json").read_text())
 
 
-def pm2_params_for_account(ccy: str, account_id: int, ts: int, root: Optional[Path] = None) -> dict:
+def pm2_params_for_account(ccy: str, account_id: int, ts: int, root: Optional[Path] = None,
+                           label: Optional[LabelFn] = None) -> dict:
     """PM2 parameters that apply to ``account_id`` at ``ts``: its override lib if one is set, else the standard lib."""
-    lib = account_lib(load_overrides(ccy, root), account_id, ts)
+    lib = account_lib(load_overrides(ccy, root), account_id, ts, label)
     return Timeline(ccy, "pm2", lib=lib, root=root).at(ts)
+
+
+def _unsalted_sha10(account_id: int) -> str:
+    """Pseudonym of the first A2 run (reversible for small ids); only used to check files before relabelling."""
+    return hashlib.sha256(str(int(account_id)).encode()).hexdigest()[:10]
+
+
+def relabel_overrides(data_dir: Path = DATA_DIR, out_dir: Path = PARAMS_DIR, ccys: Sequence[str] = CCYS,
+                      label: Optional[LabelFn] = None) -> Dict[str, int]:
+    """Rewrite ``{CCY}_pm2_overrides.json`` from the raw rows in ``data_dir`` with ``p2ids`` labels, without RPC.
+
+    An existing file must describe the same events (same lib, block and time per row, account equal to the old
+    unsalted hash or already to the label); otherwise nothing is written and ``ValueError`` is raised.
+    """
+    lab = _label_fn(label)
+    new_by_ccy: Dict[str, List[dict]] = {}
+    for ccy in ccys:
+        raw = json.loads((Path(data_dir) / f"{ccy}_pm2_overrides_raw.json").read_text())
+        new = overrides_from_raw(raw, lab)
+        path = Path(out_dir) / f"{ccy}_pm2_overrides.json"
+        if path.exists():
+            old = json.loads(path.read_text())
+            if len(old) != len(new):
+                raise ValueError(f"{path}: {len(old)} rows, raw file has {len(new)}")
+            for i, (o, n, r) in enumerate(zip(old, new, raw)):
+                if (o["lib"], int(o["from_block"]), int(o["from_ts"])) != (n["lib"], n["from_block"], n["from_ts"]):
+                    raise ValueError(f"{path}: row {i} differs from the raw file")
+                if o["account"] not in (_unsalted_sha10(r["account"]), n["account"]):
+                    raise ValueError(f"{path}: row {i} belongs to another account than the raw file")
+        new_by_ccy[ccy] = new
+    for ccy, new in new_by_ccy.items():
+        _write_json(Path(out_dir) / f"{ccy}_pm2_overrides.json", new, one_line_items=True)
+    return {ccy: len(new) for ccy, new in new_by_ccy.items()}
 
 
 # =====================================================================================================================
@@ -751,26 +804,60 @@ class Loader:
 
     def __init__(self, rpc, data_dir: Path = DATA_DIR, out_dir: Path = PARAMS_DIR, to_block: Optional[int] = None,
                  deadline: Optional[float] = None, log=print):
+        """End block: ``to_block`` if given (and stored for later runs), else the stored one, else the chain head.
+
+        A new end block is written to ``meta.json`` only after every log cache records the range it covers, so an
+        interrupted run never mistakes an old cache for the new range.
+        """
         self.rpc, self.data_dir, self.out_dir, self.deadline, self.log = rpc, Path(data_dir), Path(out_dir), deadline, log
         self.data_dir.mkdir(parents=True, exist_ok=True)
         meta_path = self.data_dir / "meta.json"
         meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-        if "to_block" not in meta:
-            meta["to_block"] = int(to_block) if to_block else int(rpc.raw("eth_blockNumber", []), 16)
+        self._migrate_log_caches(meta.get("to_block"))
+        if to_block is not None:
+            new = int(to_block)
+        elif "to_block" in meta:
+            new = int(meta["to_block"])
+        else:
+            new = int(rpc.raw("eth_blockNumber", []), 16)
+        if meta.get("to_block") != new:
+            if "to_block" in meta:
+                meta.setdefault("previous_to_blocks", []).append(int(meta["to_block"]))
+                self.log(f"end block {meta['to_block']} -> {new}")
+            meta["to_block"] = new
             _write_json(meta_path, meta)
-        self.to_block = int(meta["to_block"])
+        self.to_block = new
         self.store = SnapshotStore(self.data_dir)
         self._events: Optional[List[dict]] = None
 
     # ---- events ------------------------------------------------------------------------------------------------------
+    def _migrate_log_caches(self, covered_to: Optional[int]) -> None:
+        """Log caches of the first A2 run are plain lists that cover ``[lo, meta.to_block]``; record that range."""
+        for path in sorted(self.data_dir.glob("logs_*.json")):
+            logs = json.loads(path.read_text())
+            if isinstance(logs, list):
+                _write_json(path, {"to_block": covered_to, "addresses": None, "topics": None, "from_block": None,
+                                   "logs": logs})
+
     def _logs_cached(self, name: str, addresses: List[str], topics: List[str], lo: int) -> List[dict]:
+        """Logs of one filter in ``[lo, self.to_block]``; refetched when the end block or the filter changes."""
         path = self.data_dir / f"logs_{name}.json"
-        if path.exists():
-            return json.loads(path.read_text())
+        want = {"addresses": sorted(a.lower() for a in addresses), "topics": sorted(t.lower() for t in topics),
+                "from_block": int(lo)}
+        cache = json.loads(path.read_text()) if path.exists() else None
+        if isinstance(cache, list):  # written before this loader existed and not migrated: range unknown
+            cache = None
+        if cache is not None:
+            same_filter = all(cache.get(k) is None or cache.get(k) == v for k, v in want.items())
+            covered = cache.get("to_block")
+            if same_filter and covered is not None and covered >= self.to_block:
+                addr, top = set(want["addresses"]), set(want["topics"])
+                return [L for L in cache["logs"] if lo <= int(L["blockNumber"], 16) <= self.to_block
+                        and L["address"].lower() in addr and L["topics"][0].lower() in top]
         self._check_deadline()
         logs = fetch_logs(self.rpc, addresses, topics, lo, self.to_block)
-        _write_json(path, logs)
-        self.log(f"logs {name}: {len(logs)}")
+        _write_json(path, {**want, "to_block": self.to_block, "logs": logs})
+        self.log(f"logs {name}: {len(logs)} up to block {self.to_block}")
         return logs
 
     def events(self) -> List[dict]:
@@ -1139,11 +1226,11 @@ def report_markdown(root: Path = PARAMS_DIR) -> str:
 
 
 # =====================================================================================================================
-# CLI: python3 -m derive_surface.p2params {load, oi-share, report}
+# CLI: python3 -m derive_surface p2 params {load, oi-share, report, relabel}
 # =====================================================================================================================
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    ap = argparse.ArgumentParser(prog="python3 -m derive_surface.p2params")
+    ap = argparse.ArgumentParser(prog="python3 -m derive_surface p2 params")
     sub = ap.add_subparsers(dest="cmd", required=True)
     ld = sub.add_parser("load", help="download/refresh all parameter timelines (resumable)")
     ld.add_argument("--to-block", type=int, default=None)
@@ -1151,7 +1238,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ld.add_argument("--rate", type=float, default=2.0)
     sub.add_parser("oi-share", help="write results/p2/manager_oi_share.csv from oi_legacy.json")
     sub.add_parser("report", help="print the markdown table of parameter changes")
+    sub.add_parser("relabel", help="rewrite {CCY}_pm2_overrides.json with p2ids labels from the raw files (no RPC)")
     args = ap.parse_args(argv)
+    if args.cmd == "relabel":
+        print(json.dumps(relabel_overrides()))
+        return 0
     if args.cmd == "oi-share":
         df = manager_oi_share(json.loads(OI_LEGACY.read_text()))
         OI_SHARE_CSV.parent.mkdir(parents=True, exist_ok=True)

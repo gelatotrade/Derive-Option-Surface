@@ -23,10 +23,11 @@ import argparse
 import calendar
 import datetime as dt
 import hashlib
+import heapq
 import json
 import os
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -1073,6 +1074,864 @@ def missing_fill_days(rows: pd.DataFrame, events: pd.DataFrame, loaded: set, max
     return out
 
 
+# ================================================================ Part 2 (task B3): marginal capital, netting value, holding time
+#
+# Preregistration (docs/paper2/PRAEREGISTRIERUNG.md incl. Nachtrag 1):
+# * H2 population: maker fills of the ten dominant subaccounts in the PM2 window of the fill's currency whose account is
+#   under PM2 at the start of the UTC day; a seeded simple random sample of 20 000 (numpy default_rng(20260924)).
+# * book before a fill = day-start snapshot + BalanceAdjusted events up to the fill's transaction (Nachtrag 1);
+#   dK = K(after) - K(before) = p q_new + net(before) - net(after) at zero cash under PM2 with the account's lib.
+# * netting value of a maker day: K of the day-start book (marks M_b of Paper 1) under SM, legacy PM (BTC/ETH legs only)
+#   and PM2, each currency its own portfolio under PM2 and the legacy PM; only currencies whose PM2 window is open.
+# * holding time (sensitivity): FIFO per subaccount and instrument over the tape fills, reconciled to the day-start
+#   snapshots (transfers), median per Paper-1 cell on the maker side.
+
+PM2_WINDOW_START = {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_819_200}  # 12.06.2025 23:00, 11.11.2025
+LEGACY_PM_CCYS = ("BTC", "ETH")
+H2_N = 20_000
+H2_SEED = 20260924
+PILOT_END_MS = 1_789_646_400_000  # 17.09.2026 12:00 UTC (pilot cut of Paper 1)
+DERIVED_DIR = Path("data/p2/derived")
+
+
+def pm2_window_open(ccy: str, ts: int) -> bool:
+    """True if the PM2 window of ``ccy`` is open at ``ts`` (Unix seconds)."""
+    start = PM2_WINDOW_START.get(str(ccy))
+    return start is not None and int(ts) >= start
+
+
+def filter_pm2_window(books_by_ccy: Dict[str, Book], ts: int) -> Dict[str, Book]:
+    """Only the books of currencies whose PM2 window is open at ``ts`` (seconds); other currencies drop out."""
+    return {c: b for c, b in books_by_ccy.items() if pm2_window_open(c, ts)}
+
+
+def _zero_cash(book: Optional[Book]) -> Book:
+    if book is None:
+        return Book()
+    return Book(options=list(book.options), perp=float(book.perp), perp_entry=None, cash=0.0)
+
+
+def add_leg(book: Optional[Book], expiry: int, strike: float, is_call: bool, q: float) -> Book:
+    """``book`` at zero cash plus one option leg (the engines net legs of the same instrument)."""
+    b = _zero_cash(book)
+    b.options.append(OptionLeg(int(expiry), float(strike), bool(is_call), float(q)))
+    return b
+
+
+def leg_vols(state, legs: Sequence[OptionLeg]) -> Dict[Tuple[int, float], float]:
+    """Vol-feed value at every (expiry, strike) of ``legs`` (``LyraVolFeed.getVol`` on the expiry's SVI curve,
+    vectorised); nan where the expiry has no state or no SVI curve."""
+    from .chainfeeds import svi_vol
+
+    by_e: Dict[int, List[float]] = defaultdict(list)
+    for leg in legs:
+        by_e[int(leg.expiry)].append(float(leg.strike))
+    out: Dict[Tuple[int, float], float] = {}
+    for e, ks in by_e.items():
+        es = state.expiries.get(e)
+        if es is None or es.svi is None:
+            out.update({(e, k): float("nan") for k in ks})
+            continue
+        a, b, rho, m, sig, ref = es.svi
+        f = es.svi_fwd if es.svi_fwd is not None else es.forward
+        with np.errstate(invalid="ignore", divide="ignore"):
+            v = svi_vol(np.asarray(ks, dtype=float), a, b, rho, m, sig, f, ref)
+        out.update({(e, k): float(x) for k, x in zip(ks, np.atleast_1d(v))})
+    return out
+
+
+def mark_b(state, legs: Sequence[OptionLeg], vols: Optional[Dict[Tuple[int, float], float]] = None) -> np.ndarray:
+    """Paper-1 mark M_b per leg: Black-76 on the last pushed SVI curve, forward ``SVI_fwd``, discount 1
+    (``markpath.mark_from_svi``); nan without a curve or at/after expiry."""
+    from . import pricing
+
+    if not len(legs):
+        return np.zeros(0)
+    vols = vols if vols is not None else leg_vols(state, legs)
+    F, K, T, V, kind = [], [], [], [], []
+    for leg in legs:
+        es = state.expiries.get(int(leg.expiry))
+        f = float("nan") if es is None or es.svi is None else (es.svi_fwd if es.svi_fwd is not None else es.forward)
+        F.append(f)
+        K.append(float(leg.strike))
+        T.append((float(leg.expiry) - float(state.ts)) / pricing.YEAR)
+        V.append(vols.get((int(leg.expiry), float(leg.strike)), float("nan")))
+        kind.append(1 if leg.is_call else -1)
+    F, K, T, V, kind = (np.asarray(x, dtype=float) for x in (F, K, T, V, kind))
+    with np.errstate(invalid="ignore"):
+        price = pricing.price(F, K, T, V, kind, 1.0)
+    return np.where((T > 0) & np.isfinite(V) & np.isfinite(F), price, np.nan)
+
+
+def marginal_capital(book: Optional[Book], state, params, expiry: int, strike: float, is_call: bool, q: float,
+                     price: float, *, is_initial: bool = True, vols: Optional[Dict[Tuple[int, float], float]] = None,
+                     net_fn=None, net_before: Optional[float] = None) -> dict:
+    """Marginal capital of adding ``q`` contracts of (expiry, strike, is_call) at ``price`` to ``book``:
+    ``dK = K(after) - K(before) = price * q + net(before) - net(after)`` with zero cash (the marks of the existing legs
+    cancel). ``net_fn`` defaults to ``margin_pm2.net_margin``; perps enter with entry at the engine's perp price."""
+    from . import margin_pm2
+
+    fn = net_fn or margin_pm2.net_margin
+    before = _zero_cash(book)
+    after = add_leg(before, expiry, strike, is_call, q)
+    if vols is None:
+        vols = leg_vols(state, after.options)
+    if net_before is None:
+        empty = not before.options and before.perp == 0.0
+        net_before = 0.0 if empty else float(fn(before, state, params, is_initial, vols=vols)[0])
+    net_after = float(fn(after, state, params, is_initial, vols=vols)[0])
+    return {"dK": float(price) * float(q) + float(net_before) - net_after, "net_before": float(net_before),
+            "net_after": net_after}
+
+
+def _state_ok(state, legs: Sequence[OptionLeg], vols: Dict[Tuple[int, float], float], perp: float) -> bool:
+    if state is None or not np.isfinite(state.spot):
+        return False
+    if perp != 0.0 and not np.isfinite(state.perp_price):
+        return False
+    for leg in legs:
+        es = state.expiries.get(int(leg.expiry))
+        if es is None or not np.isfinite(es.forward):
+            return False
+        if not np.isfinite(vols.get((int(leg.expiry), float(leg.strike)), float("nan"))):
+            return False
+    return True
+
+
+def _engines():
+    from . import margin_pm, margin_pm2, margin_sm
+    return {"sm": margin_sm.net_margin, "pm": margin_pm.net_margin, "pm2": margin_pm2.net_margin}
+
+
+def maker_day_capital(books_by_ccy: Dict[str, Book], states: Dict[str, object], params: Dict[str, Dict[str, dict]], *,
+                      vols: Optional[Dict[str, Dict[Tuple[int, float], float]]] = None) -> dict:
+    """Capital K = sum M_b q - net(q; cash = 0) of one day-start book under SM, legacy PM and PM2, IM and MM.
+
+    ``books_by_ccy`` are the (window-filtered) books per currency, ``states[ccy]`` the market states at the day start,
+    ``params[mgr][ccy]`` the parameters (``mgr`` in sm, pm, pm2; a missing entry gives nan). Every currency is its own
+    portfolio (PM2 and legacy PM do not net across currencies; SM margins markets separately and adds them), so
+    ``K_mgr = sum over ccy of K_mgr_ccy``. The legacy PM only exists for BTC and ETH: its K covers these legs only (nan
+    without them) and is nan when a book holds more expiries than ``maxExpiries`` (PMRM reverts). Columns: ``K_sm,
+    K_pm, K_pm2`` and ``*_mm``, the same per currency (``K_pm2_ETH``), ``premium[_ccy]``, ``n_legs, n_legs_pm,
+    gross_contracts, perp_gross, n_expiries_max, ccys, status`` (``ok`` / ``no_state``), ``pm_too_many_expiries``,
+    ``pm2_over_max_expiries``.
+    """
+    from . import margin_pm
+    from .margin_sm import merged_options
+
+    engines = _engines()
+    ccys = sorted(c for c, b in books_by_ccy.items() if b.options or b.perp != 0.0)
+    out: dict = {"ccys": ",".join(ccys), "n_legs": 0, "n_legs_pm": 0, "gross_contracts": 0.0, "perp_gross": 0.0,
+                 "n_expiries_max": 0, "status": "ok", "pm_too_many_expiries": False, "pm2_over_max_expiries": False}
+    prem: Dict[str, float] = {}
+    vmaps: Dict[str, Dict[Tuple[int, float], float]] = {}
+    books0: Dict[str, Book] = {}
+    ok = True
+    for c in ccys:
+        bk = _zero_cash(books_by_ccy[c])
+        legs = merged_options(bk)
+        bk = Book(options=legs, perp=bk.perp, perp_entry=None, cash=0.0)
+        books0[c] = bk
+        n_exp = len({leg.expiry for leg in legs})
+        out["n_legs"] += len(legs)
+        out["n_legs_pm"] += len(legs) if c in LEGACY_PM_CCYS else 0
+        out["gross_contracts"] += float(sum(abs(leg.amount) for leg in legs))
+        out["perp_gross"] += abs(float(bk.perp))
+        out["n_expiries_max"] = max(out["n_expiries_max"], n_exp)
+        p2 = params.get("pm2", {}).get(c)
+        if p2 is not None and p2.get("maxExpiries") is not None and n_exp > int(p2["maxExpiries"]):
+            out["pm2_over_max_expiries"] = True
+        st = states.get(c)
+        if st is None:
+            ok = False
+            continue
+        vm = (vols or {}).get(c) or leg_vols(st, legs)
+        vmaps[c] = vm
+        marks = mark_b(st, legs, vm)
+        prem[c] = float(np.dot(marks, [leg.amount for leg in legs])) if legs else 0.0
+        out[f"premium_{c}"] = prem[c]
+        if not _state_ok(st, legs, vm, float(bk.perp)) or not np.isfinite(prem[c]):
+            ok = False
+    if not ok:
+        out["status"] = "no_state"
+    nan = float("nan")
+    out["premium"] = float(sum(prem.values())) if ok else nan
+    for mgr in ("sm", "pm", "pm2"):
+        for im in (True, False):
+            col = f"K_{mgr}" + ("" if im else "_mm")
+            vals = []
+            for c in ccys:
+                if mgr == "pm" and c not in LEGACY_PM_CCYS:
+                    continue
+                p = params.get(mgr, {}).get(c)
+                v = nan
+                if ok and p is not None:
+                    kw = {"strict_expiries": True} if mgr == "pm" else {}
+                    try:
+                        net = engines[mgr](books0[c], states[c], p, im, vols=vmaps[c], **kw)[0]
+                        v = prem[c] - float(net)
+                    except margin_pm.TooManyExpiries:
+                        out["pm_too_many_expiries"] = True
+                out[f"{col}_{c}"] = v
+                vals.append(v)
+            out[col] = float(sum(vals)) if vals else nan
+    return out
+
+
+# ---------------------------------------------------------------- H2 population and sample
+
+def _fill_days(ts_ms) -> pd.Series:
+    t = pd.Series(np.asarray(ts_ms, dtype="int64"))
+    return pd.to_datetime(t - t % DAY_MS, unit="ms")
+
+
+def h2_population(markouts: pd.DataFrame, snaps: pd.DataFrame, top: Sequence[int]) -> pd.DataFrame:
+    """Maker fills (``maker_sub``) of the dominant subaccounts ``top`` in the PM2 window of their currency (at the
+    fill time ``ts``) whose account is under a PM2 manager in the day-start snapshot of the UTC day of its own row
+    (``ts_maker``); sorted by (ts, trade_id). Adds ``day_manager`` (manager label at the day start)."""
+    m = markouts[markouts["maker_sub"].isin([int(x) for x in top])].copy()
+    start = m["currency"].map(PM2_WINDOW_START)
+    m = m[start.notna() & (m["ts"] // 1000 >= start.fillna(0))]
+    lab = snaps.groupby(["subaccount", "day"])["manager_label"].first()
+    key = pd.MultiIndex.from_arrays([m["maker_sub"].astype("int64").to_numpy(), _fill_days(m["ts_maker"]).to_numpy()])
+    m["day_manager"] = lab.reindex(key).to_numpy()
+    m = m[m["day_manager"].astype(str).str.startswith("PM2")]
+    return m.sort_values(["ts", "trade_id"], kind="mergesort").reset_index(drop=True)
+
+
+def h2_sample(pop: pd.DataFrame, n: int = H2_N, seed: int = H2_SEED) -> pd.DataFrame:
+    """Simple random sample of ``n`` rows without replacement (``np.random.default_rng(seed).choice``, rows kept in
+    the population order); the whole population when it has at most ``n`` rows."""
+    if len(pop) <= n:
+        return pop.reset_index(drop=True).copy()
+    idx = np.sort(np.random.default_rng(seed).choice(len(pop), size=n, replace=False))
+    return pop.iloc[idx].reset_index(drop=True)
+
+
+# ---------------------------------------------------------------- FIFO holding time
+
+class FifoInventory:
+    """FIFO lots per instrument ``(ccy, expiry, strike, is_call)``; closing quantities are recorded as pieces
+    ``(key, open_ms, close_ms, qty, how)`` for lots with a key (a maker fill), ``how`` in fill, transfer, expiry,
+    censored. Lots without a key (taker fills, positions of unknown origin) are tracked but not recorded."""
+
+    def __init__(self):
+        self.lots: Dict[LegKey, deque] = {}
+        self.pieces: List[Tuple[Optional[str], int, int, float, str]] = []
+        self._heap: List[Tuple[int, LegKey]] = []
+
+    def position(self, inst: LegKey) -> float:
+        return float(sum(lot[1] for lot in self.lots.get(inst, ())))
+
+    def _move(self, inst: LegKey, ts: int, q: float, key: Optional[str], how: str) -> float:
+        lots = self.lots.get(inst)
+        if lots is None:
+            lots = self.lots[inst] = deque()
+            heapq.heappush(self._heap, (int(inst[1]), inst))
+        rem = float(q)
+        while abs(rem) > AMOUNT_EPS and lots and (lots[0][1] > 0) != (rem > 0):
+            lot = lots[0]
+            c = min(abs(rem), abs(lot[1]))
+            if lot[2] is not None:
+                self.pieces.append((lot[2], lot[0], int(ts), c, how))
+            lot[1] -= c if lot[1] > 0 else -c
+            rem -= c if rem > 0 else -c
+            if abs(lot[1]) <= AMOUNT_EPS:
+                lots.popleft()
+        if abs(rem) > AMOUNT_EPS:
+            lots.append([int(ts), rem, key])
+            return abs(rem)
+        return 0.0
+
+    def trade(self, inst: LegKey, ts: int, q: float, key: Optional[str] = None) -> float:
+        """Apply a fill of ``q`` contracts (signed); returns the quantity that opened a new lot."""
+        return self._move(inst, ts, q, key, "fill")
+
+    def set_position(self, inst: LegKey, ts: int, target: float, how: str = "transfer") -> None:
+        """Move the position to ``target`` (reconciliation with a day-start snapshot): a reduction closes the oldest
+        lots with ``how``, an increase opens a lot of unknown origin."""
+        delta = float(target) - self.position(inst)
+        if abs(delta) > AMOUNT_EPS:
+            self._move(inst, ts, delta, None, how)
+
+    def expire(self, ts: int) -> None:
+        """Close every lot of instruments with ``expiry * 1000 <= ts`` at their expiry (settlement)."""
+        while self._heap and self._heap[0][0] * 1000 <= int(ts):
+            e, inst = heapq.heappop(self._heap)
+            for lot in self.lots.pop(inst, ()):
+                if lot[2] is not None:
+                    self.pieces.append((lot[2], lot[0], int(e) * 1000, abs(lot[1]), "expiry"))
+
+    def close_all(self, ts: int, how: str = "censored") -> None:
+        for inst, lots in self.lots.items():
+            for lot in lots:
+                if lot[2] is not None:
+                    self.pieces.append((lot[2], lot[0], int(ts), abs(lot[1]), how))
+        self.lots.clear()
+        self._heap.clear()
+
+
+PIECE_COLUMNS = ["key", "open_ms", "close_ms", "qty", "how"]
+
+
+def _inst_positions(rows: pd.DataFrame, ccys: Sequence[str]) -> Dict[LegKey, float]:
+    pos: Dict[LegKey, float] = defaultdict(float)
+    r = rows[(rows["kind"] == "option") & rows["ccy"].isin(list(ccys))]
+    for c, e, k, ic, a in zip(r["ccy"], r["expiry"], r["strike"], r["is_call"], r["amount"]):
+        pos[(str(c), int(e), round(float(k), 8), bool(ic))] += float(a)
+    return pos
+
+
+def fifo_account(tape: pd.DataFrame, snaps: Optional[pd.DataFrame], end_ms: int, start_ms: Optional[int] = None,
+                 ccys: Sequence[str] = SAMPLE_CCYS, reconcile: bool = True) -> Tuple[pd.DataFrame, Dict[str, float]]:
+    """FIFO over the tape fills of one subaccount (maker and taker rows, currencies ``ccys``) in time order, with the
+    option positions reset to every day-start snapshot (00:00:01 UTC) before that day's fills: differences are
+    transfers (trade module, liquidation) and close the oldest lots (``how = transfer``) or open lots of unknown
+    origin. Lots are closed by later fills, at expiry, by transfers, or censored at ``end_ms``. Maker rows open lots
+    keyed by ``trade_id``. Returns the pieces (:data:`PIECE_COLUMNS`) and the quantity each maker fill opened."""
+    start_ms = int(start_ms) if start_ms is not None else _day_ts(START_DAY) * 1000
+    events: List[Tuple[int, int, int, object]] = []
+    if reconcile and snaps is not None and len(snaps):
+        for i, (day, g) in enumerate(snaps.groupby("day", sort=True)):
+            events.append(((_day_ts(day) + 1) * 1000, 0, i, _inst_positions(g, ccys)))
+    t = tape[tape["currency"].isin(list(ccys)) & (tape["timestamp"] >= start_ms) & (tape["timestamp"] <= int(end_ms))]
+    t = t.sort_values(["timestamp", "trade_id"], kind="mergesort")
+    sign = np.where(t["direction"].astype(str).to_numpy() == "buy", 1.0, -1.0)
+    for j, (ts, tid, role, c, e, k, cp, a, sg) in enumerate(zip(
+            t["timestamp"], t["trade_id"], t["liquidity_role"], t["currency"], t["expiry"], t["strike"],
+            t["option_type"], t["trade_amount"], sign)):
+        inst = (str(c), int(e), round(float(k), 8), str(cp) == "C")
+        events.append((int(ts), 1, j, (inst, float(a) * float(sg), str(tid) if role == "maker" else None)))
+    events.sort(key=lambda x: (x[0], x[1], x[2]))
+    inv = FifoInventory()
+    opened: Dict[str, float] = {}
+    for ts, kind, _, payload in events:
+        if ts > int(end_ms):
+            break
+        inv.expire(ts)
+        if kind == 0:
+            pos = payload
+            for inst in set(pos) | set(inv.lots):
+                if inst[1] * 1000 > ts:
+                    inv.set_position(inst, ts, pos.get(inst, 0.0))
+        else:
+            inst, q, key = payload
+            got = inv.trade(inst, ts, q, key)
+            if key is not None:
+                opened[key] = opened.get(key, 0.0) + got
+    inv.expire(int(end_ms))
+    inv.close_all(int(end_ms))
+    return pd.DataFrame(inv.pieces, columns=PIECE_COLUMNS), opened
+
+
+def fill_holding_times(pieces: pd.DataFrame, opened: Dict[str, float]) -> pd.DataFrame:
+    """Per maker fill that opened contracts: ``q_open``, the contract-weighted mean holding time in days over its
+    closed pieces (``ht_days``; fill, expiry and transfer) and without transfers (``ht_days_excl_transfer``), and the
+    contracts closed by each route (``c_fill, c_expiry, c_transfer, c_censored``)."""
+    keys = [k for k, v in opened.items() if v > AMOUNT_EPS]
+    out = pd.DataFrame({"trade_id": keys, "q_open": [float(opened[k]) for k in keys]})
+    p = pieces.copy()
+    p["days"] = (p["close_ms"].astype(float) - p["open_ms"].astype(float)) / DAY_MS
+    p["w"] = p["qty"] * p["days"]
+
+    def mean_days(sel: pd.DataFrame) -> pd.Series:
+        g = sel.groupby("key")[["w", "qty"]].sum()
+        return g["w"] / g["qty"]
+
+    out["ht_days"] = out["trade_id"].map(mean_days(p[p["how"] != "censored"]))
+    out["ht_days_excl_transfer"] = out["trade_id"].map(mean_days(p[p["how"].isin(["fill", "expiry"])]))
+    by_how = p.groupby(["key", "how"])["qty"].sum()
+    for how in ("fill", "expiry", "transfer", "censored"):
+        s = by_how.xs(how, level="how") if how in by_how.index.get_level_values("how") else pd.Series(dtype=float)
+        out[f"c_{how}"] = out["trade_id"].map(s).fillna(0.0)
+    return out
+
+
+def weighted_median(values, weights) -> float:
+    """Lower weighted median: the smallest value whose cumulative weight reaches half the total."""
+    v = np.asarray(values, dtype=float)
+    w = np.asarray(weights, dtype=float)
+    ok = np.isfinite(v) & np.isfinite(w) & (w > 0)
+    v, w = v[ok], w[ok]
+    if not len(v):
+        return float("nan")
+    o = np.argsort(v, kind="mergesort")
+    v, w = v[o], w[o]
+    c = np.cumsum(w)
+    return float(v[min(int(np.searchsorted(c, 0.5 * c[-1])), len(v) - 1)])
+
+
+CELL_KEYS = ["ccy", "side", "delta_bucket", "tenor_bucket"]
+
+
+def holding_cells(fills: pd.DataFrame, ht: pd.DataFrame, pieces: pd.DataFrame) -> pd.DataFrame:
+    """Holding time per Paper-1 cell (currency x maker side x |delta| bucket x tenor bucket) for ``window`` all and pm2
+    (fills in the PM2 window of their currency). ``fills``: maker fills (``trade_id, currency, maker_side,
+    delta_bucket, tenor_bucket, ts``); ``ht`` from :func:`fill_holding_times`; ``pieces`` with ``key, qty, days, how``.
+    ``median_days`` is over opening fills, ``median_days_w`` the contract-weighted median over closed pieces; the
+    shares split the opened contracts by how they were closed."""
+    f = fills.copy()
+    f["ccy"] = f["currency"].astype(str)
+    f["side"] = np.where(f["maker_side"].to_numpy() > 0, "buy", "sell")
+    start = f["ccy"].map(PM2_WINDOW_START)
+    f["in_pm2"] = start.notna() & (f["ts"] // 1000 >= start.fillna(0))
+    f = f.merge(ht, on="trade_id", how="left")
+    closed = pieces[pieces["how"] != "censored"][["key", "qty", "days"]]
+    rows = []
+    for window, sub in (("all", f), ("pm2", f[f["in_pm2"]])):
+        for cell, g in sub.groupby(CELL_KEYS, sort=True):
+            op = g[g["q_open"].fillna(0.0) > AMOUNT_EPS]
+            pc = closed[closed["key"].isin(set(op["trade_id"]))]
+            qsum = float(op["q_open"].sum())
+            rec = dict(zip(CELL_KEYS, cell))
+            rec.update(window=window, n_fills=int(len(g)), n_opening=int(len(op)), q_open=qsum,
+                       median_days=float(op["ht_days"].median()) if op["ht_days"].notna().any() else float("nan"),
+                       median_days_w=weighted_median(pc["days"], pc["qty"]),
+                       median_days_excl_transfer=float(op["ht_days_excl_transfer"].median())
+                       if op["ht_days_excl_transfer"].notna().any() else float("nan"))
+            for how in ("fill", "expiry", "transfer", "censored"):
+                rec[f"share_{how}"] = float(op[f"c_{how}"].sum()) / qsum if qsum > 0 else float("nan")
+            rows.append(rec)
+    cols = ["window"] + CELL_KEYS + ["n_fills", "n_opening", "q_open", "median_days", "median_days_w",
+                                     "median_days_excl_transfer", "share_fill", "share_expiry", "share_transfer",
+                                     "share_censored"]
+    return pd.DataFrame(rows, columns=cols)
+
+
+# ---------------------------------------------------------------- B3: one fill, maker days, resumable runs
+
+def fill_marginal(chain_book: Optional[Book], tape_book: Optional[Book], state, params, params_std, expiry: int,
+                  strike: float, is_call: bool, q: float, price: float) -> dict:
+    """All marginal-capital numbers of one maker fill under PM2 (``q`` signed contracts at ``price``).
+
+    ``chain_book``: exact on-chain book before the fill's transaction in the fill's currency (``None`` = no position);
+    ``tape_book``: the day-start + tape book (``None`` = not available). ``params`` are the account's PM2 parameters,
+    ``params_std`` those of the standard lib (the single-contract capital of B2). Returns ``dK`` (IM, whole fill),
+    ``dK_mm``, ``dK_unit`` (one contract in the fill's direction), ``dK_tape``, ``K_single_book(_mm)`` (per contract,
+    standard lib, empty book), ``net_before/net_after``, book sizes and ``status`` (``ok`` / ``no_state``).
+    """
+    nan = float("nan")
+    chain = _zero_cash(chain_book)
+    new = OptionLeg(int(expiry), float(strike), bool(is_call), float(q))
+    legs = list(chain.options) + [new] + (list(tape_book.options) if tape_book is not None else [])
+    out = {"n_legs_before": len(chain.options), "n_expiries_before": len({leg.expiry for leg in chain.options}),
+           "gross_before": float(sum(abs(leg.amount) for leg in chain.options)), "perp_before": float(chain.perp),
+           "n_legs_tape": len(tape_book.options) if tape_book is not None else -1,
+           "perp_tape": float(tape_book.perp) if tape_book is not None else nan, "tape_ok": tape_book is not None}
+    keys = ("dK", "dK_mm", "dK_unit", "dK_tape", "K_single_book", "K_single_book_mm", "net_before", "net_after")
+    vols = leg_vols(state, legs)
+    perp = max(abs(chain.perp), abs(tape_book.perp) if tape_book is not None else 0.0)
+    if not _state_ok(state, legs, vols, perp):
+        out.update({k: nan for k in keys}, status="no_state")
+        return out
+    sgn = 1.0 if q > 0 else -1.0
+    leg = (int(expiry), float(strike), bool(is_call))
+    im = marginal_capital(chain, state, params, *leg, q, price, vols=vols)
+    out.update(status="ok", dK=im["dK"], net_before=im["net_before"], net_after=im["net_after"])
+    out["dK_unit"] = marginal_capital(chain, state, params, *leg, sgn, price, vols=vols,
+                                      net_before=im["net_before"])["dK"]
+    out["dK_mm"] = marginal_capital(chain, state, params, *leg, q, price, is_initial=False, vols=vols)["dK"]
+    out["K_single_book"] = marginal_capital(None, state, params_std, *leg, sgn, price, vols=vols)["dK"]
+    out["K_single_book_mm"] = marginal_capital(None, state, params_std, *leg, sgn, price, is_initial=False,
+                                               vols=vols)["dK"]
+    out["dK_tape"] = marginal_capital(tape_book, state, params, *leg, q, price, vols=vols)["dK"] \
+        if tape_book is not None else nan
+    return out
+
+
+def maker_day_list(markouts: pd.DataFrame, top: Sequence[int], end_day: str = END_DAY) -> pd.DataFrame:
+    """(subaccount, day) of every UTC day with at least one maker fill (day of the maker's own row ``ts_maker``) of
+    the accounts ``top`` whose day start (00:00:01) lies in the PM2 window of BTC and ETH, up to ``end_day``."""
+    m = markouts[markouts["maker_sub"].isin([int(x) for x in top])]
+    df = pd.DataFrame({"subaccount": m["maker_sub"].astype("int64").to_numpy(), "day": _fill_days(m["ts_maker"]).to_numpy()})
+    first = pd.Timestamp(min(PM2_WINDOW_START.values()) - 1, unit="s").ceil("D")
+    df = df[(df["day"] >= first) & (df["day"] <= pd.Timestamp(end_day))]
+    return df.drop_duplicates().sort_values(["subaccount", "day"], kind="mergesort").reset_index(drop=True)
+
+
+class _Pm2Params:
+    """PM2 parameters of the standard lib and of an account's lib (``p2params``), with cached timelines."""
+
+    def __init__(self, root: Optional[Path] = None):
+        self.root = root
+        self._tl: Dict[Tuple[str, Optional[str]], object] = {}
+        self._ov: Dict[str, list] = {}
+
+    def timeline(self, ccy: str, lib: Optional[str] = None):
+        from .p2params import Timeline
+
+        key = (ccy, lib)
+        if key not in self._tl:
+            self._tl[key] = Timeline(ccy, "pm2", lib=lib, root=self.root)
+        return self._tl[key]
+
+    def lib(self, ccy: str, sub: int, ts: int) -> Optional[str]:
+        from .p2params import account_lib, load_overrides
+
+        if ccy not in self._ov:
+            self._ov[ccy] = load_overrides(ccy, self.root)
+        return account_lib(self._ov[ccy], int(sub), int(ts))
+
+    def account(self, ccy: str, sub: int, ts: int) -> Tuple[dict, Optional[str]]:
+        lib = self.lib(ccy, sub, ts)
+        return self.timeline(ccy, lib).at(int(ts)), lib
+
+    def standard(self, ccy: str, ts: int) -> dict:
+        return self.timeline(ccy, None).at(int(ts))
+
+
+def _labels(subs: Iterable[int]) -> Dict[int, str]:
+    from . import p2ids
+
+    subs = sorted({int(s) for s in subs})
+    return dict(zip(subs, p2ids.labels(subs)))
+
+
+def _block_ts(ts_s: int) -> int:
+    """Timestamp of the block of second ``ts_s`` (the ``block.timestamp`` an eth_call at that block sees; B2)."""
+    return ts_at_block(block_at_ts(int(ts_s)))
+
+
+def _month_bounds(month: str) -> Tuple[int, int]:
+    m0 = pd.Timestamp(month + "-01")
+    m1 = m0 + pd.offsets.MonthBegin(1)
+    return _day_ts(m0), _day_ts(m1)
+
+
+MARKOUT_B3_COLUMNS = ["trade_id", "ts", "ts_maker", "currency", "maker_sub", "tx_hash", "amount", "price",
+                      "maker_side", "expiry", "strike", "option_type"]
+MARGINAL_PARTS = DERIVED_DIR / "marginal_parts" / "v1"
+MAKER_DAY_PARTS = DERIVED_DIR / "maker_day_parts" / "v1"
+CAPITAL_PATH = DERIVED_DIR / "capital.parquet"
+
+
+def _atomic_parquet(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    df.to_parquet(tmp, index=False)
+    os.replace(tmp, path)
+
+
+def _h2_inputs() -> Tuple[List[int], pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    top = json.loads((BOOKS_DIR / "top_makers.json").read_text())["subaccounts"]
+    snaps = pd.read_parquet(BOOKS_DIR / "snapshots.parquet")
+    m = pd.read_parquet(MARKOUTS, columns=MARKOUT_B3_COLUMNS)
+    m = m[m["maker_sub"].isin(top)].reset_index(drop=True)
+    pop = h2_population(m, snaps, top)
+    return top, snaps, pop, h2_sample(pop)
+
+
+def _chunk_marginal(fills: pd.DataFrame, hist, ob: "OnchainBooks", snap_g: dict, tape_g: dict, prm: _Pm2Params,
+                    registry: AssetRegistry) -> pd.DataFrame:
+    empty = pd.DataFrame(columns=SNAPSHOT_COLUMNS)
+    rows = []
+    for sub, g in fills.groupby("maker_sub", sort=True):
+        sub = int(sub)
+        day_of: Dict[str, pd.Timestamp] = {}
+        for tx in g["tx_hash"].astype(str).str.lower().unique():
+            try:
+                day_of[tx] = ob.locate(sub, tx)
+            except KeyError:
+                pass
+        by_day: Dict[pd.Timestamp, List[str]] = defaultdict(list)
+        for tx, d in day_of.items():
+            by_day[d].append(tx)
+        bals: Dict[str, Dict[BalanceKey, int]] = {}
+        for d, txs in by_day.items():
+            bals.update(replay_balances_many(ob._snap(sub, d), ob.events[(sub, d)], txs))
+        for f in g.itertuples(index=False):
+            ccy, tx = str(f.currency), str(f.tx_hash).lower()
+            ts_s = int(f.ts) // 1000
+            blk_ts = _block_ts(ts_s)
+            q = float(f.maker_side) * float(f.amount)
+            rec = {"fill_key": f.trade_id, "subaccount": sub, "ts": int(f.ts), "ts_maker": int(f.ts_maker),
+                   "ccy": ccy, "manager": f.day_manager, "expiry": int(f.expiry), "strike": float(f.strike),
+                   "is_call": str(f.option_type) == "C", "maker_side": int(f.maker_side), "amount": float(f.amount),
+                   "q": q, "price": float(f.price), "block_ts": blk_ts}
+            if tx not in day_of:
+                rec["status"] = "no_tx"
+                rows.append(rec)
+                continue
+            rec["chain_day"] = day_of[tx]
+            chain = books_from_balances(bals[tx], blk_ts * 1000, registry).get(ccy)
+            fday = fill_day(int(f.ts_maker))
+            try:
+                tb = book_before_fill(snap_g.get((sub, fday), empty), tape_g.get((sub, fday)), f.trade_id,
+                                      subaccount=sub)
+                tape_book = tb.get(ccy, Book())
+            except (KeyError, ValueError):
+                tape_book = None
+            exps = {int(f.expiry)} | {leg.expiry for leg in (chain.options if chain else [])} \
+                | {leg.expiry for leg in (tape_book.options if tape_book is not None else [])}
+            state = hist.state_at(blk_ts, sorted(exps))
+            params, lib = prm.account(ccy, sub, ts_s)
+            rec["lib"] = lib or "std"
+            rec.update(fill_marginal(chain, tape_book, state, params, prm.standard(ccy, ts_s), int(f.expiry),
+                                     float(f.strike), str(f.option_type) == "C", q, float(f.price)))
+            rows.append(rec)
+    return pd.DataFrame(rows)
+
+
+def run_marginal(max_seconds: float = 480.0, parts_dir: Path = MARGINAL_PARTS, log=print) -> dict:
+    """Resumable H2 run: one part per (currency, month) of the sampled fills; FeedHistory is loaded per month."""
+    import gc
+
+    from .p2feeds import FeedHistory
+
+    t0 = time.monotonic()
+    top, snaps, pop, sample = _h2_inputs()
+    sample = sample.assign(month=pd.to_datetime(sample["ts"], unit="ms").dt.strftime("%Y-%m"))
+    chunks = sorted(sample.groupby(["currency", "month"]).groups)
+    todo = [(c, m) for c, m in chunks if not (Path(parts_dir) / f"{c}_{m}.parquet").exists()]
+    log(f"population {len(pop)}, sample {len(sample)}, chunks {len(chunks)}, todo {len(todo)}")
+    if todo:
+        accs = sorted(int(x) for x in sample["maker_sub"].unique())
+        tape = load_tape(accs)
+        tape = tape.assign(_day=_fill_days(tape["timestamp"]).to_numpy())
+        tape_g = {(int(a), pd.Timestamp(d)): g for (a, d), g in tape.groupby(["subaccount_id", "_day"])}
+        snaps_a = snaps[snaps["subaccount"].isin(accs)]
+        snap_g = {(int(a), pd.Timestamp(d)): g for (a, d), g in snaps_a.groupby(["subaccount", "day"])}
+        prm, reg = _Pm2Params(), default_registry()
+    done = 0
+    for ccy, month in todo:
+        if time.monotonic() - t0 > max_seconds:
+            break
+        fills = sample[(sample["currency"] == ccy) & (sample["month"] == month)]
+        lo, hi = _month_bounds(month)
+        d_lo, d_hi = pd.Timestamp(lo - 86400, unit="s"), pd.Timestamp(hi + 2 * 86400, unit="s")
+        subs = sorted(int(x) for x in fills["maker_sub"].unique())
+        ev = pd.read_parquet(BOOKS_DIR / "events.parquet",
+                             filters=[("subaccount", "in", subs), ("day", ">=", d_lo), ("day", "<=", d_hi)])
+        sn = snaps_a[snaps_a["subaccount"].isin(subs) & (snaps_a["day"] >= d_lo) & (snaps_a["day"] <= d_hi)]
+        ob = OnchainBooks(sn, ev, reg)
+        hist = FeedHistory(ccy, start_ts=lo - 3600, end_ts=hi + 3600)
+        t1 = time.monotonic()
+        df = _chunk_marginal(fills, hist, ob, snap_g, tape_g, prm, reg)
+        _atomic_parquet(df, Path(parts_dir) / f"{ccy}_{month}.parquet")
+        done += 1
+        log(f"{ccy} {month}: {len(df)} fills, status {df['status'].value_counts().to_dict()}, "
+            f"{time.monotonic() - t1:.0f}s compute, {time.monotonic() - t0:.0f}s total")
+        del hist, ob, ev
+        gc.collect()
+    remaining = len(todo) - done
+    return {"chunks": len(chunks), "done": done, "remaining": remaining, "population": int(len(pop)),
+            "sample": int(len(sample))}
+
+
+def combine_marginal(parts_dir: Path = MARGINAL_PARTS, out: Path = DERIVED_DIR / "marginal.parquet",
+                     capital: Path = CAPITAL_PATH) -> Tuple[pd.DataFrame, dict]:
+    """All parts into ``marginal.parquet`` with ``K_single_pm2(_mm)`` from B2 and the ratios; consistency check of
+    the book engine on the one-contract book against B2 (``K_single_book`` vs ``K_single_pm2``)."""
+    df = pd.concat([pd.read_parquet(f) for f in sorted(Path(parts_dir).glob("*.parquet"))], ignore_index=True)
+    cap = pd.read_parquet(capital, columns=["trade_id", "K_pm2", "K_pm2_mm"]).rename(
+        columns={"trade_id": "fill_key", "K_pm2": "K_single_pm2", "K_pm2_mm": "K_single_pm2_mm"})
+    df = df.merge(cap, on="fill_key", how="left")
+    df["day"] = _fill_days(df["ts"]).to_numpy()
+    df["label"] = df["subaccount"].map(_labels(df["subaccount"]))
+    a = df["amount"].to_numpy(dtype=float)
+    for src, dst in (("dK", "dK_per_contract"), ("dK_mm", "dK_mm_per_contract"), ("dK_tape", "dK_tape_per_contract")):
+        df[dst] = df[src] / a
+    ks, ksm = df["K_single_pm2"], df["K_single_pm2_mm"]
+    df["ratio"] = (df["dK_per_contract"] / ks).where(ks > 0)
+    df["ratio_unit"] = (df["dK_unit"] / ks).where(ks > 0)
+    df["ratio_tape"] = (df["dK_tape_per_contract"] / ks).where(ks > 0)
+    df["ratio_mm"] = (df["dK_mm_per_contract"] / ksm).where(ksm > 0)
+    ok = df["status"] == "ok"
+    d = (df.loc[ok, "K_single_book"] - df.loc[ok, "K_single_pm2"]).abs()
+    rel = d / df.loc[ok, "K_single_pm2"].abs().clip(lower=1e-12)
+    dm = (df.loc[ok, "K_single_book_mm"] - df.loc[ok, "K_single_pm2_mm"]).abs()
+    lead = ["fill_key", "subaccount", "label", "day", "ts", "ts_maker", "block_ts", "ccy", "manager", "lib"]
+    df = df[lead + [c for c in df.columns if c not in lead]]
+    df = df.sort_values(["ts", "fill_key"], kind="mergesort").reset_index(drop=True)
+    _atomic_parquet(df, Path(out))
+    check = {"rows": int(len(df)), "status": {str(k): int(v) for k, v in df["status"].value_counts().items()},
+             "tape_ok": int(df["tape_ok"].fillna(False).astype(bool).sum()),
+             "k_single_missing": int(df["K_single_pm2"].isna().sum()),
+             "k_single_le_0": int((df["K_single_pm2"] <= 0).sum()),
+             "single_vs_b2_max_abs": float(d.max()) if len(d) else float("nan"),
+             "single_vs_b2_max_rel": float(rel.max()) if len(rel) else float("nan"),
+             "single_mm_vs_b2_max_abs": float(dm.max()) if len(dm) else float("nan"),
+             "empty_book_fills": int((df.loc[ok, "n_legs_before"] == 0).sum()),
+             "empty_book_dK_vs_single_max_abs": float(
+                 ((df.loc[ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0), "dK_per_contract"]
+                   - df.loc[ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0), "K_single_book"]).abs().max())
+                 if (ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0)).any() else float("nan"))}
+    return df, check
+
+
+MAKER_DAY_LEAD = ["subaccount", "label", "day", "ts", "manager", "status", "ccys", "n_legs", "n_legs_pm",
+                  "gross_contracts", "perp_gross", "n_expiries_max", "premium", "K_sm", "K_pm", "K_pm2", "K_sm_mm",
+                  "K_pm_mm", "K_pm2_mm", "pm_too_many_expiries", "pm2_over_max_expiries"]
+
+
+def _maker_day_books(snap: pd.DataFrame, day) -> Dict[str, Book]:
+    ts = _day_ts(day) + 1
+    legs, perps = _snapshot_positions(snap)
+    return filter_pm2_window(_books_from_positions(legs, perps, ts * 1000), ts)
+
+
+def _chunk_maker_days(days: pd.DataFrame, snap_g: dict, month: str, prm: _Pm2Params, history_factory) -> pd.DataFrame:
+    import gc
+
+    from .p2params import Timeline
+
+    items = []
+    need: Dict[str, Dict[Tuple[int, pd.Timestamp], List[int]]] = defaultdict(dict)
+    for r in days.itertuples(index=False):
+        sub, day = int(r.subaccount), pd.Timestamp(r.day)
+        snap = snap_g.get((sub, day))
+        rec = {"subaccount": sub, "day": day, "ts": _day_ts(day) + 1}
+        if snap is None:
+            rec["status"] = "no_snapshot"
+            items.append((rec, None))
+            continue
+        rec["manager"] = _single(snap, "manager_label")
+        bks = _maker_day_books(snap, day)
+        if not any(b.options for b in bks.values()):
+            rec["status"] = "no_options"
+            items.append((rec, None))
+            continue
+        for c, b in bks.items():
+            need[c][(sub, day)] = sorted({leg.expiry for leg in b.options})
+        items.append((rec, bks))
+    lo, hi = _month_bounds(month)
+    states: Dict[Tuple[int, pd.Timestamp], Dict[str, object]] = defaultdict(dict)
+    for c in sorted(need):
+        hist = history_factory(c, lo - 3600, hi + 3600)
+        for (sub, day), exps in need[c].items():
+            states[(sub, day)][c] = hist.state_at(_day_ts(day) + 1, exps)
+        del hist
+        gc.collect()
+    tls: Dict[Tuple[str, str], Optional[Timeline]] = {}
+
+    def at(c: str, mgr: str, ts: int) -> Optional[dict]:
+        """Standard-lib parameters in force at ``ts``; None outside the manager's timeline (e.g. HYPE legacy PM)."""
+        if (c, mgr) not in tls:
+            try:
+                tls[(c, mgr)] = Timeline(c, mgr)
+            except FileNotFoundError:
+                tls[(c, mgr)] = None
+        tl = tls[(c, mgr)]
+        try:
+            return tl.at(ts) if tl is not None else None
+        except KeyError:
+            return None
+
+    rows = []
+    for rec, bks in items:
+        if bks is None:
+            rows.append(rec)
+            continue
+        sub, day, ts = rec["subaccount"], rec["day"], rec["ts"]
+        params = {"sm": {}, "pm": {}, "pm2": {}}
+        for c in bks:
+            for mgr in ("sm", "pm"):
+                p = at(c, mgr, ts) if (mgr == "sm" or c in LEGACY_PM_CCYS) else None
+                if p is not None:
+                    params[mgr][c] = p
+            params["pm2"][c] = prm.account(c, sub, ts)[0]
+        rec.update(maker_day_capital(bks, states[(sub, day)], params))
+        rows.append(rec)
+    return pd.DataFrame(rows)
+
+
+def _default_history(ccy: str, start_ts: int, end_ts: int):
+    from .p2feeds import FeedHistory
+
+    return FeedHistory(ccy, start_ts=start_ts, end_ts=end_ts)
+
+
+def run_maker_days(max_seconds: float = 480.0, parts_dir: Path = MAKER_DAY_PARTS, log=print,
+                   history_factory=_default_history) -> dict:
+    """Resumable netting-value run: one part per month of maker days, one FeedHistory window per currency."""
+    t0 = time.monotonic()
+    top = json.loads((BOOKS_DIR / "top_makers.json").read_text())["subaccounts"]
+    m = pd.read_parquet(MARKOUTS, columns=["maker_sub", "ts_maker"])
+    days = maker_day_list(m, top)
+    days = days.assign(month=days["day"].dt.strftime("%Y-%m"))
+    months = sorted(days["month"].unique())
+    todo = [mo for mo in months if not (Path(parts_dir) / f"{mo}.parquet").exists()]
+    log(f"maker days {len(days)}, months {len(months)}, todo {len(todo)}")
+    if todo:
+        snaps = pd.read_parquet(BOOKS_DIR / "snapshots.parquet")
+        snaps = snaps[snaps["subaccount"].isin(top) & (snaps["day"] >= days["day"].min())]
+        snap_g = {(int(a), pd.Timestamp(d)): g for (a, d), g in snaps.groupby(["subaccount", "day"])}
+        prm = _Pm2Params()
+    done = 0
+    for mo in todo:
+        if time.monotonic() - t0 > max_seconds:
+            break
+        t1 = time.monotonic()
+        df = _chunk_maker_days(days[days["month"] == mo], snap_g, mo, prm, history_factory)
+        _atomic_parquet(df, Path(parts_dir) / f"{mo}.parquet")
+        done += 1
+        log(f"{mo}: {len(df)} maker days, status {df['status'].value_counts().to_dict()}, "
+            f"{time.monotonic() - t1:.0f}s, {time.monotonic() - t0:.0f}s total")
+    return {"months": len(months), "done": done, "remaining": len(todo) - done, "maker_days": int(len(days))}
+
+
+def combine_maker_days(parts_dir: Path = MAKER_DAY_PARTS, out: Path = DERIVED_DIR / "maker_days.parquet") -> Tuple[pd.DataFrame, dict]:
+    df = pd.concat([pd.read_parquet(f) for f in sorted(Path(parts_dir).glob("*.parquet"))], ignore_index=True)
+    df["label"] = df["subaccount"].map(_labels(df["subaccount"]))
+    for mgr in ("sm", "pm", "pm2"):
+        for ccy in (("BTC", "ETH") if mgr == "pm" else SAMPLE_CCYS):
+            for sfx in ("", "_mm"):
+                col = f"K_{mgr}{sfx}_{ccy}"
+                if col not in df.columns:
+                    df[col] = np.nan
+    for ccy in SAMPLE_CCYS:
+        if f"premium_{ccy}" not in df.columns:
+            df[f"premium_{ccy}"] = np.nan
+    for col in MAKER_DAY_LEAD:
+        if col not in df.columns:
+            df[col] = np.nan
+    df = df[MAKER_DAY_LEAD + sorted(c for c in df.columns if c not in MAKER_DAY_LEAD)]
+    df = df.sort_values(["subaccount", "day"], kind="mergesort").reset_index(drop=True)
+    _atomic_parquet(df, Path(out))
+    ok = df["status"] == "ok"
+    check = {"rows": int(len(df)), "status": {str(k): int(v) for k, v in df["status"].value_counts().items()},
+             "by_label": {str(k): int(v) for k, v in df.loc[ok, "label"].value_counts().sort_index().items()},
+             "nan_ok": {c: int(df.loc[ok, c].isna().sum()) for c in ("K_sm", "K_pm", "K_pm2", "K_sm_mm", "K_pm_mm",
+                                                                      "K_pm2_mm")},
+             "pm_too_many_expiries": int(df.loc[ok, "pm_too_many_expiries"].fillna(False).astype(bool).sum()),
+             "pm2_over_max_expiries": int(df.loc[ok, "pm2_over_max_expiries"].fillna(False).astype(bool).sum()),
+             "no_btc_eth_legs": int((df.loc[ok, "n_legs_pm"] == 0).sum())}
+    return df, check
+
+
+def run_holding(out_csv: Path = Path("results/p2/holding_time.csv"),
+                out_fills: Path = DERIVED_DIR / "holding_fills.parquet", end_ms: int = PILOT_END_MS) -> dict:
+    """FIFO holding time of the maker fills of the ten dominant subaccounts, median per Paper-1 cell."""
+    top = json.loads((BOOKS_DIR / "top_makers.json").read_text())["subaccounts"]
+    snaps = pd.read_parquet(BOOKS_DIR / "snapshots.parquet",
+                            columns=["subaccount", "day", "kind", "ccy", "expiry", "strike", "is_call", "amount"])
+    snaps = snaps[snaps["subaccount"].isin(top)]
+    tape = load_tape(top)
+    all_pieces, opened = [], {}
+    for sub in top:
+        pc, op = fifo_account(tape[tape["subaccount_id"] == int(sub)], snaps[snaps["subaccount"] == int(sub)], end_ms)
+        all_pieces.append(pc.assign(subaccount=int(sub)))
+        opened.update(op)
+    pieces = pd.concat(all_pieces, ignore_index=True)
+    pieces["days"] = (pieces["close_ms"].astype(float) - pieces["open_ms"].astype(float)) / DAY_MS
+    ht = fill_holding_times(pieces, opened)
+    fills = pd.read_parquet(MARKOUTS, columns=["trade_id", "ts", "currency", "maker_sub", "maker_side", "delta_bucket",
+                                               "tenor_bucket"])
+    fills = fills[fills["maker_sub"].isin(top)].reset_index(drop=True)
+    cells = holding_cells(fills, ht, pieces)
+    Path(out_csv).parent.mkdir(parents=True, exist_ok=True)
+    cells.to_csv(out_csv, index=False, float_format="%.6g")
+    f2 = fills.merge(ht, on="trade_id", how="left")
+    f2["label"] = f2["maker_sub"].map(_labels(f2["maker_sub"]))
+    _atomic_parquet(f2, Path(out_fills))
+    in_tape = set(tape.loc[tape["liquidity_role"] == "maker", "trade_id"].astype(str))
+    q = pieces.groupby("how")["qty"].sum()
+    return {"maker_fills": int(len(fills)), "maker_fills_in_tape": int(fills["trade_id"].astype(str).isin(in_tape).sum()),
+            "opening_fills": int(len(ht)), "contracts_opened": float(ht["q_open"].sum()),
+            "contracts_by_how": {str(k): float(v) for k, v in q.items()}, "cells": int(len(cells)),
+            "cells_all": int((cells["window"] == "all").sum()), "cells_pm2": int((cells["window"] == "pm2").sum())}
+
+
 # ---------------------------------------------------------------- CLI helpers
 
 def load_tape(subaccounts: Sequence[int], ccys: Sequence[str] = SAMPLE_CCYS, tape_dir: Path = TAPE_DIR) -> pd.DataFrame:
@@ -1203,6 +2062,11 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     cp.add_argument("--accounts", choices=["pm2", "all"], default="pm2")
     cp.add_argument("--n", type=int, default=3000)
     cp.add_argument("--seed", type=int, default=20260924)
+    mg = sub.add_parser("marginal", help="B3: marginal capital of the H2 sample (resumable) -> derived/marginal.parquet")
+    mg.add_argument("--max-seconds", type=float, default=480.0)
+    md = sub.add_parser("maker-days", help="B3: netting value of the maker days (resumable) -> derived/maker_days.parquet")
+    md.add_argument("--max-seconds", type=float, default=480.0)
+    sub.add_parser("holding", help="B3: FIFO holding time per cell -> results/p2/holding_time.csv")
     a = ap.parse_args(argv)
     BOOKS_DIR.mkdir(parents=True, exist_ok=True)
     top_path = BOOKS_DIR / "top_makers.json"
@@ -1292,6 +2156,26 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
                "per_account": {sha10(s_): _compare_summary(g) for s_, g in df.groupby("subaccount")}}
         (BOOKS_DIR / "compare_books.json").write_text(json.dumps(out, indent=1, default=str))
         print(json.dumps(out, indent=1, default=str))
+    elif a.cmd == "marginal":
+        st = run_marginal(a.max_seconds)
+        if st["remaining"] == 0:
+            _, check = combine_marginal()
+            st["check"] = check
+            (DERIVED_DIR / "marginal_check.json").write_text(json.dumps(check, indent=1))
+        print(json.dumps(st, indent=1, default=str))
+        print("DONE" if st["remaining"] == 0 else "RERUN")
+    elif a.cmd == "maker-days":
+        st = run_maker_days(a.max_seconds)
+        if st["remaining"] == 0:
+            _, check = combine_maker_days()
+            st["check"] = check
+            (DERIVED_DIR / "maker_days_check.json").write_text(json.dumps(check, indent=1))
+        print(json.dumps(st, indent=1, default=str))
+        print("DONE" if st["remaining"] == 0 else "RERUN")
+    elif a.cmd == "holding":
+        st = run_holding()
+        (DERIVED_DIR / "holding_check.json").write_text(json.dumps(st, indent=1))
+        print(json.dumps(st, indent=1))
 
 
 if __name__ == "__main__":
