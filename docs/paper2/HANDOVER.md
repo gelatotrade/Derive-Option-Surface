@@ -105,3 +105,21 @@ Clarify the semantics of `get_margin` before anything else happens. Specifically
 `pre_initial_margin` as opposed to `post_initial_margin`, how does that relate to `simulated_collaterals`, and
 how does one read from it a requirement that is comparable across portfolios. Only once this question
 is answered is an experimental design for the sampling worthwhile.
+
+## Nachtrag 24.09.2026, nachmittags: Semantik geklärt
+
+Der erste Schritt ist erledigt, das Ergebnis steht in `docs/paper2/get_margin_semantik.md`. Mehrere Aussagen
+oben sind damit überholt; Abschnitt 9 der Notiz listet sie. Die wichtigsten:
+
+- `get_margin` liefert Netto-Margin, `net = C + V − R`. „Kapital minus post_initial_margin“ ist R − V und
+  keine Anforderung. Vergleichbar ist das Kapitalmass K_p(q) = Σ p·q − net_IM(q; C = 0).
+- Der Widerspruch 11 gegen 1,2 kommt von zwei verschiedenen Büchern und von dieser Lesart. Parameter haben
+  sich nicht geändert. Auf R lag der Faktor am 17.09. bei 10,8 (gemischtes Buch nahe am Geld).
+- Produktiv ist v2 (`api.lyra.finance`). PM2 diskontiert dort pauschal mit 2 %, on-chain mit dem Rate-Feed.
+  `api.derive.xyz/v3` ist ein Schattenbetrieb.
+- SM ist nicht konvex. PM2 ist in natürlichen Büchern konvex, in konstruierten nicht. Eine absolute
+  Grössen-Bruchstelle gibt es nicht, R ist homogen vom Grad 1.
+- Rohdaten liegen unter `data/p2/semantik_20260924/` (nicht im Git), kleine Tabellen unter `results/p2/semantik/`.
+
+Nächster Schritt: die Entscheidungen aus Abschnitt 10 der Notiz treffen, dann brainstorming, Spezifikation
+und Präregistrierung.
