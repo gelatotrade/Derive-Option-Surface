@@ -117,3 +117,19 @@ Zeitstempel. Änderungen danach nur als datierter Nachtrag am Ende, nie durch Ü
    ist die mittlere Gebühr dort 1,56 statt 1,09 USDC je Kontrakt und der mittlere Rabatt 0,59 statt 0,77. Paper 2
    verwendet die Form je Kontrakt; die Form aus Paper 1 wird als Sensitivität berichtet. Der Befund geht als
    Korrekturhinweis an Paper 1.
+
+## Nachtrag 3 (25.09.2026, vor der ersten Inferenz): Präzisierungen ohne inhaltliche Änderung
+
+1. **H1-Bootstrap:** Die Menge der Zellen ist die der Originalstichprobe (≥ 200 Fills im PM2-Fenster). In jeder
+   Replikation werden die Tage mit Zurücklegen gezogen, beide Zellgrössen aus den gewichteten Tagessummen neu
+   gerechnet und ρ über die Zellen mit mindestens einem Fill in der Replikation bestimmt. Intervall: 5. und
+   95. Perzentil der 9 999 Replikationen.
+2. **H2 und H3:** Intervall für den Median ebenso über gezogene UTC-Tage (alle Fills bzw. Maker-Tage eines
+   gezogenen Tages gehen mit dessen Vielfachheit ein).
+3. **H4-Placebo:** Eine Placebo-Replikation zieht für jedes behaltene echte Ereignis e einen Placebo-Termin aus den
+   zulässigen Tagen seines Basiswerts (mindestens 28 Tage Abstand zu jedem Ereignis dieses Basiswerts) und gibt ihm
+   den Dosisvektor eines zufällig gewählten behaltenen Ereignisses desselben Basiswerts; dann wird das Panel wie
+   für die echten Ereignisse gebaut und β geschätzt. 100 Replikationen, Seed 20260924.
+4. **H4-Fixeffekte:** α je (Zelle, Ereignis), γ je (UTC-Tag, Basiswert); Schätzung durch wechselseitiges
+   Herausmitteln (within), Wild-Cluster-Bootstrap mit restringierten Residuen (β = 0), Rademacher-Gewichte je
+   UTC-Tag, einseitiges p für β > 0.
