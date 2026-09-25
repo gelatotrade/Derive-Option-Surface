@@ -5,10 +5,11 @@ Every number is read from ``results/p2/summary.json`` (and the figure tables of 
 typed; each number of a title stands in the drawing as well. Type at least 28 px, colour only for PM2 and always
 together with a second cue, simple per cent. Cards:
 
-* ``s1_h2_next_contract.png`` (H2): the next contract in a big PM2 book costs a few per cent of its stand-alone
-  capital;
+* ``s1_h2_next_contract.png`` (H2): a fill in a big PM2 book costs, per contract, a few per cent of its
+  stand-alone capital (the registered statistic covers the whole fill, not the next single contract);
 * ``s2_h3_netting.png`` (H3): PM2 needs a multiple less capital than standard margin for the same maker books;
-* ``s3_h1_map.png`` (H1): per unit of capital, the map of where makers earn stays the same (Spearman's rho).
+* ``s3_h1_map.png`` (H1): per unit of capital the cells with positive edge still rank first (Spearman's rho), but
+  among them the order changes (rho within the profitable cells, exploratory).
 
 The numbers of every card go to ``results/p2/fig_s{1,2,3}.csv`` (``key, value, printed, source``).
 """
@@ -32,7 +33,7 @@ PT = 72.0 / DPI                                 # points per pixel
 INK = "#111111"
 MUTED = "#555555"
 PM2 = "#0072B2"
-FOOTER = "Derive, chain 957 · replica of the deployed margin contracts · pre-registration commit c4fcb59"
+FOOTER = "Derive, chain 957 · replica of the deployed margin contracts · pre-registration 1d13227"
 RESULTS = Path("results/p2")
 OUT = Path("paper2/social")
 MINUS = "−"
@@ -105,11 +106,11 @@ def _save(fig, name: str, out_dir: Path) -> Path:
 # ---------------------------------------------------------------------------------------------------- cards
 
 def card_h2(data: dict, out_dir: Path, *, keep: bool = False):
-    """H2: the next contract in a big PM2 book against the same contract on its own."""
+    """H2: a fill in a big PM2 book, per contract, against the same contract on its own."""
     s = data["summary"]
     stat, lo, hi, share0 = (float(s[k]) for k in ("h2_stat", "h2_lo", "h2_hi", "h2_share_nonpositive"))
     p_stat, p0 = pct(stat), pct(share0, 0)
-    title = f"In a big PM2 book, the next contract costs\n{p_stat} of its stand-alone capital"
+    title = f"In a big PM2 book, a fill costs {p_stat}\nof its stand-alone capital per contract"
     take = [f"Median of {thousands(s['h2_n'])} fills, {s['h2_n_accounts']} PM2 maker accounts (ETH, HYPE), "
             f"{month(s['h2_first_day'])} to {month(s['h2_last_day'])};",
             f"90 % interval {pct(lo)} to {pct(hi)}. {p0} of the fills add no capital at all."]
@@ -123,12 +124,12 @@ def card_h2(data: dict, out_dir: Path, *, keep: bool = False):
             bbox=dict(fc="white", ec="none", pad=1))
     ax.text(100 * hi + 2.0, 0, p_stat, ha="left", va="center", fontsize=22, fontweight="bold", color=INK)
     ax.set_yticks([1, 0])
-    ax.set_yticklabels(["the contract\non its own", "the same contract\nadded to the book"], fontsize=15)
+    ax.set_yticklabels(["the contract\non its own", "the same fill\nin the book"], fontsize=15)
     ax.set_xlim(0, 105)
     ax.set_ylim(-0.6, 1.6)
     ax.set_xticks([0, 25, 50, 75, 100])
     ax.set_xticklabels(["0 %", "25 %", "50 %", "75 %", "100 %"])
-    ax.set_xlabel("PM2 capital of one more contract, % of its stand-alone capital")
+    ax.set_xlabel("marginal PM2 capital per contract, % of its stand-alone capital")
     ax.text(0.5, 1.02, f"{p0} of fills: free (book capital does not rise)", transform=ax.transAxes, ha="center",
             va="bottom", fontsize=15, color=INK)
     rows = [("stat", stat, p_stat, "summary.json h2_stat"), ("lo", lo, pct(lo), "summary.json h2_lo"),
@@ -182,7 +183,10 @@ def card_h1(data: dict, out_dir: Path, *, keep: bool = False):
     s = data["summary"]
     stat, lo, hi = (float(s[k]) for k in ("h1_stat", "h1_lo", "h1_hi"))
     r = f"{stat:.2f}"
-    title = f"Measured per unit of capital, the map of\nwhere makers earn stays the same: ρ = {r}"
+    pos = s.get("sens_h1_sign_within_pos_stat")
+    rp = None if pos is None else f"{float(pos):.2f}"
+    title = (f"Capital keeps winners above losers (ρ = {r}),\nbut reorders the profitable cells (ρ = {rp})"
+             if rp is not None else f"Capital keeps winners above losers: ρ = {r}")
     take = [f"Spearman's ρ, {s['h1_n_cells']} delta × tenor cells (BTC, ETH, HYPE), edge per notional against",
             f"edge per PM2 capital, {month(s['h1_first_day'])} to {month(s['h1_last_day'])}; "
             f"90 % interval {lo:.2f} to {hi:.2f}."]
@@ -201,15 +205,20 @@ def card_h1(data: dict, out_dir: Path, *, keep: bool = False):
     ax.set_yticks([1, 50, 100, 150])
     ax.set_xlabel("rank by edge per notional")
     ax.set_ylabel("rank by edge per capital")
-    fig.legend(*ax.get_legend_handles_labels(), loc="upper left", bbox_to_anchor=(0.56, 0.47), fontsize=15,
+    fig.legend(*ax.get_legend_handles_labels(), loc="upper left", bbox_to_anchor=(0.56, 0.47 if pos is None else 0.40),
+               fontsize=15,
                handletextpad=0.3, frameon=False)
     fig.text(0.565, 0.66, f"ρ = {r}", fontsize=30, fontweight="bold", va="center")
     fig.text(0.565, 0.555, f"{s['h1_n_cells']} cells, 1 = highest edge;\ndashed: same rank in both", fontsize=15,
              va="center", color=MUTED)
+    if rp is not None:
+        fig.text(0.565, 0.445, f"profitable cells only: ρ = {rp}", fontsize=18, fontweight="bold", va="center")
     rows = [("stat", stat, r, "summary.json h1_stat"), ("lo", lo, f"{lo:.2f}", "summary.json h1_lo"),
             ("hi", hi, f"{hi:.2f}", "summary.json h1_hi"),
             ("n_cells", s["h1_n_cells"], str(s["h1_n_cells"]), "summary.json h1_n_cells"),
             ("points", n, str(n), "fig_f2_b.csv rows")]
+    if rp is not None:
+        rows.append(("within_pos", float(pos), rp, "summary.json sens_h1_sign_within_pos_stat"))
     return _finish(fig, "s3_h1_map", out_dir, rows, data["rd"], "fig_s3.csv", keep)
 
 

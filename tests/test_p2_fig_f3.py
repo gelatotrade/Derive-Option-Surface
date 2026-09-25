@@ -144,7 +144,7 @@ def test_ecdf_bands_and_overflows(tmp_path):
     at0 = float(ecdf.loc[np.isclose(ecdf["x"], 0.0), "value"].iloc[0])
     assert abs(at0 - h2["share_nonpositive"]) <= 1.0 / h2["n"]
     bands = a[a["kind"] == "band"]
-    assert bands["key"].tolist() == ["free", "cheap", "partial", "dearer"]
+    assert bands["key"].tolist() == ["free", "cheap", "partial", "full"]
     assert abs(bands["value"].sum() - 1.0) < 1e-12
     assert bands["printed"].str.endswith("%").all()
     over = a[a["kind"] == "overflow"].set_index("key")
@@ -178,4 +178,4 @@ def test_checks_catch_a_wrong_figure_table(tmp_path):
 
 def test_caption_is_english_without_dashes():
     assert "—" not in f3.CAPTION and "–" not in f3.CAPTION and " - " not in f3.CAPTION
-    assert f3.CAPTION.startswith("\\textbf{The next contract")
+    assert f3.CAPTION.startswith("\\textbf{A fill in a dominant")

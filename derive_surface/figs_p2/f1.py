@@ -82,8 +82,9 @@ JITTER = 0.18
 CAPTION = (
     "What one contract costs. PM2 capital per contract in per cent of notional over the absolute delta of the "
     "traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums over the "
-    "fills of the PM2 window, which spans four parameter regimes. Each row is shaded on one logarithmic grey scale, "
-    "and an empty cross marks a cell with fewer than 200 fills. The strips on the right give, for every occupied "
+    "fills of the PM2 window, which the parameter changes of 23 January, 24 May and 20 August 2026 split into four "
+    "regimes. Each row is shaded on one logarithmic grey scale, and an empty cross marks a cell with fewer than 200 "
+    "fills. The strips on the right give, for every occupied "
     "cell, the capital of the same fills under standard margin (squares) and under the legacy manager (diamonds) "
     "divided by PM2 capital, with the median cell as a bar; hollow squares use only the fills after the parameter "
     "change of 20 August 2026. For a maker buy, standard margin charges the premium.")

@@ -1,10 +1,10 @@
-"""F3 · The next contract in the book (H2) · 3.4 x 4.0 in.
+"""F3 · A fill in the book (H2) · 3.4 x 4.0 in.
 
 Panel a is the cumulative distribution of dK per contract over the stand-alone PM2 capital, read from the binned
 distribution that the inference wrote (``fig_h2_dist.csv``, label ``all``, variant ``ratio``): the value at every
 right bin edge is the cumulative count over n, from the left overflow at x = -1 to one minus the right overflow at
-x = 2.  Bands behind the curve split the fills into free (<= 0), cheap (0 to 1/2), partial (1/2 to 1) and dearer
-(> 1); the share <= 0 comes from ``share_le_0``, the others from the bins.  The median with its day-cluster
+x = 2.  Bands behind the curve split the fills into free (<= 0), cheap (0 to 1/2), partial (1/2 to 1) and full
+(>= 1, the whole stand-alone capital); the share <= 0 comes from ``share_le_0``, the others from the bins.  The median with its day-cluster
 interval sits at height one half.  Panel b is the verdict forest (``f34_frame.ruler``) on the same x-axis.
 
 No test statistic is computed here; the figure only sums bins and sorts rows.
@@ -29,12 +29,12 @@ TICKLABELS = ["−1", "−0.5", "0", "0.5", "1", "1.5", "2"]
 XLABEL = "ΔK per contract / stand-alone PM2 capital"
 LABEL_NUDGE = {"cheap": -0.05, "partial": 0.05}     # x offset of the two inner band labels
 BANDS = [("free", -np.inf, 0.0, "#BDBDBD"), ("cheap", 0.0, 0.5, "#D9D9D9"), ("partial", 0.5, 1.0, "#EFEFEF"),
-         ("dearer", 1.0, np.inf, "white")]
+         ("full", 1.0, np.inf, "white")]
 SENS = [("next contract", "ratio_unit"), ("maintenance margin", "ratio_mm"), ("tape book", "ratio_tape")]
 N_BINS = 62
 
 CAPTION = (
-    r"\textbf{The next contract in a dominant maker's book (H2).} Panel a is the cumulative distribution of the "
+    r"\textbf{A fill in a dominant maker's book (H2).} Panel a is the cumulative distribution of the "
     r"marginal capital of a fill per contract over its stand-alone PM2 capital, $\Delta K / K_{\text{single}}$, "
     r"for the \PH{h2-n} tested fills of the four PM2 subaccounts, which trade ETH and HYPE only; the numbers above "
     r"the bands are the shares of fills in each band, and the shares beyond the axis are given at both ends. The "
@@ -86,8 +86,8 @@ def panel_a_table(hist: pd.DataFrame, n: float, share0: float, h: dict) -> pd.Da
 
     f_half, c_half = f_at(0.5)
     f_one, c_one = f_at(1.0)
-    shares = {"free": share0, "cheap": f_half - share0, "partial": f_one - f_half, "dearer": 1.0 - f_one}
-    band_counts = {"free": share0 * n, "cheap": c_half - share0 * n, "partial": c_one - c_half, "dearer": n - c_one}
+    shares = {"free": share0, "cheap": f_half - share0, "partial": f_one - f_half, "full": 1.0 - f_one}
+    band_counts = {"free": share0 * n, "cheap": c_half - share0 * n, "partial": c_one - c_half, "full": n - c_one}
     for key, lo, hi, _ in BANDS:
         rows.append({"kind": "band", "key": key, "x": lo, "x_hi": hi, "count": float(band_counts[key]),
                      "value": float(shares[key]), "printed": fr.pct(shares[key])})
@@ -290,7 +290,7 @@ def _chk_bands(rd: Path):
     hist, n, share0 = registered_dist(dist)
     right, cum = hist["x_hi"].to_numpy(float), np.cumsum(hist["value"].to_numpy(float))
     f = {x: cum[int(np.flatnonzero(np.isclose(right, x))[0])] / n for x in (0.5, 1.0)}
-    want = {"free": share0, "cheap": f[0.5] - share0, "partial": f[1.0] - f[0.5], "dearer": 1 - f[1.0]}
+    want = {"free": share0, "cheap": f[0.5] - share0, "partial": f[1.0] - f[0.5], "full": 1 - f[1.0]}
     bands = a[a["kind"] == "band"].set_index("key")
     ok = all(fr.close(bands.loc[k, "value"], v) and bands.loc[k, "printed"] == fr.pct(v) for k, v in want.items())
     ok = ok and abs(bands["value"].sum() - 1.0) < 1e-12

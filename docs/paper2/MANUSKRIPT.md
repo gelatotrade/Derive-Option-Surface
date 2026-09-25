@@ -2,6 +2,15 @@
 
 Stand: 24.09.2026, 23:00 UTC+2. Gehört zu `paper2/main.tex` (Entwurf vor der ersten Kapitalzahl).
 
+**Nachtrag 25.09.2026 (Pilotschnitt 17.09.2026):** Alle Platzhalter sind gefüllt, Abstract, Ergebnisse,
+Diskussion und Schluss geschrieben, die Captions stammen aus `derive_surface/figs_p2/<slot>.py` (eine begründete
+Abweichung in F2, siehe `CAPTION_EXCEPTIONS` in `scripts/p2_build.py`). Die Tabellen unten beschreiben den
+Stand vor den Ergebnissen. Prüfkette: `scripts/p2_wordcount.py` (Budget je Abschnitt), `scripts/p2_number_check.py`
+(jede Zahl gegen `results/p2` oder die Konstantenliste der Präregistrierung; Quellen im Manuskript als
+`% src datei:schlüssel` erklärt; Bericht `docs/paper2/ZAHLENPRUEFUNG.md`) und `scripts/p2_build.py` (tectonic,
+Log, Overfull, Pflichtteile, Gedankenstriche, Zitate, Abbildungen, Captions, Budget, Zahlen). Nach dem
+Enddatenlauf alle drei neu laufen lassen: eine erklärte Zahl, die ihre Quelle nicht mehr trifft, bricht den Bau ab.
+
 **Titel:** What does the edge cost? Capital-adjusted market making under a public portfolio-margin engine.
 Dass Kapital über hypothetische Portfolios der Engine gemessen wird und nicht über Kontosalden, steht im
 dritten Satz des Abstracts und im zweiten Absatz der Einleitung.
@@ -255,3 +264,101 @@ Offen: Für die Inferenz (Cluster- und Wild-Cluster-Bootstrap) zitiert Paper 1 `
    measurably“ ehrlicher als eine Zahl.
 4. **`paper2/main.pdf`** ist Bauausgabe und steht nicht in `.gitignore` (dort nur `paper/main.pdf`). Vor dem
    Commit ergänzen oder die Datei löschen.
+
+---
+
+## 7 · Review-Runde 1 (25.09.2026)
+
+Eingearbeitet sind alle kritischen und wichtigen Befunde von Referee und Zahlenprüfer, die kleinen fast alle.
+Neue Zahlen stehen erst im Text, seit sie in `results/p2` liegen (Zahlenregel). Prüfkette danach grün:
+`p2_number_check` (0 unbelegt), `p2_wordcount` (alle Abschnitte im Budget, Abstract 200/200),
+`p2_build` (build clean), `p2_figure_check` (alle Prüfungen ja).
+
+### 7.1 Neue Grössen und wo sie entstehen
+
+Alles explorativ oder beschreibend; kein registriertes Urteil und keine registrierte Zahl ändert sich.
+
+| Grösse | Code | Ablage | Wert (Pilot) |
+|---|---|---|---|
+| ρ nur aus dem Vorzeichenmuster (Ränge innerhalb der Vorzeichengruppen gemischt, 4 000 Ziehungen, Seed 20260924) | `inference_p2.sign_floor` | `sensitivity.json` → `h1_sign.sign_floor`; `summary.json` `h1_sign_floor_*` | Mittel 0,734, P5 0,700, P95 0,770 |
+| ρ innerhalb von Gruppen (gleicher Tages-Bootstrap wie H1) | `inference_p2.h1_sign` | `h1_sign.within_{pos,nonpos,sell,buy,pos_sell,pos_buy}` | Edge > 0: 0,634; Verkäufe 0,990; Käufe 0,721; profitable Käufe 0,243 |
+| Überlappung der besten Zellen | `inference_p2.top_overlap` | `h1_sign.top_overlap`; `h1_top10_overlap`, `h1_top20_overlap` | 1 von 10, 5 von 20 |
+| H2 und H3 je Parameterregime R1 bis R4 (Grenzen wie `figs_p2.f1.REGIME_BOUNDS`, getestet) | `inference_p2.h2_regime_rows`, `h3_review_rows` | `sens_h2.csv`, `sens_h3.csv` (`group = regime=…`); `sensitivity.json` `d_h2.by_regime`, `e_h3.by_regime` | H2 0,0117 bis 0,0899; H3 4,44 bis 6,00 |
+| H3 je Manager des Kontos | `inference_p2.h3_review_rows` | `group = account_manager=SM/PM/PM2`; `e_h3.by_account_manager` | SM 1,076; Legacy 5,457; PM2 5,161 |
+| H3 höchstens 63 Optionen ohne SM-Konto | dito | `e_h3.sm_pm2_le63_no_sm` | 3,780 [3,635; 3,980], n = 184 |
+| H2-Population vor der Ziehung, Ziehung gegen `marginal.parquet` geprüft | `inference_p2.h2_population` | `d_h2.population`; `h2_population` | 100 995, Ziehung identisch |
+| H4-Niveau und Lesehilfe (ln 0,9 mal β und Intervallgrenzen) | `inference_p2_h4.review_extras` | `sensitivity_h4.json` → `review.readings`; `h4_review_*` | Halbspread im Mittel 7,93 bp (Median 3,34); −1,75 bis +2,74 bp |
+| H4 nur Verkaufs- bzw. Kaufzellen, Dosis mit OI-Anteil des geänderten Managers gewichtet | dito | `review.sells_only`, `buys_only`, `oi_weighted` | −3,81 (p 0,58); 128 (p 0,13); −5,13 (p 0,59); OI-Anteil 54,5 bis 94,9 % |
+| API gegen Chain-Semantik, 195 Einzelkontrakte | `p2_zahlenblatt.review_section` aus `api_snapshot.csv` | `api_*` | PM2 Median 0,08 %, p95 0,50 %, Max 2,4 % (> 90 T) |
+| Weitere Zähler | dito | `fills_outside_every_window` (6), `h3_accounts_{sm,pm,pm2}` (1/4/4), `h3_accounts_median_above_threshold` (8 von 9), `h3_days_over_validated_legs` (127, bis 317 Beine), `validation_single_blocks_per_cell` (100), `semantik_box_expiries` (14), `event_*_refbook_log_change` | |
+
+CLI: `python3 -m derive_surface p2 infer extras` und `python3 -m derive_surface.inference_p2_h4 extras` schreiben
+nur diese Einträge in die bestehenden Dateien; `infer sensitivity` und `inference_p2_h4 run` erzeugen sie beim
+nächsten Volllauf mit. Danach `scripts/p2_zahlenblatt.py`. Tests in `tests/test_p2_inference.py` und
+`tests/test_p2_inference_h4.py`.
+
+### 7.2 Änderungen an Prüfkette, Abbildungen und Karten
+
+- `p2_number_check.py`: Erklärungen im Abstract gelten nur für das Abstract (so bindet „two are rejected“ nicht
+  mehr jede „two“ des Textes an `derived:n_rejected`); Daten und Uhrzeiten lassen sich erklären
+  (`% src datei:schlüssel <Datum>`, `const:`, `git:<sha>` für das Autorendatum eines Commits). Damit gehen
+  „25 September 2026“ (Nachträge) an `git:c4fcb59`, das Datum der API-Probe an `api_day`, „08:00“ an
+  `fig_t1_meta.csv`, „fourteen“ an `semantik_box_expiries`, „−0.105“ an `h4_review_ten_pct_dose`.
+- `p2_figure_check.py`: neue Prüfung `CAPTION_ELEMENTS`. Nennt eine Bildunterschrift ein Band oder eine
+  Zeilengruppe (F2 „grey band“, F3/F4 „per/by parameter regime“, „by the manager of the account“, „by book size“,
+  „on the same BTC and ETH legs“), muss die Figurtabelle diese Zeilen enthalten.
+- Captions in den Modulen (F1 „four regimes“ mit den drei Grenzdaten; F2 „edge per unit of premium“; F3 Titel „A
+  fill in a dominant maker's book“; F4 Grenze von 63 Optionen als Probe vom September 2026, Zeile „SM / PM2 same
+  legs“ erklärt). F2-Zeilentitel „edge per premium“ statt „return on premium“, F3-Band „full“ statt „dearer“;
+  F2 und F3 neu gebaut. `docs/paper2/ABBILDUNGSWAHL.md` bleibt als historische Bauanweisung unverändert.
+- Social-Karten: s1 „a fill costs … per contract“ statt „the next contract“; s3 nicht mehr „the map … stays the
+  same“, sondern Vorzeichenmuster (0,90) und profitable Zellen (0,63); Fusszeile nennt die Präregistrierung
+  `1d13227` statt `c4fcb59`.
+
+### 7.3 Abgelehnte oder nur teilweise übernommene Vorschläge
+
+1. **Referee, klein (H1-Intervall unter dem Schätzer):** Der vorgeschlagene Halbsatz „the interval sits below the
+   estimate because thin cells are noisier in resampled days“ ist nicht übernommen. Der Mechanismus ist nicht
+   belegt: Rauschen im gemeinsamen Zähler beider Karten treibt ρ eher nach oben, und in den neuen Gruppenzeilen
+   liegt das Intervall teils über dem Schätzer (Edge ≤ 0: 0,636 bei [0,674; 0,830]; profitable Käufe 0,243 bei
+   [0,231; 0,476]). Hinweis für den Autor: Perzentilintervalle von ρ über wenige, dünn besetzte Zellen decken den
+   Punktschätzer nicht zuverlässig; der Text nennt für die Gruppen deshalb nur Punktwerte.
+2. **Referee, klein (cameron2008, mackinnon2017, roodman2019 zitieren):** nicht übernommen. Die Vorgabe erlaubt nur
+   Schlüssel aus `paper2/refs.bib`; die Erweiterung bleibt Entscheidung des Autors (Abschnitt 5, „Offen“).
+3. **Referee, wichtig (Aufteilung grosser Bücher auf SM-Subaccounts nach Verfall):** Der zweite Satz des Vorschlags
+   ist nicht geprüft und steht deshalb nur als offene Grenze in 4.3 („is not examined“), wie vom Referee für
+   diesen Fall vorgesehen.
+4. **Referee, wichtig (H2 explorativ nach öffnenden und schliessenden Fills trennen):** nicht gerechnet.
+   `marginal.parquet` enthält die Position im Instrument vor dem Fill nicht; sie müsste aus Snapshot und
+   `BalanceAdjusted` je Fill neu erhoben werden (Lauf in `books.py`). Übernommen ist die Minimalfassung als Satz
+   ohne Zahl: der Median mischt Fills, die das Risiko des Buchs ausgleichen, mit Fills, die es erhöhen. „Many fills
+   that release capital close existing positions“ ist ohne diese Messung nicht belegt und steht nicht im Text.
+5. **Referee, wichtig (K explorativ für Option plus Perp-Delta rechnen):** nicht gerechnet; die Abweichung zwischen
+   gesichertem Netto-Edge und Kapital des ungesicherten Kontrakts steht in Abschnitt 3 und unter den Grenzen.
+6. **Referee, klein (Anteil der Maker-Tage mit Nicht-USDC-Collateral):** nicht gerechnet, `maker_days.parquet`
+   führt kein Collateral. Der Text sagt jetzt, dass der Anteil nicht gemessen ist (die Snapshots enthalten
+   Basis-Assets, eine spätere Runde kann ihn ausweisen).
+7. **Referee, kritisch (H4 im Abstract „modest narrowing“):** „modest“ ist nicht übernommen. Für zehn Prozent
+   billigeres Kapital reicht das Intervall bis −1,75 bp bei einem mittleren Halbspread von 7,93 bp, gut ein Fünftel.
+   Der Text sagt deshalb „a narrowing by a fifth is not excluded“; das Abstract sagt nur „no evidence“.
+8. **Referee, kritisch (Abstract-Wortlaut H3 mit 73,6 %):** gekürzt auf „mostly books no standard-margin account
+   could hold“, weil das Abstract eine harte Grenze von 200 Wörtern hat; 73,6 % stehen in Einleitung und 4.3.
+9. **Referee, klein (Kohärenz: PM2 nur praktisch konvex):** wegen des Budgets von Abschnitt 2 (660/660) nur der
+   erste Teil übernommen: Der Satz schreibt die Kohärenz nur dem Worst-Loss-Kern der Szenario-Margin zu und nicht
+   der ganzen Regel mit Kontingenzen und Static Discount; Figlewski steht jetzt für wahrscheinlichkeitsbasierte
+   Margin („probability-based margin“), nicht für Szenario-Engines.
+10. **Zahlenprüfer, klein (Deklarationen für alle Zählwörter):** teilweise. „four“ (Regime in F1, Probebücher in T2,
+    Nachträge), „ten“ (zehn Prozent) und „100“ (Validierungsblöcke neben 100 Placebo-Terminen im selben Abschnitt)
+    bleiben generische Treffer der Konstantenliste: Für sie gibt es keine Zahl in `results/p2`, oder eine Erklärung
+    würde im selben Geltungsbereich eine andere Zahl falsch binden. Die Werte selbst stimmen.
+11. **Referee, wichtig (Absatz zu den Grenzen um „dose is stand-alone …“ erweitern):** steht statt in der Diskussion
+    in 4.4 (Identifikationsabsatz), weil die Diskussion am Budget liegt; die Diskussion nennt die übrigen Grenzen.
+
+### 7.4 Hinweise für den nächsten Lauf
+
+- Nach dem Enddatenlauf: `infer sensitivity`, `inference_p2_h4 run`, `p2_zahlenblatt.py`, Abbildungen,
+  `p2_number_check`, `p2_wordcount`, `p2_build`, `p2_figure_check`. Erklärte Zahlen, die ihre Quelle nicht mehr
+  treffen, brechen den Bau ab; die Sätze zu H1 (0,634, 0,734), H3 (3,780, 8 von 9) und H4 (7,93, −1,75/+2,74)
+  sind dann neu zu lesen, nicht nur die Ziffern zu tauschen.
+- Die Kaufzellen-Schätzung von H4 (128, p 0,13) beruht auf Dosen nahe null und ist kaum identifiziert; sie steht im
+  Text, damit die Verkaufszeile nicht selektiv wirkt.

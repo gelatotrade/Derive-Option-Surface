@@ -1,8 +1,8 @@
 # Abbildungen Paper 2: Prüfliste
 
-Erzeugt 2026-09-25 01:47 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. Jede Zeile vergleicht den Wert, den die Abbildung druckt (ihre Tabelle `results/p2/fig_<slot>_*.csv`), mit der Datei in `results/p2`, aus der er stammt, nie mit sich selbst. Spalte *Bauanweisung*: dieselbe Zahl gegen die Prüfzahl in `docs/paper2/ABBILDUNGSWAHL.md` (Pilotschnitt 17.09.2026), wo der Slot eine hat.
+Erzeugt 2026-09-25 02:03 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. Jede Zeile vergleicht den Wert, den die Abbildung druckt (ihre Tabelle `results/p2/fig_<slot>_*.csv`), mit der Datei in `results/p2`, aus der er stammt, nie mit sich selbst. Spalte *Bauanweisung*: dieselbe Zahl gegen die Prüfzahl in `docs/paper2/ABBILDUNGSWAHL.md` (Pilotschnitt 17.09.2026), wo der Slot eine hat.
 
-**Ergebnis:** 197 von 197 Prüfungen ja; Bauanweisung 108 von 108 ja; Gestalt 13 von 13 ja; Captions 9 von 9 gleich.
+**Ergebnis:** 206 von 206 Prüfungen ja; Bauanweisung 108 von 108 ja; Gestalt 13 von 13 ja; Captions 9 von 9 gleich.
 
 ## Prüfzahlen
 
@@ -74,7 +74,7 @@ Erzeugt 2026-09-25 01:47 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. 
 | F2 | ten largest \|rank_shift\| (ties by cell id) | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | ja | – |
 | F2 | header line = verdict rebuilt from h1.json rule and bounds | registered: 0.90 [0.88, 0.91] → rejected | registered: 0.90 [0.88, 0.91] → rejected | ja | – |
 | F2 | sample line: cells and day clusters | 173 cells · 463 day clusters | 173 cells · 463 day clusters | ja | ja |
-| F2 | forest rows (stat, lo, hi) = h1.json and sensitivity.json | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:b_mm.h1_pm2_mm: [0.902559, 0.8… | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:g_by_ccy.pm2_ETH: [0.921632, 0… | ja | – |
+| F2 | forest rows (stat, lo, hi) = h1.json and sensitivity.json | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:b_mm.h1_pm2_mm: [0.902559, 0.8… | {sensitivity.json:f_time.holding: [0.833378, 0.79533, 0.840752], sensitivity.json:a_maps.… | ja | – |
 | F2 | fills in occupied cells (panel a) = h1.json n_fills | 331813 | 331813 | ja | ja |
 | F2 | cells present in every replicate | 173 | 173 | ja | ja |
 | F2 | kappa span of the occupied cells | [0.0736079, 38.7334] | [0.0736079, 38.7334] | ja | ja |
@@ -86,7 +86,7 @@ Erzeugt 2026-09-25 01:47 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. 
 | F3 | 62 bins, two open, sum n | fig_h2_dist.csv all/ratio: 62 bins sum to 19999.0; h2.json n 19999 | h2.json n | ja | – |
 | F3 | ECDF steps | fig_f3_a.csv ecdf: 61 steps against the cumulative bins | fig_h2_dist.csv hist | ja | – |
 | F3 | ECDF at 0 | fig_f3_a.csv ecdf x=0: ECDF(0) 0.41962098104905243; share_le_0 0.41962098104905243; h2.js… | h2.json share_nonpositive, fig_h2_dist.csv share_le_0 | ja | – |
-| F3 | band shares | fig_f3_a.csv band: free 42 %; cheap 30 %; partial 24 %; dearer 4 % | fig_h2_dist.csv hist and share_le_0 | ja | – |
+| F3 | band shares | fig_f3_a.csv band: free 42 %; cheap 30 %; partial 24 %; full 4 % | fig_h2_dist.csv hist and share_le_0 | ja | – |
 | F3 | overflows | fig_f3_a.csv overflow and ECDF ends: 15.8 % below −1; 0.0 % above 2 | fig_h2_dist.csv open bins | ja | – |
 | F3 | median bar | fig_f3_a.csv median: bar 0.03070183757603388 to 0.03855716844133305, circle 0.03454012245… | h2.json stat, lo, hi | ja | – |
 | F4 | verdict line | fig_f4_b.csv header: figure 'registered: 4.75 [4.66, 4.82] → not rejected'; h3.json gives… | h3.json rule, threshold, lo, hi, rejected | ja | – |
@@ -205,6 +205,15 @@ Erzeugt 2026-09-25 01:47 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. 
 | S3 | card number lo (printed 0.88) | 0.880564 | 0.880564 | ja | – |
 | S3 | card number hi (printed 0.91) | 0.907433 | 0.907433 | ja | – |
 | S3 | card number n_cells (printed 173) | 173 | 173 | ja | – |
+| S3 | card number within_pos (printed 0.63) | 0.634125 | 0.634125 | ja | – |
+| F2 | caption "grey band": a row of kind band (h1_sign.sign_floor) | fig_f2_c.csv | drawn | ja | – |
+| F2 | caption "exploratory rows": rows of kind exploratory | fig_f2_c.csv | drawn | ja | – |
+| F3 | caption "per account": rows with group label= | fig_f3_b.csv | drawn | ja | – |
+| F3 | caption "per parameter regime": rows with group regime= | fig_f3_b.csv | drawn | ja | – |
+| F4 | caption "by the manager of the account": rows with group account_manager= | fig_f4_b.csv | drawn | ja | – |
+| F4 | caption "by parameter regime": rows with group regime= | fig_f4_b.csv | drawn | ja | – |
+| F4 | caption "by book size": rows sm_pm2_le63 and sm_pm2_gt63 | fig_f4_b.csv | drawn | ja | – |
+| F4 | caption "on the same BTC and ETH legs": row sm_pm2_be | fig_f4_b.csv | drawn | ja | – |
 
 ## Gestalt
 

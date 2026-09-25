@@ -48,7 +48,7 @@ EXPLORATORY_BAND = "#F0F0F0"
 HATCH_GREY = "#BBBBBB"
 MINUS = "-"            # hyphen-minus in the cells: "−725" (0.27 in) does not fit a 0.24 in column, "-725" does
 CCYS, SIDES = base.CCYS, base.SIDES
-SIDE_TITLE = {"sell": "maker sells (short)", "buy": "maker buys (long):\nreturn on premium"}
+SIDE_TITLE = {"sell": "maker sells (short)", "buy": "maker buys (long):\nedge per premium"}
 HEADER = ("number = net edge per unit of PM2 capital, bp, per fill · hatched = negative\n"
           "× = under 200 fills · PM2 window, pooled over four regimes")
 X_RHO = (-0.2, 1.0)
@@ -77,8 +77,8 @@ BAND_LABEL = "sign pattern alone"
 CAPTION = (
     "The map in two denominators (H1). Panel a is net edge per unit of PM2 capital in basis points, per fill, for "
     "every cell of the PM2 window by underlying and maker side; negative cells are hatched and an empty cross marks "
-    "fewer than 200 fills. For a maker buy the denominator is close to the premium, so the lower row is a return on "
-    "premium and is shaded on its own scale. The map per notional is Figure~\\PH{p1-map-fig} of the companion paper. "
+    "fewer than 200 fills. For a maker buy the denominator is close to the premium, so the lower row is edge per unit "
+    "of premium and is shaded on its own scale. The map per notional is Figure~\\PH{p1-map-fig} of the companion paper. "
     "Panel b ranks the \\PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because "
     "capital is positive in every cell, the \\PH{h1-pos} cells with positive edge come first in both rankings, and "
     "the grey lines mark that boundary. Crosses give the 90 per cent rank intervals of the ten largest moves. Panel "

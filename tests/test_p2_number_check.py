@@ -180,6 +180,25 @@ def test_declarations_inside_the_abstract_hold_for_the_abstract_only(results):
     assert nc.unused_declarations(ok, vs) == []
 
 
+def test_declared_dates_and_times_bind_to_their_source(results):
+    body = ("\\section{R}\nThe cut of 17 September 2026 at 10:45 and the addenda of 25 September 2026.\n"
+            "% src summary.json:cutoff_day 17 September 2026\n% src git:c4fcb59 25 September 2026\n"
+            "% src semantik/faktoren.csv:messung 10:45\n")
+    t = tex(body)
+    vs = nc.check(t, results, resolve_commit=resolve, git_date=lambda sha: "2026-09-25 01:29:58 +0200")
+    got = {v.token.raw: v for v in vs}
+    assert got["17 September 2026"].how == "declared" and got["17 September 2026"].source == "summary.json:cutoff_day"
+    assert got["25 September 2026"].how == "declared" and got["25 September 2026"].source == "git:c4fcb59"
+    assert got["10:45"].how == "declared"
+    vs = nc.check(t, results, resolve_commit=resolve, git_date=lambda sha: "2026-09-24 23:29:58 +0000")
+    assert not {v.token.raw: v for v in vs}["25 September 2026"].ok       # the commit is of another day
+    wrong = tex("\\section{R}\nOn 17 September 2026.\n% src semantik/faktoren.csv:messung 17 September 2026\n")
+    assert not nc.check(wrong, results, resolve_commit=resolve)[0].ok     # the declared file has no such date
+    const = tex("\\section{R}\nFrom 11 January 2024.\n% src const:sample 11 January 2024\n")
+    v = nc.check(const, results, resolve_commit=resolve)[0]
+    assert v.ok and v.how == "declared" and nc.unused_declarations(const, [v]) == []
+
+
 def test_declared_csv_column_and_row(results):
     vs = verdicts(results, "\\section{R}\nKappa 7.8 and rank 4.\n% src table.csv:kappa 7.8\n"
                            "% src table.csv:rank@ETH|sell 4\n")
