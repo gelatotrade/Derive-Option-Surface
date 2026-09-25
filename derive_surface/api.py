@@ -91,8 +91,14 @@ class DeriveClient:
                 if resp.status_code == 429 or resp.status_code >= 500:
                     log.warning("%s: HTTP %s (attempt %d)", method, resp.status_code, attempt + 1)
                 else:
-                    payload = resp.json()
-                    if "error" in payload:
+                    try:
+                        payload = resp.json()
+                    except ValueError as exc:  # empty or truncated body despite HTTP 200 -> retry
+                        log.warning("%s: unparseable response %s (attempt %d)", method, exc, attempt + 1)
+                        payload = None
+                    if payload is None:
+                        pass
+                    elif "error" in payload:
                         err = payload["error"]
                         if _is_rate_limit(err):
                             log.warning("%s: rate limited %s (attempt %d)", method, err, attempt + 1)
