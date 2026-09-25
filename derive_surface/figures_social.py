@@ -21,7 +21,7 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
 from . import figdata, figstyle  # noqa: E402
-from .figures_p1 import load_inputs  # noqa: E402
+from .figures_p1 import load_inputs, minus  # noqa: E402
 from .markouts import DELTA_LABELS, TENOR_LABELS  # noqa: E402
 
 WIDTH, HEIGHT, DPI = 10.0, 5.625, 160          # 1600 x 900
@@ -92,7 +92,7 @@ def card_s1(inputs: dict, out_dir: Path) -> List[Path]:
     labels = ["half\nspread", "adverse\nselection", "maker\nfee", "maker\nrebate", "hedge\ncost", "NET\nEDGE"]
 
     fig = _card("Where an options maker's edge goes",
-                "Mean per contract, 603,940 fills on Derive, BTC / ETH / HYPE, Jan 2024 - Sep 2026.")
+                "Mean per contract, 603,940 Derive fills, BTC / ETH / HYPE, Jan 2024 to Sep 2026.")
     ax = _axes(fig)
     running = 0.0
     for i, (key, label) in enumerate(zip(order, labels)):
@@ -102,7 +102,7 @@ def card_s1(inputs: dict, out_dir: Path) -> List[Path]:
         color = INK if total else (figstyle.PALETTE[0] if v >= 0 else figstyle.PALETTE[1])
         ax.bar(i, v, bottom=bottom, color=color, width=0.66)
         top = bottom + v
-        ax.text(i, max(top, bottom) + 0.6, "{:+.2f}".format(v), ha="center", fontsize=16, fontweight="bold")
+        ax.text(i, max(top, bottom) + 0.6, minus("{:+.2f}".format(v)), ha="center", fontsize=16, fontweight="bold")
         if not total:
             running += v
     ax.axhline(0, color=INK, lw=1.2)
@@ -131,7 +131,7 @@ def card_s2(inputs: dict, out_dir: Path) -> List[Path]:
     ax.set_yticklabels(["{}  ({})".format(names.get(c, c), int(g))
                         for c, g in zip(classes["class"], classes["clusters"])])
     for i, v in enumerate(classes["mean"]):
-        ax.text(v + (1.2 if v >= 0 else -1.2), i, "{:+.1f}".format(v), va="center",
+        ax.text(v + (1.2 if v >= 0 else -1.2), i, minus("{:+.1f}".format(v)), va="center",
                 ha="left" if v >= 0 else "right", fontsize=16, fontweight="bold")
     ax.axvline(0, color=INK, lw=1.2)
     ax.set_xlabel("USDC per contract")
@@ -184,8 +184,9 @@ def card_s4(inputs: dict, out_dir: Path) -> List[Path]:
         ax.plot([raw, ctrl], [i, i], color=MUTED, lw=2.0)
         ax.plot([raw], [i], "o", mfc="white", mec=figstyle.PALETTE[1], mew=2.6, ms=15)
         ax.plot([ctrl], [i], "o", color=figstyle.PALETTE[0], ms=15)
-        ax.annotate("t = {:.2f}".format(t), xy=(ctrl, i), xytext=(0, 16), textcoords="offset points",
-                    ha="center", fontsize=15, fontweight="bold")
+        ax.annotate(minus("t = {:.2f}".format(t)), xy=(ctrl, i), xytext=(0, 16), textcoords="offset points",
+                    ha="center", fontsize=15, fontweight="bold", zorder=4,
+                    bbox=dict(boxstyle="square,pad=0.1", fc="white", ec="none"))     # over the zero line
     ax.axvline(0, color=INK, lw=1.2)
     span = max(abs(r[1]) for r in rows)
     ax.set_xlim(-span * 1.12, span * 0.16)          # room to the right of zero for the t labels
@@ -200,19 +201,33 @@ def card_s4(inputs: dict, out_dir: Path) -> List[Path]:
     return _save(fig, "s4_proxies", out_dir)
 
 
+def s5_takeaway(grids: Dict[str, pd.DataFrame]) -> str:
+    """The sentence under the S5 title, with the median over the occupied cells of each panel.
+
+    The first card stated a ranking in words; that ranking came from a unit error (net edge per contract
+    over the notional of the whole fill), so the takeaway now carries the numbers of the map it sits on.
+    """
+    medians = []
+    for ccy, values in grids.items():
+        finite = values.to_numpy(float)
+        finite = finite[np.isfinite(finite)]
+        if finite.size:
+            medians.append("{} {:.1f}".format(ccy, float(np.median(finite))))
+    return ("Median net edge in basis points of notional, one shared colour scale. Rows are the absolute "
+            "delta, columns the tenor. Median over the cells: {} bp.".format(", ".join(medians)))
+
+
 def card_s5(inputs: dict, out_dir: Path) -> List[Path]:
     """Where a maker is actually paid."""
     frame = inputs["frame"]
-    bp = frame.assign(bp=1e4 * frame["net_edge"] / frame["notional"].replace(0, np.nan))
+    bp = frame.assign(bp=figdata.edge_bp(frame))               # edge of the fill over its notional
     currencies = [c for c in ("BTC", "ETH", "HYPE") if (bp["currency"] == c).any()]
 
-    fig = _card("Where a maker actually gets paid",
-                "Median net edge in basis points of notional, one shared colour scale. Rows are the absolute "
-                "delta, columns the tenor. HYPE pays almost nothing anywhere.")
     grids = {}
     for ccy in currencies:
         values, _ = figdata.cell_matrix(bp[bp["currency"] == ccy], "bp", stat="median")
         grids[ccy] = values
+    fig = _card("Where a maker actually gets paid", s5_takeaway(grids))
     everything = np.concatenate([g.to_numpy(float).ravel() for g in grids.values()])
     everything = everything[np.isfinite(everything)]
     # one scale for all three panels: a per-panel scale would make the cheapest underlying look the hottest
@@ -229,7 +244,7 @@ def card_s5(inputs: dict, out_dir: Path) -> List[Path]:
             for j in range(grid.shape[1]):
                 v = grid[i, j]
                 if np.isfinite(v):
-                    ax.text(j, i, "{:.0f}".format(v) if abs(v) >= 10 else "{:.1f}".format(v),
+                    ax.text(j, i, minus("{:.0f}".format(v) if abs(v) >= 10 else "{:.1f}".format(v)),
                             ha="center", va="center", fontsize=12,
                             color="white" if v > cut else INK)
         ax.set_xticks(range(grid.shape[1]))

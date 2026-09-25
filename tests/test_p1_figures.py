@@ -69,6 +69,8 @@ def frame(n=900, seed=0):
         f["iv_b_{}".format(h)] = np.abs(rng.normal(0.6, 0.1, n))
         f["fwd_b_{}".format(h)] = f["fwd_t"] + rng.normal(0, 50, n)
     f["y_usd"] = f["mo_usd_30m"]
+    f["fee_pc"] = f["fee_maker"] / f["amount"]            # analysis_frame: fee and rebate per contract
+    f["rebate_pc"] = f["rebate_maker"] / f["amount"]
     f["y_dn"] = f["mo_dn_30m"]
     f["y_vol"] = f["mo_vol_30m"]
     f["day"] = pd.to_datetime(f["ts"], unit="ms", utc=True).dt.strftime("%Y-%m-%d")
@@ -165,3 +167,82 @@ def test_build_rejects_an_unknown_slot(tmp_path, monkeypatch):
     monkeypatch.setattr(figures_p1, "load_inputs", lambda root, results_dir: inputs())
     with pytest.raises(KeyError):
         figures_p1.build("data/p1", "results/p1", tmp_path, only=["F9"])
+
+
+# ------------------------------------------------------------------ units: per contract, per notional
+
+def test_t2_draws_fee_and_rebate_per_contract():
+    """Bars and error bars of T2 come from the per-contract columns that make up the net edge."""
+    from tests.test_p1_figdata import FUNDING, fills_with_amounts
+    from derive_surface import inference_p1 as inf
+
+    f = inf.analysis_frame(fills_with_amounts(), FUNDING)
+    values = figures_p1.t2_values(f)
+    assert values["maker fee"]["value"] == pytest.approx(-np.mean(f["fee_maker"] / f["amount"]))
+    assert values["maker fee"]["value"] == pytest.approx(-0.4)
+    assert values["maker rebate"]["value"] == pytest.approx(0.1)
+    for name in ("maker fee", "maker rebate"):
+        assert values[name]["lo"] <= values[name]["value"] <= values[name]["hi"]
+    steps = sum(values[k]["value"] for k in ("half spread", "adverse selection", "maker fee", "maker rebate",
+                                             "hedge cost"))
+    assert steps == pytest.approx(values["net edge"]["value"])
+    assert values["net edge"]["value"] == pytest.approx(np.mean(f["net_edge"]))
+
+
+def spy(monkeypatch, name):
+    from derive_surface import figdata
+
+    calls, real = [], getattr(figdata, name)
+
+    def wrapped(frame, *args, **kw):
+        calls.append(args)
+        return real(frame, *args, **kw)
+
+    monkeypatch.setattr(figdata, name, wrapped)
+    return calls
+
+
+def test_f5_and_s5_draw_the_edge_per_notional_through_one_helper(tmp_path, monkeypatch):
+    from derive_surface import figures_social
+
+    calls = spy(monkeypatch, "edge_bp")
+    figures_p1.fig_f5(inputs(), tmp_path)
+    figures_social.card_s5(inputs(), tmp_path)
+    assert len(calls) == 2
+
+
+def test_f1c_and_f2c_divide_the_markout_by_the_price_per_contract(tmp_path, monkeypatch):
+    calls = spy(monkeypatch, "premium_share")
+    figures_p1.fig_f1(inputs(), tmp_path)
+    assert calls == [("y_usd",)]
+    del calls[:]
+    figures_p1.fig_f2(inputs(), tmp_path)
+    assert {c[0] for c in calls} == {"mo_usd_{}".format(h) for h in figures_p1.HORIZONS}
+
+
+def test_f2_grey_line_uses_the_balanced_subsample_like_the_class_lines(tmp_path, monkeypatch):
+    from derive_surface import figdata
+
+    data = inputs()
+    f = data["frame"]
+    f.loc[f.index[:120], "mo_usd_24h"] = np.nan          # these fills lack a horizon and must not be drawn
+    balanced = int(np.isfinite(f[["mo_usd_{}".format(h) for h in figures_p1.HORIZONS]]).all(axis=1).sum())
+    sizes = []
+    original = figdata.premium_share
+
+    def wrapped(frame, column):
+        sizes.append(len(frame))
+        return original(frame, column)
+
+    monkeypatch.setattr(figdata, "premium_share", wrapped)
+    figures_p1.fig_f2(data, tmp_path)
+    assert max(sizes) == balanced < len(f)
+
+
+def test_minus_prints_negative_numbers_with_a_minus_sign_and_keeps_ranges():
+    assert figures_p1.minus("t -0.10") == "t −0.10"
+    assert figures_p1.minus("-82.8 to 29 bp") == "−82.8 to 29 bp"
+    assert figures_p1.minus("adverse\nselection\n-3.72") == "adverse\nselection\n−3.72"
+    assert figures_p1.minus("0-5") == "0-5"
+    assert figures_p1.minus("p25-p75") == "p25-p75"
+    assert figures_p1.minus("+15.70") == "+15.70"

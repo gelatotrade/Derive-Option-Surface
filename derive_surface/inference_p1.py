@@ -215,7 +215,11 @@ def hedge_cost(abs_delta: np.ndarray, forward: np.ndarray, tau_s: float, funding
 
 def analysis_frame(markouts: pd.DataFrame, funding: pd.DataFrame, horizon: str = HORIZON,
                    half_spread_bp: float = 1.0) -> pd.DataFrame:
-    """Analysis columns for one horizon: markout units, half spread, adverse selection, net edge, FE key, cluster."""
+    """Analysis columns for one horizon: markout units, half spread, adverse selection, net edge, FE key, cluster.
+
+    Every component of the net edge is in USDC per contract: ``fee_pc`` and ``rebate_pc`` are the maker
+    fee and rebate of the fill divided by its amount.  The edge of the whole fill is ``net_edge * amount``.
+    """
     tau = HORIZON_SECONDS[horizon]
     f = markouts.copy()
     rates = (funding.assign(ccy=funding["instrument_name"].str.split("-").str[0])
@@ -229,7 +233,13 @@ def analysis_frame(markouts: pd.DataFrame, funding: pd.DataFrame, horizon: str =
     f["y_vol"] = f[f"mo_vol_{horizon}"].to_numpy()
     f["hedge"] = hedge_cost(f["delta_t"].to_numpy(), f["fwd_t"].to_numpy(), tau, f["funding_per_hour"].to_numpy(),
                             half_spread_bp=half_spread_bp)
-    f["net_edge"] = f["y_usd"] - f["fee_maker"].to_numpy() + f["rebate_maker"].to_numpy() - f["hedge"].to_numpy()
+    # the tape books the maker fee and rebate as sums over the fill; markout and hedge are per contract
+    # (pre-registration, addendum 3); a fill without a positive amount has no net edge
+    amount = f["amount"].to_numpy(float)
+    amount = np.where(amount > 0, amount, np.nan)
+    f["fee_pc"] = f["fee_maker"].to_numpy(float) / amount
+    f["rebate_pc"] = f["rebate_maker"].to_numpy(float) / amount
+    f["net_edge"] = f["y_usd"] - f["fee_pc"].to_numpy() + f["rebate_pc"].to_numpy() - f["hedge"].to_numpy()
     day = pd.to_datetime(f["ts"], unit="ms", utc=True).dt.strftime("%Y-%m-%d")
     f["day"] = day
     f["fe_key"] = f["instrument_name"] + "|" + day
@@ -368,8 +378,8 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
         ci.update({"class": name, "fills": int(len(g)), "mean_dn": float(np.nanmean(g["y_dn"])),
                    "mean_vol": float(np.nanmean(g["y_vol"])), "mean_ne": float(np.nanmean(g["net_edge"])),
                    "mean_hs": float(np.nanmean(g["hs"])), "mean_as": float(np.nanmean(g["as_usd"])),
-                   "mean_hedge": float(np.nanmean(g["hedge"])), "mean_fee": float(np.nanmean(g["fee_maker"])),
-                   "mean_rebate": float(np.nanmean(g["rebate_maker"])), "mean_notional": float(np.nanmean(g["notional"])),
+                   "mean_hedge": float(np.nanmean(g["hedge"])), "mean_fee": float(np.nanmean(g["fee_pc"])),
+                   "mean_rebate": float(np.nanmean(g["rebate_pc"])), "mean_notional": float(np.nanmean(g["notional"])),
                    "share_negative": float(np.nanmean(g["y_usd"] < 0))})
         classes.append(ci)
     pd.DataFrame(classes).to_csv(out_dir / "class_means.csv", index=False)

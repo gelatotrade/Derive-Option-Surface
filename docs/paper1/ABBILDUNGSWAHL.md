@@ -58,3 +58,11 @@ bis H4 aendern sich nicht. Nach dem Neulauf lauten die p-Werte der beiden auffae
 | fuenf Prozent getrimmtes Mittel 10,80 | 6,36 |
 | Markout in Praemienanteilen q25 -3,3 / Median +3,4 / q75 +13,5 Prozent | -1,6 / +1,1 / +21,1 |
 | Pro-Kontrakt-Faktor 426 zwischen den Basiswerten | 1 599 zwischen BTC und HYPE, gemessen am mittleren Indexpreis |
+
+## Nachtrag 25.09.2026
+
+Zwei Zeilen oben sind nach Nachtrag 3 der Praeregistrierung ueberholt. Die Quartile des Entwurfs, -3,3 / +3,4 /
++13,5 Prozent, waren die einheitliche Form (Markout je Kontrakt durch Preis je Kontrakt) und gelten wieder; die
+"Nachrechnung" -1,6 / +1,1 / +21,1 teilte den Markout je Kontrakt durch die Praemie des ganzen Fills. Die
+Sensitivitaet bei null Basispunkten lautet nach der Korrektur der Gebuehreneinheit 78,4 statt 57,7 Prozent.
+Einzelheiten: `docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md`, `docs/paper1/REVISION_2026-09-25.md`.

@@ -49,3 +49,14 @@ def test_every_subcommand_reaches_its_own_handler(monkeypatch, tmp_path, capsys)
     p1cli.main(["--root", str(tmp_path), "inference", "--results", str(tmp_path)])
     p1cli.main(["--root", str(tmp_path), "figures", "--results", str(tmp_path), "--out", str(tmp_path)])
     assert calls == ["inference", "figures"]
+
+
+def test_cards_command_draws_the_social_cards(monkeypatch, tmp_path):
+    from derive_surface import p1cli
+
+    calls = []
+    monkeypatch.setattr("derive_surface.figures_social.build",
+                        lambda *a, **k: calls.append((a, k)) or {"S1": [tmp_path / "s1.png"]})
+    p1cli.main(["--root", str(tmp_path), "cards", "--results", str(tmp_path), "--out", str(tmp_path),
+                "--only", "S1,S5"])
+    assert len(calls) == 1 and calls[0][1]["only"] == ["S1", "S5"]
