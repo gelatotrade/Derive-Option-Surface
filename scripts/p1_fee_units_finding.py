@@ -8,15 +8,15 @@ the maker row of the fill (P2 pre-registration, addendum 2).  This script copies
 paper 1 numbers exactly (``fee_unit="p1"``) and recomputes them with fee and rebate divided by the fill amount
 (``fee_unit="per_contract"``).  Nothing in paper 1 is changed; the helpers that do not touch the fee
 (``hedge_cost``, ``cluster_mean_ci``, ``cell_table``, ``figdata.cell_matrix``) are imported unchanged.
-Finding and numbers: docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md, results/p1_befund/.
+Finding and numbers: docs/paper1/FINDING_2026-09-25_FEE_UNITS.md, results/p1_finding/.
 
-    python3 scripts/p2_heavy.py --wait-max 500 -- python3 scripts/p1_befund_gebuehreneinheit.py
+    python3 scripts/p2_heavy.py --wait-max 500 -- python3 scripts/p1_fee_units_finding.py
 
 Inputs are the paper 1 files under data/p1 (markouts, funding) and results/p1.  The run is resumable: every
-step writes a part file under ``--parts`` (default data/p1/befund_gebuehreneinheit, ignored by git) and is
+step writes a part file under ``--parts`` (default data/p1/fee_units_finding, ignored by git) and is
 skipped when that file exists; ``--max-seconds`` stops before starting a step once the budget is spent (exit
-code 3 = call again).  The sections of results/p1_befund/gebuehreneinheit.csv up to ``f1_premium_share`` are
-the numbers of the finding as committed on 25.09.2026; the sections after it answer the audit of Paper 2
+code 3 = call again).  The sections of results/p1_finding/fee_units.csv up to ``f1_premium_share`` are
+the numbers of the finding as committed on 2026-09-25; the sections after it answer the audit of Paper 2
 (docs/paper2/AUDIT.md, A65 to A68) and are appended so that the earlier rows stay where they were.
 """
 from __future__ import annotations
@@ -39,7 +39,7 @@ if str(REPO) not in sys.path:
 from derive_surface import figdata  # noqa: E402
 from derive_surface import inference_p1 as inf  # noqa: E402
 
-SCRIPT = "scripts/p1_befund_gebuehreneinheit.py"
+SCRIPT = "scripts/p1_fee_units_finding.py"
 HORIZON = "30m"
 P1_SEED = 20260917                  # paper 1 registered seed: needed to reproduce its intervals exactly
 B_CELLS = 9_999                     # paper 1 registered H4 run, and the draws the paper 1 text states
@@ -59,9 +59,9 @@ PACKAGE_KEY = ["rfq_id", "maker_wallet"]
 MARKOUTS = REPO / "data" / "p1" / "derived" / "markouts.parquet"
 FUNDING = REPO / "data" / "p1" / "ref" / "funding_history.parquet"
 P1_RESULTS = REPO / "results" / "p1"
-ABBILDUNGEN = REPO / "docs" / "paper1" / "ABBILDUNGEN.md"
-PARTS = REPO / "data" / "p1" / "befund_gebuehreneinheit"
-OUT_DIR = REPO / "results" / "p1_befund"
+FIGURE_CHECKS = REPO / "docs" / "paper1" / "FIGURE_CHECKS.md"
+PARTS = REPO / "data" / "p1" / "fee_units_finding"
+OUT_DIR = REPO / "results" / "p1_finding"
 
 
 # ------------------------------------------------------------------------------------------ the net edge
@@ -352,7 +352,7 @@ def run_steps(max_seconds: float, b_cells: int, b_figure: int, parts: Path = Non
         return inf.cell_table(f[f["currency"] == ccy], "net_edge", b=b_cells, seed=P1_SEED)
 
     steps: List[tuple] = []
-    # the finding as committed on 25.09.2026
+    # the finding as committed on 2026-09-25
     steps.append(("reproduce_frame.json", lambda: _reproduce_frame(inputs(), frame("p1"))))
     for unit in FEE_UNITS:
         steps.append(("decomposition_{}.csv".format(unit), lambda u=unit: decomposition(frame(u), b=b_figure)))
@@ -420,15 +420,15 @@ def _reproduce_frame(inputs: Dict[str, pd.DataFrame], ours: pd.DataFrame) -> dic
 # ---------------------------------------------------------------------------------------------- assembly
 
 def _p1_manuscript_references() -> Dict[str, float]:
-    """Headline decomposition as printed in paper/main.tex and docs/paper2/UEBERGABE.md (two decimals)."""
+    """Headline decomposition as printed in paper/main.tex and docs/paper2/HANDOVER.md (two decimals)."""
     return {"half spread": 15.70, "adverse selection": -2.65, "maker fee": -1.56, "maker rebate": 0.59,
             "hedge cost": -3.15, "net edge": 8.93, "markout": 13.05}
 
 
 def _p1_figure_net_edge() -> float:
-    if not Path(ABBILDUNGEN).exists():
+    if not Path(FIGURE_CHECKS).exists():
         return float("nan")
-    text = Path(ABBILDUNGEN).read_text()
+    text = Path(FIGURE_CHECKS).read_text()
     m = re.search(r"\| T2 \| the five components add up to the net edge \| ([0-9.\-]+) \|", text)
     return float(m.group(1)) if m else float("nan")
 
@@ -439,7 +439,7 @@ def _cells(parts: Path, unit: str, bp: float) -> pd.DataFrame:
 
 
 def assemble(parts: Path = None, out_dir: Path = None, b_cells: int = B_CELLS) -> dict:
-    """Combine the parts into results/p1_befund/gebuehreneinheit.{csv,json} and check paper 1 is reproduced."""
+    """Combine the parts into results/p1_finding/fee_units.{csv,json} and check paper 1 is reproduced."""
     parts = PARTS if parts is None else Path(parts)
     out_dir = OUT_DIR if out_dir is None else Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -470,13 +470,13 @@ def assemble(parts: Path = None, out_dir: Path = None, b_cells: int = B_CELLS) -
         for _, r in d.iterrows():
             ref, src, digits = np.nan, "", None
             if unit == "p1" and r["item"] in manuscript:
-                ref, src, digits = manuscript[r["item"]], "paper/main.tex, UEBERGABE.md (2 decimals)", 2
+                ref, src, digits = manuscript[r["item"]], "paper/main.tex, HANDOVER.md (2 decimals)", 2
             add("decomposition", r["item"], unit, r["value"], r["lo"], r["hi"], r["level"], r["n"], int(r["b"]),
                 ref=ref, source=src, digits=digits)
         if unit == "p1":
             d = d.set_index("item")
             add("decomposition_check", "net edge (exact)", unit, d.loc["net edge", "value"], ref=figure_ne,
-                source="docs/paper1/ABBILDUNGEN.md, T2 check")
+                source="docs/paper1/FIGURE_CHECKS.md, T2 check")
             add("decomposition_check", "markout (exact)", unit, d.loc["markout", "value"],
                 ref=float(horizon.loc[HORIZON, "mean"]), source="results/p1/horizon_means.csv")
 
@@ -618,7 +618,7 @@ def assemble(parts: Path = None, out_dir: Path = None, b_cells: int = B_CELLS) -
             a["hi"], 0.90, a["n"], B_CELLS)
 
     table = pd.DataFrame(rows)
-    table.to_csv(out_dir / "gebuehreneinheit.csv", index=False)
+    table.to_csv(out_dir / "fee_units.csv", index=False)
     report = {"meta": {"horizon": HORIZON, "seed": P1_SEED, "b_cells": B_CELLS, "b_other": B_FIGURE,
                        "fills": int(repro["fills"]), "script": SCRIPT,
                        "note": "seed and B of paper 1 so that its numbers are reproduced exactly; "
@@ -629,7 +629,7 @@ def assemble(parts: Path = None, out_dir: Path = None, b_cells: int = B_CELLS) -
               "reproduced": bool(all(c["matches"] for c in checks)),
               "rfq_booking": booking,
               "h4_rfq_package": {"{}_1bp".format(PACKAGE_UNIT): v_package}}
-    (out_dir / "gebuehreneinheit.json").write_text(json.dumps(report, indent=1, default=str))
+    (out_dir / "fee_units.json").write_text(json.dumps(report, indent=1, default=str))
     return report
 
 

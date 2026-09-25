@@ -1,4 +1,5 @@
-"""Markouts of paper 1, exactly as pre-registered (docs/paper1/PRAEREGISTRIERUNG.md, incl. addendum 1).
+"""Markouts of paper 1, exactly as pre-registered (docs/paper1/PRAEREGISTRIERUNG.md, incl. addendum 1;
+English translation in docs/paper1/PREREGISTRATION.md).
 
 Maker side s = −taker_side.  MO_τ = s·(M(t+τ) − P) per contract in USDC; delta-neutral
 MO^Δ_τ = MO_τ − s·Δ(t)·(F(t+τ) − F(t)) with F the forward of the valid SVI curve at both ends; vol-point
