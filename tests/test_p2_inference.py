@@ -326,7 +326,8 @@ def _marginal(n: int = 60, seed: int = 0) -> pd.DataFrame:
                          "day": pd.to_datetime("2025-10-01") + pd.to_timedelta(rng.integers(0, 10, n), unit="D"),
                          "ccy": "ETH", "status": "ok", "amount": 2.0, "dK_per_contract": dk,
                          "dK_unit": dk * 1.1, "dK_tape_per_contract": dk * 0.9, "dK_mm_per_contract": dk * 0.8,
-                         "K_single_pm2": ks, "K_single_pm2_mm": ks * 0.8})
+                         "dK_mm_std_per_contract": dk * 0.7, "K_single_pm2": ks, "K_single_pm2_mm": ks * 0.8,
+                         "K_single_pm2_mm_acct": ks * 0.6})
 
 
 def test_h2_excludes_nonpositive_single_capital_and_counts():
@@ -343,11 +344,35 @@ def test_h2_excludes_nonpositive_single_capital_and_counts():
 def test_h2_variants_use_their_numerator_and_denominator():
     mg = _marginal()
     v = ip.h2_test(mg, variant="ratio_mm", b=19)
+    keep = mg["K_single_pm2_mm_acct"] > 0
+    assert v["stat"] == pytest.approx(np.median(mg.loc[keep, "dK_mm_per_contract"]
+                                                / mg.loc[keep, "K_single_pm2_mm_acct"]))
+    v = ip.h2_test(mg, variant="ratio_mm_std", b=19)
     keep = mg["K_single_pm2_mm"] > 0
-    assert v["stat"] == pytest.approx(np.median(mg.loc[keep, "dK_mm_per_contract"] / mg.loc[keep, "K_single_pm2_mm"]))
+    assert v["stat"] == pytest.approx(np.median(mg.loc[keep, "dK_mm_std_per_contract"] / mg.loc[keep, "K_single_pm2_mm"]))
     v = ip.h2_test(mg, variant="ratio_unit", b=19)
     keep = mg["K_single_pm2"] > 0
     assert v["stat"] == pytest.approx(np.median(mg.loc[keep, "dK_unit"] / mg.loc[keep, "K_single_pm2"]))
+
+
+def test_h2_mm_variants_take_one_lib_in_numerator_and_denominator():
+    """C5a: the MM sensitivity never divides an account-lib dK_mm by a standard-lib K_single_mm."""
+    num, den = ip.H2_VARIANTS["ratio_mm"]
+    assert (num, den) == ("dK_mm_per_contract", "K_single_pm2_mm_acct")
+    assert ip.H2_LIBS["ratio_mm"] == ("account", "account")
+    num, den = ip.H2_VARIANTS["ratio_mm_std"]
+    assert (num, den) == ("dK_mm_std_per_contract", "K_single_pm2_mm")
+    assert ip.H2_LIBS["ratio_mm_std"] == ("standard", "standard")
+    assert set(ip.H2_LIBS) == set(ip.H2_VARIANTS)
+
+
+def test_h2_preregistered_result_does_not_depend_on_mm_columns():
+    mg = _marginal()
+    full = ip.h2_test(mg, b=49)
+    lean = ip.h2_test(mg.drop(columns=["dK_mm_per_contract", "dK_mm_std_per_contract", "K_single_pm2_mm",
+                                       "K_single_pm2_mm_acct"]), b=49)
+    np.testing.assert_array_equal(full.pop("_draws"), lean.pop("_draws"))
+    assert full == lean
 
 
 def test_h2_rule_rejects_when_upper_bound_reaches_threshold():
@@ -504,6 +529,21 @@ def test_main_run_and_sensitivity_write_all_outputs(tmp_path):
     assert sens["e_h3"]["sm_pm_be"]["rejected"] in (True, False)
     assert sens["e_h3"]["pm_pm2_be"]["rejected"] is None      # legacy PM vs PM2: no preregistered threshold
     assert "holding" in sens["f_time"] and "to_expiry" in sens["f_time"]
+    mg = pd.read_parquet(root / "data/p2/derived/marginal.parquet")
+    for sec, key, variant in (("d_h2", "ratio_mm", "ratio_mm"), ("d_h2", "ratio_mm_std", "ratio_mm_std"),
+                              ("b_mm", "h2_ratio_mm", "ratio_mm"), ("b_mm", "h2_ratio_mm_std", "ratio_mm_std")):
+        v = sens[sec][key]
+        num, den = ip.H2_VARIANTS[variant]
+        assert (v["numerator"], v["denominator"]) == (num, den), (sec, key)
+        assert v["libs"] == "/".join(ip.H2_LIBS[variant]), (sec, key)
+        keep = mg[den] > 0
+        assert v["stat"] == pytest.approx(np.median(mg.loc[keep, num] / mg.loc[keep, den])), (sec, key)
+    sh2 = pd.read_csv(out / "sens_h2.csv")
+    both = sh2[sh2["group"] == "all"].set_index("variant")
+    assert {"ratio_mm", "ratio_mm_std"} <= set(both.index)
+    assert both.loc["ratio_mm", "denominator"] == "K_single_pm2_mm_acct"
+    assert both.loc["ratio_mm_std", "numerator"] == "dK_mm_std_per_contract"
+    assert both.loc["ratio_mm", "libs"] == "account/account" and both.loc["ratio_mm_std", "libs"] == "standard/standard"
     for name in ("fig_capital_by_manager.csv", "fig_edge_maps.csv", "fig_h2_dist.csv", "fig_h3_series.csv",
                  "sens_h1_cells.csv", "sens_h2.csv", "sens_h3.csv"):
         assert (out / name).exists(), name

@@ -16,7 +16,10 @@ least 0.5. No fill is excluded (addendum 4, item 4).
 
 H2 (marginal capital). ``ratio = (dK / amount) / K_pm2,single`` over the drawn sample of 20 000 fills (addendum 4,
 item 1); fills with ``K_pm2,single <= 0`` are excluded and counted. Median with a day-cluster interval, every fill of a
-drawn day entering with the day's multiplicity. Rejected if the upper bound is at least 0.5.
+drawn day entering with the day's multiplicity. Rejected if the upper bound is at least 0.5. The MM sensitivity takes
+one lib per ratio (C5a): ``ratio_mm`` the account's lib in numerator and denominator (``K_single_pm2_mm_acct``, same
+market state), ``ratio_mm_std`` the standard lib in both. Override libs differ only in ``mmFactor``, so the IM test is
+the same under either lib.
 
 H3 (netting value). ``K_sm / K_pm2`` of the maker days with at least one option position (status ``ok``), both on the
 same legs (addendum 4, item 2); days with ``K_pm2 <= 0`` are excluded and counted. Median with a day-cluster
@@ -79,7 +82,17 @@ H2_VARIANTS: Dict[str, Tuple[str, str]] = {
     "ratio": ("dK_per_contract", "K_single_pm2"),
     "ratio_unit": ("dK_unit", "K_single_pm2"),
     "ratio_tape": ("dK_tape_per_contract", "K_single_pm2"),
-    "ratio_mm": ("dK_mm_per_contract", "K_single_pm2_mm"),
+    "ratio_mm": ("dK_mm_per_contract", "K_single_pm2_mm_acct"),     # MM, account lib in both (C5a)
+    "ratio_mm_std": ("dK_mm_std_per_contract", "K_single_pm2_mm"),  # MM, standard lib in both (C5a)
+}
+# PM2 lib of (numerator, denominator). Under IM both libs give the same numbers (overrides change only mmFactor;
+# books.combine_marginal checks K_single_book_acct == K_single_pm2).
+H2_LIBS: Dict[str, Tuple[str, str]] = {
+    "ratio": ("account", "standard"),
+    "ratio_unit": ("account", "standard"),
+    "ratio_tape": ("account", "standard"),
+    "ratio_mm": ("account", "account"),
+    "ratio_mm_std": ("standard", "standard"),
 }
 QUANTILES = (0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
 HIST_EDGES = np.concatenate([[-np.inf], np.round(np.arange(-1.0, 2.0 + 1e-9, 0.05), 10), [np.inf]])
@@ -680,6 +693,11 @@ def _stats(v: dict, rule_key: str) -> dict:
     return out
 
 
+def _h2_stats(v: dict) -> dict:
+    """``_stats`` of an H2 variant plus the PM2 lib of numerator and denominator (``account/account`` etc.)."""
+    return {**_stats(v, "H2"), "libs": "/".join(H2_LIBS[v["variant"]])}
+
+
 def _map_rows(name: str, cells: pd.DataFrame) -> pd.DataFrame:
     c = cells.copy()
     c.insert(0, "map", name)
@@ -726,7 +744,8 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
     sens["b_mm"] = {
         "h1_pm2_mm": emap("pm2_mm", pm2, "K_pm2_mm"),
         "h1_sm_all_mm": emap("sm_all_mm", fr[fr["in_sm"].to_numpy()], "K_sm_mm"),
-        "h2_ratio_mm": _stats(h2_test(mg, variant="ratio_mm", **kw), "H2"),
+        "h2_ratio_mm": _h2_stats(h2_test(mg, variant="ratio_mm", **kw)),
+        "h2_ratio_mm_std": _h2_stats(h2_test(mg, variant="ratio_mm_std", **kw)),
         "h3_mm": _stats(h3_test(md, num="K_sm_mm", den="K_pm2_mm", **kw), "H3"),
     }
     # (c) Paper 1's net edge form (fee and rebate undivided)
@@ -737,14 +756,14 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
     d: dict = {}
     for variant in H2_VARIANTS:
         v = h2_test(mg, variant=variant, **kw)
-        d[variant] = _stats(v, "H2")
-        h2_rows.append({"variant": variant, "group": "all", **_stats(v, "H2")})
+        d[variant] = _h2_stats(v)
+        h2_rows.append({"variant": variant, "group": "all", **d[variant]})
     for group_col in ("label", "ccy"):
         d[f"by_{group_col}"] = {}
         for g in sorted(map(str, pd.unique(mg[group_col]))):
             v = h2_test(mg[mg[group_col].astype(str) == g], variant="ratio", **kw)
-            d[f"by_{group_col}"][g] = _stats(v, "H2")
-            h2_rows.append({"variant": "ratio", "group": f"{group_col}={g}", **_stats(v, "H2")})
+            d[f"by_{group_col}"][g] = _h2_stats(v)
+            h2_rows.append({"variant": "ratio", "group": f"{group_col}={g}", **d[f"by_{group_col}"][g]})
     sens["d_h2"] = d
 
     # (e) H3 with the legacy PM on BTC and ETH legs, per account, share of days over 63 options

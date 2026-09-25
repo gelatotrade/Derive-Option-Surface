@@ -1507,8 +1507,12 @@ def fill_marginal(chain_book: Optional[Book], tape_book: Optional[Book], state, 
     ``chain_book``: exact on-chain book before the fill's transaction in the fill's currency (``None`` = no position);
     ``tape_book``: the day-start + tape book (``None`` = not available). ``params`` are the account's PM2 parameters,
     ``params_std`` those of the standard lib (the single-contract capital of B2). Returns ``dK`` (IM, whole fill),
-    ``dK_mm``, ``dK_unit`` (one contract in the fill's direction), ``dK_tape``, ``K_single_book(_mm)`` (per contract,
-    standard lib, empty book), ``net_before/net_after``, book sizes and ``status`` (``ok`` / ``no_state``).
+    ``dK_mm`` (account lib), ``dK_unit`` (one contract in the fill's direction), ``dK_tape``, ``K_single_book(_mm)``
+    (per contract, standard lib, empty book), ``net_before/net_after``, book sizes and ``status`` (``ok`` /
+    ``no_state``). For the MM sensitivity with one lib per ratio (C5a) also ``dK_mm_std`` (the book's dK under MM
+    with the standard lib) and ``K_single_book_acct(_mm)`` (per contract, account lib, empty book). Override libs
+    differ from the standard lib only in ``mmFactor``, so the IM numbers do not depend on the lib; when ``params``
+    equals ``params_std`` the standard-lib numbers are copied.
     """
     nan = float("nan")
     chain = _zero_cash(chain_book)
@@ -1518,7 +1522,8 @@ def fill_marginal(chain_book: Optional[Book], tape_book: Optional[Book], state, 
            "gross_before": float(sum(abs(leg.amount) for leg in chain.options)), "perp_before": float(chain.perp),
            "n_legs_tape": len(tape_book.options) if tape_book is not None else -1,
            "perp_tape": float(tape_book.perp) if tape_book is not None else nan, "tape_ok": tape_book is not None}
-    keys = ("dK", "dK_mm", "dK_unit", "dK_tape", "K_single_book", "K_single_book_mm", "net_before", "net_after")
+    keys = ("dK", "dK_mm", "dK_unit", "dK_tape", "K_single_book", "K_single_book_mm", "net_before", "net_after",
+            "dK_mm_std", "K_single_book_acct", "K_single_book_mm_acct")
     vols = leg_vols(state, legs)
     perp = max(abs(chain.perp), abs(tape_book.perp) if tape_book is not None else 0.0)
     if not _state_ok(state, legs, vols, perp):
@@ -1534,6 +1539,16 @@ def fill_marginal(chain_book: Optional[Book], tape_book: Optional[Book], state, 
     out["K_single_book"] = marginal_capital(None, state, params_std, *leg, sgn, price, vols=vols)["dK"]
     out["K_single_book_mm"] = marginal_capital(None, state, params_std, *leg, sgn, price, is_initial=False,
                                                vols=vols)["dK"]
+    if params is params_std or params == params_std:
+        out["dK_mm_std"] = out["dK_mm"]
+        out["K_single_book_acct"] = out["K_single_book"]
+        out["K_single_book_mm_acct"] = out["K_single_book_mm"]
+    else:
+        out["dK_mm_std"] = marginal_capital(chain, state, params_std, *leg, q, price, is_initial=False,
+                                            vols=vols)["dK"]
+        out["K_single_book_acct"] = marginal_capital(None, state, params, *leg, sgn, price, vols=vols)["dK"]
+        out["K_single_book_mm_acct"] = marginal_capital(None, state, params, *leg, sgn, price, is_initial=False,
+                                                        vols=vols)["dK"]
     out["dK_tape"] = marginal_capital(tape_book, state, params, *leg, q, price, vols=vols)["dK"] \
         if tape_book is not None else nan
     return out
@@ -1600,7 +1615,7 @@ def _month_bounds(month: str) -> Tuple[int, int]:
 
 MARKOUT_B3_COLUMNS = ["trade_id", "ts", "ts_maker", "currency", "maker_sub", "tx_hash", "amount", "price",
                       "maker_side", "expiry", "strike", "option_type"]
-MARGINAL_PARTS = DERIVED_DIR / "marginal_parts" / "v1"
+MARGINAL_PARTS = DERIVED_DIR / "marginal_parts" / "v2"      # v2 (C5a): + dK_mm_std, K_single_book_acct(_mm)
 MAKER_DAY_PARTS = DERIVED_DIR / "maker_day_parts" / "v1"
 CAPITAL_PATH = DERIVED_DIR / "capital.parquet"
 
@@ -1721,7 +1736,12 @@ def run_marginal(max_seconds: float = 480.0, parts_dir: Path = MARGINAL_PARTS, l
 def combine_marginal(parts_dir: Path = MARGINAL_PARTS, out: Path = DERIVED_DIR / "marginal.parquet",
                      capital: Path = CAPITAL_PATH) -> Tuple[pd.DataFrame, dict]:
     """All parts into ``marginal.parquet`` with ``K_single_pm2(_mm)`` from B2 and the ratios; consistency check of
-    the book engine on the one-contract book against B2 (``K_single_book`` vs ``K_single_pm2``)."""
+    the book engine on the one-contract book against B2 (``K_single_book`` vs ``K_single_pm2``).
+
+    MM ratios with one lib each (C5a): ``ratio_mm = dK_mm_per_contract / K_single_pm2_mm_acct`` (account lib in
+    numerator and denominator; ``K_single_pm2_mm_acct`` is the book engine's single-contract MM capital under the
+    account's lib in the same market state) and ``ratio_mm_std = dK_mm_std_per_contract / K_single_pm2_mm`` (standard
+    lib in both, the denominator from B2)."""
     df = pd.concat([pd.read_parquet(f) for f in sorted(Path(parts_dir).glob("*.parquet"))], ignore_index=True)
     cap = pd.read_parquet(capital, columns=["trade_id", "K_pm2", "K_pm2_mm"]).rename(
         columns={"trade_id": "fill_key", "K_pm2": "K_single_pm2", "K_pm2_mm": "K_single_pm2_mm"})
@@ -1729,13 +1749,16 @@ def combine_marginal(parts_dir: Path = MARGINAL_PARTS, out: Path = DERIVED_DIR /
     df["day"] = _fill_days(df["ts"]).to_numpy()
     df["label"] = df["subaccount"].map(_labels(df["subaccount"]))
     a = df["amount"].to_numpy(dtype=float)
-    for src, dst in (("dK", "dK_per_contract"), ("dK_mm", "dK_mm_per_contract"), ("dK_tape", "dK_tape_per_contract")):
+    for src, dst in (("dK", "dK_per_contract"), ("dK_mm", "dK_mm_per_contract"), ("dK_tape", "dK_tape_per_contract"),
+                     ("dK_mm_std", "dK_mm_std_per_contract")):
         df[dst] = df[src] / a
-    ks, ksm = df["K_single_pm2"], df["K_single_pm2_mm"]
+    df["K_single_pm2_mm_acct"] = df["K_single_book_mm_acct"]
+    ks, ksm, ksa = df["K_single_pm2"], df["K_single_pm2_mm"], df["K_single_pm2_mm_acct"]
     df["ratio"] = (df["dK_per_contract"] / ks).where(ks > 0)
     df["ratio_unit"] = (df["dK_unit"] / ks).where(ks > 0)
     df["ratio_tape"] = (df["dK_tape_per_contract"] / ks).where(ks > 0)
-    df["ratio_mm"] = (df["dK_mm_per_contract"] / ksm).where(ksm > 0)
+    df["ratio_mm"] = (df["dK_mm_per_contract"] / ksa).where(ksa > 0)
+    df["ratio_mm_std"] = (df["dK_mm_std_per_contract"] / ksm).where(ksm > 0)
     ok = df["status"] == "ok"
     d = (df.loc[ok, "K_single_book"] - df.loc[ok, "K_single_pm2"]).abs()
     rel = d / df.loc[ok, "K_single_pm2"].abs().clip(lower=1e-12)
@@ -1743,6 +1766,12 @@ def combine_marginal(parts_dir: Path = MARGINAL_PARTS, out: Path = DERIVED_DIR /
     lead = ["fill_key", "subaccount", "label", "day", "ts", "ts_maker", "block_ts", "ccy", "manager", "lib"]
     df = df[lead + [c for c in df.columns if c not in lead]]
     df = df.sort_values(["ts", "fill_key"], kind="mergesort").reset_index(drop=True)
+    ok = df["status"] == "ok"                     # masks on the sorted rows
+    std = ok & (df["lib"].astype(str) == "std")
+    empty = ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0)
+
+    def max_abs(x: pd.Series) -> float:
+        return float(x.abs().max()) if len(x) else float("nan")
     _atomic_parquet(df, Path(out))
     check = {"rows": int(len(df)), "status": {str(k): int(v) for k, v in df["status"].value_counts().items()},
              "tape_ok": int(df["tape_ok"].fillna(False).astype(bool).sum()),
@@ -1755,7 +1784,19 @@ def combine_marginal(parts_dir: Path = MARGINAL_PARTS, out: Path = DERIVED_DIR /
              "empty_book_dK_vs_single_max_abs": float(
                  ((df.loc[ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0), "dK_per_contract"]
                    - df.loc[ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0), "K_single_book"]).abs().max())
-                 if (ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0)).any() else float("nan"))}
+                 if (ok & (df["n_legs_before"] == 0) & (df["perp_before"] == 0)).any() else float("nan")),
+             # C5a: one lib per MM ratio
+             "fills_account_lib": int((ok & ~std).sum()),
+             "single_im_acct_vs_std_max_abs": max_abs(df.loc[ok, "K_single_book_acct"] - df.loc[ok, "K_single_pm2"]),
+             "single_mm_acct_vs_b2_std_lib_max_abs": max_abs(df.loc[std, "K_single_pm2_mm_acct"]
+                                                             - df.loc[std, "K_single_pm2_mm"]),
+             "dK_mm_std_vs_dK_mm_std_lib_max_abs": max_abs(df.loc[std, "dK_mm_std"] - df.loc[std, "dK_mm"]),
+             "empty_book_dK_mm_vs_single_mm_acct_max_abs": max_abs(df.loc[empty, "dK_mm_per_contract"]
+                                                                   - df.loc[empty, "K_single_pm2_mm_acct"]),
+             "empty_book_dK_mm_std_vs_single_mm_max_abs": max_abs(df.loc[empty, "dK_mm_std_per_contract"]
+                                                                  - df.loc[empty, "K_single_pm2_mm"]),
+             "k_single_mm_acct_le_0": int((df["K_single_pm2_mm_acct"] <= 0).sum()),
+             "k_single_mm_le_0": int((df["K_single_pm2_mm"] <= 0).sum())}
     return df, check
 
 

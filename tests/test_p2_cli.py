@@ -8,14 +8,18 @@ import pytest
 from derive_surface import p2cli
 from derive_surface.__main__ import main
 
-COMMANDS = ["feeds", "params", "validate", "capital", "books", "events", "infer", "figures", "surface"]
+COMMANDS = ["feeds", "params", "validate", "capital", "books", "events", "infer", "infer-h4", "zahlenblatt", "api",
+            "figures", "surface"]
 
 
 def _fake_modules(monkeypatch, calls, rc=0):
     for cmd, spec in p2cli.COMMANDS.items():
-        fake = types.ModuleType(f"derive_surface.{spec.module}")
+        name = spec.module if spec.script else f"derive_surface.{spec.module}"
+        fake = types.ModuleType(name)
         fake.main = lambda argv, cmd=cmd: calls.append((cmd, list(argv))) or rc
-        monkeypatch.setitem(sys.modules, f"derive_surface.{spec.module}", fake)
+        if spec.script:
+            fake.__file__ = str(p2cli.REPO / spec.script)
+        monkeypatch.setitem(sys.modules, name, fake)
 
 
 def test_p2_is_routed_and_help_lists_every_command(capsys):
@@ -30,8 +34,14 @@ def test_p2_is_routed_and_help_lists_every_command(capsys):
 def test_commands_map_to_the_modules_of_the_plan():
     assert {c: s.module for c, s in p2cli.COMMANDS.items()} == {
         "feeds": "p2feeds", "params": "p2params", "validate": "p2validate", "capital": "capital", "books": "books",
-        "events": "p2events", "infer": "inference_p2", "figures": "figures_p2", "surface": "p2surface",
-        "ids": "p2ids"}
+        "events": "p2events", "infer": "inference_p2", "infer-h4": "inference_p2_h4", "zahlenblatt": "p2_zahlenblatt",
+        "api": "p2api", "figures": "figures_p2", "surface": "p2surface", "ids": "p2ids"}
+
+
+def test_only_the_number_sheet_is_a_script_and_it_exists():
+    scripts = {c: s.script for c, s in p2cli.COMMANDS.items() if s.script}
+    assert scripts == {"zahlenblatt": "scripts/p2_zahlenblatt.py"}
+    assert (p2cli.REPO / scripts["zahlenblatt"]).is_file()
 
 
 def test_every_command_reaches_the_main_of_its_module(monkeypatch):
@@ -70,6 +80,32 @@ def test_real_module_help_is_forwarded(capsys):
         main(["p2", "params", "--help"])
     assert exc.value.code == 0
     assert "oi-share" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("cmd,needle", [("infer", "sensitivity"), ("infer-h4", "run"), ("api", "report"),
+                                        ("zahlenblatt", "ZAHLENBLATT.md")])
+def test_new_commands_reach_the_real_modules(cmd, needle, capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["p2", cmd, "--help"])
+    assert exc.value.code == 0
+    assert needle in capsys.readouterr().out
+
+
+def test_script_is_loaded_as_a_module_once(monkeypatch):
+    monkeypatch.delitem(sys.modules, "p2_zahlenblatt", raising=False)
+    fn = p2cli._module_main("zahlenblatt")
+    mod = sys.modules["p2_zahlenblatt"]
+    assert fn is mod.main and mod.__file__ == str(p2cli.REPO / "scripts" / "p2_zahlenblatt.py")
+    assert p2cli._module_main("zahlenblatt") is fn
+
+
+def test_missing_script_gives_a_clear_error(monkeypatch):
+    monkeypatch.setitem(p2cli.COMMANDS, "zahlenblatt",
+                        p2cli.Command("_p2_no_such_script", "C1", "x", script="scripts/_p2_no_such_script.py"))
+    with pytest.raises(SystemExit) as exc:
+        p2cli.main(["zahlenblatt"])
+    msg = str(exc.value.code)
+    assert "scripts/_p2_no_such_script.py" in msg and "C1" in msg
 
 
 def test_missing_module_gives_a_clear_error(monkeypatch):

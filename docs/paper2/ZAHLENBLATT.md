@@ -1,6 +1,6 @@
 # Zahlenblatt Paper 2
 
-Erzeugt 2026-09-25 00:14 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
+Erzeugt 2026-09-25 00:28 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
 
 - **Datenstand:** Stichprobe vom 11.01.2024 00:00 UTC bis zum letzten Fill am 17.09.2026 11:51:53 UTC. **Pilotstand:** Die Stichprobe endet vor dem präregistrierten Ende (30.09.2026 08:00 UTC); die Zahlen des Manuskripts entstehen mit dem Enddatenlauf. Stichtag 17.09.2026.
 - **Inferenz:** B = 9 999, Seed 20260924, 90-%-Perzentilintervalle aus einem Cluster-Bootstrap über UTC-Tage (H1 bis H3, Nachtrag 3). H4: Wild-Cluster-Bootstrap mit Rademacher-Gewichten und restringierten Residuen, Cluster UTC-Tag, einseitiges p für β > 0, 100 Placebo-Termine.
@@ -120,7 +120,8 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 |---|---|---|---:|---|
 | H1 mit MM | ρ | 0,903 [0,880; 0,907] | 173 | abgelehnt |
 | Karte SM, ganzer Zeitraum, mit MM | ρ | 0,902 [0,879; 0,910] | 177 | abgelehnt |
-| H2 mit MM | Median dK_mm_per_contract/K_single_pm2_mm | 0,0190 [0,0160; 0,0221] | 19 977 | nicht abgelehnt |
+| H2 mit MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0,0291 [0,0251; 0,0339] | 19 693 | nicht abgelehnt |
+| h2_ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0,0278 [0,0242; 0,0324] | 19 977 | nicht abgelehnt |
 | H3 mit MM | Median K_sm_mm/K_pm2_mm | 5,614 [5,471; 5,802] | 1 943 | nicht abgelehnt |
 
 ### (c) Netto-Edge in der Form von Paper 1 (Gebühr und Rabatt ungeteilt)
@@ -136,7 +137,8 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 | ratio (gleich Test H2) | Median dK_per_contract/K_single_pm2 | 0,0345 [0,0307; 0,0386] | 19 999 | nicht abgelehnt |
 | nächster einzelner Kontrakt (ratio_unit) | Median dK_unit/K_single_pm2 | 0,0329 [0,0295; 0,0366] | 19 999 | nicht abgelehnt |
 | Buch aus dem Tape | Median dK_tape_per_contract/K_single_pm2 | 0,0340 [0,0305; 0,0382] | 19 999 | nicht abgelehnt |
-| MM | Median dK_mm_per_contract/K_single_pm2_mm | 0,0190 [0,0160; 0,0221] | 19 977 | nicht abgelehnt |
+| MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0,0291 [0,0251; 0,0339] | 19 693 | nicht abgelehnt |
+| ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0,0278 [0,0242; 0,0324] | 19 977 | nicht abgelehnt |
 | Konto M3 | Median dK_per_contract/K_single_pm2 | 0,0230 [0,0126; 0,0356] | 6 405 | nicht abgelehnt |
 | Konto M5 | Median dK_per_contract/K_single_pm2 | 0,0505 [0,0387; 0,0743] | 5 957 | nicht abgelehnt |
 | Konto M8 | Median dK_per_contract/K_single_pm2 | 0,0449 [0,0376; 0,0625] | 4 296 | nicht abgelehnt |

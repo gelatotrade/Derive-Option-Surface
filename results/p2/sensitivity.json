@@ -120,22 +120,42 @@
    "exploratory": true
   },
   "h2_ratio_mm": {
-   "stat": 0.018956035390212313,
-   "lo": 0.015999656839990342,
-   "hi": 0.0221494137313638,
+   "stat": 0.029059983667578563,
+   "lo": 0.02514976517174013,
+   "hi": 0.03390387892824244,
    "rejected": false,
-   "n": 19977,
+   "n": 19693,
    "n_days": 372,
-   "n_excluded": 23,
-   "share_nonpositive": 0.44315963357861543,
+   "n_excluded": 307,
+   "share_nonpositive": 0.4351292337378764,
    "numerator": "dK_mm_per_contract",
-   "denominator": "K_single_pm2_mm",
+   "denominator": "K_single_pm2_mm_acct",
    "variant": "ratio_mm",
    "b": 9999,
    "seed": 20260924,
    "level": 0.9,
    "rule": "H2",
-   "exploratory": true
+   "exploratory": true,
+   "libs": "account/account"
+  },
+  "h2_ratio_mm_std": {
+   "stat": 0.027762606679601405,
+   "lo": 0.02423792594443455,
+   "hi": 0.03244571779645726,
+   "rejected": false,
+   "n": 19977,
+   "n_days": 372,
+   "n_excluded": 23,
+   "share_nonpositive": 0.4287931120788907,
+   "numerator": "dK_mm_std_per_contract",
+   "denominator": "K_single_pm2_mm",
+   "variant": "ratio_mm_std",
+   "b": 9999,
+   "seed": 20260924,
+   "level": 0.9,
+   "rule": "H2",
+   "exploratory": true,
+   "libs": "standard/standard"
   },
   "h3_mm": {
    "stat": 5.614276930370074,
@@ -191,7 +211,8 @@
    "seed": 20260924,
    "level": 0.9,
    "rule": "H2",
-   "exploratory": true
+   "exploratory": true,
+   "libs": "account/standard"
   },
   "ratio_unit": {
    "stat": 0.03291189572634804,
@@ -209,7 +230,8 @@
    "seed": 20260924,
    "level": 0.9,
    "rule": "H2",
-   "exploratory": true
+   "exploratory": true,
+   "libs": "account/standard"
   },
   "ratio_tape": {
    "stat": 0.03403281826875784,
@@ -227,25 +249,46 @@
    "seed": 20260924,
    "level": 0.9,
    "rule": "H2",
-   "exploratory": true
+   "exploratory": true,
+   "libs": "account/standard"
   },
   "ratio_mm": {
-   "stat": 0.018956035390212313,
-   "lo": 0.015999656839990342,
-   "hi": 0.0221494137313638,
+   "stat": 0.029059983667578563,
+   "lo": 0.02514976517174013,
+   "hi": 0.03390387892824244,
    "rejected": false,
-   "n": 19977,
+   "n": 19693,
    "n_days": 372,
-   "n_excluded": 23,
-   "share_nonpositive": 0.44315963357861543,
+   "n_excluded": 307,
+   "share_nonpositive": 0.4351292337378764,
    "numerator": "dK_mm_per_contract",
-   "denominator": "K_single_pm2_mm",
+   "denominator": "K_single_pm2_mm_acct",
    "variant": "ratio_mm",
    "b": 9999,
    "seed": 20260924,
    "level": 0.9,
    "rule": "H2",
-   "exploratory": true
+   "exploratory": true,
+   "libs": "account/account"
+  },
+  "ratio_mm_std": {
+   "stat": 0.027762606679601405,
+   "lo": 0.02423792594443455,
+   "hi": 0.03244571779645726,
+   "rejected": false,
+   "n": 19977,
+   "n_days": 372,
+   "n_excluded": 23,
+   "share_nonpositive": 0.4287931120788907,
+   "numerator": "dK_mm_std_per_contract",
+   "denominator": "K_single_pm2_mm",
+   "variant": "ratio_mm_std",
+   "b": 9999,
+   "seed": 20260924,
+   "level": 0.9,
+   "rule": "H2",
+   "exploratory": true,
+   "libs": "standard/standard"
   },
   "by_label": {
    "M10": {
@@ -264,7 +307,8 @@
     "seed": 20260924,
     "level": 0.9,
     "rule": "H2",
-    "exploratory": true
+    "exploratory": true,
+    "libs": "account/standard"
    },
    "M3": {
     "stat": 0.022980377063320977,
@@ -282,7 +326,8 @@
     "seed": 20260924,
     "level": 0.9,
     "rule": "H2",
-    "exploratory": true
+    "exploratory": true,
+    "libs": "account/standard"
    },
    "M5": {
     "stat": 0.05047197770153931,
@@ -300,7 +345,8 @@
     "seed": 20260924,
     "level": 0.9,
     "rule": "H2",
-    "exploratory": true
+    "exploratory": true,
+    "libs": "account/standard"
    },
    "M8": {
     "stat": 0.044850980771494686,
@@ -318,7 +364,8 @@
     "seed": 20260924,
     "level": 0.9,
     "rule": "H2",
-    "exploratory": true
+    "exploratory": true,
+    "libs": "account/standard"
    }
   },
   "by_ccy": {
@@ -338,7 +385,8 @@
     "seed": 20260924,
     "level": 0.9,
     "rule": "H2",
-    "exploratory": true
+    "exploratory": true,
+    "libs": "account/standard"
    },
    "HYPE": {
     "stat": 0.022980377063320977,
@@ -356,7 +404,8 @@
     "seed": 20260924,
     "level": 0.9,
     "rule": "H2",
-    "exploratory": true
+    "exploratory": true,
+    "libs": "account/standard"
    }
   }
  },

@@ -1060,6 +1060,104 @@ def test_fill_marginal_combines_chain_tape_unit_mm_and_single():
     assert rb["status"] == "no_state" and math.isnan(rb["dK"])
 
 
+def _b3_acct_params(mm_factor: float = 0.35) -> dict:
+    """An override lib as on chain: the standard parameters with another mmFactor (C5a)."""
+    import copy
+
+    prm = copy.deepcopy(_b3_params("ETH", "pm2"))
+    assert prm["MarginParameters"]["mmFactor"] != mm_factor
+    prm["MarginParameters"]["mmFactor"] = mm_factor
+    return prm
+
+
+def test_fill_marginal_mm_libs_one_lib_per_ratio():
+    """C5a: MM numerator and denominator come from the same lib, once the account's and once the standard lib."""
+    st = _b3_state()
+    prm_acct, prm_std = _b3_acct_params(), _b3_params("ETH", "pm2")
+    chain = _b3_book(st)
+    e = max(st.expiries)
+    k, q, p = 3150.0, -2.0, 60.0
+    leg = (e, k, True)
+    r = books.fill_marginal(chain, None, st, prm_acct, prm_std, *leg, q, p)
+    mc = books.marginal_capital
+    assert r["dK_mm_std"] == pytest.approx(mc(chain, st, prm_std, *leg, q, p, is_initial=False)["dK"], rel=1e-12)
+    assert r["dK_mm"] == pytest.approx(mc(chain, st, prm_acct, *leg, q, p, is_initial=False)["dK"], rel=1e-12)
+    assert r["dK_mm"] != pytest.approx(r["dK_mm_std"], rel=1e-6)
+    assert r["K_single_book_mm_acct"] == pytest.approx(mc(None, st, prm_acct, *leg, -1.0, p, is_initial=False)["dK"],
+                                                       rel=1e-12)
+    assert r["K_single_book_mm"] == pytest.approx(mc(None, st, prm_std, *leg, -1.0, p, is_initial=False)["dK"],
+                                                  rel=1e-12)
+    # IM does not use mmFactor: the account lib gives the standard single-contract IM capital bit for bit
+    assert r["K_single_book_acct"] == r["K_single_book"]
+    # empty book: each consistent MM ratio is exactly 1, the mixed one (account dK_mm / standard K_single_mm) is not
+    r0 = books.fill_marginal(None, None, st, prm_acct, prm_std, *leg, q, p)
+    assert r0["dK_mm"] / abs(q) / r0["K_single_book_mm_acct"] == pytest.approx(1.0, rel=1e-12)
+    assert r0["dK_mm_std"] / abs(q) / r0["K_single_book_mm"] == pytest.approx(1.0, rel=1e-12)
+    assert r0["dK_mm"] / abs(q) / r0["K_single_book_mm"] != pytest.approx(1.0, rel=1e-3)
+
+
+def test_fill_marginal_standard_lib_account_copies_and_no_state_is_nan():
+    st = _b3_state()
+    prm_std = _b3_params("ETH", "pm2")
+    chain = _b3_book(st)
+    e = max(st.expiries)
+    r = books.fill_marginal(chain, None, st, prm_std, prm_std, e, 3150.0, True, -2.0, 60.0)
+    assert r["dK_mm_std"] == r["dK_mm"]
+    assert r["K_single_book_mm_acct"] == r["K_single_book_mm"]
+    assert r["K_single_book_acct"] == r["K_single_book"]
+    exps = dict(st.expiries)
+    exps[e] = ExpiryState(expiry=e, forward=exps[e].forward, svi=None)
+    bad = MarketState(currency="ETH", ts=st.ts, spot=st.spot, expiries=exps, perp=st.perp)
+    rb = books.fill_marginal(chain, None, bad, _b3_acct_params(), prm_std, e, 3150.0, True, -2.0, 60.0)
+    for key in ("dK_mm_std", "K_single_book_mm_acct", "K_single_book_acct"):
+        assert math.isnan(rb[key]), key
+
+
+def test_combine_marginal_mm_ratios_use_one_lib(tmp_path, monkeypatch):
+    """marginal.parquet: ratio_mm = account lib in both, ratio_mm_std = standard lib in both; IM columns untouched."""
+    st = _b3_state()
+    prm_acct, prm_std = _b3_acct_params(), _b3_params("ETH", "pm2")
+    chain = _b3_book(st)
+    e = max(st.expiries)
+    rows = []
+    for i, (book, prm, lib, q) in enumerate([(chain, prm_acct, "0xacc", -2.0), (None, prm_acct, "0xacc", 3.0),
+                                             (chain, prm_std, "std", 1.5), (None, prm_std, "std", -1.0)]):
+        r = books.fill_marginal(book, None, st, prm, prm_std, e, 3150.0, True, q, 60.0)
+        t_ms = (st.ts + (3 - i)) * 1000         # reverse time order: combine_marginal re-sorts the rows
+        rows.append({"fill_key": f"t{i}", "subaccount": 4242, "ts": t_ms, "ts_maker": t_ms,
+                     "block_ts": st.ts, "ccy": "ETH", "manager": "pm2", "lib": lib, "amount": abs(q), "q": q, **r})
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    pd.DataFrame(rows).to_parquet(parts / "ETH_2026-01.parquet")
+    one = {i: books.fill_marginal(None, None, st, prm_std, prm_std, e, 3150.0, True, -1.0 if r["q"] < 0 else 1.0,
+                                  60.0) for i, r in enumerate(rows)}
+    cap = pd.DataFrame({"trade_id": [r["fill_key"] for r in rows],
+                        "K_pm2": [one[i]["K_single_book"] for i in range(len(rows))],
+                        "K_pm2_mm": [one[i]["K_single_book_mm"] for i in range(len(rows))]})
+    cap.to_parquet(tmp_path / "capital.parquet")
+    monkeypatch.setattr(books, "_labels", lambda subs: {int(s): "M3" for s in subs})
+    df, check = books.combine_marginal(parts, tmp_path / "marginal.parquet", tmp_path / "capital.parquet")
+    df = df.set_index("fill_key")
+    a = df["amount"]
+    assert (df["dK_mm_std_per_contract"] == df["dK_mm_std"] / a).all()
+    assert (df["K_single_pm2_mm_acct"] == df["K_single_book_mm_acct"]).all()
+    assert np.allclose(df["ratio_mm"], df["dK_mm_per_contract"] / df["K_single_pm2_mm_acct"], rtol=0, atol=0)
+    assert np.allclose(df["ratio_mm_std"], df["dK_mm_std_per_contract"] / df["K_single_pm2_mm"], rtol=0, atol=0)
+    assert np.allclose(df["ratio"], df["dK_per_contract"] / df["K_single_pm2"], rtol=0, atol=0)
+    # empty books: both consistent MM ratios are 1
+    assert df.loc["t1", "ratio_mm"] == pytest.approx(1.0, rel=1e-12)
+    assert df.loc["t1", "ratio_mm_std"] == pytest.approx(1.0, rel=1e-12)
+    assert df.loc["t3", "ratio_mm"] == pytest.approx(1.0, rel=1e-12)
+    # standard-lib fills: both variants coincide
+    assert df.loc["t2", "ratio_mm"] == df.loc["t2", "ratio_mm_std"]
+    assert df.loc["t0", "ratio_mm"] != pytest.approx(df.loc["t0", "ratio_mm_std"], rel=1e-6)
+    assert check["fills_account_lib"] == 2
+    assert check["single_im_acct_vs_std_max_abs"] == 0.0
+    assert check["single_mm_acct_vs_b2_std_lib_max_abs"] == 0.0
+    assert check["dK_mm_std_vs_dK_mm_std_lib_max_abs"] == 0.0
+    assert check["empty_book_dK_mm_vs_single_mm_acct_max_abs"] == pytest.approx(0.0, abs=1e-9)
+
+
 def test_maker_day_list_uses_maker_rows_of_top_accounts_in_the_pm2_window():
     d = _day_ts("2025-06-13") * 1000
     m = pd.DataFrame(dict(maker_sub=[1, 1, 1, 2, 9, 1],
