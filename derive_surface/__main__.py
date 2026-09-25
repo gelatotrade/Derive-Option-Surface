@@ -9,6 +9,14 @@ CCYS = ["BTC", "ETH", "HYPE"]
 
 
 def main(argv: list[str] | None = None) -> None:
+    import sys
+
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "p1":
+        from .p1cli import main as p1_main
+
+        p1_main(argv[1:])
+        return
     p = argparse.ArgumentParser(prog="derive_surface", description=__doc__)
     p.add_argument("--data", type=Path, default=Path("data"))
     p.add_argument("--media", type=Path, default=Path("docs/media"))

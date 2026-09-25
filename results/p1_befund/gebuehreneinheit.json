@@ -1,0 +1,790 @@
+{
+ "meta": {
+  "horizon": "30m",
+  "seed": 20260917,
+  "b_cells": 9999,
+  "b_other": 999,
+  "fills": 603940,
+  "script": "scripts/p1_befund_gebuehreneinheit.py",
+  "note": "seed and B of paper 1 so that its numbers are reproduced exactly; decomposition and class intervals at B = 999 (as the paper 1 figures), exploratory; sections decomposition_b9999 and classes_b9999 repeat them at B = 9 999 for quotation in the text (audit A68)"
+ },
+ "h4": {
+  "p1_1bp": {
+   "stat": 0.4948453608247423,
+   "lo": null,
+   "hi": null,
+   "rejected": true,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 48,
+   "negative_cells": 3,
+   "branch_majority": false,
+   "branch_atm": true,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 23.954511294038355,
+     "lo": 7.244689616023027,
+     "hi": 44.82803589807593,
+     "positive": true,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 0.3614924014156243,
+     "lo": -0.4107779705994462,
+     "hi": 1.3376347234330104,
+     "positive": false,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  },
+  "per_contract_1bp": {
+   "stat": 0.7628865979381443,
+   "lo": null,
+   "hi": null,
+   "rejected": true,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 74,
+   "negative_cells": 0,
+   "branch_majority": true,
+   "branch_atm": true,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 24.19332885998207,
+     "lo": 6.429064983417091,
+     "hi": 46.36740226791829,
+     "positive": true,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 1.05325629360007,
+     "lo": 0.1992115053081409,
+     "hi": 2.098044726273645,
+     "positive": true,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  },
+  "p1_0bp": {
+   "stat": 0.5773195876288659,
+   "lo": null,
+   "hi": null,
+   "rejected": true,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 56,
+   "negative_cells": 3,
+   "branch_majority": true,
+   "branch_atm": true,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 28.20666391833196,
+     "lo": 11.486092548133431,
+     "hi": 49.09524553958628,
+     "positive": true,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 0.5070818234926516,
+     "lo": -0.2663372348436124,
+     "hi": 1.4845505467396896,
+     "positive": false,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  },
+  "per_contract_0bp": {
+   "stat": 0.7835051546391752,
+   "lo": null,
+   "hi": null,
+   "rejected": true,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 76,
+   "negative_cells": 0,
+   "branch_majority": true,
+   "branch_atm": true,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 28.44548148427568,
+     "lo": 10.62156523723801,
+     "hi": 50.66511872416421,
+     "positive": true,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 1.1988457156770973,
+     "lo": 0.3443408274874025,
+     "hi": 2.2450878254943825,
+     "positive": true,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  },
+  "p1_3bp": {
+   "stat": 0.38144329896907214,
+   "lo": null,
+   "hi": null,
+   "rejected": false,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 37,
+   "negative_cells": 4,
+   "branch_majority": false,
+   "branch_atm": false,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 15.450206045451132,
+     "lo": -1.1852169365118257,
+     "hi": 36.25576885061193,
+     "positive": false,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 0.0703135572615695,
+     "lo": -0.7001781850556816,
+     "hi": 1.0441777373061365,
+     "positive": false,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  },
+  "per_contract_3bp": {
+   "stat": 0.5876288659793815,
+   "lo": null,
+   "hi": null,
+   "rejected": true,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 57,
+   "negative_cells": 0,
+   "branch_majority": true,
+   "branch_atm": false,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 15.689023611394848,
+     "lo": -1.9769591434586649,
+     "hi": 37.705990701851974,
+     "positive": false,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 0.7620774494460154,
+     "lo": -0.0900196108246333,
+     "hi": 1.8048589156321724,
+     "positive": false,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  }
+ },
+ "reproduction": [
+  {
+   "section": "analysis_frame",
+   "item": "hs",
+   "value": 0.0,
+   "reference": 0.0,
+   "source": "inference_p1.analysis_frame on the same rows",
+   "matches": true
+  },
+  {
+   "section": "analysis_frame",
+   "item": "y_usd",
+   "value": 0.0,
+   "reference": 0.0,
+   "source": "inference_p1.analysis_frame on the same rows",
+   "matches": true
+  },
+  {
+   "section": "analysis_frame",
+   "item": "as_usd",
+   "value": 0.0,
+   "reference": 0.0,
+   "source": "inference_p1.analysis_frame on the same rows",
+   "matches": true
+  },
+  {
+   "section": "analysis_frame",
+   "item": "hedge",
+   "value": 0.0,
+   "reference": 0.0,
+   "source": "inference_p1.analysis_frame on the same rows",
+   "matches": true
+  },
+  {
+   "section": "analysis_frame",
+   "item": "net_edge",
+   "value": 0.0,
+   "reference": 0.0,
+   "source": "inference_p1.analysis_frame on the same rows",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "half spread",
+   "value": 15.701225476954274,
+   "reference": 15.7,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "adverse selection",
+   "value": -2.650620908563112,
+   "reference": -2.65,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "markout",
+   "value": 13.050604568391153,
+   "reference": 13.05,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "maker fee",
+   "value": -1.5616598854624304,
+   "reference": -1.56,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "maker rebate",
+   "value": 0.5929654755034721,
+   "reference": 0.59,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "hedge cost",
+   "value": -3.149457390064287,
+   "reference": -3.15,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition",
+   "item": "net edge",
+   "value": 8.93245276836791,
+   "reference": 8.93,
+   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "matches": true
+  },
+  {
+   "section": "decomposition_check",
+   "item": "net edge (exact)",
+   "value": 8.93245276836791,
+   "reference": 8.93245,
+   "source": "docs/paper1/ABBILDUNGEN.md, T2 check",
+   "matches": true
+  },
+  {
+   "section": "decomposition_check",
+   "item": "markout (exact)",
+   "value": 13.050604568391153,
+   "reference": 13.050604568391153,
+   "source": "results/p1/horizon_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_markout",
+   "value": -25.414134724330296,
+   "reference": -25.414134724330296,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_hs",
+   "value": -16.60421421778671,
+   "reference": -16.60421421778671,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_as",
+   "value": -8.809920506543587,
+   "reference": -8.809920506543587,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_fee",
+   "value": 1.2286726484190262,
+   "reference": 1.2286726484190262,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_rebate",
+   "value": 0.0790501758377686,
+   "reference": 0.0790501758377686,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_hedge",
+   "value": 3.9276936794733537,
+   "reference": 3.9276936794733537,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "dominant_maker mean_ne",
+   "value": -30.4914508763849,
+   "reference": -30.4914508763849,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_markout",
+   "value": 3.890721736803673,
+   "reference": 3.890721736803673,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_hs",
+   "value": 6.399207048302854,
+   "reference": 6.399207048302854,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_as",
+   "value": -2.508485311499181,
+   "reference": -2.508485311499181,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_fee",
+   "value": 4.546177111852412,
+   "reference": 4.546177111852412,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_rebate",
+   "value": 1.7832999241020782,
+   "reference": 1.7832999241020782,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_hedge",
+   "value": 2.759151819978383,
+   "reference": 2.759151819978383,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "large mean_ne",
+   "value": -1.6313072709250451,
+   "reference": -1.6313072709250451,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_markout",
+   "value": -20.669878044430543,
+   "reference": -20.669878044430543,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_hs",
+   "value": -5.1740277432226325,
+   "reference": -5.1740277432226325,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_as",
+   "value": -15.495850301207913,
+   "reference": -15.495850301207913,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_fee",
+   "value": 1.131324194296081,
+   "reference": 1.131324194296081,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_rebate",
+   "value": 1.5863257608367525,
+   "reference": 1.5863257608367525,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_hedge",
+   "value": 4.935400218311306,
+   "reference": 4.935400218311306,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "mm_programme mean_ne",
+   "value": -25.150276696201175,
+   "reference": -25.150276696201175,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_markout",
+   "value": 24.731948751492116,
+   "reference": 24.731948751492116,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_hs",
+   "value": 25.603771503935235,
+   "reference": 25.603771503935235,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_as",
+   "value": -0.8718227524430988,
+   "reference": -0.8718227524430988,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_fee",
+   "value": 1.2434983526410002,
+   "reference": 1.2434983526410002,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_rebate",
+   "value": 0.5692688025942637,
+   "reference": 0.5692688025942637,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_hedge",
+   "value": 2.872183000622791,
+   "reference": 2.872183000622791,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "other mean_ne",
+   "value": 21.185536200822593,
+   "reference": 21.185536200822593,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_markout",
+   "value": 15.208820333361222,
+   "reference": 15.208820333361222,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_hs",
+   "value": 15.380194630423237,
+   "reference": 15.380194630423237,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_as",
+   "value": -0.1713742970620077,
+   "reference": -0.1713742970620077,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_fee",
+   "value": 0.910310410927818,
+   "reference": 0.910310410927818,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_rebate",
+   "value": 0.0,
+   "reference": 0.0,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_hedge",
+   "value": 3.1115219484876424,
+   "reference": 3.1115219484876424,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "rfq mean_ne",
+   "value": 11.186987973945762,
+   "reference": 11.186987973945762,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_markout",
+   "value": 4.219748619768521,
+   "reference": 4.219748619768521,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_hs",
+   "value": 4.320229183988184,
+   "reference": 4.320229183988184,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_as",
+   "value": -0.1004805642196642,
+   "reference": -0.1004805642196642,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_fee",
+   "value": 34.21381339041514,
+   "reference": 34.21381339041514,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_rebate",
+   "value": 2.442100084448373,
+   "reference": 2.442100084448373,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_hedge",
+   "value": 1.0243198690310191,
+   "reference": 1.0243198690310191,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "classes",
+   "item": "vault mean_ne",
+   "value": -28.576284555229268,
+   "reference": -28.576284555229268,
+   "source": "results/p1/class_means.csv",
+   "matches": true
+  },
+  {
+   "section": "h4",
+   "item": "share of cells positive, perp half spread 1 bp",
+   "value": 0.4948453608247423,
+   "reference": 0.4948453608247423,
+   "source": "results/p1/h4_sensitivity.csv",
+   "matches": true
+  },
+  {
+   "section": "h4",
+   "item": "BTC 40-60 <=2d mean net edge",
+   "value": 23.954511294038355,
+   "reference": 23.954511294038355,
+   "source": "results/p1/h4_cells.csv",
+   "matches": true
+  },
+  {
+   "section": "h4",
+   "item": "ETH 40-60 <=2d mean net edge",
+   "value": 0.3614924014156243,
+   "reference": 0.3614924014156243,
+   "source": "results/p1/h4_cells.csv",
+   "matches": true
+  },
+  {
+   "section": "h4_cells",
+   "item": "97 cells: mean, lo, hi, p, flags",
+   "value": {
+    "mean": 0.0,
+    "lo": 0.0,
+    "hi": 0.0,
+    "p": 0.0
+   },
+   "reference": 0.0,
+   "source": "results/p1/h4_cells.csv",
+   "matches": true
+  },
+  {
+   "section": "h4",
+   "item": "share of cells positive, perp half spread 0 bp",
+   "value": 0.5773195876288659,
+   "reference": 0.5773195876288659,
+   "source": "results/p1/h4_sensitivity.csv",
+   "matches": true
+  },
+  {
+   "section": "h4",
+   "item": "share of cells positive, perp half spread 3 bp",
+   "value": 0.38144329896907214,
+   "reference": 0.3814432989690721,
+   "source": "results/p1/h4_sensitivity.csv",
+   "matches": true
+  },
+  {
+   "section": "f5_bp_check",
+   "item": "BTC 40-60 <=2d (text: about 9 bp)",
+   "value": 8.983827552543886,
+   "reference": 9.0,
+   "source": "paper/main.tex sec. maker",
+   "matches": true
+  },
+  {
+   "section": "f5_bp_check",
+   "item": "BTC 40-60 30-90d (text: about 29 bp)",
+   "value": 28.45967796936723,
+   "reference": 29.0,
+   "source": "paper/main.tex sec. maker",
+   "matches": true
+  },
+  {
+   "section": "f1_premium_share",
+   "item": "markout q25",
+   "value": -1.6073330653520386,
+   "reference": -1.6,
+   "source": "paper/main.tex sec. results (1 decimal)",
+   "matches": true
+  },
+  {
+   "section": "f1_premium_share",
+   "item": "markout q50",
+   "value": 1.0764316718092948,
+   "reference": 1.1,
+   "source": "paper/main.tex sec. results (1 decimal)",
+   "matches": true
+  },
+  {
+   "section": "f1_premium_share",
+   "item": "markout q75",
+   "value": 21.116907569608763,
+   "reference": 21.1,
+   "source": "paper/main.tex sec. results (1 decimal)",
+   "matches": true
+  }
+ ],
+ "reproduced": true,
+ "rfq_booking": {
+  "fills": 603940,
+  "rfq_fills": 122378,
+  "orderbook_fills": 481562,
+  "packages": 72564,
+  "multi_leg_packages": 39366,
+  "multi_leg_with_fee": 4996,
+  "multi_leg_fee_on_one_leg": 4511,
+  "multi_leg_fee_on_every_leg": 95,
+  "multi_leg_with_rebate": 0,
+  "rfq_fee_per_contract_leg": 0.3115303958725652,
+  "rfq_fee_per_contract_package": 0.31773244691940455,
+  "note": "package = rfq_id x maker wallet; fee per contract as the mean over RFQ fills"
+ },
+ "h4_rfq_package": {
+  "per_contract_package_1bp": {
+   "stat": 0.7628865979381443,
+   "lo": null,
+   "hi": null,
+   "rejected": true,
+   "rule": "P1 H4: rejected if >= 50 % of occupied cells (>= 200 fills) have a positive 90 % cluster bootstrap interval of the mean net edge, or if cell BTC/ETH x [40,60) x <=2d has a positive interval",
+   "n": 97,
+   "positive_cells": 74,
+   "negative_cells": 0,
+   "branch_majority": true,
+   "branch_atm": true,
+   "atm": [
+    {
+     "currency": "BTC",
+     "stat": 24.20828481033357,
+     "lo": 6.4522013261241735,
+     "hi": 46.38508173907123,
+     "positive": true,
+     "n": 8902
+    },
+    {
+     "currency": "ETH",
+     "stat": 1.0561449320465164,
+     "lo": 0.2022474968053753,
+     "hi": 2.1017278918443587,
+     "positive": true,
+     "n": 23718
+    }
+   ],
+   "note": "stat = share of occupied cells with a positive 90 % interval; lo/hi undefined for the share"
+  }
+ }
+}

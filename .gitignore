@@ -7,3 +7,9 @@ build/
 dist/
 .venv/
 logs/
+
+# paper 1 data (large, regenerable)
+data/p1/
+
+# manuscript build output
+paper/main.pdf
