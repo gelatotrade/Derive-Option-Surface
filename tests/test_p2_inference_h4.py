@@ -416,3 +416,112 @@ def test_main_cli_run(monkeypatch):
     monkeypatch.setattr(h4, "run", fake_run)
     assert h4.main(["run", "--max-seconds", "30", "--b", "99"]) == 0
     assert seen["max_seconds"] == 30.0 and seen["b"] == 99
+
+
+# ------------------------------------------------------------------------------------------------ figure tables (F5 b, F6 b)
+
+def test_fwl_bins_are_equal_count_residuals_with_the_slope_beta():
+    panel = _panel(seed=5, beta=3.0, sigma=0.5)
+    f = h4.fit(panel)
+    t = h4.fwl_bins(panel, n_bins=5, n_hist=8)
+    assert list(t.columns) == h4.FWL_COLUMNS
+    bins = t[t["kind"] == "bin"].reset_index(drop=True)
+    hist = t[t["kind"] == "hist"].reset_index(drop=True)
+    assert list(bins["bin"]) == list(range(5))
+    assert bins["n_rows"].sum() == len(panel) and bins["n_rows"].max() - bins["n_rows"].min() <= 1
+    assert bins["x_mean"].is_monotonic_increasing
+    # x in log-% (100 x the residualised post*dose); weighted bin means reproduce the residual means (zero)
+    w = bins["n_rows"].to_numpy(float)
+    assert np.dot(w, bins["x_mean"]) / w.sum() == pytest.approx(100 * f.xd.mean(), abs=1e-9)
+    assert np.dot(w, bins["y_mean"]) / w.sum() == pytest.approx(f.yd.mean(), abs=1e-9)
+    assert (bins["n_fills"] <= bins["n_rows"]).all() and (bins["n_fills"] > 0).all()
+    assert len(hist) == 8 and hist["count"].sum() == len(panel)
+    assert np.allclose(hist["x"].to_numpy()[1:], hist["x_hi"].to_numpy()[:-1])
+    assert hist["x"].iloc[0] == pytest.approx(100 * f.xd.min()) and hist["x_hi"].iloc[-1] == pytest.approx(100 * f.xd.max())
+    assert t["fwl_slope"].nunique() == 1
+    assert t["fwl_slope"].iloc[0] == pytest.approx(f.beta, rel=1e-12)
+
+
+def test_placebo_day_table_marks_the_gap_rule_and_counts_draws():
+    ev = _utc("2026-01-10 22:50")
+    kept = pd.DataFrame({"event_id": ["BTC-pm2-20260110"], "ccy": ["BTC"], "manager": ["pm2"], "event_ts": [ev]})
+    changes = {"BTC": np.array([_utc("2025-12-01") // DAY, _utc("2026-01-10") // DAY, _utc("2026-04-01") // DAY])}
+    sample = (_utc("2024-01-11"), _utc("2026-03-20 12:00"))
+    window = p2events.manager_window("BTC", "pm2")
+    days = {"BTC-pm2-20260110": h4.admissible_days(ev, window, changes["BTC"], sample)}
+    draws = h4.draw_placebos(kept, days, n_rep=30, seed=7)
+    t = h4.placebo_day_table(kept, changes, sample, h4.drawn_counts(draws))
+    assert list(t.columns) == h4.PLACEBO_DAY_COLUMNS
+    ok = t[t["admissible"]]
+    assert len(ok) == len(days["BTC-pm2-20260110"])
+    got = (pd.to_datetime(ok["day"], utc=True).astype("int64") // 10 ** 9 // DAY).to_numpy()
+    assert list(got) == list(days["BTC-pm2-20260110"])
+    assert t["drawn_count"].sum() == 30 and (t.loc[~t["admissible"], "drawn_count"] == 0).all()
+    bad = (pd.to_datetime(t.loc[~t["admissible"], "day"], utc=True).astype("int64") // 10 ** 9 // DAY).to_numpy()
+    assert len(bad) > 0 and all(np.abs(changes["BTC"] - d).min() < 28 for d in bad)
+    # counts parsed back from the draws strings of h4_placebo.csv are the same
+    assert h4.drawn_counts_from_strings([h4.draws_string(r) for r in draws]) == h4.drawn_counts(draws)
+
+
+def test_run_writes_figure_tables_and_figtables_rebuilds_them(tmp_path, params_root):
+    kw = _setup(tmp_path, params_root, effect=20.0)
+    h4.run(b=19, n_placebo=5, **kw)
+    out = kw["out_dir"]
+    res = json.loads((out / "h4.json").read_text())
+    fwl = pd.read_csv(out / "fig_h4_fwl_bins.csv")
+    assert fwl["fwl_slope"].iloc[0] == pytest.approx(res["stat"], rel=1e-8)
+    assert (fwl["kind"] == "bin").sum() == h4.FWL_BINS and (fwl["kind"] == "hist").sum() == h4.FWL_HIST_BINS
+    days = pd.read_csv(out / "h4_placebo_days.csv")
+    adm = days[days["admissible"]].groupby("timeline").size()
+    for eid, info in res["placebo"]["admissible_days"].items():
+        assert adm[eid] == info["days"]
+    assert days["drawn_count"].sum() == 5
+    first = {p: (out / p).read_text() for p in ("fig_h4_fwl_bins.csv", "h4_placebo_days.csv")}
+    for p in first:
+        (out / p).unlink()
+    kw["events"].to_csv(out / "events.csv", index=False)
+    h4.fig_tables(results_dir=out, panel=kw["panel"], params_root=params_root)
+    for p, text in first.items():
+        assert (out / p).read_text() == text
+
+
+def test_main_cli_figtables(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(h4, "fig_tables", lambda **kw: seen.update(kw) or {"status": "DONE"})
+    assert h4.main(["figtables"]) == 0
+    assert seen == {}
+
+
+# ------------------------------------------------------------------------------------------------ review round 1
+
+def test_review_extras_readings_and_side_splits():
+    panel = _panel(seed=4, beta=5.0, n_events=4, n_cells=4)
+    f = h4.fit(panel)
+    res = {"stat": f.beta, "lo": f.beta - 2.0, "hi": f.beta + 3.0}
+    events = pd.DataFrame({"event_id": sorted(panel["event_id"].unique())})
+    events["ccy"] = events["event_id"].str.split("-").str[0]
+    events["manager"] = "pm2"
+    events["event_ts"] = _utc("2025-09-10")
+    oi = pd.DataFrame({"month": ["2025-09", "2025-09"], "ccy": ["BTC", "ETH"], "sm": [0.5, 0.2], "pm": [0.0, 0.0],
+                       "pm2": [0.5, 0.8]})
+    out = h4.review_extras(panel, res, events, oi, b=49)
+    r = out["readings"]
+    assert r["y_mean"] == pytest.approx(panel["y_hs_bp"].mean()) and r["n_rows"] == len(panel)
+    assert r["ten_pct_dose"] == pytest.approx(np.log(0.9))
+    assert r["ten_pct_change_beta"] == pytest.approx(np.log(0.9) * f.beta)
+    assert r["ten_pct_change_lo"] == pytest.approx(np.log(0.9) * res["hi"])
+    assert r["ten_pct_change_hi"] == pytest.approx(np.log(0.9) * res["lo"])
+    sells = panel[panel["cell"].str.split("|").str[1] == "sell"].reset_index(drop=True)
+    assert out["sells_only"]["beta"] == pytest.approx(h4.fit(sells).beta)
+    assert out["sells_only"]["n"] == len(sells) and out["buys_only"]["n"] == len(panel) - len(sells)
+    w = panel["event_id"].str.startswith("BTC").map({True: 0.5, False: 0.8}).to_numpy()
+    weighted = panel.assign(dose=panel["dose"] * w)
+    assert out["oi_weighted"]["beta"] == pytest.approx(h4.fit(weighted).beta)
+    assert out["oi_weighted"]["share_min"] == 0.5 and out["oi_weighted"]["share_max"] == 0.8
+
+
+def test_run_writes_review_entry(tmp_path, params_root):
+    kw = _setup(tmp_path, params_root, effect=20.0)
+    h4.run(b=19, n_placebo=3, **kw)
+    sens = json.loads((kw["out_dir"] / "sensitivity_h4.json").read_text())
+    assert {"readings", "sells_only", "buys_only"} <= set(sens["review"])

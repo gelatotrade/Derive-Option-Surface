@@ -1,0 +1,48 @@
+kind,item,scenario,spot_shock,vol_shock,vol_state,dampening,is_skew,pnl_usdc,pnl_pct_forward,binding,x_position,drawn,value_usdc,value_pct_forward,printed
+scenario,scenario 0,0,1.14,1,up,1,False,-7313.64203905,-9.54936556161,True,10,True,,,1.14
+scenario,scenario 1,1,1.105,1,up,1,False,-5483.97855143,-7.16038816776,False,9,True,,,
+scenario,scenario 2,2,1.105,0,unchanged,1,False,-3819.52756309,-4.98712745002,False,9,True,,,
+scenario,scenario 3,3,1.105,2,down,1,False,-3328.68160456,-4.34623369731,False,9,True,,,
+scenario,scenario 4,4,1.07,1,up,1,False,-4030.96883357,-5.26320467336,False,8,True,,,
+scenario,scenario 5,5,1.07,0,unchanged,1,False,-1888.80908981,-2.46620334689,False,8,True,,,
+scenario,scenario 6,6,1.07,2,down,1,False,-1038.58191754,-1.35606833686,False,8,True,,,
+scenario,scenario 7,7,1.035,1,up,1,False,-3049.35034018,-3.98151303665,False,7,True,,,
+scenario,scenario 8,8,1.035,0,unchanged,1,False,-548.842227637,-0.716619030487,False,7,True,,,
+scenario,scenario 9,9,1.035,2,down,1,False,651.796611338,0.851045769024,False,7,True,,,
+scenario,scenario 10,10,1,1,up,1,False,-2620.97990654,-3.42219309116,False,6,True,,,1
+scenario,scenario 11,11,1,0,unchanged,1,False,-10.708614218,-0.0139821543466,False,6,True,,,1
+scenario,scenario 12,12,1,2,down,1,False,1329.53276401,1.73596059554,False,6,True,,,1
+scenario,scenario 13,13,0.965,1,up,1,False,-2797.41458494,-3.65256247932,False,5,True,,,
+scenario,scenario 14,14,0.965,0,unchanged,1,False,-393.436632096,-0.513707152354,False,5,True,,,
+scenario,scenario 15,15,0.965,2,down,1,False,755.268676089,0.986148439683,False,5,True,,,
+scenario,scenario 16,16,0.93,1,up,1,False,-3585.00369593,-4.68091145963,False,4,True,,,
+scenario,scenario 17,17,0.93,0,unchanged,1,False,-1655.70446442,-2.16184044944,False,4,True,,,
+scenario,scenario 18,18,0.93,2,down,1,False,-918.748086809,-1.19960223554,False,4,True,,,
+scenario,scenario 19,19,0.895,1,up,1,False,-4938.53835216,-6.44821113927,False,3,True,,,
+scenario,scenario 20,20,0.895,0,unchanged,1,False,-3603.25355756,-4.70474016209,False,3,True,,,
+scenario,scenario 21,21,0.895,2,down,1,False,-3256.36322422,-4.25180815023,False,3,True,,,
+scenario,scenario 22,22,0.86,1,up,1,False,-6767.65909571,-8.8364798764,False,2,True,,,0.86
+scenario,scenario 23,23,0.34,1,up,0.122624,False,-5600.52354167,-7.31256005562,False,0,True,,,0.34
+scenario,scenario 24,24,0.67,1,up,0.245,False,-4998.15482384,-6.52605190295,False,1,True,,,
+scenario,scenario 25,25,1.5,1,up,0.161741,False,-5405.57565423,-7.05801811431,False,11,True,,,
+scenario,scenario 26,26,2,1,up,0.080871,False,-5799.43370348,-7.57227550777,False,12,True,,,
+scenario,scenario 27,27,3,1,up,0.020218,False,-2998.32702031,-3.91489228448,False,13,True,,,
+scenario,scenario 28,28,4,1,up,0.008976,False,-2018.59118223,-2.63565881618,False,14,True,,,
+scenario,scenario 29,29,5,1,up,0.005044,False,-1520.64159761,-1.98548991408,False,15,True,,,
+scenario,scenario 30,30,6,1,up,0.003228,False,-1220.38756959,-1.59345056357,False,16,True,,,6
+scenario,scenario 31,31,1,3,linear skew,1,True,-10.708614218,-0.0139821543466,False,,False,,,
+scenario,scenario 32,32,1,4,abs skew,1,True,-10.708614218,-0.0139821543466,False,,False,,,
+capital,K_pm2_book,,,,,,,-7684.72585562,-10.0338868165,,,True,7684.72585562,10.0338868165,"PM2, book 10.0"
+capital,K_pm2_legs,,,,,,,-18134.0161823,-23.6774439739,,,True,18134.0161823,23.6774439739,"PM2, legs one by one 23.7"
+capital,K_pm2_call,,,,,,,-9203.50382697,-12.0169434082,,,False,9203.50382697,12.0169434082,
+capital,K_pm2_put,,,,,,,-8930.5123553,-11.6605005656,,,False,8930.5123553,11.6605005656,
+capital,K_sm,,,,,,,-22678.3048743,-29.6108863964,,,True,22678.3048743,29.6108863964,SM 29.6
+meta,forward,,,,,,,,,,,,76587.7271308,,
+meta,strike,,,,,,,,,,,,76587.7271308,,
+meta,ts,,,,,,,,,,,,1789632000,,
+meta,expiry,,,,,,,,,,,,1791532800,,
+meta,tenor_days,,,,,,,,,,,,22,,
+meta,spot_grid_half_width,,,,,,,,,,,,0.14,,core ±14 %
+meta,basis_contingency,,,,,,,,,,,,-333.20586099,,
+meta,pm2_param_from_ts,,,,,,,,,,,,1788562297,,
+meta,legs_source,,,,,,,,,,,,,,recomputed on the reference row

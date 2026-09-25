@@ -1,0 +1,64 @@
+key,manager,rule,value,printed
+header,,,,"BTC · 17 Sep 2026, 08:00 UTC · 15 live expiries · PM2 spot grid ±14 % since 20 Aug 2026 · chain semantics"
+ts,,,1789632000.0,"17 Sep 2026, 08:00 UTC"
+block,,,44805192.0,
+n_expiries,,,15.0,15 live expiries
+expiry_tenor_days,,1789718400,1.0,
+expiry_tenor_days,,1789804800,2.0,
+expiry_tenor_days,,1789891200,3.0,
+expiry_tenor_days,,1789977600,4.0,
+expiry_tenor_days,,1790064000,5.0,
+expiry_tenor_days,,1790323200,8.0,
+expiry_tenor_days,,1790928000,15.0,
+expiry_tenor_days,,1791532800,22.0,
+expiry_tenor_days,,1793347200,43.0,
+expiry_tenor_days,,1795766400,71.0,
+expiry_tenor_days,,1798185600,99.0,
+expiry_tenor_days,,1798704000,105.0,
+expiry_tenor_days,,1806048000,190.0,
+expiry_tenor_days,,1813910400,281.0,
+expiry_tenor_days,,1821772800,372.0,
+spot_grid_up_pct,pm2,,13.99999999999999,±14 %
+spot_grid_down_pct,pm2,,14.000000000000002,±14 %
+spot_grid_since_ts,pm2,,1787263765.0,20 Aug 2026
+iso_level,,,4.0,4 %
+iso_level,,,8.0,8 %
+iso_level,,,12.0,12 %
+iso_level,,,14.0,14 %
+colorbar_tick,,,4.0,4
+colorbar_tick,,,6.0,6
+colorbar_tick,,,8.0,8
+colorbar_tick,,,10.0,10
+colorbar_tick,,,12.0,12
+colorbar_tick,,,14.0,14
+colour_scale_min,,,3.0,
+colour_scale_max,,,15.5,
+atm_delta,,,0.4999999999999999,ATM
+atm_tenor_days,,,30.43916333210104,30 d
+atm_K_pct,pm2,,11.82592716837212,11.8
+title,pm2,,11.82592716837212,a  PM2: ATM 30 d short = 11.8 % of forward
+n_nodes,pm2,,740.0,
+K_pct_min,pm2,,3.4180258422592016,
+K_pct_median,pm2,,10.447997732586177,
+K_pct_max,pm2,,13.70401517776222,
+max_rel_decomposition_gap,pm2,,4.90262425022761e-15,
+n_class,pm2,up,356.0,"spot +14 %, vol up"
+n_class,pm2,down,314.0,"spot −14 %, vol up"
+n_class,pm2,core,0.0,
+n_class,pm2,tail_up,35.0,spot ×2 (dampened)
+n_class,pm2,tail_down,35.0,spot ×0.34 (dampened)
+n_class,pm2,other,0.0,
+atm_K_pct,sm,,14.080277225304144,14.1
+title,sm,,14.080277225304144,b  SM: ATM 30 d short = 14.1 % of forward
+n_nodes,sm,,740.0,
+K_pct_min,sm,,12.37407104946571,
+K_pct_median,sm,,12.978999882525677,
+K_pct_max,sm,,15.006539483575773,
+max_rel_decomposition_gap,sm,,3.4816339455988024e-15,
+n_class,sm,otm,231.0,15 % − OTM
+n_class,sm,floor,509.0,13 % floor
+n_class,sm,mm_put,0.0,
+n_class,sm,max_loss,0.0,
+n_sm_below_pm2,,,9.0,
+median_sm_over_pm2,,,1.260882120328457,
+n_outside_scale,,,0.0,

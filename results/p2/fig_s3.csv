@@ -1,0 +1,6 @@
+key,value,printed,source
+stat,0.9029439440785052,0.90,summary.json h1_stat
+lo,0.8805637576426197,0.88,summary.json h1_lo
+hi,0.9074328677844167,0.91,summary.json h1_hi
+n_cells,173.0,173,summary.json h1_n_cells
+points,173.0,173,fig_f2_b.csv rows

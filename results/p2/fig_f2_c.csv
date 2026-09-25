@@ -1,0 +1,17 @@
+label,source_key,kind,stat,lo,hi,n,n_days,printed
+registered,h1.json,registered,0.9029439440785052,0.8805637576426197,0.9074328677844167,173,463.0,173
+maintenance margin,sensitivity.json:b_mm.h1_pm2_mm,sensitivity,0.9025592056774409,0.8800135353750735,0.9069378068056979,173,463.0,173
+"net edge, Paper 1",sensitivity.json:c_p1_net_edge.h1_pm2,sensitivity,0.912608758129337,0.8788206145616532,0.915367749651186,173,463.0,173
+per day to expiry,sensitivity.json:f_time.to_expiry,exploratory,0.8058739819497429,0.7605543477757021,0.8131332539134385,173,463.0,173
+per holding time,sensitivity.json:f_time.holding,exploratory,0.8333781422234171,0.7953302955996124,0.8407519086269474,173,463.0,173
+SM capital,sensitivity.json:a_maps.sm_pm2_window,exploratory,0.8975274763478591,0.8734465607631726,0.9024620939966903,173,463.0,173
+legacy PM capital,sensitivity.json:a_maps.pm_pm2_window,exploratory,0.9076462644204358,0.8848425196850394,0.9122476423731917,128,463.0,128
+BTC only,sensitivity.json:g_by_ccy.pm2_BTC,exploratory,0.8922478466240622,0.8705140316754654,0.9153098082800778,60,463.0,60
+ETH only,sensitivity.json:g_by_ccy.pm2_ETH,exploratory,0.9216322479673245,0.8864717334045883,0.9246096881322289,68,463.0,68
+HYPE only,sensitivity.json:g_by_ccy.pm2_HYPE,exploratory,0.8884057971014493,0.8183135704874835,0.9111989459815547,45,305.0,45
+edge > 0 only,sensitivity.json:h1_sign.within_pos,exploratory,0.6341249226963512,0.6231131725417439,0.7368101422387137,99,463.0,99
+edge ≤ 0 only,sensitivity.json:h1_sign.within_nonpos,exploratory,0.6358385783043318,0.67383635690485,0.8296127360236949,74,463.0,74
+sign pattern alone,sensitivity.json:h1_sign.sign_floor,band,0.734164012705638,0.6997425033954322,0.7697566645498329,4000,,sign pattern alone
+header,h1.json,header,0.9029439440785052,0.8805637576426197,0.9074328677844167,173,463.0,"registered: 0.90 [0.88, 0.91] → rejected"
+sample,h1.json,sample,,,,173,463.0,173 cells · 463 day clusters
+sample,h1.json,sample,,,,173,463.0,rejected if upper bound ≥ 0.5

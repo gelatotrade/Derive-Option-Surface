@@ -50,7 +50,8 @@ STRUCT_DE = {"BasisContingencyParameters": "Basis", "OtherContingencyParameters"
 SECTION_DE = {"a_maps": "(a) Karten unter anderen Managern", "b_mm": "(b) MM statt IM",
               "c_p1_net_edge": "(c) Netto-Edge in der Form von Paper 1 (Gebühr und Rabatt ungeteilt)",
               "d_h2": "(d) H2-Varianten", "e_h3": "(e) H3-Varianten", "f_time": "(f) Zeitnormierung",
-              "g_by_ccy": "(g) Werte je Basiswert"}
+              "g_by_ccy": "(g) Werte je Basiswert",
+              "h1_sign": "(h) Vorzeichenstruktur von H1 (Review-Runde 1)"}
 VARIANT_DE = {
     ("a_maps", "pm2"): "PM2, PM2-Fenster (gleich Test H1)",
     ("a_maps", "sm_all"): "SM, ganzer Zeitraum",
@@ -76,10 +77,19 @@ VARIANT_DE = {
     ("f_time", "to_expiry"): "bis zum Verfall, annualisiert",
     ("f_time", "holding"): "empirische Haltedauer",
     ("f_time", "holding_excl_transfer"): "Haltedauer ohne Transfers",
+    ("e_h3", "sm_pm2_le63_no_sm"): "Tage mit höchstens 63 Optionen ohne SM-Konto",
+    ("h1_sign", "within_pos"): "nur Zellen mit Edge > 0",
+    ("h1_sign", "within_nonpos"): "nur Zellen mit Edge ≤ 0",
+    ("h1_sign", "within_sell"): "nur Maker-Verkäufe",
+    ("h1_sign", "within_buy"): "nur Maker-Käufe",
+    ("h1_sign", "within_pos_sell"): "Maker-Verkäufe mit Edge > 0",
+    ("h1_sign", "within_pos_buy"): "Maker-Käufe mit Edge > 0",
 }
-GROUP_DE = {"by_label": "Konto", "by_ccy": "Basiswert"}
+GROUP_DE = {"by_label": "Konto", "by_ccy": "Basiswert", "by_regime": "Regime",
+            "by_account_manager": "Manager des Kontos"}
 STATUS_DE = {"no_options": "ohne Optionen", "no_snapshot": "ohne Snapshot"}
-GROUP_SLOTS = {"by_label": LABELS, "by_ccy": CCYS}
+REGIMES = ("R1", "R2", "R3", "R4")                   # parameter regimes of the figures (ABBILDUNGSWAHL 6.6)
+GROUP_SLOTS = {"by_label": LABELS, "by_ccy": CCYS, "by_regime": REGIMES, "by_account_manager": ("SM", "PM", "PM2")}
 VERDICT_FIELDS = ("stat", "lo", "hi", "rejected", "n")
 
 NNBSP = " "   # narrow no-break space as thousands separator (as in the Paper 1 sheet)
@@ -841,6 +851,7 @@ def events_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
         s.put(f"event_{eid}_panel_cells", None if _missing(panel_cells[i]) else int(panel_cells[i]))
         s.put(f"event_{eid}_refbook_day", rday)
         s.put(f"event_{eid}_refbook_change", change)
+        s.put(f"event_{eid}_refbook_log_change", None if change is None else math.log1p(change))
         s.put(f"event_{eid}_refbook_k_before_bp", before)
         s.put(f"event_{eid}_refbook_k_after_bp", after)
         kinds = ", ".join(STRUCT_DE.get(k, k) for k in str(e.get("kinds", "")).split("+") if k)
@@ -943,6 +954,139 @@ def oi_section(d: Dict[str, Any], s: Summary) -> List[str]:
     return lines + [""]
 
 
+def _optional_csv(results: Path, name: str) -> Optional[pd.DataFrame]:
+    p = Path(results) / name
+    return pd.read_csv(p) if p.is_file() else None
+
+
+def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path) -> List[str]:
+    """Numbers of review round 1 (docs/paper2/MANUSKRIPT.md): all exploratory or descriptive."""
+    sens, h3, cap = d["sensitivity.json"], d["h3.json"], d["capital_check.json"]
+    lines = ["## Review-Runde 1 (explorativ oder beschreibend)", ""]
+    # H1: sign structure
+    sign = sens.get("h1_sign") or {}
+    fl = sign.get("sign_floor") or {}
+    for k in ("mean", "median", "p05", "p95", "draws", "n_pos", "n_nonpos"):
+        s.put(f"h1_sign_floor_{k}", fl.get(k))
+    top = sign.get("top_overlap") or {}
+    s.put("h1_top10_overlap", top.get("top10"))
+    s.put("h1_top20_overlap", top.get("top20"))
+    s.put("h1_sign_agree", sign.get("sign_agree"))
+    wp, wn = sign.get("within_pos") or {}, sign.get("within_nonpos") or {}
+    ws, wb, wpb = sign.get("within_sell") or {}, sign.get("within_buy") or {}, sign.get("within_pos_buy") or {}
+    lines += [
+        f"- H1, nur Vorzeichen: Mischt man die Ränge innerhalb der {di(fl.get('n_pos'))} Zellen mit Edge > 0 und der "
+        f"{di(fl.get('n_nonpos'))} übrigen ({di(fl.get('draws'))} Ziehungen), ist ρ im Mittel {de(fl.get('mean'), 3)} "
+        f"(5. bis 95. Perzentil {de(fl.get('p05'), 3)} bis {de(fl.get('p95'), 3)}).",
+        f"- H1 innerhalb von Gruppen: Edge > 0 {de(wp.get('stat'), 3)} (n = {di(wp.get('n'))}), Edge ≤ 0 "
+        f"{de(wn.get('stat'), 3)} (n = {di(wn.get('n'))}), Verkäufe {de(ws.get('stat'), 3)}, Käufe "
+        f"{de(wb.get('stat'), 3)}, Käufe mit Edge > 0 {de(wpb.get('stat'), 3)} (n = {di(wpb.get('n'))}).",
+        f"- Beste Zellen: von den zehn besten je Kapital {di(top.get('top10'))} unter den zehn besten je Nominal, von "
+        f"den besten 20 {di(top.get('top20'))}; gleiches Vorzeichen in {di(sign.get('sign_agree'))} Zellen."]
+    # H2 population
+    pop = (sens.get("d_h2") or {}).get("population") or {}
+    s.put("h2_population", pop.get("n"))
+    s.put("h2_population_sample_equal", pop.get("sample_equals_marginal"))
+    lines.append(f"- H2: Population vor der Ziehung {di(pop.get('n'))} Fills; die präregistrierte Ziehung ergibt "
+                 f"genau die Fills von marginal.parquet: {yes_no(pop.get('sample_equals_marginal'))}.")
+    # H3: accounts above the threshold, days beyond the validated book size
+    by_label = (sens.get("e_h3") or {}).get("by_label") or {}
+    thr = h3.get("threshold")
+    stats = [v.get("stat") for v in by_label.values() if not _missing(v.get("stat"))]
+    above = sum(1 for x in stats if thr is not None and x > thr)
+    s.put("h3_accounts_median_n", len(stats))
+    s.put("h3_accounts_median_above_threshold", above)
+    series = _optional_csv(results, "fig_h3_series.csv")
+    vcsv = d["validation.csv"]
+    legs_max = int(vcsv.loc[vcsv["kind"] == "book", "n_legs"].max()) if (vcsv["kind"] == "book").any() else None
+    over = None
+    if series is not None and legs_max is not None:
+        ok = series[(series["status"].astype(str) == "ok") & np.isfinite(series["ratio_sm_pm2"].to_numpy(float))]
+        over = int((ok["n_legs"] > legs_max).sum())
+        s.put("h3_legs_max", int(ok["n_legs"].max()))
+    s.put("h3_days_over_validated_legs", over)
+    fam_counts: Dict[str, int] = {}
+    if series is not None:
+        ok = series[series["status"].astype(str) == "ok"]
+        for lab, mgr in ok[["label", "manager"]].drop_duplicates("label").itertuples(index=False):
+            fam = str(mgr).split(":", 1)[0]
+            fam_counts[fam] = fam_counts.get(fam, 0) + 1
+    for fam in ("SM", "PM", "PM2"):
+        s.put(f"h3_accounts_{fam}", fam_counts.get(fam) if series is not None else None)
+    lines.append("- H3-Konten nach Manager: " + ", ".join(f"{k} {v}" for k, v in sorted(fam_counts.items())) + ".")
+    e = sens.get("e_h3") or {}
+    ns = e.get("sm_pm2_le63_no_sm") or {}
+    lines += [
+        f"- H3: {above} von {len(stats)} Kontomedianen über der Schwelle {de(thr, 0)}; höchstens 63 Optionen ohne "
+        f"SM-Konto {ci(ns.get('stat'), ns.get('lo'), ns.get('hi'), 3)} (n = {di(ns.get('n'))}).",
+        f"- H3: {di(over)} Maker-Tage mit mehr Beinen als das grösste validierte Buch ({di(legs_max)} Beine)."]
+    # fills outside every manager window
+    outside = 0
+    for c in CCYS:
+        mg = _get(cap, "managers", c) or {}
+        n_c = max((v.get("n") or 0) for v in mg.values()) if mg else 0
+        in_c = max((v.get("n_in_window") or 0) for v in mg.values()) if mg else 0
+        outside += int(n_c - in_c)
+    s.put("fills_outside_every_window", outside)
+    lines.append(f"- Fills ausserhalb jedes Manager-Fensters (ohne Kapital): {di(outside)}.")
+    # validation: blocks drawn per cell of single contracts
+    cells = (d["validation_summary.json"].get("cells") or [])
+    blocks = [int(c.get("n", 0)) + int(c.get("n_missing", 0)) for c in cells
+              if c.get("kind") == "single" and c.get("is_initial")]
+    s.put("validation_single_blocks_per_cell", max(blocks) if blocks else None)
+    s.put("validation_single_blocks_per_cell_min", min(blocks) if blocks else None)
+    # probes of the off-chain discount: expiries of the box-spread measurement quoted in Section 2
+    box_path = Path(results) / "semantik" / "box_diskont.json"
+    box = json.loads(box_path.read_text()) if box_path.is_file() else {}
+    first = next((v for k, v in sorted(box.items()) if k.startswith("box_") and isinstance(v, list)), None)
+    s.put("semantik_box_expiries", len(first) if first is not None else None)
+    # API snapshot (present-day sensitivity, off-chain against chain semantics)
+    api = _optional_csv(results, "api_snapshot.csv")
+    if api is not None and len(api):
+        ok = api[api["status"].astype(str) == "ok"]
+        s.put("api_n", len(ok))
+        s.put("api_n_cells", len(api))
+        ts = pd.to_numeric(ok["ts"], errors="coerce")
+        s.put("api_day", pd.Timestamp(int(ts.min()), unit="ms", tz="UTC").strftime("%Y-%m-%d") if len(ts) else None)
+        for m in ("sm", "pm2"):
+            r = ok[f"rel_diff_{m}"].abs().astype(float)
+            s.put(f"api_{m}_median_abs_rel", float(r.median()) if len(r) else None)
+            s.put(f"api_{m}_p95_abs_rel", float(r.quantile(0.95)) if len(r) else None)
+            s.put(f"api_{m}_max_abs_rel", float(r.max()) if len(r) else None)
+        r = ok.assign(ar=ok["rel_diff_pm2"].abs().astype(float))
+        s.put("api_pm2_max_tenor_bucket", str(r.loc[r["ar"].idxmax(), "tenor_bucket"]) if len(r) else None)
+        med = r.groupby("tenor_bucket")["ar"].median()
+        for b, key in ((">90d", "gt90d"), ("<=2d", "le2d")):
+            s.put(f"api_pm2_median_abs_rel_{key}", float(med[b]) if b in med else None)
+        lines.append(f"- API gegen Chain-Semantik ({di(len(ok))} Einzelkontrakte am {day_de(s['api_day'])}): PM2 "
+                     f"Median |rel| {pct(s['api_pm2_median_abs_rel'], 2)}, p95 {pct(s['api_pm2_p95_abs_rel'], 2)}, "
+                     f"Maximum {pct(s['api_pm2_max_abs_rel'], 2)} (Laufzeit {s['api_pm2_max_tenor_bucket']}); SM "
+                     f"Median {pct(s['api_sm_median_abs_rel'], 2)}, Maximum {pct(s['api_sm_max_abs_rel'], 2)}.")
+    # H4 readings and side splits
+    rv = (d["sensitivity_h4.json"].get("review") or {})
+    rd = rv.get("readings") or {}
+    for k in ("y_mean", "y_median", "y_mean_fills", "y_median_fills", "ten_pct_dose", "ten_pct_change_beta",
+              "ten_pct_change_lo", "ten_pct_change_hi"):
+        s.put(f"h4_review_{k}", rd.get(k))
+    for name in ("sells_only", "buys_only", "oi_weighted"):
+        v = rv.get(name) or {}
+        for k in ("beta", "se", "p", "lo", "hi", "n", "cell_events"):
+            s.put(f"h4_review_{name}_{k}", v.get(k))
+    ow = rv.get("oi_weighted") or {}
+    s.put("h4_review_oi_share_min", ow.get("share_min"))
+    s.put("h4_review_oi_share_max", ow.get("share_max"))
+    so = rv.get("sells_only") or {}
+    lines += [
+        f"- H4 Niveau: Halbspread im Panel im Mittel {de(rd.get('y_mean'), 2)} bp des Index (Median "
+        f"{de(rd.get('y_median'), 2)}); Kapital zehn Prozent billiger (Dosis {de(rd.get('ten_pct_dose'), 3)}): "
+        f"Änderung des Halbspreads {de(rd.get('ten_pct_change_beta'), 2, sign=True)} bp, Intervall "
+        f"{de(rd.get('ten_pct_change_lo'), 2, sign=True)} bis {de(rd.get('ten_pct_change_hi'), 2, sign=True)} bp.",
+        f"- H4 nur Verkaufszellen: β {de(so.get('beta'), 2)}, p {de(so.get('p'), 4)}; OI-gewichtete Dosis "
+        f"(Anteil {pct(ow.get('share_min'), 1)} bis {pct(ow.get('share_max'), 1)}): β {de(ow.get('beta'), 2)}, "
+        f"p {de(ow.get('p'), 4)}.", ""]
+    return lines
+
+
 def checks_section(checks: Checks, s: Summary) -> List[str]:
     failed = sum(1 for _, ok, _ in checks if not ok)
     s.put("checks_n", len(checks))
@@ -993,7 +1137,8 @@ def build(results: Path = RESULTS, now: Optional[dt.datetime] = None, prereg_end
     head = header(d, s, cut, results, summary_path, now, checks)
     body = (sample_section(d, s, checks) + validation_section(d, s, checks) + h1_section(d, s, checks)
             + h2_section(d, s, checks) + h3_section(d, s, checks) + h4_section(d, s, checks)
-            + sensitivity_section(d, s, checks) + events_section(d, s, checks) + oi_section(d, s))
+            + sensitivity_section(d, s, checks) + events_section(d, s, checks) + oi_section(d, s)
+            + review_section(d, s, checks, results))
     tail = checks_section(checks, s) + limits_section(d, cut)
     md = "\n".join(head + body + tail).rstrip() + "\n"
     return md, dict(sorted(s.items()))

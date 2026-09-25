@@ -1,6 +1,6 @@
 # Zahlenblatt Paper 2
 
-Erzeugt 2026-09-25 00:28 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
+Erzeugt 2026-09-25 01:47 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
 
 - **Datenstand:** Stichprobe vom 11.01.2024 00:00 UTC bis zum letzten Fill am 17.09.2026 11:51:53 UTC. **Pilotstand:** Die Stichprobe endet vor dem präregistrierten Ende (30.09.2026 08:00 UTC); die Zahlen des Manuskripts entstehen mit dem Enddatenlauf. Stichtag 17.09.2026.
 - **Inferenz:** B = 9 999, Seed 20260924, 90-%-Perzentilintervalle aus einem Cluster-Bootstrap über UTC-Tage (H1 bis H3, Nachtrag 3). H4: Wild-Cluster-Bootstrap mit Rademacher-Gewichten und restringierten Residuen, Cluster UTC-Tag, einseitiges p für β > 0, 100 Placebo-Termine.
@@ -145,6 +145,10 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 | Konto M10 | Median dK_per_contract/K_single_pm2 | 0,0258 [0,0220; 0,0293] | 3 341 | nicht abgelehnt |
 | Basiswert ETH | Median dK_per_contract/K_single_pm2 | 0,0378 [0,0342; 0,0421] | 13 594 | nicht abgelehnt |
 | Basiswert HYPE | Median dK_per_contract/K_single_pm2 | 0,0230 [0,0126; 0,0356] | 6 405 | nicht abgelehnt |
+| Regime R1 | Median dK_per_contract/K_single_pm2 | 0,0503 [0,0411; 0,0693] | 5 137 | nicht abgelehnt |
+| Regime R2 | Median dK_per_contract/K_single_pm2 | 0,0372 [0,0305; 0,0466] | 7 906 | nicht abgelehnt |
+| Regime R3 | Median dK_per_contract/K_single_pm2 | 0,0117 [−0,0012; 0,0220] | 5 593 | nicht abgelehnt |
+| Regime R4 | Median dK_per_contract/K_single_pm2 | 0,0899 [0,0241; 0,1639] | 1 363 | nicht abgelehnt |
 
 ### (e) H3-Varianten
 
@@ -166,6 +170,14 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 | Konto M7 | Median K_sm/K_pm2 | 6,311 [4,925; 12,243] | 10 | nicht abgelehnt |
 | Konto M8 | Median K_sm/K_pm2 | 5,257 [5,134; 5,361] | 239 | nicht abgelehnt |
 | Konto M10 | Median K_sm/K_pm2 | 5,663 [5,329; 5,924] | 247 | nicht abgelehnt |
+| Regime R1 | Median K_sm/K_pm2 | 4,440 [4,272; 4,592] | 990 | nicht abgelehnt |
+| Regime R2 | Median K_sm/K_pm2 | 4,675 [4,496; 4,788] | 590 | nicht abgelehnt |
+| Regime R3 | Median K_sm/K_pm2 | 5,720 [5,447; 5,940] | 279 | nicht abgelehnt |
+| Regime R4 | Median K_sm/K_pm2 | 6,001 [5,756; 6,620] | 84 | nicht abgelehnt |
+| Manager des Kontos PM | Median K_sm/K_pm2 | 5,457 [5,291; 5,719] | 452 | nicht abgelehnt |
+| Manager des Kontos PM2 | Median K_sm/K_pm2 | 5,161 [5,068; 5,262] | 1 163 | nicht abgelehnt |
+| Manager des Kontos SM | Median K_sm/K_pm2 | 1,076 [1,049; 1,111] | 328 | abgelehnt |
+| Tage mit höchstens 63 Optionen ohne SM-Konto | Median K_sm/K_pm2 | 3,780 [3,635; 3,980] | 184 | nicht abgelehnt |
 
 ### (f) Zeitnormierung
 
@@ -185,6 +197,17 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 | ETH, SM, ganzer Zeitraum | ρ | 0,890 [0,857; 0,903] | 69 | abgelehnt |
 | HYPE, PM2-Fenster | ρ | 0,888 [0,818; 0,911] | 45 | abgelehnt |
 | HYPE, SM, ganzer Zeitraum | ρ | 0,887 [0,817; 0,910] | 45 | abgelehnt |
+
+### (h) Vorzeichenstruktur von H1 (Review-Runde 1)
+
+| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+|---|---|---|---:|---|
+| nur Zellen mit Edge > 0 | ρ | 0,634 [0,623; 0,737] | 99 | abgelehnt |
+| nur Zellen mit Edge ≤ 0 | ρ | 0,636 [0,674; 0,830] | 74 | abgelehnt |
+| nur Maker-Verkäufe | ρ | 0,990 [0,985; 0,992] | 86 | abgelehnt |
+| nur Maker-Käufe | ρ | 0,721 [0,689; 0,784] | 87 | abgelehnt |
+| Maker-Verkäufe mit Edge > 0 | ρ | 0,940 [0,937; 0,978] | 38 | abgelehnt |
+| Maker-Käufe mit Edge > 0 | ρ | 0,243 [0,231; 0,476] | 61 | nicht abgelehnt |
 
 ### (h) H4-Varianten
 
@@ -285,6 +308,20 @@ Anteil von `OptionAsset.totalPosition` je Manager an der Summe über die Manager
 | 2026-07 | 4,7 % | 0,0 % | 95,3 % | 30,1 % | 0,0 % | 69,9 % | 15,9 % | 84,1 % |
 | 2026-08 | 5,1 % | 0,0 % | 94,9 % | 19,4 % | 0,0 % | 80,6 % | 12,8 % | 87,2 % |
 | 2026-09 | 9,0 % | 0,0 % | 91,0 % | 28,1 % | 0,0 % | 71,9 % | 12,1 % | 87,9 % |
+
+## Review-Runde 1 (explorativ oder beschreibend)
+
+- H1, nur Vorzeichen: Mischt man die Ränge innerhalb der 99 Zellen mit Edge > 0 und der 74 übrigen (4 000 Ziehungen), ist ρ im Mittel 0,734 (5. bis 95. Perzentil 0,700 bis 0,770).
+- H1 innerhalb von Gruppen: Edge > 0 0,634 (n = 99), Edge ≤ 0 0,636 (n = 74), Verkäufe 0,990, Käufe 0,721, Käufe mit Edge > 0 0,243 (n = 61).
+- Beste Zellen: von den zehn besten je Kapital 1 unter den zehn besten je Nominal, von den besten 20 5; gleiches Vorzeichen in 173 Zellen.
+- H2: Population vor der Ziehung 100 995 Fills; die präregistrierte Ziehung ergibt genau die Fills von marginal.parquet: ja.
+- H3-Konten nach Manager: PM 4, PM2 4, SM 1.
+- H3: 8 von 9 Kontomedianen über der Schwelle 2; höchstens 63 Optionen ohne SM-Konto 3,780 [3,635; 3,980] (n = 184).
+- H3: 127 Maker-Tage mit mehr Beinen als das grösste validierte Buch (245 Beine).
+- Fills ausserhalb jedes Manager-Fensters (ohne Kapital): 6.
+- API gegen Chain-Semantik (195 Einzelkontrakte am 25.09.2026): PM2 Median |rel| 0,08 %, p95 0,50 %, Maximum 2,41 % (Laufzeit >90d); SM Median 0,00 %, Maximum 0,30 %.
+- H4 Niveau: Halbspread im Panel im Mittel 7,93 bp des Index (Median 3,34); Kapital zehn Prozent billiger (Dosis −0,105): Änderung des Halbspreads +0,48 bp, Intervall −1,75 bis +2,74 bp.
+- H4 nur Verkaufszellen: β −3,81, p 0,5766; OI-gewichtete Dosis (Anteil 54,5 % bis 94,9 %): β −5,13, p 0,5926.
 
 ## Konsistenzprüfungen
 

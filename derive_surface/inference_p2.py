@@ -28,8 +28,15 @@ interval. Rejected if the lower bound is at most 2.
 Every verdict is a JSON object ``{stat, lo, hi, rejected, rule, n, ...}``. Accounts appear only as ``p2ids`` labels
 (the input tables carry them in ``label``); raw subaccount ids never reach ``results/``.
 
-CLI: ``python3 -m derive_surface p2 infer run`` (H1 to H3) and ``... infer sensitivity`` (exploratory tables and
-figure data), each with ``--root`` (repository root), ``--out``, ``--b``, ``--seed``.
+Review round 1 (exploratory, docs/paper2/MANUSKRIPT.md): ``h1_sign`` in ``sensitivity.json`` (the rho that the sign
+pattern alone gives when ranks are shuffled within each sign group, rho within sign groups and sides, overlap of the
+best cells), H2 and H3 per parameter regime (``regime=R1`` to ``R4``, section 6.6 of ABBILDUNGSWAHL), H3 per manager
+of the account (``account_manager=SM/PM/PM2``) and on small books without the SM account, and the size of the H2
+population before the draw. None of it changes a registered number.
+
+CLI: ``python3 -m derive_surface p2 infer run`` (H1 to H3), ``... infer sensitivity`` (exploratory tables and
+figure data) and ``... infer extras`` (only the review-round entries, merged into the existing ``sensitivity.json``,
+``sens_h2.csv`` and ``sens_h3.csv``), each with ``--root`` (repository root), ``--out``, ``--b``, ``--seed``.
 """
 from __future__ import annotations
 
@@ -65,6 +72,12 @@ H1_MAX_RHO = 0.5
 H2_MAX_MEDIAN = 0.5
 H3_MIN_MEDIAN = 2.0
 SM_MAX_OPTIONS = 63            # options an SM account on v2 can hold (addendum 4, item 2)
+SIGN_DRAWS = 4_000             # shuffles of the ranks within the sign groups (h1_sign.sign_floor)
+# Parameter regimes of the figures (ABBILDUNGSWAHL section 6.6): the PM2 events of 23.01.2026 04:24:05,
+# 24.05.2026 04:05:07 and 20.08.2026 22:09:25 UTC; an object at the event second belongs to the later regime. Fills
+# are placed by their time, maker days by the book time 00:00 UTC. Same bounds as figs_p2.f1.REGIME_BOUNDS (tested).
+REGIME_BOUNDS = (1769142245, 1779595507, 1787263765)
+REGIMES = ("R1", "R2", "R3", "R4")
 MANAGERS = ("sm", "pm", "pm2")
 CCYS = ("BTC", "ETH", "HYPE")
 BTC_ETH = ("BTC", "ETH")
@@ -639,6 +652,205 @@ def h3_series(maker_days: pd.DataFrame) -> pd.DataFrame:
 
 
 # =====================================================================================================================
+# Review round 1: sign structure of H1, regimes, account managers (exploratory)
+# =====================================================================================================================
+
+def regime_of(ts_s) -> np.ndarray:
+    """Regime label (R1 to R4) for UNIX seconds; a time at an event second belongs to the later regime."""
+    k = np.searchsorted(np.asarray(REGIME_BOUNDS, dtype=np.int64), np.asarray(ts_s, dtype=np.int64), side="right")
+    return np.asarray(REGIMES, dtype=object)[k]
+
+
+def _day_seconds(days) -> np.ndarray:
+    return (pd.to_datetime(pd.Series(days)).astype("int64") // 10 ** 9).to_numpy(np.int64)
+
+
+def fill_regimes(mg: pd.DataFrame) -> np.ndarray:
+    """Regime of each H2 fill: by ``ts`` (ms) when present, else by its UTC day."""
+    if "ts" in mg:
+        return regime_of(mg["ts"].to_numpy(np.int64) // 1000)
+    return regime_of(_day_seconds(mg["day"]))
+
+
+def account_manager(manager) -> np.ndarray:
+    """``SM``, ``PM`` or ``PM2`` from a manager label such as ``PM2:ETH``."""
+    return np.asarray([str(m).split(":", 1)[0] for m in manager], dtype=object)
+
+
+def sign_floor(a_bp, draws: int = SIGN_DRAWS, seed: int = SEED) -> dict:
+    """Spearman's rho between the ranks of ``a_bp`` and ranks that keep only the sign pattern.
+
+    Capital is positive in every cell, so the cells with positive edge rank first under either denominator. Each
+    draw gives the cells with ``a_bp > 0`` a random permutation of the top ranks and the others a random permutation
+    of the remaining ranks; the statistic is the correlation of those ranks with the ranks of ``a_bp``."""
+    a = np.asarray(a_bp, dtype=float)
+    a = a[np.isfinite(a)]
+    pos = a > 0
+    n, n_pos = int(len(a)), int(pos.sum())
+    out = {"draws": int(draws), "seed": int(seed), "n": n, "n_pos": n_pos, "n_nonpos": n - n_pos,
+           "rule": "descriptive (no preregistered threshold)", "exploratory": True}
+    if n < 3 or draws < 1:
+        return {**out, "mean": float("nan"), "median": float("nan"), "p05": float("nan"), "p95": float("nan")}
+    ra = ranks_desc(a)
+    top = np.arange(1, n_pos + 1, dtype=float)
+    rest = np.arange(n_pos + 1, n + 1, dtype=float)
+    rng = np.random.default_rng(seed)
+    rb = np.empty((draws, n))
+    for i in range(draws):
+        rb[i, pos] = rng.permutation(top)
+        rb[i, ~pos] = rng.permutation(rest)
+    rho = _pearson_rows(np.broadcast_to(ra, rb.shape), rb)
+    return {**out, "mean": float(np.mean(rho)), "median": float(np.median(rho)),
+            "p05": float(np.quantile(rho, 0.05)), "p95": float(np.quantile(rho, 0.95))}
+
+
+def top_overlap(cells: pd.DataFrame, ks: Sequence[int] = (10, 20)) -> dict:
+    """How many of the ``k`` best occupied cells by edge per capital are among the ``k`` best by edge per notional."""
+    occ = cells[cells["occupied"].astype(bool)]
+    out = {}
+    for k in ks:
+        a = set(occ.sort_values(["A_bp", "cell"], ascending=[False, True], kind="mergesort")["cell"].head(k))
+        b = set(occ.sort_values(["B_bp", "cell"], ascending=[False, True], kind="mergesort")["cell"].head(k))
+        out[f"top{k}"] = int(len(a & b))
+    return out
+
+
+H1_SIGN_GROUPS = ("within_pos", "within_nonpos", "within_sell", "within_buy", "within_pos_sell", "within_pos_buy")
+
+
+def h1_sign(frame: pd.DataFrame, cells: pd.DataFrame, k_col: str = "K_pm2", min_fills: int = MIN_CELL_FILLS,
+            b: int = B, seed: int = SEED, level: float = LEVEL, draws: int = SIGN_DRAWS) -> dict:
+    """Sign structure of H1 on the occupied cells of the registered map (``cells``, from ``edge_map``).
+
+    ``sign_floor``: rho from the sign pattern alone (see ``sign_floor``). ``within_*``: rho between edge per notional
+    and edge per capital over the occupied cells of one group (sign of the edge, maker side, or both), with the same
+    day-cluster bootstrap as H1 on the fills of those cells. ``top_overlap``: overlap of the best cells."""
+    occ = cells[cells["occupied"].astype(bool)]
+    pos = occ["A_bp"].to_numpy(float) > 0
+    side = occ["side"].astype(str).to_numpy()
+    masks = {"within_pos": pos, "within_nonpos": ~pos, "within_sell": side == "sell", "within_buy": side == "buy",
+             "within_pos_sell": pos & (side == "sell"), "within_pos_buy": pos & (side == "buy")}
+    out: dict = {"sign_floor": sign_floor(occ["A_bp"].to_numpy(float), draws=draws, seed=seed),
+                 "top_overlap": top_overlap(cells),
+                 "sign_agree": int((np.sign(occ["A_bp"].to_numpy(float)) == np.sign(occ["B_bp"].to_numpy(float)))
+                                   .sum())}
+    for name in H1_SIGN_GROUPS:
+        chosen = set(occ.loc[masks[name], "cell"])
+        sub = frame[frame["cell"].isin(chosen).to_numpy()]
+        _, res = edge_map(sub, k_col, min_fills=min_fills, b=b, seed=seed, level=level)
+        v = h1_verdict(res)
+        v["capital"] = k_col
+        out[name] = {**_stats(v, "H1"), "cells": name}
+    return out
+
+
+def h2_regime_rows(mg: pd.DataFrame, **kw) -> Tuple[dict, List[dict]]:
+    """H2 statistic per parameter regime (exploratory)."""
+    reg = fill_regimes(mg)
+    d, rows = {}, []
+    for r in REGIMES:
+        sub = mg[reg == r]
+        if not len(sub):
+            continue
+        d[r] = _h2_stats(h2_test(sub, variant="ratio", **kw))
+        rows.append({"variant": "ratio", "group": f"regime={r}", **d[r]})
+    return d, rows
+
+
+def h3_review_rows(md: pd.DataFrame, **kw) -> Tuple[dict, List[dict]]:
+    """H3 per parameter regime, per manager of the account and on books of at most 63 options without the SM
+    accounts (exploratory)."""
+    e: dict = {"by_regime": {}, "by_account_manager": {}}
+    rows: List[dict] = []
+    reg = regime_of(_day_seconds(md["day"]))
+    for r in REGIMES:
+        sub = md[reg == r]
+        if (sub["status"] == "ok").any():
+            e["by_regime"][r] = _stats(h3_test(sub, **kw), "H3")
+            rows.append({"variant": "sm_pm2", "group": f"regime={r}", **e["by_regime"][r]})
+    fam = account_manager(md["manager"]) if "manager" in md else np.full(len(md), "", dtype=object)
+    for m in ("SM", "PM", "PM2"):
+        sub = md[fam == m]
+        if (sub["status"] == "ok").any():
+            e["by_account_manager"][m] = _stats(h3_test(sub, **kw), "H3")
+            rows.append({"variant": "sm_pm2", "group": f"account_manager={m}", **e["by_account_manager"][m]})
+    small = md[(md["n_legs"] <= SM_MAX_OPTIONS).to_numpy() & (fam != "SM")]
+    if (small["status"] == "ok").any():
+        e["sm_pm2_le63_no_sm"] = _stats(h3_test(small, **kw), "H3")
+        rows.append({"variant": "sm_pm2_le63_no_sm", "group": "all", **e["sm_pm2_le63_no_sm"]})
+    return e, rows
+
+
+def h2_population(root: Path) -> Optional[dict]:
+    """Size of the H2 population before the draw, and whether the preregistered draw from it gives the fills of
+    ``marginal.parquet``; None when the book inputs are not there (``books.h2_population``)."""
+    from . import books
+    root = Path(root)
+    need = [root / books.BOOKS_DIR / "top_makers.json", root / books.BOOKS_DIR / "snapshots.parquet",
+            root / books.MARKOUTS]
+    if not all(p.exists() for p in need):
+        return None
+    top = json.loads(need[0].read_text())["subaccounts"]
+    snaps = pd.read_parquet(need[1])
+    m = pd.read_parquet(need[2], columns=books.MARKOUT_B3_COLUMNS)
+    m = m[m["maker_sub"].isin(top)].reset_index(drop=True)
+    pop = books.h2_population(m, snaps, top)
+    sample = books.h2_sample(pop)
+    mg = pd.read_parquet(paths(root)["marginal"], columns=["fill_key"])
+    same = sorted(map(str, sample["trade_id"])) == sorted(map(str, mg["fill_key"]))
+    return {"n": int(len(pop)), "sample": int(len(sample)), "sample_equals_marginal": bool(same),
+            "rule": "descriptive (no preregistered threshold)"}
+
+
+def review_entries(pm2: pd.DataFrame, cells: pd.DataFrame, mg: pd.DataFrame, md: pd.DataFrame,
+                   min_fills: int = MIN_CELL_FILLS, **kw) -> Tuple[dict, dict, dict, List[dict], List[dict]]:
+    """(h1_sign, d_h2 additions, e_h3 additions, sens_h2 rows, sens_h3 rows) of the review round."""
+    sign = h1_sign(pm2, cells, min_fills=min_fills, **kw)
+    d_reg, h2_rows = h2_regime_rows(mg, **kw)
+    e_add, h3_rows = h3_review_rows(md, **kw)
+    return sign, {"by_regime": d_reg}, e_add, h2_rows, h3_rows
+
+
+def _merge_rows(old: pd.DataFrame, new: List[dict]) -> pd.DataFrame:
+    """Rows of ``old`` whose (variant, group) is not in ``new``, then ``new``."""
+    new_df = pd.DataFrame(new)
+    if new_df.empty:
+        return old
+    keys = set(zip(new_df["variant"].astype(str), new_df["group"].astype(str)))
+    keep = [(str(v), str(g)) not in keys for v, g in zip(old["variant"], old["group"])]
+    return pd.concat([old[keep], new_df], ignore_index=True)
+
+
+def run_extras(root: Path = REPO, out: Optional[Path] = None, b: int = B, seed: int = SEED, level: float = LEVEL,
+               min_fills: int = MIN_CELL_FILLS) -> dict:
+    """Only the review-round entries, merged into the existing ``sensitivity.json``, ``sens_h2.csv`` and
+    ``sens_h3.csv`` of ``out`` (every other entry is kept as it is)."""
+    p = paths(root)
+    out = Path(out) if out is not None else p["out"]
+    t0 = time.time()
+    sens = json.loads((out / "sensitivity.json").read_text())
+    fr = load_edge_frame(root)
+    pm2 = fr[fr["in_pm2"].to_numpy()]
+    cells, _ = edge_map(pm2, "K_pm2", min_fills=min_fills, b=1, seed=seed, level=level)
+    mg = pd.read_parquet(p["marginal"])
+    md = pd.read_parquet(p["maker_days"])
+    kw = dict(b=b, seed=seed, level=level)
+    sign, d_add, e_add, h2_rows, h3_rows = review_entries(pm2, cells, mg, md, min_fills=min_fills, **kw)
+    sens["h1_sign"] = sign
+    sens.setdefault("d_h2", {}).update(d_add)
+    pop = h2_population(root)
+    if pop is not None:
+        sens["d_h2"]["population"] = pop
+    sens.setdefault("e_h3", {}).update(e_add)
+    write_json(sens, out / "sensitivity.json")
+    for name, rows in (("sens_h2.csv", h2_rows), ("sens_h3.csv", h3_rows)):
+        old = pd.read_csv(out / name) if (out / name).exists() else pd.DataFrame(columns=["variant", "group"])
+        write_csv(_merge_rows(old, rows), out / name)
+    log.info("extras done in %.1f s", time.time() - t0)
+    return sens
+
+
+# =====================================================================================================================
 # Runs
 # =====================================================================================================================
 
@@ -823,6 +1035,18 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
             g_[f"sm_all_{c}"] = emap(f"sm_all_{c}", sub, "K_sm")
     sens["g_by_ccy"] = g_
 
+    # review round 1: sign structure of H1, regimes, account managers, small books without SM, H2 population
+    main_cells = maps[0].drop(columns="map")
+    sign, d_add, e_add, more_h2, more_h3 = review_entries(pm2, main_cells, mg, md, min_fills=min_fills, **kw)
+    sens["h1_sign"] = sign
+    sens["d_h2"].update(d_add)
+    pop = h2_population(root)
+    if pop is not None:
+        sens["d_h2"]["population"] = pop
+    sens["e_h3"].update(e_add)
+    h2_rows += more_h2
+    h3_rows += more_h3
+
     all_maps = pd.concat(maps, ignore_index=True)
     write_csv(all_maps, out / "sens_h1_cells.csv")
     write_csv(pd.DataFrame(h2_rows), out / "sens_h2.csv")
@@ -846,7 +1070,7 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="derive_surface p2 infer", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["run", "sensitivity"])
+    ap.add_argument("cmd", choices=["run", "sensitivity", "extras"])
     ap.add_argument("--root", type=Path, default=REPO, help="repository root (data/ and results/ below it)")
     ap.add_argument("--out", type=Path, default=None, help="output directory (default <root>/results/p2)")
     ap.add_argument("--b", type=int, default=B)
@@ -856,6 +1080,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     if a.cmd == "run":
         run(a.root, a.out, b=a.b, seed=a.seed, min_fills=a.min_fills)
+    elif a.cmd == "extras":
+        run_extras(a.root, a.out, b=a.b, seed=a.seed, min_fills=a.min_fills)
     else:
         run_sensitivity(a.root, a.out, b=a.b, seed=a.seed, min_fills=a.min_fills)
     return 0

@@ -27,6 +27,13 @@ timelines of the currency including SM and account libs). The placebo stage is r
 (``data/p2/derived/h4_placebo/``)::
 
     python3 scripts/p2_heavy.py --wait-max 500 -- python3 -m derive_surface.inference_p2_h4 run --max-seconds 420
+
+Descriptive figure tables (ABBILDUNGSWAHL section 10; no registered number changes): ``fig_h4_fwl_bins.csv``, the
+residualised regressor and outcome in 20 equal-count bins with their histogram and the slope ``beta``, and
+``h4_placebo_days.csv``, the candidate placebo days of every kept event with the gap rule and the number of draws.
+``run`` writes both; ``figtables`` rebuilds them from the stored panel and results without the placebo stage::
+
+    python3 -m derive_surface.inference_p2_h4 figtables
 """
 from __future__ import annotations
 
@@ -71,6 +78,10 @@ FIG_COLUMNS = (["event_id", "ccy", "manager", "event_day", "event_utc", "kinds",
                + [f"t{k}_{c}" for k in (1, 2, 3) for c in ("cells", "dose_lo", "dose_hi", "median_dose", "n_pre",
                                                            "n_post", "y_pre", "y_post")])
 VARIANTS = {"main": "event", "all_timelines": "all"}
+FWL_BINS = 20
+FWL_HIST_BINS = 40
+FWL_COLUMNS = ["kind", "bin", "x_mean", "y_mean", "n_rows", "n_fills", "x", "x_hi", "count", "fwl_slope"]
+PLACEBO_DAY_COLUMNS = ["timeline", "ccy", "manager", "day", "admissible", "drawn_count"]
 READINGS = [
     "fixed effects alpha per (cell, event) and gamma per (UTC day, currency), removed by alternating projections",
     "cluster-robust SE by UTC day with factor G/(G-1); p = (1 + #{t* >= t}) / (B + 1), one-sided for beta > 0",
@@ -424,6 +435,78 @@ def event_figure_table(panel: pd.DataFrame, events: pd.DataFrame) -> pd.DataFram
     return out
 
 
+def fwl_bins(panel: pd.DataFrame, n_bins: int = FWL_BINS, n_hist: int = FWL_HIST_BINS,
+             f: Optional[Fit] = None) -> pd.DataFrame:
+    """Descriptive picture of ``beta`` (Frisch-Waugh-Lovell, ABBILDUNGSWAHL section 10).
+
+    ``post * dose`` and ``y`` after removing both fixed effects, x in log-% (100 times the residualised regressor).
+    ``kind = bin``: ``n_bins`` equal-count bins of the rows sorted by residualised x (stable), with the means of x and
+    y, the rows and the distinct fills. ``kind = hist``: ``n_hist`` equal-width bins of the residualised x over its
+    range. ``fwl_slope`` = sum x~ y~ / sum x~^2 in bp per log unit, which is ``beta``."""
+    f = fit(panel) if f is None else f
+    x = 100.0 * np.asarray(f.xd, dtype=float)
+    y = np.asarray(f.yd, dtype=float)
+    keys = panel["fill_key"].astype(str).to_numpy()
+    with np.errstate(all="ignore"):
+        slope = float(np.dot(f.xd, f.yd) / np.dot(f.xd, f.xd)) if len(x) else np.nan
+    rows = []
+    order = np.argsort(x, kind="mergesort")
+    for k, idx in enumerate(np.array_split(order, n_bins)):
+        if len(idx) == 0:
+            continue
+        rows.append({"kind": "bin", "bin": k, "x_mean": float(x[idx].mean()), "y_mean": float(y[idx].mean()),
+                     "n_rows": int(len(idx)), "n_fills": int(len(set(keys[idx])))})
+    if len(x):
+        counts, edges = np.histogram(x, bins=n_hist)
+        for k, c in enumerate(counts):
+            rows.append({"kind": "hist", "bin": k, "x": float(edges[k]), "x_hi": float(edges[k + 1]),
+                         "count": int(c)})
+    out = pd.DataFrame(rows, columns=FWL_COLUMNS)
+    for c in ("bin", "n_rows", "n_fills", "count"):
+        out[c] = out[c].astype("Int64")
+    out["fwl_slope"] = slope
+    return out
+
+
+def drawn_counts(draws: Sequence[Sequence[Mapping]]) -> Dict[Tuple[str, int], int]:
+    """Number of placebo replications that drew each (event_id, UTC day number)."""
+    out: Dict[Tuple[str, int], int] = {}
+    for rep in draws:
+        for d in rep:
+            key = (str(d["event_id"]), int(d["placebo_ts"]) // DAY)
+            out[key] = out.get(key, 0) + 1
+    return out
+
+
+def drawn_counts_from_strings(strings: Sequence[str]) -> Dict[Tuple[str, int], int]:
+    """Same counts from the ``draws`` column of ``h4_placebo.csv`` (``event_id@YYYY-MM-DD@source;...``)."""
+    out: Dict[Tuple[str, int], int] = {}
+    for s in strings:
+        for part in str(s).split(";"):
+            eid, day, _ = part.split("@")
+            key = (eid, int(pd.Timestamp(day, tz="UTC").timestamp()) // DAY)
+            out[key] = out.get(key, 0) + 1
+    return out
+
+
+def placebo_day_table(kept: pd.DataFrame, changes: Mapping[str, np.ndarray], sample: Tuple[int, int],
+                      drawn: Mapping[Tuple[str, int], int]) -> pd.DataFrame:
+    """Candidate placebo days of every kept event (manager window and sample, before the gap rule), whether the gap
+    rule admits them and how often the placebo stage drew them. ``timeline`` is the event id, as in
+    ``h4.json placebo.admissible_days``."""
+    empty = np.array([], dtype=np.int64)
+    rows = []
+    for e in kept.itertuples():
+        window = p2events.manager_window(e.ccy, e.manager)
+        cand = admissible_days(int(e.event_ts), window, empty, sample)
+        ok = set(admissible_days(int(e.event_ts), window, changes[e.ccy], sample).tolist())
+        for d in cand.tolist():
+            rows.append({"timeline": e.event_id, "ccy": e.ccy, "manager": e.manager,
+                         "day": pd.Timestamp(d * DAY, unit="s").strftime("%Y-%m-%d"), "admissible": d in ok,
+                         "drawn_count": int(drawn.get((e.event_id, d), 0))})
+    return pd.DataFrame(rows, columns=PLACEBO_DAY_COLUMNS)
+
+
 # =====================================================================================================================
 # Run (resumable placebo stage) and CLI
 # =====================================================================================================================
@@ -544,6 +627,8 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
                                   "last": pd.Timestamp(int(v.max()) * DAY, unit="s").strftime("%Y-%m-%d")
                                   if len(v) else None} for k, v in days.items()}
         draws = draw_placebos(kept, days, n_placebo, seed)
+        if variant == "main":
+            day_table = placebo_day_table(kept, changes, sample, drawn_counts(draws))
         dstr = [draws_string(r) for r in draws]
         path = parts_dir / f"{variant}.csv"
         parts = _load_parts(path, fp, dstr)
@@ -626,13 +711,124 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
                                       "placebo_betas": all_pl["beta"].tolist(),
                                       **verdict(f.beta, test["p"], ps_all["p95"])}}
 
+    oi_path = out_dir / "manager_oi_share.csv"
+    sens["review"] = review_extras(panel, h4, kept, pd.read_csv(oi_path) if oi_path.exists() else None, b=b,
+                                   seed=seed)
+
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_json(out_dir / "h4.json", h4)
     main_pl[PLACEBO_COLUMNS].to_csv(out_dir / "h4_placebo.csv", index=False)
     event_figure_table(panel, kept).to_csv(out_dir / "fig_h4_events.csv", index=False)
+    fwl_bins(panel, f=f).to_csv(out_dir / "fig_h4_fwl_bins.csv", index=False)
+    day_table.to_csv(out_dir / "h4_placebo_days.csv", index=False)
     _write_json(out_dir / "sensitivity_h4.json", sens)
     return {"status": "DONE", "placebo_new": new, "beta": f.beta, "p": test["p"], "placebo_p95": ps["p95"],
             "rejected": v["rejected"], "seconds": time.monotonic() - t0}
+
+
+TEN_PCT_DOSE = float(np.log(0.9))    # dose of capital ten per cent cheaper (reading aid of Figure F6)
+
+
+def event_oi_share(events: pd.DataFrame, oi: pd.DataFrame) -> Dict[str, float]:
+    """Share of the currency's option open interest held under the changed manager in the month of each event
+    (``manager_oi_share.csv``: month, ccy, sm, pm, pm2)."""
+    out = {}
+    for e in events.itertuples():
+        month = pd.Timestamp(int(e.event_ts), unit="s").strftime("%Y-%m")
+        hit = oi[(oi["month"].astype(str) == month) & (oi["ccy"].astype(str) == str(e.ccy))]
+        out[str(e.event_id)] = float(hit[str(e.manager)].iloc[0]) if len(hit) else float("nan")
+    return out
+
+
+def review_extras(panel: pd.DataFrame, h4: Mapping, events: pd.DataFrame, oi: Optional[pd.DataFrame] = None,
+                  b: int = B, seed: int = SEED) -> dict:
+    """Review round 1, exploratory (docs/paper2/MANUSKRIPT.md); no registered number changes.
+
+    ``readings``: level of the outcome in the panel (rows and distinct fills) and the change in the half spread that
+    ``beta`` and its descriptive interval imply for capital ten per cent cheaper (dose ``ln 0.9``). ``sells_only`` and
+    ``buys_only``: the estimate on the cells of one maker side. ``oi_weighted``: the dose times the share of open
+    interest under the changed manager in the event month, the dose that the average contract of the currency saw."""
+    y = panel["y_hs_bp"].to_numpy(float)
+    fills = panel.drop_duplicates("fill_key")["y_hs_bp"].to_numpy(float)
+    beta, lo, hi = float(h4["stat"]), float(h4["lo"]), float(h4["hi"])
+    changes = sorted([TEN_PCT_DOSE * lo, TEN_PCT_DOSE * hi])
+    out: dict = {"exploratory": True, "b": int(b), "seed": int(seed),
+                 "readings": {"y_mean": float(np.mean(y)), "y_median": float(np.median(y)), "n_rows": int(len(y)),
+                              "y_mean_fills": float(np.mean(fills)), "y_median_fills": float(np.median(fills)),
+                              "n_fills": int(len(fills)), "ten_pct_dose": TEN_PCT_DOSE,
+                              "ten_pct_change_beta": TEN_PCT_DOSE * beta, "ten_pct_change_lo": changes[0],
+                              "ten_pct_change_hi": changes[1],
+                              "note": "change in the half spread (bp of the index) for capital ten per cent cheaper: "
+                                      "ln(0.9) times beta and times the bounds of the descriptive interval"}}
+    side = panel["cell"].astype(str).str.split("|").str[1]
+    for name, s in (("sells_only", "sell"), ("buys_only", "buy")):
+        sub = panel[(side == s).to_numpy()].reset_index(drop=True)
+        t = wild_cluster_test(fit(sub), b=b, seed=seed)
+        t.update(events=int(sub["event_id"].nunique()), cell_events=int(sub.groupby(["cell", "event_id"]).ngroups))
+        out[name] = t
+    if oi is not None:
+        share = event_oi_share(events, oi)
+        w = panel["event_id"].astype(str).map(share).to_numpy(float)
+        weighted = panel.assign(dose=panel["dose"].to_numpy(float) * w)
+        t = wild_cluster_test(fit(weighted), b=b, seed=seed)
+        kept = sorted(set(panel["event_id"].astype(str)))
+        t.update(share_min=float(np.nanmin([share[k] for k in kept])),
+                 share_max=float(np.nanmax([share[k] for k in kept])), shares={k: share[k] for k in kept})
+        out["oi_weighted"] = t
+    return out
+
+
+def run_extras(results_dir: Path = RESULTS_DIR, panel_path: Path = p2events.PANEL_PATH, b: int = B,
+               seed: int = SEED) -> dict:
+    """``review_extras`` on the stored panel and results, merged into ``sensitivity_h4.json`` as ``review``."""
+    results_dir = Path(results_dir)
+    h4 = json.loads((results_dir / "h4.json").read_text())
+    sens = json.loads((results_dir / "sensitivity_h4.json").read_text())
+    events = pd.read_csv(results_dir / "events.csv")
+    oi_path = results_dir / "manager_oi_share.csv"
+    oi = pd.read_csv(oi_path) if oi_path.exists() else None
+    panel = pd.read_parquet(panel_path)
+    if abs(fit(panel).beta - float(h4["stat"])) > 1e-8 * max(1.0, abs(float(h4["stat"]))):
+        raise RuntimeError("stored panel does not reproduce h4.json stat")
+    sens["review"] = review_extras(panel, h4, events[events["kept"].astype(bool)], oi, b=b, seed=seed)
+    _write_json(results_dir / "sensitivity_h4.json", sens)
+    r = sens["review"]
+    return {"status": "DONE", "y_mean": r["readings"]["y_mean"], "sells_beta": r["sells_only"]["beta"],
+            "buys_beta": r["buys_only"]["beta"],
+            "oi_beta": r.get("oi_weighted", {}).get("beta")}
+
+
+def fig_tables(results_dir: Path = RESULTS_DIR, panel: Optional[pd.DataFrame] = None,
+               events: Optional[pd.DataFrame] = None, params_root: Optional[Path] = None,
+               panel_path: Path = p2events.PANEL_PATH) -> dict:
+    """Rebuild ``fig_h4_fwl_bins.csv`` and ``h4_placebo_days.csv`` from the stored panel, ``events.csv``, ``h4.json``
+    and ``h4_placebo.csv`` (no placebo stage, no bootstrap). Refuses when the slope differs from ``h4.json stat`` or
+    the admissible days differ from ``h4.json placebo.admissible_days``."""
+    results_dir = Path(results_dir)
+    res = json.loads((results_dir / "h4.json").read_text())
+    if events is None:
+        events = pd.read_csv(results_dir / "events.csv")
+    if panel is None:
+        panel = pd.read_parquet(panel_path)
+    kept = (events[events["kept"].astype(bool)].sort_values(["ccy", "event_ts"], kind="mergesort")
+            .reset_index(drop=True))
+    sample = tuple(int(pd.Timestamp(s).timestamp()) for s in res["sample"])
+    f = fit(panel)
+    bins = fwl_bins(panel, f=f)
+    slope = float(bins["fwl_slope"].iloc[0])
+    if not abs(slope - float(res["stat"])) <= 1e-8 * max(1.0, abs(float(res["stat"]))):
+        raise RuntimeError(f"FWL slope {slope} differs from h4.json stat {res['stat']}")
+    changes = {c: change_days(c, root=params_root, scope="event") for c in sorted(set(kept["ccy"]))}
+    placebo = pd.read_csv(results_dir / "h4_placebo.csv", dtype={"draws": str})
+    table = placebo_day_table(kept, changes, sample, drawn_counts_from_strings(placebo["draws"].tolist()))
+    adm = table[table["admissible"]].groupby("timeline").size()
+    for eid, info in res["placebo"]["admissible_days"].items():
+        if int(adm.get(eid, 0)) != int(info["days"]):
+            raise RuntimeError(f"admissible days of {eid}: {int(adm.get(eid, 0))} here, {info['days']} in h4.json")
+    bins.to_csv(results_dir / "fig_h4_fwl_bins.csv", index=False)
+    table.to_csv(results_dir / "h4_placebo_days.csv", index=False)
+    return {"status": "DONE", "fwl_slope": slope, "beta": float(res["stat"]),
+            "admissible_days": {k: int(v) for k, v in adm.items()}, "drawn": int(table["drawn_count"].sum())}
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -643,7 +839,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--placebos", type=int, default=N_PLACEBO)
     r.add_argument("--seed", type=int, default=SEED)
     r.add_argument("--max-seconds", type=float, default=420.0)
+    sub.add_parser("figtables", help="rebuild fig_h4_fwl_bins.csv and h4_placebo_days.csv from stored results")
+    x = sub.add_parser("extras", help="review-round readings and side splits into sensitivity_h4.json (review)")
+    x.add_argument("--b", type=int, default=B)
+    x.add_argument("--seed", type=int, default=SEED)
     a = ap.parse_args(argv)
+    if a.cmd == "figtables":
+        print(json.dumps(_clean(fig_tables())), flush=True)
+        return 0
+    if a.cmd == "extras":
+        print(json.dumps(_clean(run_extras(b=a.b, seed=a.seed))), flush=True)
+        return 0
     res = run(b=a.b, n_placebo=a.placebos, seed=a.seed, max_seconds=a.max_seconds)
     print(json.dumps(_clean(res)), flush=True)
     return 0

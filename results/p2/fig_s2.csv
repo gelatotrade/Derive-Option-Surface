@@ -1,0 +1,6 @@
+key,value,printed,source
+stat,4.7467261022171625,4.7×,summary.json h3_stat
+lo,4.661926808686567,4.66,summary.json h3_lo
+hi,4.823628547372672,4.82,summary.json h3_hi
+n,1943.0,1 943,summary.json h3_n
+share_over_63,0.7364899639732373,74 %,summary.json h3_share_days_over_63_options

@@ -1,0 +1,6 @@
+key,value,printed,source
+stat,0.034540122450644445,3.5 %,summary.json h2_stat
+lo,0.03070183757603388,3.1 %,summary.json h2_lo
+hi,0.03855716844133305,3.9 %,summary.json h2_hi
+share_nonpositive,0.41962098104905243,42 %,summary.json h2_share_nonpositive
+n,19999.0,19 999,summary.json h2_n

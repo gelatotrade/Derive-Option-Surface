@@ -1,0 +1,5 @@
+label,source_key,kind,stat,lo,hi,n,printed
+registered,h4.json,registered,-4.599234789460463,-26.040160771530132,16.59075093602188,141,"−4.60 [−26.0, 16.6]"
+BTC only,sensitivity_h4.json by_ccy.BTC,exploratory,-3.4180513789020828,-10.508765644196906,3.569307811168082,126,"−3.42 [−10.5, 3.6]"
+ETH only,sensitivity_h4.json by_ccy.ETH,exploratory,-1.8989519393471017,-8.36344475528213,4.677038703917917,126,"−1.90 [−8.4, 4.7]"
+HYPE only,sensitivity_h4.json by_ccy.HYPE,exploratory,-10.123564225599672,-85.8404298260345,64.68219858829787,70,"−10.12 [−85.8, 64.7]"

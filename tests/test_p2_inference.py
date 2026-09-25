@@ -548,3 +548,106 @@ def test_main_run_and_sensitivity_write_all_outputs(tmp_path):
                  "sens_h1_cells.csv", "sens_h2.csv", "sens_h3.csv"):
         assert (out / name).exists(), name
         assert "subaccount" not in (out / name).read_text()
+
+
+# ------------------------------------------------------------------------------------------------ review round 1
+
+def test_regime_bounds_match_the_figures_and_event_second_is_later_regime():
+    from derive_surface.figs_p2 import f1
+    assert ip.REGIME_BOUNDS == f1.REGIME_BOUNDS and ip.REGIMES == f1.REGIMES
+    b = ip.REGIME_BOUNDS
+    got = ip.regime_of([b[0] - 1, b[0], b[1], b[2] - 1, b[2] + 10])
+    assert list(got) == ["R1", "R2", "R3", "R3", "R4"]
+    np.testing.assert_array_equal(ip.fill_regimes(pd.DataFrame({"ts": [b[1] * 1000 - 1, b[1] * 1000]})),
+                                  ["R2", "R3"])
+
+
+def test_sign_floor_one_cell_per_group_is_exact_and_all_positive_is_near_zero():
+    v = ip.sign_floor([5.0, -1.0], draws=10)
+    assert v["n_pos"] == 1 and v["n_nonpos"] == 1
+    # two cells: ranks are fixed by the sign pattern, rho is one
+    assert ip.sign_floor([5.0, 3.0, -1.0], draws=50)["p05"] < 1.0
+    three = ip.sign_floor([5.0, -1.0, -2.0, -3.0], draws=200, seed=1)
+    assert -1.0 <= three["p05"] <= three["mean"] <= three["p95"] <= 1.0
+    flat = ip.sign_floor(np.arange(1.0, 201.0), draws=500, seed=2)
+    assert abs(flat["mean"]) < 0.02 and flat["n_nonpos"] == 0
+    split = ip.sign_floor(np.r_[np.arange(1.0, 101.0), -np.arange(1.0, 101.0)], draws=500, seed=3)
+    # two equal groups shuffled inside: rho = 0.75 in expectation (between-group variance share)
+    assert split["mean"] == pytest.approx(0.75, abs=0.02)
+    again = ip.sign_floor(np.r_[np.arange(1.0, 101.0), -np.arange(1.0, 101.0)], draws=500, seed=3)
+    assert again == split
+
+
+def test_top_overlap_counts_cells_best_under_both_denominators():
+    cells = pd.DataFrame({"cell": list("abcdef"), "occupied": [True] * 5 + [False],
+                          "A_bp": [6.0, 5.0, 4.0, 3.0, 2.0, 99.0], "B_bp": [1.0, 50.0, 40.0, 3.0, 2.0, 99.0]})
+    assert ip.top_overlap(cells, ks=(1, 2, 3)) == {"top1": 0, "top2": 1, "top3": 2}
+
+
+def test_h1_sign_groups_reuse_the_h1_bootstrap_on_their_cells():
+    rng = np.random.default_rng(5)
+    rows = []
+    for c in range(8):
+        side = "sell" if c < 4 else "buy"
+        cell = f"BTC|{side}|d{c}|t"
+        for d in range(6):
+            for _ in range(5):
+                edge = (c - 3.5) * 10 + rng.normal(0, 1)
+                rows.append((cell, f"2025-10-0{d + 1}", edge, 1e5, 1e3 * (c + 1), 1.0))
+    fr = _fill_frame(rows)
+    fr["side"] = fr["cell"].str.split("|").str[1]
+    cells, res = ip.edge_map(fr, "K", min_fills=10, b=9)
+    out = ip.h1_sign(fr, cells, k_col="K", min_fills=10, b=9, draws=20)
+    assert set(ip.H1_SIGN_GROUPS) <= set(out)
+    assert out["sign_floor"]["n"] == 8 and out["sign_floor"]["draws"] == 20
+    occ = cells[cells["occupied"]]
+    pos = occ[occ["A_bp"] > 0]
+    assert out["within_pos"]["n"] == len(pos)
+    assert out["within_pos"]["stat"] == pytest.approx(ip.spearman(pos["A_bp"], pos["B_bp"]))
+    assert out["within_sell"]["n"] == 4 and out["within_buy"]["n"] == 4
+    assert out["sign_agree"] == 8
+    assert out["within_pos"]["b"] == 9 and out["within_pos"]["rule"] == "H1"
+
+
+def test_h3_review_rows_by_regime_manager_and_small_books_without_sm():
+    md = _maker_days(40)
+    md["manager"] = ["SM", "PM:ETH", "PM2:ETH", "PM2:HYPE"] * 10
+    md["day"] = pd.to_datetime(["2026-01-10", "2026-03-01", "2026-06-01", "2026-09-01"] * 10)
+    md["n_legs"] = [10, 100] * 20
+    e, rows = ip.h3_review_rows(md, b=19)
+    assert set(e["by_regime"]) == {"R1", "R2", "R3", "R4"} and set(e["by_account_manager"]) == {"SM", "PM", "PM2"}
+    ok = (md["status"] == "ok") & (md["K_pm2"] > 0)
+    small = ok & (md["n_legs"] <= 63) & (md["manager"] != "SM")
+    assert e["sm_pm2_le63_no_sm"]["n"] == int(small.sum())
+    assert e["sm_pm2_le63_no_sm"]["stat"] == pytest.approx(np.median(md.loc[small, "K_sm"] / md.loc[small, "K_pm2"]))
+    pm2 = ok & md["manager"].str.startswith("PM2")
+    assert e["by_account_manager"]["PM2"]["n"] == int(pm2.sum())
+    groups = {(r["variant"], r["group"]) for r in rows}
+    assert ("sm_pm2", "regime=R4") in groups and ("sm_pm2", "account_manager=SM") in groups
+    assert ("sm_pm2_le63_no_sm", "all") in groups
+
+
+def test_merge_rows_replaces_same_variant_and_group():
+    old = pd.DataFrame({"variant": ["ratio", "ratio"], "group": ["all", "regime=R1"], "stat": [1.0, 2.0]})
+    new = [{"variant": "ratio", "group": "regime=R1", "stat": 3.0}, {"variant": "ratio", "group": "regime=R2",
+                                                                    "stat": 4.0}]
+    got = ip._merge_rows(old, new)
+    assert list(zip(got["group"], got["stat"])) == [("all", 1.0), ("regime=R1", 3.0), ("regime=R2", 4.0)]
+
+
+def test_main_extras_adds_review_entries_and_keeps_the_rest(tmp_path):
+    root = _synthetic_root(tmp_path)
+    out = root / "results" / "p2"
+    assert ip.main(["sensitivity", "--root", str(root), "--b", "19", "--min-fills", "20"]) == 0
+    sens = json.loads((out / "sensitivity.json").read_text())
+    assert {"sign_floor", "top_overlap", "within_pos", "within_nonpos"} <= set(sens["h1_sign"])
+    assert "by_regime" in sens["d_h2"] and "by_account_manager" in sens["e_h3"]
+    before = {k: v for k, v in sens.items() if k != "h1_sign"}
+    (out / "sensitivity.json").write_text(json.dumps(before))
+    sh3 = pd.read_csv(out / "sens_h3.csv")
+    n_before = len(sh3)
+    assert ip.main(["extras", "--root", str(root), "--b", "19", "--min-fills", "20"]) == 0
+    again = json.loads((out / "sensitivity.json").read_text())
+    assert again["h1_sign"] == sens["h1_sign"]
+    assert again["a_maps"] == sens["a_maps"]
+    assert len(pd.read_csv(out / "sens_h3.csv")) == n_before     # replaced, not appended twice
