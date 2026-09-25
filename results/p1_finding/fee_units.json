@@ -5,7 +5,7 @@
   "b_cells": 9999,
   "b_other": 999,
   "fills": 603940,
-  "script": "scripts/p1_befund_gebuehreneinheit.py",
+  "script": "scripts/p1_fee_units_finding.py",
   "note": "seed and B of paper 1 so that its numbers are reproduced exactly; decomposition and class intervals at B = 999 (as the paper 1 figures), exploratory; sections decomposition_b9999 and classes_b9999 repeat them at B = 9 999 for quotation in the text (audit A68)"
  },
  "h4": {
@@ -242,7 +242,7 @@
    "item": "half spread",
    "value": 15.701225476954274,
    "reference": 15.7,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -250,7 +250,7 @@
    "item": "adverse selection",
    "value": -2.650620908563112,
    "reference": -2.65,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -258,7 +258,7 @@
    "item": "markout",
    "value": 13.050604568391153,
    "reference": 13.05,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -266,7 +266,7 @@
    "item": "maker fee",
    "value": -1.5616598854624304,
    "reference": -1.56,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -274,7 +274,7 @@
    "item": "maker rebate",
    "value": 0.5929654755034721,
    "reference": 0.59,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -282,7 +282,7 @@
    "item": "hedge cost",
    "value": -3.149457390064287,
    "reference": -3.15,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -290,7 +290,7 @@
    "item": "net edge",
    "value": 8.93245276836791,
    "reference": 8.93,
-   "source": "paper/main.tex, UEBERGABE.md (2 decimals)",
+   "source": "paper/main.tex, HANDOVER.md (2 decimals)",
    "matches": true
   },
   {
@@ -298,7 +298,7 @@
    "item": "net edge (exact)",
    "value": 8.93245276836791,
    "reference": 8.93245,
-   "source": "docs/paper1/ABBILDUNGEN.md, T2 check",
+   "source": "docs/paper1/FIGURE_CHECKS.md, T2 check",
    "matches": true
   },
   {
