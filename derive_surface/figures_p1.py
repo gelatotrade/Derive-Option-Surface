@@ -408,6 +408,14 @@ def fig_f2(inputs: dict, out_dir: Path) -> List[Path]:
     return figstyle.save(fig, "f2", out_dir)
 
 
+def _top10_mask(wallets: pd.Series, top10: set) -> pd.Series:
+    """Membership in the ten worst wallets. The Lorenz file stores pseudonyms, so fill wallets are mapped the same way."""
+    if top10 and all(str(w).startswith("W") for w in top10):
+        from .inference_p1 import load_salt, wallet_pseudonym
+        return pd.Series(wallet_pseudonym(wallets, load_salt()), index=wallets.index).isin(top10)
+    return wallets.isin(top10)
+
+
 def fig_f3(inputs: dict, out_dir: Path) -> List[Path]:
     """F3: who takes back which part of the spread, and how few wallets that is."""
     frame, results = inputs["frame"], inputs["results"]
@@ -468,7 +476,7 @@ def fig_f3(inputs: dict, out_dir: Path) -> List[Path]:
 
     if top10:
         names = ["dominant_maker", "mm_programme"]
-        shares = [100.0 * float(frame.loc[frame["taker_class"] == n, "taker_wallet"].isin(top10).mean())
+        shares = [100.0 * float(_top10_mask(frame.loc[frame["taker_class"] == n, "taker_wallet"], top10).mean())
                   if (frame["taker_class"] == n).any() else np.nan for n in names]
         c.barh([1, 0], shares, color=[figstyle.CLASS_COLORS[n] for n in names], edgecolor="black", lw=0.4)
         for value, y in zip(shares, [1, 0]):
@@ -521,7 +529,7 @@ def fig_f4(inputs: dict, out_dir: Path) -> List[Path]:
     _panel_tag(a, "a")
 
     worst = lorenz.nsmallest(10, "loss") if "loss" in lorenz else lorenz.head(10)
-    composition = (frame[frame["taker_wallet"].isin(set(worst["wallet"]))]["taker_class"]
+    composition = (frame[_top10_mask(frame["taker_wallet"], set(worst["wallet"]))]["taker_class"]
                    .value_counts(normalize=True) if "wallet" in worst else pd.Series(dtype=float))
     left = 0.0
     for name in figstyle.CLASS_ORDER:
@@ -709,7 +717,7 @@ def fig_f6(inputs: dict, out_dir: Path) -> List[Path]:
                        color=figstyle.CLASS_COLORS[name], lw=0, label=figstyle.CLASS_LABELS[name])
         bottom = bottom + composition[name].to_numpy(float)
     if top10:
-        top_share = f.assign(top=f["taker_wallet"].isin(top10)).groupby("month")["top"].mean()
+        top_share = f.assign(top=_top10_mask(f["taker_wallet"], top10)).groupby("month")["top"].mean()
         b.plot(np.arange(len(top_share)), top_share.to_numpy(float), color="black", lw=1.0,
                label="ten loss wallets")
     b.set_ylim(0, 1)

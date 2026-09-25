@@ -246,3 +246,15 @@ def test_minus_prints_negative_numbers_with_a_minus_sign_and_keeps_ranges():
     assert figures_p1.minus("0-5") == "0-5"
     assert figures_p1.minus("p25-p75") == "p25-p75"
     assert figures_p1.minus("+15.70") == "+15.70"
+
+
+def test_top10_mask_is_the_same_for_raw_and_pseudonymised_lorenz_files(tmp_path, monkeypatch):
+    from derive_surface import figures_p1, inference_p1
+    monkeypatch.setattr(inference_p1, "SALT_PATH", tmp_path / "salt.txt")
+    salt = inference_p1.load_salt(create=True)
+    wallets = pd.Series(["0x{:040x}".format(i % 7) for i in range(40)])
+    raw_top = {"0x{:040x}".format(i) for i in (1, 3, 5)}
+    pseudo_top = set(inference_p1.wallet_pseudonym(sorted(raw_top), salt))
+    raw = figures_p1._top10_mask(wallets, raw_top)
+    pseudo = figures_p1._top10_mask(wallets, pseudo_top)
+    assert raw.sum() > 0 and raw.tolist() == pseudo.tolist()
