@@ -1,184 +1,184 @@
-# Design: Wer handelt gegen den Maker? Adverse Selection auf einer Onchain-Options-CLOB (Derive 2024–2026)
+# Design: Who trades against the maker? Adverse selection on an onchain options CLOB (Derive 2024-2026)
 
-Stand: 17.09.2026 · Autor: Gregor Albiez (FHNW) · Ziel: SSRN Working Paper, 15–18 Seiten, Elsevier CAS zweispaltig, wenig Text, viele erklärende Abbildungen · Rolle: wissenschaftliche Vorarbeit des Market-Maker-Bots (liefert das Adverse-Selection-Modell der Quoting-Regel).
+As of: 2026-09-17 · Author: Gregor Albiez (FHNW) · Target: SSRN working paper, 15 to 18 pages, Elsevier CAS two-column, little text, many explanatory figures · Role: scientific groundwork for the market-maker bot (supplies the adverse selection model for the quoting rule).
 
-**Entscheidungen des Autors (17.09.2026):** Kern BTC/ETH/HYPE, Alts als Anhang · Stichtag 30.09.2026 08:00 UTC · Präregistrierung vor der ersten Markout-Zahl · Derive-Team vorab informieren · Code, Spec, Plan und Manuskript im bestehenden Repo `gelatotrade/Derive-Option-Surface` (Branch `paper1-adverse-selection`), Rohdaten unter `data/p1/` (nicht versioniert). Das Repo ist öffentlich: interne Notizen zur Datenanfrage bleiben ausserhalb (`Derive_Options/docs/`).
+**Author's decisions (2026-09-17):** core BTC/ETH/HYPE, alts as an appendix · cutoff 2026-09-30 08:00 UTC · pre-registration before the first markout number · inform the Derive team in advance · code, spec, plan and manuscript in the existing repo `gelatotrade/Derive-Option-Surface` (branch `paper1-adverse-selection`), raw data under `data/p1/` (not versioned). The repo is public: internal notes on the data request stay outside it (`Derive_Options/docs/`).
 
-Reihenfolge wie bei HIP-4: **erst Pipeline und Zahlenblatt, dann schreiben.** Hypothesen H1–H4 werden vor der ersten Auswertung festgeschrieben (`docs/PRAEREGISTRIERUNG.md`), Erweiterungen danach klar getrennt.
-
----
-
-## 1 · Fragestellung und Beitrag
-
-**Frage.** Wie gross ist der Verlust eines passiven Makers nach einem Options-Fill auf Derive (Markout über 1 min bis Settlement), aus welchen Gegenparteiklassen stammt er, und in welchen Zellen der Surface (Delta × Tenor × Underlying) bleibt nach Markout, Gebühr, Rebate und Hedge-Kosten ein positiver Netto-Edge?
-
-**Beitrag.**
-1. Erste Adverse-Selection-Studie mit **Kontoidentität je Options-Fill**: der öffentliche Derive-Tape trägt wallet, subaccount_id, rfq_id, Gebühr, Rebate und realisiertes P&L. Cartea et al. (toxic flow), Barzykin et al. (adverse selection und price reading) und Albers et al. (fill vs post-fill) sind Theorie oder Perp-Experimente ohne Optionen; Alexander et al. (Deribit) messen Kaufdruck ohne Identität; die Hyperliquid-Identitätsarbeiten betreffen Perps.
-2. **Modellfreier Settlement-Markout** als Kontrolle gegen die Zirkularität des Exchange-Marks (der Mark ist ein Backend-SVI, das den Fills folgen kann).
-3. **Onchain-Rekonstruktion der Mark-Historie** aus `VolDataUpdated`-Events (SVI-Parameter je Verfall seit 01/2024) als eigener Datenbeitrag.
-4. **Netto-Edge-Wasserfall** je Klasse und Zelle: Halbspread − Markout − Gebühr + Rebate − Hedge-Kosten, mit der 12,5-%-Gebührenkappe und den Maker-Tiers.
-
-Nicht Teil des Papers (spätere Paper): Margin-Polytop, Vault-Roll-Ereignisstudie, Maker-Inventarpfade, HYPE-Listungsexperiment als Hauptergebnis. HYPE vor/nach Deribit-Listung erscheint hier nur als Split in H3.
+Order as for HIP-4: **pipeline and numbers sheet first, then writing.** Hypotheses H1 to H4 are fixed before the first analysis (`docs/paper1/PREREGISTRATION.md`), extensions afterwards are kept clearly separate.
 
 ---
 
-## 2 · Daten
+## 1 · Question and contribution
 
-| Datensatz | Quelle | Felder | Umfang / Stand |
+**Question.** How large is a passive maker's loss after an option fill on Derive (markout from 1 min to settlement), which counterparty classes does it come from, and in which cells of the surface (delta × tenor × underlying) does a positive net edge remain after markout, fee, rebate and hedging costs?
+
+**Contribution.**
+1. First adverse selection study with **account identity per option fill**: the public Derive tape carries wallet, subaccount_id, rfq_id, fee, rebate and realised P&L. Cartea et al. (toxic flow), Barzykin et al. (adverse selection and price reading) and Albers et al. (fill vs post-fill) are theory or perp experiments without options; Alexander et al. (Deribit) measure buying pressure without identity; the Hyperliquid identity papers concern perps.
+2. **Model-free settlement markout** as a control against the circularity of the exchange mark (the mark is a backend SVI that can follow the fills).
+3. **Onchain reconstruction of the mark history** from `VolDataUpdated` events (SVI parameters per expiry since 01/2024) as a data contribution in its own right.
+4. **Net edge waterfall** per class and cell: half spread − markout − fee + rebate − hedging costs, with the 12.5% fee cap and the maker tiers.
+
+Not part of this paper (later papers): margin polytope, vault roll event study, maker inventory paths, HYPE listing experiment as the main result. HYPE before/after the Deribit listing appears here only as a split in H3.
+
+---
+
+## 2 · Data
+
+| Dataset | Source | Fields | Scope / status |
 |---|---|---|---|
-| **Options-Tape** | `public/get_trade_history {instrument_type: option, page_size 1000}` ohne currency (gemischt, paginiert), zusätzlich je Currency als Gegenprobe | trade_id, instrument_name, timestamp (ms), trade_price, trade_amount, mark_price, index_price, direction, liquidity_role, wallet, subaccount_id, rfq_id, quote_id, trade_fee, expected_rebate, realized_pnl, realized_pnl_excl_fees, tx_hash, tx_status, extra_fee | seit 11.01.2024; BTC 309 273, ETH ~800 k, HYPE ~85 k Zeilen (Maker- und Taker-Zeile je Fill); **beide Zeilen behalten**, Paarung über tx_hash + instrument + timestamp + amount + price; Stichtag **30.09.2026 08:00 UTC** |
-| Perp-Tape (Hedge-Kosten, Maker-Erkennung) | dito `instrument_type: perp` | wie oben | seit Start |
-| **Mark-Pfad (a)** | mark_price späterer Fills desselben Instruments | | im Tape |
-| **Mark-Pfad (b)** | Chain: `VolDataUpdated` je Currency-VolFeed (SVI_a, b, ρ, m, σ, fwd, refTau, confidence, timestamp), `ForwardDataUpdated`, `SpotPriceUpdated`; Feed-Adressen aus `v2-core/deployments/957/<CCY>.json` und deren Git-Historie | | `eth_getLogs` auf rpc.derive.xyz, Fenster ≤ 2 000 Blöcke (Limit 10 000 Logs), topic0-Filter; Gegenprobe gegen `get_latest_signed_feeds` |
-| **Settlement** | `get_option_settlement_prices {currency}`; `get_option_settlement_history` (P&L je Subaccount) | Verfall, Preis; subaccount_id, amount, settlement_pnl | 944 BTC-Verfälle; 254 986 BTC-Zeilen |
-| Externe Referenz | Tardis Deribit `options_chain` am 1. jedes Monats 2024–2026 (kostenlos); DVOL-Historie | mark_iv, bid_iv, ask_iv je Serie | 33 Stichtage; HYPE_USDC prüfen |
-| Buch-Mids (Pilot) | Live-Aufzeichnung 03.09.2026 (1,9 h, alle Optionen alle 20 s) und Recorder-Wochen ab Deployment | bid, ask, bid_iv, ask_iv | Pilot; Recorder als Erweiterung |
-| **Klassifikation** | Vault-Verträge (help.derive.xyz „Vault Smart Contracts“, `get_vault_statistics`) → Vault-Subaccounts über `AccountCreated`; `get_liquidation_history` (83 Auktionen, tx_hash, bids); `get_maker_program_scores` je Epoche (Wallets im MM-Programm); rfq_id im Tape | | Tabelle wallet/subaccount → Klasse |
-| Gebühren, Rebates | trade_fee, expected_rebate je Fill; `get_instrument` (maker_fee_rate, taker_fee_rate, base_fee, mark_price_fee_rate_cap); Institutional-Tiers (help.derive) | | |
-| Hedge-Kosten | `get_funding_rate_history` (30 d rollierend, ab jetzt sammeln), Perp-Tape, Recorder-Perp-Buch | | |
+| **Option tape** | `public/get_trade_history {instrument_type: option, page_size 1000}` without currency (mixed, paginated), additionally per currency as a cross-check | trade_id, instrument_name, timestamp (ms), trade_price, trade_amount, mark_price, index_price, direction, liquidity_role, wallet, subaccount_id, rfq_id, quote_id, trade_fee, expected_rebate, realized_pnl, realized_pnl_excl_fees, tx_hash, tx_status, extra_fee | since 2024-01-11; BTC 309,273, ETH ~800 k, HYPE ~85 k rows (maker and taker row per fill); **keep both rows**, pairing via tx_hash + instrument + timestamp + amount + price; cutoff **2026-09-30 08:00 UTC** |
+| Perp tape (hedging costs, maker detection) | same with `instrument_type: perp` | as above | since launch |
+| **Mark path (a)** | mark_price of later fills of the same instrument | | in the tape |
+| **Mark path (b)** | Chain: `VolDataUpdated` per currency vol feed (SVI_a, b, ρ, m, σ, fwd, refTau, confidence, timestamp), `ForwardDataUpdated`, `SpotPriceUpdated`; feed addresses from `v2-core/deployments/957/<CCY>.json` and its Git history | | `eth_getLogs` on rpc.derive.xyz, windows ≤ 2,000 blocks (limit 10,000 logs), topic0 filter; cross-check against `get_latest_signed_feeds` |
+| **Settlement** | `get_option_settlement_prices {currency}`; `get_option_settlement_history` (P&L per subaccount) | expiry, price; subaccount_id, amount, settlement_pnl | 944 BTC expiries; 254,986 BTC rows |
+| External reference | Tardis Deribit `options_chain` on the 1st of each month 2024-2026 (free); DVOL history | mark_iv, bid_iv, ask_iv per series | 33 snapshot dates; check HYPE_USDC |
+| Book mids (pilot) | live recording 2026-09-03 (1.9 h, all options every 20 s) and recorder weeks from deployment onwards | bid, ask, bid_iv, ask_iv | pilot; recorder as an extension |
+| **Classification** | vault contracts (help.derive.xyz "Vault Smart Contracts", `get_vault_statistics`) → vault subaccounts via `AccountCreated`; `get_liquidation_history` (83 auctions, tx_hash, bids); `get_maker_program_scores` per epoch (wallets in the MM programme); rfq_id in the tape | | table wallet/subaccount → class |
+| Fees, rebates | trade_fee, expected_rebate per fill; `get_instrument` (maker_fee_rate, taker_fee_rate, base_fee, mark_price_fee_rate_cap); institutional tiers (help.derive) | | |
+| Hedging costs | `get_funding_rate_history` (30 d rolling, collect from now on), perp tape, recorder perp book | | |
 
-Underlyings: **BTC, ETH, HYPE als Kern** (vollständige Surface-Pipeline vorhanden); die neun übrigen (SOL, XRP, ZEC, ADA, XAUT, CC, VVV, LIT, PUMP) nur als deskriptive Anhangstabelle (Fills, RFQ-Anteil, mittlerer Markout), ohne Surface.
+Underlyings: **BTC, ETH, HYPE as the core** (full surface pipeline available); the nine others (SOL, XRP, ZEC, ADA, XAUT, CC, VVV, LIT, PUMP) only as a descriptive appendix table (fills, RFQ share, mean markout), without a surface.
 
-Sicherung: Tape und Chain-Logs **sofort** vollständig ziehen und als Parquet mit Manifest (SHA-256, Zeilenzahl, Abrufzeit) ablegen, bevor v3 Felder ändert.
+Preservation: pull the tape and the chain logs completely **right away** and store them as Parquet with a manifest (SHA-256, row count, retrieval time) before v3 changes fields.
 
 ---
 
-### 2a · Befunde der Datenprobe vom 17.09.2026 (gelten vor allem Früheren)
+### 2a · Findings from the data probe of 2026-09-17 (these take precedence over anything earlier)
 
-| Befund | Folge |
+| Finding | Consequence |
 |---|---|
-| `get_trade_history` liefert die Zeilen einer Seite **nicht chronologisch** (1000er-Seite unsortiert); Seitenwanderung über grosse Bereiche kann Zeilen auslassen oder doppeln | Download in Zeitfenstern, die auf **eine** Seite passen (rekursive Halbierung je Tag); ein Aufruf je Fenster |
-| `from_timestamp` und `to_timestamp` sind **beide inklusiv** (count[a,m−1] + count[m,b] = count[a,b], geprüft) | Fenster [a, b], nächstes ab b+1 |
-| Gesamtzahl Options-Zeilen über alle Underlyings rund 1,23 Mio (ohne `currency`-Parameter abrufbar); **erster Fill 06.12.2023 03:13 UTC** (1 402 Zeilen vor dem 01.01.2024) | ein Durchlauf für alle Underlyings ab 01.12.2023; Stichprobe laut Präregistrierung unverändert ab 11.01.2024 |
-| Die `count`-Angabe der API ist über lange Bereiche **nicht additiv** (61 Tage: 16 Zeilen weniger als die Summe der Hälften); Tageszahlen stimmen exakt mit den gelieferten Zeilen überein | Integritätsprüfung durch Nachzählen jedes Tages; abweichende Tage werden neu geladen; die CLI schreibt nichts, solange ein Tag abweicht |
-| Zeilen können lange nach ihrem Zeitstempel erscheinen: bei RFQ-Fills liegt die Maker-Zeile im Median 3 s, im 99. Perzentil 75 s und maximal 1 689 s (28 min) vor der Taker-Zeile; bei Buch-Fills sind beide gleich | Stichtag muss ≥ 60 min zurückliegen; zwischengespeicherte Fenster werden nur wiederverwendet, wenn sie ≥ 60 min nach Fensterende geladen wurden; finaler Lauf frühestens 30.09.2026 09:00 UTC |
-| Maker- und Taker-Zeile tragen dieselbe `trade_id`; bei RFQ-Fills liegt der Maker-Zeitstempel einige Sekunden **vor** dem Taker-Zeitstempel (Quote vs Ausführung) | Fill-Zeit = Taker-Zeitstempel; Maker-Zeit als eigene Spalte |
-| Perp-Tape: BTC 2,04 Mio, ETH 3,56 Mio, HYPE 1,47 Mio Zeilen | für Paper 1 **nicht** geladen (Hedge-Kosten aus Gebührenformel, Recorder-Spread, Funding); gehört zu Paper 3 |
-| Vol-Feed-Adressen je Underlying über `SVI_fwd` gegen den Live-Forward identifiziert: BTC `0x3883…1b87`, ETH `0xb27c…d160` (beide **unverändert seit 01/2024**; die in R4 vermutete Adressänderung war eine Verwechslung von BTC- und ETH-Feed), HYPE `0x4819…12d1` (aktiv zwischen Block 30,0 Mio und 31,38 Mio, d. h. um den HYPE-Start 10.11.2025); dazu SOL `0x7423`, ZEC `0x52aa`, XAUT `0x665b`, XRP `0xbf2e`, VVV `0x8df0`, ADA `0xe7b5`, CC `0x6a0d`, LIT `0xc9b3`, PUMP `0x0105`, inaktiv `0xd38b` (vermutlich AAVE) | Feed-Tabelle im Code; Kontinuität per Stichprobe geprüft |
-| Jeder `VolDataUpdated`-Log trägt `blockTimestamp`; im Beispiel landet die Kurve 45 s nach ihrer Signatur (`feed_ts`) onchain | beide Zeiten werden gespeichert (`feed_ts`, `block_ts`); Präregistrierung spricht von der „onchain gepushten“ Kurve → `block_ts` |
-| Formelprüfung 17.09.2026: `svi_vol` auf der neuesten signierten Kurve (`get_latest_signed_feeds`, 12 s alt) trifft den Ticker-Mark-IV im Median auf 0,00001 (BTC kürzester Verfall 0,00125); die zuletzt **onchain** gepushte Kurve war 3–4 min alt und wich im Median 0,004–0,023 ab | Pfad (b) ist ein um Minuten verzögerter Mark, vor allem für die Horizonte 1 und 5 min; Alter der Kurve je Horizont mitführen, Pfad (a) als Gegenstück; in Limitations nennen |
-| Parallel zum BTC-Kern-Feed emittierte 03–06/2024 eine zweite Adresse (`0x533a…de1e`) Kurven mit BTC-ähnlichem Forward (rund 1 % tiefer) | Mark-Gegenprobe zum Fill-Zeitpunkt für diese Monate prüfen (DATENSTAND) |
-| Eventdichte ~0,5 `VolDataUpdated` je Block für BTC und ETH (2024 anfangs weniger), ~0,35 für HYPE → grob **38 Mio Events** für die drei Kern-Underlyings; RPC-Grenze 10 000 Logs je `eth_getLogs` (Fehler −32005) | adaptive Blockfenster, 50 000-Block-Stücke, wiederaufnehmbar, Hintergrundlauf; volle Auflösung, kompakt gespeichert (Parameter float32, Forward float64); **nur 15 GB frei** |
-| `SVI.sol` (lyra-utils): k = ln(K/SVI_fwd), begrenzt auf ±4·√(a + b·σ); w = a + b·(ρ(k−m) + √((k−m)² + σ²)), gedeckelt bei 144; **vol = √(w / SVI_refTau)** mit dem Referenz-Tau des Fits, nicht der laufenden Restlaufzeit | Mark-IV-Rekonstruktion exakt nach dieser Formel; Gegenprobe gegen den Live-Ticker |
-| `get_liquidation_history` deckt ohne Zeitfilter nur die **letzten 7 Tage** ab; `count`/`num_pages` sagen nur, ob eine weitere Seite folgt; manche Fenster scheitern reproduzierbar mit HTTP 500 bei Seitengrösse 100, gehen aber mit kleinen Seiten; sehr lange Fenster liefern weniger Auktionen als die Summe kurzer | Tagesfenster, Seitengrösse 100 mit Rückfall auf 20 und 5, Halbierung bis 1 h bei Totalausfall, verbleibende Lücken werden ausgewiesen. Alle Seitengrössen liefern dieselben Auktionen, die Gebote aber unvollständig (10.10.2025: 242 Auktionen, 34 Gebote bei Grösse 100, 4 bei Grösse 5); vollständige Gebote nur aus den Chain-Events (`DutchAuction`). Die frühere Angabe „83 bzw. 76 Liquidationen seit Start“ stammte aus dem 7-Tage-Standardfenster; tatsächlich sind es Tausende |
-| Vault-Wallets: Help-Center-Seite „Vault Smart Contracts“ nennt 202 Adressen (Bridges, Connectors, TSA-Tokens mehrerer Chains); 15 Mainnet-Token auf Derive Chain, davon 10 handelnde Vaults, eins zu eins zu den 10 Vaults aus `get_vault_statistics`; TVL zusammen nur rund 1,6 Mio USD (17.09.2026) | kuratierte Liste `docs/paper1/meta/vault_wallets.csv` mit Quelle je Adresse, Gegenprobe gegen die Wallets im Tape; geringe Teststärke von H2 wird im Datenstand ausgewiesen |
-| Maker-Programme (DRV-Scores) gibt es erst ab 20.11.2024 | die Klasse „MM-Programm“ kann vor diesem Datum nicht vergeben werden; im Datenstand ausweisen |
-| `get_settlement_history` je Subaccount (BTC 254 986 Zeilen) | für Paper 1 nicht nötig (Settlement-Markout braucht nur den Preis je Verfall) |
-| System-Python 3.9.6; das Repo verlangt ≥ 3.10 in `pyproject.toml`, alle 28 Tests laufen aber unter 3.9 | keine Installation, Aufruf per `python3 -m derive_surface` aus dem Repo; neuer Code 3.9-kompatibel (`from __future__ import annotations`, kein `match`) |
+| `get_trade_history` returns the rows of a page **not in chronological order** (a page of 1,000 is unsorted); paging across large ranges can skip or duplicate rows | download in time windows that fit on **one** page (recursive halving per day); one call per window |
+| `from_timestamp` and `to_timestamp` are **both inclusive** (count[a,m−1] + count[m,b] = count[a,b], verified) | window [a, b], the next one from b+1 |
+| Total number of option rows across all underlyings about 1.23 million (retrievable without the `currency` parameter); **first fill 2023-12-06 03:13 UTC** (1,402 rows before 2024-01-01) | one pass for all underlyings from 2023-12-01; sample per the pre-registration unchanged from 2024-01-11 |
+| The API's `count` value is **not additive** over long ranges (61 days: 16 rows fewer than the sum of the halves); daily counts match the delivered rows exactly | integrity check by recounting every day; days that deviate are reloaded; the CLI writes nothing as long as any day deviates |
+| Rows can appear long after their timestamp: for RFQ fills the maker row lies a median of 3 s, at the 99th percentile 75 s and at most 1,689 s (28 min) before the taker row; for book fills both are the same | the cutoff must be ≥ 60 min in the past; cached windows are reused only if they were loaded ≥ 60 min after the window end; final run no earlier than 2026-09-30 09:00 UTC |
+| Maker and taker rows carry the same `trade_id`; for RFQ fills the maker timestamp lies a few seconds **before** the taker timestamp (quote vs execution) | fill time = taker timestamp; maker time as a separate column |
+| Perp tape: BTC 2.04 million, ETH 3.56 million, HYPE 1.47 million rows | **not** loaded for Paper 1 (hedging costs from the fee formula, recorder spread, funding); belongs to Paper 3 |
+| Vol feed addresses per underlying identified via `SVI_fwd` against the live forward: BTC `0x3883…1b87`, ETH `0xb27c…d160` (both **unchanged since 01/2024**; the address change suspected in R4 was a mix-up of the BTC and ETH feeds), HYPE `0x4819…12d1` (active between block 30.0 million and 31.38 million, i.e. around the HYPE launch on 2025-11-10); in addition SOL `0x7423`, ZEC `0x52aa`, XAUT `0x665b`, XRP `0xbf2e`, VVV `0x8df0`, ADA `0xe7b5`, CC `0x6a0d`, LIT `0xc9b3`, PUMP `0x0105`, inactive `0xd38b` (presumably AAVE) | feed table in the code; continuity checked by sampling |
+| Every `VolDataUpdated` log carries `blockTimestamp`; in the example the curve lands onchain 45 s after its signature (`feed_ts`) | both times are stored (`feed_ts`, `block_ts`); the pre-registration speaks of the curve "pushed onchain" → `block_ts` |
+| Formula check 2026-09-17: `svi_vol` on the latest signed curve (`get_latest_signed_feeds`, 12 s old) matches the ticker mark IV to 0.00001 at the median (BTC shortest expiry 0.00125); the curve last pushed **onchain** was 3 to 4 min old and deviated by 0.004 to 0.023 at the median | path (b) is a mark delayed by minutes, above all for the 1 and 5 min horizons; carry the curve age per horizon, path (a) as the counterpart; mention in the limitations |
+| In parallel with the BTC core feed, a second address (`0x533a…de1e`) emitted curves with a BTC-like forward (about 1% lower) in 03-06/2024 | check the mark cross-check at fill time for these months (DATA_STATUS) |
+| Event density ~0.5 `VolDataUpdated` per block for BTC and ETH (less at the start of 2024), ~0.35 for HYPE → roughly **38 million events** for the three core underlyings; RPC limit of 10,000 logs per `eth_getLogs` (error −32005) | adaptive block windows, 50,000-block chunks, resumable, background run; full resolution, stored compactly (parameters float32, forward float64); **only 15 GB free** |
+| `SVI.sol` (lyra-utils): k = ln(K/SVI_fwd), bounded to ±4·√(a + b·σ); w = a + b·(ρ(k−m) + √((k−m)² + σ²)), capped at 144; **vol = √(w / SVI_refTau)** with the reference tau of the fit, not the running time to expiry | mark IV reconstruction exactly by this formula; cross-check against the live ticker |
+| `get_liquidation_history` without a time filter covers only the **last 7 days**; `count`/`num_pages` only say whether another page follows; some windows fail reproducibly with HTTP 500 at page size 100 but work with small pages; very long windows return fewer auctions than the sum of short ones | daily windows, page size 100 with fallback to 20 and 5, halving down to 1 h on total failure, remaining gaps are reported. All page sizes return the same auctions, but the bids incompletely (2025-10-10: 242 auctions, 34 bids at size 100, 4 at size 5); complete bids only from the chain events (`DutchAuction`). The earlier statement "83 or 76 liquidations since launch" came from the 7-day default window; in fact there are thousands |
+| Vault wallets: the help centre page "Vault Smart Contracts" lists 202 addresses (bridges, connectors, TSA tokens on several chains); 15 mainnet tokens on Derive Chain, 10 of them trading vaults, matching one to one the 10 vaults from `get_vault_statistics`; combined TVL only about 1.6 million USD (2026-09-17) | curated list `docs/paper1/meta/vault_wallets.csv` with the source per address, cross-check against the wallets in the tape; the low power of H2 is reported in DATA_STATUS |
+| Maker programmes (DRV scores) exist only from 2024-11-20 | the class "MM programme" cannot be assigned before this date; report in DATA_STATUS |
+| `get_settlement_history` per subaccount (BTC 254,986 rows) | not needed for Paper 1 (the settlement markout needs only the price per expiry) |
+| System Python 3.9.6; the repo requires ≥ 3.10 in `pyproject.toml`, but all 28 tests run under 3.9 | no installation, invocation via `python3 -m derive_surface` from the repo; new code 3.9-compatible (`from __future__ import annotations`, no `match`) |
 
-## 3 · Definitionen
+## 3 · Definitions
 
-Für jeden Fill zum Zeitpunkt t mit Preis P, Menge q, Maker-Richtung s ∈ {+1 Maker kauft, −1 Maker verkauft}:
+For each fill at time t with price P, quantity q and maker direction s ∈ {+1 maker buys, −1 maker sells}:
 
-- **Markout in USDC je Kontrakt:** MO_τ = s · (M(t+τ) − P), M = Mark-Preis zum Zeitpunkt t+τ aus Pfad (a) oder (b). Horizonte τ ∈ {1 min, 5 min, 30 min, 4 h, 24 h, Settlement}. Negativ = Verlust des Makers.
-- **Delta-neutraler Markout:** MO^Δ_τ = MO_τ − s · Δ(t) · (S(t+τ) − S(t)), Δ aus der Mark-IV zum Fill-Zeitpunkt (Black-76 auf dem Forward), S = Index. Nimmt die Spot-Bewegung heraus; Rest ist Vol- und Skew-Bewegung.
-- **Markout in Vol-Punkten:** MO^σ_τ = s · (IV_mark(t+τ) − IV_fill(t)), beide per Black-76-Inversion (bestehende Pipeline aus Derive-Option-Surface, bid/ask-IV-Abgleich < 1e-4 verifiziert).
-- **Settlement-Markout:** MO_set = s · (Auszahlung bei Verfall − P), modellfrei. **VRP-bereinigt:** MO_set minus Mittelwert von MO_set aller Fills derselben Zelle (Delta-Bucket × Tenor-Bucket × Underlying × Kalendermonat), damit die Prämie, die jede Position der Zelle trägt, herausfällt (Robustheit: DVOL-basierte Erwartung).
-- **Effektiver Halbspread:** HS = s_taker · (P − M(t)) mit s_taker = −s (positiv, wenn der Taker schlechter als Mark handelt), in USDC und Vol-Punkten.
-- **Netto-Edge des Makers:** NE_τ = HS + MO_τ − fee_maker + rebate_maker − hedge, hedge = Perp-Halbspread + Taker-Fee + erwartetes Funding über τ, je Fill mit Delta gewichtet.
-- **Zellen:** Delta-Buckets |Δ| ∈ {0–10, 10–25, 25–40, 40–60 (ATM), 60–75, 75–90, 90–100}; Tenor ∈ {≤ 2 d, 2–7 d, 7–30 d, 30–90 d, > 90 d}; Underlying.
-- **Ausschlüsse:** Fills in den letzten 30 min vor Verfall (Settlement-TWAP-Fenster, cockpit `FEED_TWAP_SEC`), `tx_status ≠ settled`, Instrumente ohne Forward.
-- **Gegenparteiklassen (Taker-Seite):** Vault · RFQ · Liquidation · Dominanter Maker als Taker (Wallet mit Maker-Anteil ≥ 80 % und ≥ 1 % des Maker-Volumens) · MM-Programm-Wallet · Grosswallet (≥ p99 des Notionals, sonst unklassifiziert) · Retail/Sonstige. Zuordnung je Wallet und Monat, Tabelle wird veröffentlicht (pseudonymisiert).
-- **Sweep:** ≥ 5 Fills desselben Takers in ≤ 10 s über ≥ 3 Strikes.
+- **Markout in USDC per contract:** MO_τ = s · (M(t+τ) − P), M = mark price at time t+τ from path (a) or (b). Horizons τ ∈ {1 min, 5 min, 30 min, 4 h, 24 h, settlement}. Negative = loss for the maker.
+- **Delta-neutral markout:** MO^Δ_τ = MO_τ − s · Δ(t) · (S(t+τ) − S(t)), Δ from the mark IV at fill time (Black-76 on the forward), S = index. Removes the spot move; the remainder is vol and skew movement.
+- **Markout in vol points:** MO^σ_τ = s · (IV_mark(t+τ) − IV_fill(t)), both via Black-76 inversion (existing pipeline from Derive-Option-Surface, bid/ask IV match < 1e-4 verified).
+- **Settlement markout:** MO_set = s · (payoff at expiry − P), model-free. **VRP-adjusted:** MO_set minus the mean of MO_set over all fills in the same cell (delta bucket × tenor bucket × underlying × calendar month), so that the premium that every position in the cell carries drops out (robustness: DVOL-based expectation).
+- **Effective half spread:** HS = s_taker · (P − M(t)) with s_taker = −s (positive when the taker trades worse than the mark), in USDC and vol points.
+- **Maker's net edge:** NE_τ = HS + MO_τ − fee_maker + rebate_maker − hedge, hedge = perp half spread + taker fee + expected funding over τ, weighted by delta per fill.
+- **Cells:** delta buckets |Δ| ∈ {0-10, 10-25, 25-40, 40-60 (ATM), 60-75, 75-90, 90-100}; tenor ∈ {≤ 2 d, 2-7 d, 7-30 d, 30-90 d, > 90 d}; underlying.
+- **Exclusions:** fills in the last 30 min before expiry (settlement TWAP window, cockpit `FEED_TWAP_SEC`), `tx_status ≠ settled`, instruments without a forward.
+- **Counterparty classes (taker side):** vault · RFQ · liquidation · dominant maker as taker (wallet with a maker share ≥ 80% and ≥ 1% of maker volume) · MM programme wallet · large wallet (≥ p99 of notional, otherwise unclassified) · retail/other. Assignment per wallet and month; the table is published (pseudonymised).
+- **Sweep:** ≥ 5 fills by the same taker in ≤ 10 s across ≥ 3 strikes.
 
 ---
 
-## 4 · Hypothesen (Präregistrierung vor der ersten Auswertung)
+## 4 · Hypotheses (pre-registration before the first analysis)
 
-| | Hypothese | Ablehnung, wenn |
+| | Hypothesis | Rejected if |
 |---|---|---|
-| H1 | Toxizität ist konzentriert: die 10 Taker-Wallets mit dem grössten Maker-Verlust tragen > 50 % des aggregierten negativen Markouts (30 min); Fills > p90 der Grösse und Sweeps haben signifikant negativeren Markout als kleine Fills | Bootstrap-90-%-Band des Top-10-Anteils schliesst 50 % aus nach unten; oder der Grösseneffekt hat cluster-robust (Wallet) |t| < 1,96 |
-| H2 | Vault-Rolls sind uninformierter Flow: VRP-bereinigter Settlement-Markout und 30-min-Markout der Vault-Fills ≥ 0 für den Maker | 95-%-Intervall des Vault-Markouts liegt vollständig unter 0 |
-| H3 | HYPE war vor der Deribit-Listung (16.06.2026, Datum verifizieren) toxischer als danach und als BTC/ETH (Vol-Markout) | Differenz vor/nach (DiD gegen BTC/ETH, Placebo-Daten) nicht signifikant oder mit falschem Vorzeichen |
-| H4 | Netto-Edge ist zellenabhängig: bei 30 min ist NE in weniger als der Hälfte der besetzten Zellen positiv; ATM-Kurzläufer BTC/ETH negativ, Flügel und lange Tenors positiv | Anteil positiver Zellen ≥ 50 % oder ATM-Kurzläufer positiv (Bootstrap je Zelle) |
+| H1 | Toxicity is concentrated: the 10 taker wallets with the largest maker loss account for > 50% of the aggregate negative markout (30 min); fills > p90 in size and sweeps have a significantly more negative markout than small fills | the bootstrap 90% band of the top-10 share excludes 50% from below; or the size effect has cluster-robust (wallet) \|t\| < 1.96 |
+| H2 | Vault rolls are uninformed flow: VRP-adjusted settlement markout and 30 min markout of vault fills ≥ 0 for the maker | the 95% interval of the vault markout lies entirely below 0 |
+| H3 | HYPE was more toxic before the Deribit listing (2026-06-16, verify the date) than afterwards and than BTC/ETH (vol markout) | the before/after difference (DiD against BTC/ETH, placebo dates) is not significant or has the wrong sign |
+| H4 | Net edge depends on the cell: at 30 min, NE is positive in fewer than half of the populated cells; short-dated ATM BTC/ETH negative, wings and long tenors positive | share of positive cells ≥ 50% or short-dated ATM positive (bootstrap per cell) |
 
-Nebenbefunde ohne Präregistrierung (klar als explorativ): Markout nach Tageszeit, nach Buch-vs-RFQ, VPIN als Vergleichsmass, Inventar-konditionierter Markout der dominanten Maker (Placebo-Permutation), Fill-Finalität (Anteil reverted, Match→Settlement-Zeit).
-
----
-
-## 5 · Methodik
-
-1. **Panel-Regression:** MO_τ (drei Einheiten) auf Klasse × Grössenklasse × Delta-Bucket, Fixed Effects Instrument × Tag, Cluster auf Taker-Wallet; Wild-Cluster-Bootstrap wie in HIP-4 (`inference.py`-Muster, Clusterkorrektur G/(G−1)).
-2. **Varianzzerlegung** within/between Wallet; **Lorenz-Kurve** der Toxizität (kumulierter Anteil der Taker-Wallets vs kumulierter Maker-Verlust).
-3. **Placebo:** Klassen zufällig permutiert (1 000 Züge) → Verteilung des Klasseneffekts unter der Null.
-4. **Robustheit des Mark-Pfads:** (a) spätere Fill-Marks, (b) onchain-SVI, (c) Settlement, (d) Deribit-Stichtage: Ergebnisse müssen in Vorzeichen und Grössenordnung übereinstimmen; Tabelle im Anhang.
-5. **Mehrfach-Wallets:** Sensitivität, wenn Wallets mit identischem Zeit-/Instrumentmuster zusammengelegt werden (Konzentration als Untergrenze ausweisen).
-6. **Netto-Edge:** je Zelle mit Bootstrap-Band; Gebühr aus trade_fee (Kappe als Treppe sichtbar), Rebate aus expected_rebate, Tier-Szenarien (Standard, Tier 4, Tier 1).
+Secondary findings without pre-registration (clearly marked as exploratory): markout by time of day, by book vs RFQ, VPIN as a comparison measure, inventory-conditioned markout of the dominant makers (placebo permutation), fill finality (share reverted, match→settlement time).
 
 ---
 
-## 6 · Abbildungen (Theorie zuerst, dann Empirie)
+## 5 · Methodology
 
-| # | Abbildung | Zeigt |
+1. **Panel regression:** MO_τ (three units) on class × size class × delta bucket, fixed effects instrument × day, clusters on the taker wallet; wild cluster bootstrap as in HIP-4 (`inference.py` pattern, cluster correction G/(G−1)).
+2. **Variance decomposition** within/between wallet; **Lorenz curve** of toxicity (cumulative share of taker wallets vs cumulative maker loss).
+3. **Placebo:** classes randomly permuted (1,000 draws) → distribution of the class effect under the null.
+4. **Robustness of the mark path:** (a) later fill marks, (b) onchain SVI, (c) settlement, (d) Deribit snapshot dates: results must agree in sign and order of magnitude; table in the appendix.
+5. **Multiple wallets:** sensitivity when wallets with an identical time/instrument pattern are merged (report the concentration as a lower bound).
+6. **Net edge:** per cell with a bootstrap band; fee from trade_fee (cap visible as a step), rebate from expected_rebate, tier scenarios (standard, tier 4, tier 1).
+
+---
+
+## 6 · Figures (theory first, then empirics)
+
+| # | Figure | Shows |
 |---|---|---|
-| T1 | Mechanik des Markouts: ein Fill, drei Mark-Pfade (Fill-Marks, onchain-SVI, Settlement), drei Einheiten (USDC, delta-neutral, Vol) | Definition ohne Formeln |
-| T2 | Netto-Edge-Zerlegung als Wasserfall-Schema mit Gebührenkappe 12,5 % und Tier-Rebates | warum Flügel und ATM verschieden rechnen |
-| 1 | Markout-Fan über den Horizont (1 min … Settlement), Buch vs RFQ, BTC/ETH/HYPE, drei Einheiten übereinander | Hauptbefund und Vol-vs-Spot-Zerlegung |
-| 2 | Heatmap Delta × Tenor des mittleren 30-min-Markouts in Vol-Punkten, daneben in bp Notional | wo der Maker verliert |
-| 3 | Lorenz-Kurve der Toxizität, Segmente Vault / RFQ / Liquidation / Grosswallet / Sonstige eingefärbt | H1, H2 |
-| 4 | Netto-Edge-Wasserfall je Klasse (Halbspread, Markout, Gebühr, Rebate, Hedge) | H4 |
-| 5 | Tages-Toxizität 2024–2026 mit Ereignissen: FalconX 10/2025, HYPE-Listung 06/2026, Rekordmonat 03/2026, Vault-Roll-Tage | H3, Zeitstruktur |
-| A | Anhang: Robustheit der vier Mark-Pfade; Klassentabelle; Alt-Underlyings | |
+| T1 | Mechanics of the markout: one fill, three mark paths (fill marks, onchain SVI, settlement), three units (USDC, delta-neutral, vol) | the definition without formulas |
+| T2 | Net edge decomposition as a waterfall schematic with the 12.5% fee cap and tier rebates | why wings and ATM work out differently |
+| 1 | Markout fan across the horizon (1 min … settlement), book vs RFQ, BTC/ETH/HYPE, three units stacked | main finding and vol vs spot decomposition |
+| 2 | Heatmap delta × tenor of the mean 30 min markout in vol points, next to it in bp of notional | where the maker loses |
+| 3 | Lorenz curve of toxicity, segments vault / RFQ / liquidation / large wallet / other coloured | H1, H2 |
+| 4 | Net edge waterfall per class (half spread, markout, fee, rebate, hedge) | H4 |
+| 5 | Daily toxicity 2024-2026 with events: FalconX 10/2025, HYPE listing 06/2026, record month 03/2026, vault roll days | H3, time structure |
+| A | Appendix: robustness of the four mark paths; class table; alt underlyings | |
 
 ---
 
-## 7 · Pipeline und Ablage
+## 7 · Pipeline and storage
 
-Alles im Repo `Derive-Option-Surface` (lokal unter `~/Documents/Papers/Working Papers/Derive_Options/Derive-Option-Surface`), Branch `paper1-adverse-selection`:
+Everything in the repo `Derive-Option-Surface` (locally under `~/Documents/Papers/Working Papers/Derive_Options/Derive-Option-Surface`), branch `paper1-adverse-selection`:
 
 ```
 derive_surface/
-  fulltape.py      Options-Tape mit allen 20 Feldern, beide Zeilen je Fill, Einzelseiten-Fenster, Manifest   (Plan 1)
-  chainfeeds.py    VolDataUpdated je Feed, adaptive Blockfenster, Dekodierung, SVI-Vol nach SVI.sol          (Plan 1)
-  refdata.py       Settlement-Preise, Liquidationen, Maker-Programme und Scores, Vaults, Gebühren, Funding   (Plan 1)
-  classify.py      Paarung Maker/Taker, Wallet-Monats-Kennzahlen, Gegenparteiklassen                         (Plan 1)
-  p1cli.py         python3 -m derive_surface p1 tape|volfeed|compact|ref|fills                                (Plan 1)
-  markouts.py      Mark-Pfade a/b/c/d, drei Einheiten, Zellen, Ausschlüsse                                    (Plan 2)
-  inference_p1.py  Regressionen, Wild-Cluster-Bootstrap, Placebo, Lorenz, Netto-Edge                         (Plan 2)
-  figures_p1.py    T1, T2, 1–5, A                                                                              (Plan 3)
-scripts/p1_check_feeds.py   Feed-Kontinuität und Gegenprobe SVI vs Live-Mark                                   (Plan 1)
-docs/paper1/     PRAEREGISTRIERUNG.md, DATENSTAND.md, ZAHLENBLATT.md, meta/vault_wallets.csv
-paper/           CAS-Manuskript (Plan 4)
-data/p1/         raw/, tape/, volfeed/, ref/, derived/  (git-ignoriert)
+  fulltape.py      option tape with all 20 fields, both rows per fill, single-page windows, manifest         (Plan 1)
+  chainfeeds.py    VolDataUpdated per feed, adaptive block windows, decoding, SVI vol per SVI.sol            (Plan 1)
+  refdata.py       settlement prices, liquidations, maker programmes and scores, vaults, fees, funding       (Plan 1)
+  classify.py      maker/taker pairing, wallet-month metrics, counterparty classes                           (Plan 1)
+  p1cli.py         python3 -m derive_surface p1 tape|volfeed|compact|ref|fills                               (Plan 1)
+  markouts.py      mark paths a/b/c/d, three units, cells, exclusions                                        (Plan 2)
+  inference_p1.py  regressions, wild cluster bootstrap, placebo, Lorenz, net edge                            (Plan 2)
+  figures_p1.py    T1, T2, 1-5, A                                                                            (Plan 3)
+scripts/p1_check_feeds.py   feed continuity and cross-check of SVI vs live mark                              (Plan 1)
+docs/paper1/     PREREGISTRATION.md, DATA_STATUS.md, NUMBERS.md, meta/vault_wallets.csv
+paper/           CAS manuscript (Plan 4)
+data/p1/         raw/, tape/, volfeed/, ref/, derived/  (git-ignored)
 tests/           offline; test_p1_*.py
 ```
 
-- Pricing (Black-76, IV-Inversion, Forward-Delta) aus `derive_surface.pricing` direkt nutzen.
-- Jede Auswertung als Skript, jede Zahl im Zahlenblatt mit Skript und Datum (Lehre aus HIP-4: Dominanz-Code ging dreimal verloren).
-- Langläufe (Chain-Logs, Tape) wiederaufnehmbar, mit `caffeinate` am Netzteil oder auf dem VPS.
+- Use pricing (Black-76, IV inversion, forward delta) directly from `derive_surface.pricing`.
+- Every analysis as a script, every number in the numbers sheet with script and date (lesson from HIP-4: the dominance code was lost three times).
+- Long runs (chain logs, tape) resumable, with `caffeinate` on mains power or on the VPS.
 
 ---
 
-## 8 · Zeitplan (5–6 Wochen)
+## 8 · Schedule (5 to 6 weeks)
 
-| Woche | Schritt | Ergebnis |
+| Week | Step | Result |
 |---|---|---|
-| 1 | Options-Tape + Chain-Feeds + Referenzdaten sichern; Klassentabelle; Präregistrierung H1–H4 (Perps entfallen, s. §2a) | Manifest, Klassen-Statistik, `PRAEREGISTRIERUNG.md` |
-| 2 | Markouts in drei Einheiten, vier Mark-Pfade; Deskriptiva; Theorie-Abbildungen T1/T2 | Zahlenblatt v1, Abb. T1, T2, 1, 2 |
-| 3 | Inferenz (Regressionen, Bootstrap, Placebo), Netto-Edge, Robustheit, Alt-Anhang | Zahlenblatt v2, Abb. 3–5, A |
-| 4 | Schreiben (CAS, harte Grössenziele je Abschnitt, ≤ 18 Seiten), refs.bib nur verifizierte Quellen | Manuskript v1 |
-| 5 | Zwei unabhängige Prüfer (Zahlen, Text), Einarbeitung, Team informieren, SSRN-Blatt | Upload-Fassung |
+| 1 | Secure option tape + chain feeds + reference data; class table; pre-registration H1 to H4 (perps dropped, see §2a) | manifest, class statistics, `PREREGISTRATION.md` |
+| 2 | Markouts in three units, four mark paths; descriptive statistics; theory figures T1/T2 | numbers sheet v1, Figs. T1, T2, 1, 2 |
+| 3 | Inference (regressions, bootstrap, placebo), net edge, robustness, alt appendix | numbers sheet v2, Figs. 3-5, A |
+| 4 | Writing (CAS, hard size targets per section, ≤ 18 pages), refs.bib with verified sources only | manuscript v1 |
+| 5 | Two independent reviewers (numbers, text), revisions, inform the team, SSRN sheet | upload version |
 
 ---
 
-## 9 · Risiken und Grenzen
+## 9 · Risks and limits
 
-- **Mark-Zirkularität:** Backend-SVI kann den eigenen Fills folgen → Settlement-Markout und Deribit-Stichtage als unabhängige Pfade; Ergebnisse nur berichten, wo die Pfade übereinstimmen.
-- **Mehrfach-Wallets:** Konzentration ist eine Untergrenze; Sensitivität mit Zusammenlegung.
-- **Klassen heuristisch:** Vault und RFQ hart (Verträge, rfq_id), Institution/Retail weich; Team-Klassentabelle würde ersetzen, ist aber nicht nötig.
-- **Rebate-Tier je Wallet unbekannt:** expected_rebate je Fill ist beobachtet, Tier-Szenarien für den Netto-Edge.
-- **v3-Migration:** Felder und Events können sich ändern → Daten jetzt sichern, Stichtag 30.09.2026.
-- **Ethik:** Wallets sind öffentlich, im Paper nur pseudonyme Cluster („Taker-A“); Derive-Team vor Veröffentlichung informieren; Deribit-Stichtage nur aggregiert (ToS „personal use“).
-- **Statistische Kraft:** BTC/ETH reichlich (> 1 Mio Zeilen); HYPE dünn, H3 nur mit Placebo-Daten und DiD.
+- **Mark circularity:** the backend SVI can follow its own fills → settlement markout and Deribit snapshot dates as independent paths; report results only where the paths agree.
+- **Multiple wallets:** concentration is a lower bound; sensitivity with merging.
+- **Heuristic classes:** vault and RFQ hard (contracts, rfq_id), institution/retail soft; a class table from the team would replace this but is not required.
+- **Rebate tier per wallet unknown:** expected_rebate per fill is observed; tier scenarios for the net edge.
+- **v3 migration:** fields and events may change → secure the data now, cutoff 2026-09-30.
+- **Ethics:** wallets are public, the paper shows only pseudonymous clusters ("Taker-A"); inform the Derive team before publication; Deribit snapshot dates only in aggregate (ToS "personal use").
+- **Statistical power:** BTC/ETH ample (> 1 million rows); HYPE thin, H3 only with placebo dates and DiD.
 
 ---
 
-## 10 · Entscheidungen (17.09.2026 vom Autor bestätigt)
+## 10 · Decisions (confirmed by the author on 2026-09-17)
 
-1. Kern BTC/ETH/HYPE, Rest als Anhang.
-2. Stichtag 30.09.2026 08:00 UTC; bis dahin Pilotdaten bis 17.09.2026 12:00 UTC nur zum Bau der Pipeline, **keine Markouts**.
-3. Präregistrierung H1–H4 (`docs/paper1/PRAEREGISTRIERUNG.md`) wird committet, bevor eine Markout-Zahl existiert.
-4. Derive-Team wird vorab informiert (Formular).
-5. Bestehendes Repo `gelatotrade/Derive-Option-Surface`, soweit möglich.
+1. Core BTC/ETH/HYPE, the rest as an appendix.
+2. Cutoff 2026-09-30 08:00 UTC; until then pilot data up to 2026-09-17 12:00 UTC only for building the pipeline, **no markouts**.
+3. The pre-registration of H1 to H4 (`docs/paper1/PREREGISTRATION.md`) is committed before any markout number exists.
+4. The Derive team is informed in advance (form).
+5. The existing repo `gelatotrade/Derive-Option-Surface`, as far as possible.
 
-Umsetzung in Plänen: Plan 1 Datenbasis und Klassen (`docs/superpowers/plans/2026-09-17-p1-datenbasis.md`), Plan 2 Markouts und Inferenz, Plan 3 Abbildungen, Plan 4 Manuskript.
+Implementation in plans: Plan 1 data basis and classes (`docs/superpowers/plans/2026-09-17-p1-data.md`), Plan 2 markouts and inference, Plan 3 figures, Plan 4 manuscript.

@@ -1,58 +1,58 @@
-# Paper 1, Plan 3: Inferenz H1–H4, Netto-Edge, Robustheit
+# Paper 1, Plan 3: Inference H1 to H4, Net Edge, Robustness
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Die vier präregistrierten Hypothesen auf `markouts.parquet` testen (Wild-Cluster-Bootstrap, Placebos, Differenz-in-Differenzen), den Netto-Edge je Zelle rechnen, die Robustheit über die Mark-Pfade zeigen und alle Zahlen in ein Zahlenblatt schreiben, das die einzige Zahlenquelle für das Manuskript ist.
+**Goal:** Test the four pre-registered hypotheses on `markouts.parquet` (wild cluster bootstrap, placebos, difference in differences), compute the net edge per cell, show the robustness across the mark paths, and write all numbers into a numbers sheet that is the only source of numbers for the manuscript.
 
-**Architecture:** Ein Modul `derive_surface/inference_p1.py` mit getesteten Bausteinen (Analyse-Rahmen, Hedge-Kosten, Fixed-Effects-OLS, Wild-Cluster-Bootstrap mit Cluster-Suffizienzstatistiken, Cluster-Bootstrap für Mittelwerte und Anteile, DiD mit Placebos, Zellenauswertung, Lorenz-Kurve) und einer Orchestrierung, die nach `results/p1/` schreibt; CLI `p1 inference`; ein Skript, das daraus `docs/paper1/ZAHLENBLATT.md` erzeugt.
+**Architecture:** One module `derive_surface/inference_p1.py` with tested building blocks (analysis frame, hedge costs, fixed-effects OLS, wild cluster bootstrap with per-cluster sufficient statistics, cluster bootstrap for means and shares, DiD with placebos, cell evaluation, Lorenz curve) and an orchestration that writes to `results/p1/`; CLI `p1 inference`; a script that generates `docs/paper1/NUMBERS.md` from these results.
 
-**Tech Stack:** Python 3.9.6, numpy, pandas; pytest. Keine neuen Abhängigkeiten (kein statsmodels, kein linearmodels).
+**Tech Stack:** Python 3.9.6, numpy, pandas; pytest. No new dependencies (no statsmodels, no linearmodels).
 
-**Spec:** `docs/superpowers/specs/2026-09-17-adverse-selection-design.md`; **Präregistrierung:** `docs/paper1/PRAEREGISTRIERUNG.md` mit Nachtrag 1 und dem hier ergänzten Nachtrag 2.
+**Spec:** `docs/superpowers/specs/2026-09-17-adverse-selection-design.md`; **Pre-registration:** `docs/paper1/PRAEREGISTRIERUNG.md` with addendum 1 and addendum 2, which is added here.
 
 ## Global Constraints
 
-- Constraints aus Plan 1 und 2 gelten weiter (Python 3.9, keine neuen Abhängigkeiten, Tests offline, lokale Commits mit Trailer).
-- Jede Schätzung clustert auf `taker_wallet`; Bootstrap-Wiederholungen B = 9 999, Seed 20260917, p = (1 + #)/(B + 1), Kleinstichprobenkorrektur G/(G − 1).
-- Fixed Effects: Instrument × Tag (eine interagierte Gruppe), umgesetzt als Within-Transformation.
-- Primärer Horizont 30 min, primärer Mark-Pfad (b) nach Push-Zeit. Jede Tabelle nennt Horizont, Pfad und Einheit.
-- Keine Zahl im Manuskript, die nicht im Zahlenblatt steht; jede Zahl im Zahlenblatt entsteht aus `results/p1/*.csv`/`*.json`.
-- Ergebnisdateien unter `results/p1/` werden committet (klein), `data/p1/` bleibt ungetrackt.
+- The constraints from plans 1 and 2 continue to apply (Python 3.9, no new dependencies, tests offline, local commits with trailer).
+- Every estimate clusters on `taker_wallet`; bootstrap repetitions B = 9 999, seed 20260917, p = (1 + #)/(B + 1), small-sample correction G/(G − 1).
+- Fixed effects: instrument × day (one interacted group), implemented as a within transformation.
+- Primary horizon 30 min, primary mark path (b) by push time. Every table states horizon, path and unit.
+- No number in the manuscript that is not in the numbers sheet; every number in the numbers sheet comes from `results/p1/*.csv`/`*.json`.
+- Result files under `results/p1/` are committed (small), `data/p1/` stays untracked.
 
-## Dateien
+## Files
 
-| Datei | Verantwortung |
+| File | Responsibility |
 |---|---|
-| `docs/paper1/PRAEREGISTRIERUNG.md` | Nachtrag 2 (H3-Datum, Netto-Edge-Zerlegung, H1-Metrik, Ausschluss ohne Fill-IV) |
-| `derive_surface/inference_p1.py` | Analyse-Rahmen, Schätzer, Bootstraps, DiD, Zellen, Lorenz, Orchestrierung |
-| `derive_surface/p1cli.py` | Unterbefehl `inference` |
-| `scripts/p1_zahlenblatt.py` | schreibt `docs/paper1/ZAHLENBLATT.md` aus `results/p1/` |
-| `tests/test_p1_inference.py` | Offline-Tests mit synthetischen Paneldaten |
+| `docs/paper1/PRAEREGISTRIERUNG.md` | Addendum 2 (H3 date, net-edge decomposition, H1 metric, exclusion without fill IV) |
+| `derive_surface/inference_p1.py` | Analysis frame, estimators, bootstraps, DiD, cells, Lorenz, orchestration |
+| `derive_surface/p1cli.py` | Subcommand `inference` |
+| `scripts/p1_numbers.py` | writes `docs/paper1/NUMBERS.md` from `results/p1/` |
+| `tests/test_p1_inference.py` | Offline tests with synthetic panel data |
 
 ---
 
-### Task 0: Nachtrag 2 zur Präregistrierung
+### Task 0: Addendum 2 to the pre-registration
 
 **Files:** Modify `docs/paper1/PRAEREGISTRIERUNG.md`
 
-- [ ] **Step 1: Nachtrag anhängen**
+- [ ] **Step 1: Append the addendum**
 
 ```markdown
 
-## Nachtrag 2 (18.09.2026, vor der ersten Inferenz)
+## Addendum 2 (2026-09-18, before the first inference)
 
-1. **Ereignisdatum H3:** HYPE_USDC-**Optionen** starteten auf Deribit am **23.06.2026 09:00 UTC** (offizielle Ankündigung „HYPE Derivatives Launching On Deribit“, veröffentlicht 16.06.2026: Perp 16.06. 09:00 UTC, Optionen und datierte Futures 23.06. 09:00 UTC). Das früher notierte Datum 16.06.2026 war der Perp-Start. Die Delivery-Preis-Historie von Deribit umfasst nur 100 Tage und taugt nicht zur Datierung.
-2. **Netto-Edge, Zerlegung ohne Doppelzählung:** Der Halbspread ist Teil des Markouts. Es gilt HS = s·(M(t) − P) (Markout zum Horizont 0), Adverse Selection AS_τ = s·(M(t+τ) − M(t)) und MO_τ = HS + AS_τ. Der Netto-Edge ist damit NE_τ = MO_τ − Maker-Gebühr + Maker-Rebate − Hedge-Kosten, mit den **beobachteten** Gebühren und Rebates der Maker-Zeile aus dem Tape. Hedge-Kosten = |Δ(t)|·F(t)·(Perp-Taker-Gebühr 0,03 % + angenommener Perp-Halbspread) + |Δ(t)|·F(t)·Funding-Rate je Stunde·(τ/3600 s); der Perp-Halbspread wird mit 1 bp angesetzt und mit 0 bp und 3 bp als Sensitivität ausgewiesen, die Funding-Rate ist der Median des absoluten Stundenwerts der letzten 30 Tage je Underlying.
-3. **H1-Metrik:** Je Taker-Wallet w ist S_w = Σ MO_30min (USDC, Pfad b). L = Σ_{w: S_w < 0} S_w ist der aggregierte Verlust des Makers. Der Top-10-Anteil ist die Summe der zehn kleinsten (negativsten) S_w geteilt durch L. Das 90-%-Intervall entsteht aus einem Cluster-Bootstrap über Wallets (B = 9 999, Seed 20260917).
-4. **Intervalle für Mittelwerte:** Für Mittelwerte (H2, Zellen in H4) ist das berichtete Intervall das Perzentil-Intervall eines Cluster-Bootstraps über Taker-Wallets; zusätzlich wird der p-Wert des Wild-Cluster-Bootstraps gegen Null berichtet. Für Regressionskoeffizienten (H1, H3) gilt der Wild-Cluster-Bootstrap (restringierte Residuen, Rademacher).
-5. **Ausschluss ohne Fill-IV:** Fills, deren Preis ausserhalb der Arbitragegrenzen von Black-76 liegt und für die deshalb keine Fill-IV existiert (Pilot: 10 745 von 603 940), gehen nicht in die Tests in Vol-Punkten ein; in USDC und delta-neutral bleiben sie enthalten. Die Zahl wird je Test ausgewiesen.
-6. **Klasse „liquidation“ ist leer:** Liquidationen werden ausserhalb des Trade-Tapes abgewickelt (27 694 Auktionen, kein Treffer auf einem Options-Fill). Die Klassenanalyse läuft über die sechs verbleibenden Klassen.
+1. **Event date for H3:** HYPE_USDC **options** launched on Deribit on **2026-06-23 09:00 UTC** (official announcement "HYPE Derivatives Launching On Deribit", published 2026-06-16: perp 2026-06-16 09:00 UTC, options and dated futures 2026-06-23 09:00 UTC). The date noted earlier, 2026-06-16, was the perp launch. Deribit's delivery price history covers only 100 days and is not suitable for dating the event.
+2. **Net edge, decomposition without double counting:** The half spread is part of the markout. HS = s·(M(t) − P) (markout at horizon 0), adverse selection AS_τ = s·(M(t+τ) − M(t)) and MO_τ = HS + AS_τ. The net edge is therefore NE_τ = MO_τ − maker fee + maker rebate − hedge costs, with the **observed** fees and rebates of the maker row from the tape. Hedge costs = |Δ(t)|·F(t)·(perp taker fee 0.03 % + assumed perp half spread) + |Δ(t)|·F(t)·funding rate per hour·(τ/3600 s); the perp half spread is set at 1 bp and reported with 0 bp and 3 bp as a sensitivity, and the funding rate is the median of the absolute hourly value over the last 30 days per underlying.
+3. **H1 metric:** For each taker wallet w, S_w = Σ MO_30min (USDC, path b). L = Σ_{w: S_w < 0} S_w is the maker's aggregate loss. The top-10 share is the sum of the ten smallest (most negative) S_w divided by L. The 90 % interval comes from a cluster bootstrap over wallets (B = 9 999, seed 20260917).
+4. **Intervals for means:** For means (H2, cells in H4), the reported interval is the percentile interval of a cluster bootstrap over taker wallets; in addition, the p-value of the wild cluster bootstrap against zero is reported. For regression coefficients (H1, H3), the wild cluster bootstrap applies (restricted residuals, Rademacher).
+5. **Exclusion without fill IV:** Fills whose price lies outside the Black-76 arbitrage bounds, and for which therefore no fill IV exists (pilot: 10 745 of 603 940), do not enter the tests in vol points; in USDC and delta-neutral they remain included. The number is reported for each test.
+6. **Class "liquidation" is empty:** Liquidations are settled outside the trade tape (27 694 auctions, no match on an option fill). The class analysis runs over the six remaining classes.
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add docs/paper1/PRAEREGISTRIERUNG.md docs/superpowers/plans/2026-09-17-p1-inferenz.md
+git add docs/paper1/PRAEREGISTRIERUNG.md docs/superpowers/plans/2026-09-17-p1-inference.md
 git commit -m "paper1: pre-registration addendum 2 (H3 event date, net-edge decomposition, H1 metric); plan 3
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
@@ -60,29 +60,29 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 1: `inference_p1.py` — Schätzer und Bootstraps
+### Task 1: `inference_p1.py`, estimators and bootstraps
 
 **Files:**
 - Create: `derive_surface/inference_p1.py`
 - Test: `tests/test_p1_inference.py`
 
 **Interfaces:**
-- Consumes: `markouts.parquet` (Plan 2), `data/p1/ref/funding_history.parquet`, `data/p1/ref/instrument_fees_*.parquet`.
+- Consumes: `markouts.parquet` (plan 2), `data/p1/ref/funding_history.parquet`, `data/p1/ref/instrument_fees_*.parquet`.
 - Produces:
   - `HORIZON = "30m"`, `B = 9999`, `SEED = 20260917`, `HYPE_EVENT_MS = 1_782_205_200_000` (2026-06-23 09:00 UTC), `MIN_CELL_FILLS = 200`, `PERP_HALF_SPREAD_BP = (0.0, 1.0, 3.0)`
   - `hedge_cost(abs_delta, forward, tau_s, funding_per_hour, taker_fee=3e-4, half_spread_bp=1.0) -> np.ndarray`
-  - `analysis_frame(markouts, funding, horizon=HORIZON, half_spread_bp=1.0) -> DataFrame` (Spalten `y_usd, y_dn, y_vol, hs, as_usd, net_edge, fe_key, cluster, …`)
-  - `within(values, groups) -> np.ndarray` (Gruppenmittel abziehen)
+  - `analysis_frame(markouts, funding, horizon=HORIZON, half_spread_bp=1.0) -> DataFrame` (columns `y_usd, y_dn, y_vol, hs, as_usd, net_edge, fe_key, cluster, …`)
+  - `within(values, groups) -> np.ndarray` (subtract the group means)
   - `ols_fe(y, X, groups) -> (beta, resid, XtX_inv)`
-  - `wild_cluster_p(y, X, groups, clusters, test_col, b=B, seed=SEED) -> dict` mit `beta, se, t, p, n, clusters`
-  - `cluster_mean_ci(values, clusters, b=B, seed=SEED, level=0.95) -> dict` mit `mean, lo, hi, p, n, clusters`
-  - `top_loss_share(values, wallets, top=10, b=B, seed=SEED, level=0.90) -> dict` mit `share, lo, hi, loss_total, wallets`
+  - `wild_cluster_p(y, X, groups, clusters, test_col, b=B, seed=SEED) -> dict` with `beta, se, t, p, n, clusters`
+  - `cluster_mean_ci(values, clusters, b=B, seed=SEED, level=0.95) -> dict` with `mean, lo, hi, p, n, clusters`
+  - `top_loss_share(values, wallets, top=10, b=B, seed=SEED, level=0.90) -> dict` with `share, lo, hi, loss_total, wallets`
   - `lorenz(values, wallets) -> DataFrame` (`wallet_share, loss_share`)
   - `did(frame, y_col, event_ms, treated="HYPE", placebos=100, seed=SEED) -> dict`
   - `cell_table(frame, y_col, min_fills=MIN_CELL_FILLS) -> DataFrame`
   - `run_all(root: Path, out_dir: Path, half_spread_bp=1.0) -> dict`
 
-- [ ] **Step 1: Failing tests schreiben**
+- [ ] **Step 1: Write the failing tests**
 
 `tests/test_p1_inference.py`:
 
@@ -228,12 +228,12 @@ def test_analysis_frame_decomposes_the_markout():
     assert r.fe_key == "BTC-1-2-C|2023-11-14" and r.cluster == "0xt"
 ```
 
-- [ ] **Step 2: Tests laufen lassen, Fehlschlag prüfen**
+- [ ] **Step 2: Run the tests, confirm the failure**
 
 Run: `python3 -m pytest -q tests/test_p1_inference.py`
-Expected: FAIL mit `ImportError: cannot import name 'inference_p1'`
+Expected: FAIL with `ImportError: cannot import name 'inference_p1'`
 
-- [ ] **Step 3: Implementierung**
+- [ ] **Step 3: Implementation**
 
 `derive_surface/inference_p1.py`:
 
@@ -599,12 +599,12 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
     return summary
 ```
 
-- [ ] **Step 4: Tests laufen lassen**
+- [ ] **Step 4: Run the tests**
 
 Run: `python3 -m pytest -q tests/test_p1_inference.py`
 Expected: `9 passed`
 
-- [ ] **Step 5: Gesamtsuite und Commit**
+- [ ] **Step 5: Full suite and commit**
 
 ```bash
 python3 -m pytest -q
@@ -616,11 +616,11 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 2: CLI `p1 inference` und Lauf
+### Task 2: CLI `p1 inference` and run
 
 **Files:** Modify `derive_surface/p1cli.py`; Test `tests/test_p1_cli.py`
 
-- [ ] **Step 1: Test ergänzen**
+- [ ] **Step 1: Add the test**
 
 ```python
 def test_inference_command_is_listed(capsys):
@@ -629,7 +629,7 @@ def test_inference_command_is_listed(capsys):
     assert "inference" in capsys.readouterr().out
 ```
 
-- [ ] **Step 2: Unterbefehl ergänzen**
+- [ ] **Step 2: Add the subcommand**
 
 ```python
     s = sub.add_parser("inference", help="pre-registered hypotheses, net edge, robustness")
@@ -646,12 +646,12 @@ def test_inference_command_is_listed(capsys):
         print(json.dumps(summary, indent=1, default=str))
 ```
 
-- [ ] **Step 3: Tests** — `python3 -m pytest -q`
+- [ ] **Step 3: Tests:** `python3 -m pytest -q`
 
-- [ ] **Step 4: Lauf auf den Pilotdaten**
+- [ ] **Step 4: Run on the pilot data**
 
 Run: `python3 -m derive_surface p1 inference`
-Expected: `results/p1/summary.json`, `h1_lorenz.csv`, `h4_cells.csv`, `h4_sensitivity.csv`, `class_means.csv`, `horizon_means.csv`. Laufzeit: Minuten.
+Expected: `results/p1/summary.json`, `h1_lorenz.csv`, `h4_cells.csv`, `h4_sensitivity.csv`, `class_means.csv`, `horizon_means.csv`. Runtime: minutes.
 
 - [ ] **Step 5: Commit**
 
@@ -664,19 +664,19 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 3: Zahlenblatt
+### Task 3: Numbers sheet
 
-**Files:** Create `scripts/p1_zahlenblatt.py`; Output `docs/paper1/ZAHLENBLATT.md`
+**Files:** Create `scripts/p1_numbers.py`; Output `docs/paper1/NUMBERS.md`
 
-**Interfaces:** liest `results/p1/summary.json` und die CSVs, schreibt das Zahlenblatt mit einem Abschnitt je Hypothese (Aussage, Ablehnungsregel, Zahlen, Urteil), einer Klassen- und Horizonttabelle, der Zellenübersicht und der Sensitivität.
+**Interfaces:** reads `results/p1/summary.json` and the CSVs, writes the numbers sheet with one section per hypothesis (statement, rejection rule, numbers, verdict), a class table and a horizon table, the cell overview and the sensitivity.
 
-- [ ] **Step 1: Skript schreiben**
+- [ ] **Step 1: Write the script**
 
 ```python
-"""Write docs/paper1/ZAHLENBLATT.md from results/p1 (single source of numbers for the manuscript).
+"""Write docs/paper1/NUMBERS.md from results/p1 (single source of numbers for the manuscript).
 
 Run from the repository root after `p1 inference`:
-    python3 scripts/p1_zahlenblatt.py
+    python3 scripts/p1_numbers.py
 """
 from __future__ import annotations
 
@@ -687,7 +687,7 @@ from pathlib import Path
 import pandas as pd
 
 RESULTS = Path("results/p1")
-OUT = Path("docs/paper1/ZAHLENBLATT.md")
+OUT = Path("docs/paper1/NUMBERS.md")
 
 
 def de(x, digits: int = 2) -> str:
@@ -704,7 +704,7 @@ def di(x) -> str:
 
 
 def verdict(rejected: bool) -> str:
-    return "**abgelehnt**" if rejected else "nicht abgelehnt"
+    return "**rejected**" if rejected else "not rejected"
 
 
 def main() -> None:
@@ -715,74 +715,74 @@ def main() -> None:
     sens = pd.read_csv(RESULTS / "h4_sensitivity.csv")
     h1, h2, h3, h4 = s["H1"], s["H2"], s["H3"], s["H4"]
     lines = [
-        "# Zahlenblatt Paper 1", "",
-        f"Erzeugt {dt.datetime.now(dt.timezone.utc):%Y-%m-%d %H:%M UTC} aus `results/p1` mit `scripts/p1_zahlenblatt.py`. "
-        f"Pilotdaten bis 17.09.2026 12:00 UTC. Primärer Horizont {s['horizon']}, Mark-Pfad (b) nach Push-Zeit, "
-        f"Cluster Taker-Wallet, B = {s['b']}, Seed {s['seed']}, Perp-Halbspread {de(s['half_spread_bp'], 1)} bp. "
-        f"{di(s['fills'])} Fills; ohne Fill-IV (nur Vol-Einheit betroffen): {di(s['missing_vol_unit'])}.", "",
-        "## H1 Konzentration der Toxizität", "",
-        f"- Top-10-Anteil am aggregierten Maker-Verlust: **{de(100 * h1['top10_share']['share'], 1)} %** "
-        f"(90-%-Intervall {de(100 * h1['top10_share']['lo'], 1)} bis {de(100 * h1['top10_share']['hi'], 1)} %), "
-        f"Verlustsumme {de(h1['top10_share']['loss_total'], 0)} USDC über {di(h1['top10_share']['wallets'])} Wallets.",
-        f"- Grösse über dem 90. Perzentil: Koeffizient {de(h1['size_coefficient']['beta'], 3)} USDC "
+        "# Numbers for paper 1", "",
+        f"Generated {dt.datetime.now(dt.timezone.utc):%Y-%m-%d %H:%M UTC} from `results/p1` with `scripts/p1_numbers.py`. "
+        f"Pilot data up to 2026-09-17 12:00 UTC. Primary horizon {s['horizon']}, mark path (b) by push time, "
+        f"clusters by taker wallet, B = {s['b']}, seed {s['seed']}, perp half spread {de(s['half_spread_bp'], 1)} bp. "
+        f"{di(s['fills'])} fills; without a fill IV (only the vol unit is affected): {di(s['missing_vol_unit'])}.", "",
+        "## H1 Concentration of toxicity", "",
+        f"- Top-10 share of the aggregate maker loss: **{de(100 * h1['top10_share']['share'], 1)} %** "
+        f"(90 % interval {de(100 * h1['top10_share']['lo'], 1)} to {de(100 * h1['top10_share']['hi'], 1)} %), "
+        f"total loss {de(h1['top10_share']['loss_total'], 0)} USDC over {di(h1['top10_share']['wallets'])} wallets.",
+        f"- Size above the 90th percentile: coefficient {de(h1['size_coefficient']['beta'], 3)} USDC "
         f"(t {de(h1['size_coefficient']['t'], 2)}, p {de(h1['size_coefficient']['p'], 4)}).",
-        f"- Sweep: Koeffizient {de(h1['sweep_coefficient']['beta'], 3)} USDC "
+        f"- Sweep: coefficient {de(h1['sweep_coefficient']['beta'], 3)} USDC "
         f"(t {de(h1['sweep_coefficient']['t'], 2)}, p {de(h1['sweep_coefficient']['p'], 4)}).",
-        f"- Urteil: {verdict(h1['rejected'])}.", "",
-        "## H2 Vault-Flow uninformiert", "",
-        f"- 30-min-Markout der Vault-Fills: {de(h2['markout_30m']['mean'], 3)} USDC "
-        f"(95-%-Intervall {de(h2['markout_30m']['lo'], 3)} bis {de(h2['markout_30m']['hi'], 3)}, p {de(h2['markout_30m']['p'], 4)}, "
-        f"{di(h2['markout_30m']['n'])} Fills, {h2['markout_30m']['clusters']} Wallets).",
-        f"- VRP-bereinigter Settlement-Markout: {de(h2['settlement_vrp']['mean'], 3)} USDC "
-        f"(95-%-Intervall {de(h2['settlement_vrp']['lo'], 3)} bis {de(h2['settlement_vrp']['hi'], 3)}).",
-        f"- Urteil: {verdict(h2['rejected'])}.", "",
-        "## H3 HYPE vor und nach der Deribit-Listung", "",
-        f"- Ereignis 23.06.2026 09:00 UTC, Fenster ±{h3['did']['window_days']} Tage, Zielgrösse Vol-Markout.",
-        f"- DiD-Koeffizient {de(h3['did']['beta'], 3)} Vol-Punkte (t {de(h3['did']['t'], 2)}, p {de(h3['did']['p'], 4)}, "
-        f"{di(h3['did']['n'])} Fills, {h3['did']['clusters']} Wallets).",
-        f"- Placebo-Daten: {h3['did']['placebos']}, davon extremer {de(100 * (h3['did']['placebo_share_more_extreme'] or 0), 1)} %.",
-        f"- Urteil: {verdict(h3['rejected'])}.", "",
-        "## H4 Netto-Edge je Zelle", "",
-        f"- Besetzte Zellen (≥ 200 Fills): {h4['cells']}; davon mit positivem 90-%-Intervall: "
+        f"- Verdict: {verdict(h1['rejected'])}.", "",
+        "## H2 Vault flow is uninformed", "",
+        f"- 30 min markout of the vault fills: {de(h2['markout_30m']['mean'], 3)} USDC "
+        f"(95 % interval {de(h2['markout_30m']['lo'], 3)} to {de(h2['markout_30m']['hi'], 3)}, p {de(h2['markout_30m']['p'], 4)}, "
+        f"{di(h2['markout_30m']['n'])} fills, {h2['markout_30m']['clusters']} wallets).",
+        f"- VRP-adjusted settlement markout: {de(h2['settlement_vrp']['mean'], 3)} USDC "
+        f"(95 % interval {de(h2['settlement_vrp']['lo'], 3)} to {de(h2['settlement_vrp']['hi'], 3)}).",
+        f"- Verdict: {verdict(h2['rejected'])}.", "",
+        "## H3 HYPE before and after the Deribit listing", "",
+        f"- Event 2026-06-23 09:00 UTC, window ±{h3['did']['window_days']} days, outcome vol markout.",
+        f"- DiD coefficient {de(h3['did']['beta'], 3)} vol points (t {de(h3['did']['t'], 2)}, p {de(h3['did']['p'], 4)}, "
+        f"{di(h3['did']['n'])} fills, {h3['did']['clusters']} wallets).",
+        f"- Placebo dates: {h3['did']['placebos']}, of which more extreme: {de(100 * (h3['did']['placebo_share_more_extreme'] or 0), 1)} %.",
+        f"- Verdict: {verdict(h3['rejected'])}.", "",
+        "## H4 Net edge per cell", "",
+        f"- Occupied cells (≥ 200 fills): {h4['cells']}; of these with a positive 90 % interval: "
         f"**{de(100 * h4['share_positive'], 1)} %**.",
     ]
     for row in h4["atm_short"]:
-        lines.append(f"- ATM-Kurzläufer {row['currency']} 40–60 Δ, ≤ 2 d: {de(row['mean'], 3)} USDC "
-                     f"(90-%-Intervall {de(row['lo'], 3)} bis {de(row['hi'], 3)}, {di(row['fills'])} Fills)")
-    lines += [f"- Urteil: {verdict(h4['rejected'])}.", "",
-              "### Sensitivität des Perp-Halbspreads", "",
-              "| Halbspread (bp) | Zellen | Anteil positiv |", "|---|---|---|"]
+        lines.append(f"- Short-dated ATM {row['currency']} 40-60 Δ, ≤ 2 d: {de(row['mean'], 3)} USDC "
+                     f"(90 % interval {de(row['lo'], 3)} to {de(row['hi'], 3)}, {di(row['fills'])} fills)")
+    lines += [f"- Verdict: {verdict(h4['rejected'])}.", "",
+              "### Sensitivity to the perp half spread", "",
+              "| Half spread (bp) | Cells | Share positive |", "|---|---|---|"]
     for r in sens.itertuples():
         lines.append(f"| {de(r.half_spread_bp, 1)} | {r.cells} | {de(100 * r.share_positive, 1)} % |")
-    lines += ["", "## Gegenparteiklassen (30 min, Pfad b)", "",
-              "| Klasse | Fills | Halbspread | Adverse Selection | Markout USDC | 95-%-Intervall | Gebühr | Rebate | Hedge | Netto-Edge | Anteil negativ |",
+    lines += ["", "## Counterparty classes (30 min, path b)", "",
+              "| Class | Fills | Half spread | Adverse selection | Markout USDC | 95 % interval | Fee | Rebate | Hedge | Net edge | Share negative |",
               "|---|---|---|---|---|---|---|---|---|---|---|"]
     for _, r in classes.sort_values("mean").iterrows():
         lines.append(f"| {r['class']} | {di(r['fills'])} | {de(r['mean_hs'])} | {de(r['mean_as'])} | {de(r['mean'])} | "
-                     f"{de(r['lo'])} bis {de(r['hi'])} | {de(r['mean_fee'])} | {de(r['mean_rebate'])} | "
+                     f"{de(r['lo'])} to {de(r['hi'])} | {de(r['mean_fee'])} | {de(r['mean_rebate'])} | "
                      f"{de(r['mean_hedge'])} | {de(r['mean_ne'])} | {de(100 * r['share_negative'], 1)} % |")
-    lines += ["", "## Horizonte (Pfad b, Mittelwerte)", "",
-              "| Horizont | Fills | USDC | delta-neutral | Vol-Punkte | Pfad (a) USDC |", "|---|---|---|---|---|---|"]
+    lines += ["", "## Horizons (path b, means)", "",
+              "| Horizon | Fills | USDC | delta-neutral | Vol points | Path (a) USDC |", "|---|---|---|---|---|---|"]
     for r in horizons.itertuples():
         lines.append(f"| {r.horizon} | {di(r.n)} | {de(r.mean, 3)} | {de(r.mean_dn, 3)} | {de(r.mean_vol, 3)} | "
                      f"{de(r.mean_path_a, 3)} |")
-    lines += ["", "## Zellen mit dem grössten und kleinsten Netto-Edge", "",
-              "| Underlying | Delta | Tenor | Fills | Netto-Edge | 90-%-Intervall |", "|---|---|---|---|---|---|"]
+    lines += ["", "## Cells with the largest and smallest net edge", "",
+              "| Underlying | Delta | Tenor | Fills | Net edge | 90 % interval |", "|---|---|---|---|---|---|"]
     ranked = cells.sort_values("mean")
     for r in pd.concat([ranked.head(5), ranked.tail(5)]).itertuples():
         lines.append(f"| {r.currency} | {r.delta_bucket} | {r.tenor_bucket} | {di(r.fills)} | {de(r.mean, 3)} | "
-                     f"{de(r.lo, 3)} bis {de(r.hi, 3)} |")
-    lines += ["", "## Einschränkungen dieser Zahlen", "",
-              f"- Pilotstand: Stichprobe bis 17.09.2026 12:00 UTC. Die Zahlen des Manuskripts entstehen erst mit dem "
-              f"Stichtag 30.09.2026 08:00 UTC.",
-              f"- H2 beruht auf {h2['markout_30m']['clusters']} Vault-Wallets; bei so wenigen Clustern ist der "
-              f"Wild-Cluster-Bootstrap unzuverlässig, das Ergebnis ist ein Hinweis, kein Beweis.",
-              f"- Pfad (b) ist ein um Minuten verzögerter Mark (onchain-Push je Verfall im Median alle 60 s, Forward der "
-              f"Kurve statt Live-Forward). Die Horizonte 1 min und 5 min sind davon am stärksten betroffen; Pfad (a) steht "
-              f"in der Horizont-Tabelle daneben.",
-              f"- Die Vol-Einheit fehlt für {di(s['missing_vol_unit'])} Fills ohne Fill-IV (Preis ausserhalb der "
-              f"Arbitragegrenzen).",
-              "- Die Klasse „liquidation“ ist leer: Liquidationen laufen ausserhalb des Trade-Tapes."]
+                     f"{de(r.lo, 3)} to {de(r.hi, 3)} |")
+    lines += ["", "## Limitations of these numbers", "",
+              f"- Pilot state: sample up to 2026-09-17 12:00 UTC. The numbers of the manuscript only arise with the "
+              f"cut-off 2026-09-30 08:00 UTC.",
+              f"- H2 rests on {h2['markout_30m']['clusters']} vault wallets; with so few clusters the "
+              f"wild cluster bootstrap is unreliable, so the result is an indication, not proof.",
+              f"- Path (b) is a mark delayed by minutes (onchain push per expiry every 60 s at the median, forward of the "
+              f"curve instead of the live forward). The horizons 1 min and 5 min are affected most; path (a) is shown "
+              f"next to it in the horizon table.",
+              f"- The vol unit is missing for {di(s['missing_vol_unit'])} fills without fill IV (price outside the "
+              f"arbitrage bounds).",
+              "- The class “liquidation” is empty: liquidations run outside the trade tape."]
     OUT.write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
@@ -791,11 +791,11 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Lauf und Commit**
+- [ ] **Step 2: Run and commit**
 
 ```bash
-python3 scripts/p1_zahlenblatt.py
-git add scripts/p1_zahlenblatt.py docs/paper1/ZAHLENBLATT.md
+python3 scripts/p1_numbers.py
+git add scripts/p1_numbers.py docs/paper1/NUMBERS.md
 git commit -m "paper1: figure sheet generated from results/p1
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
@@ -803,8 +803,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-## Hinweise
+## Notes
 
-- Der Pilotlauf dient der Pipeline; die berichteten Zahlen des Papers entstehen erst nach dem finalen Datenstand (Stichtag 30.09.2026 08:00 UTC, Daten bis 01.10.2026 09:00 UTC).
-- Plan 4 (Abbildungen T1, T2, 1–5, A) und Plan 5 (Manuskript, CAS) setzen auf dem Zahlenblatt auf.
-- Offen und nicht präregistriert: Pfad (b') mit Live-Spot aus den onchain `SpotPriceUpdated`- oder `ForwardDataUpdated`-Events. Er würde den USDC-Markout auf 1 und 5 Minuten schärfen und kostet einen weiteren Chain-Abruf in der Grössenordnung des Vol-Feeds (rund 40 Mio. Events, zwei Stunden, 1,6 GB).
+- The pilot run serves the pipeline; the numbers reported in the paper only arise after the final data state (cut-off 2026-09-30 08:00 UTC, data up to 2026-10-01 09:00 UTC).
+- Plan 4 (figures T1, T2, 1 to 5, A) and plan 5 (manuscript, CAS) build on the numbers sheet.
+- Open and not pre-registered: path (b') with the live spot from the onchain `SpotPriceUpdated` or `ForwardDataUpdated` events. It would sharpen the USDC markout at 1 and 5 minutes and costs another chain fetch on the order of the vol feed (around 40 million events, two hours, 1.6 GB).

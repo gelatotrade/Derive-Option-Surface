@@ -146,7 +146,7 @@ def fills_with_amounts(amounts=(0.1, 1.0, 5.0)):
     """Fills as the tape books them: markout per contract, maker fee and rebate as sums over the fill.
 
     The first test of the net edge used one contract per fill, where both readings agree; the fee unit was
-    only found on 25.09.2026 (docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md).  Amounts of 0.1 and 5
+    only found on 2026-09-25 (docs/paper1/FINDING_2026-09-25_FEE_UNITS.md).  Amounts of 0.1 and 5
     make a fee per fill and a fee per contract differ by a factor of ten and five.
     """
     rows = []
