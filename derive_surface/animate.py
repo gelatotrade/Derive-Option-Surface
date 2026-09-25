@@ -279,7 +279,7 @@ class Renderer:
         elif self.axis == "strike":
             ax.set_xlabel("Strike", fontsize=8, color=INK2, labelpad=4)
         elif self.axis == "std":
-            ax.set_xlabel("standardisierte Moneyness  ln(K/F) / (σ·√T)", fontsize=8, color=INK2, labelpad=4)
+            ax.set_xlabel("Standardised moneyness  ln(K/F) / (σ·√T)", fontsize=8, color=INK2, labelpad=4)
         else:
             ax.set_xlabel("log(K/F)", fontsize=8, color=INK2, labelpad=4)
         y0_, y1_ = self.ylim_days or (days.min(), days.max())

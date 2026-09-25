@@ -1,18 +1,18 @@
 section,item,variant,value,lo,hi,level,n,b,seed,p1_reference,p1_source,matches_p1
-decomposition,half spread,p1,15.701225476954274,9.97717307254324,22.297951693485754,0.95,603940.0,999,20260917.0,15.7,"paper/main.tex, UEBERGABE.md (2 decimals)",True
-decomposition,adverse selection,p1,-2.650620908563112,-4.73996341802922,-0.7619156986113396,0.95,603940.0,999,20260917.0,-2.65,"paper/main.tex, UEBERGABE.md (2 decimals)",True
-decomposition,markout,p1,13.050604568391153,5.574984796735951,21.25025356674466,0.95,603940.0,999,20260917.0,13.05,"paper/main.tex, UEBERGABE.md (2 decimals)",True
-decomposition,maker fee,p1,-1.5616598854624304,-1.9189674213998649,-1.1814272514519166,0.95,603940.0,999,20260917.0,-1.56,"paper/main.tex, UEBERGABE.md (2 decimals)",True
-decomposition,maker rebate,p1,0.5929654755034721,0.4686116536802525,0.7328420732517033,0.95,603940.0,999,20260917.0,0.59,"paper/main.tex, UEBERGABE.md (2 decimals)",True
-decomposition,hedge cost,p1,-3.149457390064287,-3.4699468692539335,-2.8416725240679703,0.95,603940.0,999,20260917.0,-3.15,"paper/main.tex, UEBERGABE.md (2 decimals)",True
-decomposition,net edge,p1,8.93245276836791,1.2473848112728805,17.339592179865562,0.95,603940.0,999,20260917.0,8.93,"paper/main.tex, UEBERGABE.md (2 decimals)",True
+decomposition,half spread,p1,15.701225476954274,9.97717307254324,22.297951693485754,0.95,603940.0,999,20260917.0,15.7,"paper/main.tex, HANDOVER.md (2 decimals)",True
+decomposition,adverse selection,p1,-2.650620908563112,-4.73996341802922,-0.7619156986113396,0.95,603940.0,999,20260917.0,-2.65,"paper/main.tex, HANDOVER.md (2 decimals)",True
+decomposition,markout,p1,13.050604568391153,5.574984796735951,21.25025356674466,0.95,603940.0,999,20260917.0,13.05,"paper/main.tex, HANDOVER.md (2 decimals)",True
+decomposition,maker fee,p1,-1.5616598854624304,-1.9189674213998649,-1.1814272514519166,0.95,603940.0,999,20260917.0,-1.56,"paper/main.tex, HANDOVER.md (2 decimals)",True
+decomposition,maker rebate,p1,0.5929654755034721,0.4686116536802525,0.7328420732517033,0.95,603940.0,999,20260917.0,0.59,"paper/main.tex, HANDOVER.md (2 decimals)",True
+decomposition,hedge cost,p1,-3.149457390064287,-3.4699468692539335,-2.8416725240679703,0.95,603940.0,999,20260917.0,-3.15,"paper/main.tex, HANDOVER.md (2 decimals)",True
+decomposition,net edge,p1,8.93245276836791,1.2473848112728805,17.339592179865562,0.95,603940.0,999,20260917.0,8.93,"paper/main.tex, HANDOVER.md (2 decimals)",True
 decomposition,"net edge, median",p1,0.7380793974814537,,,,603940.0,0,,,,
 decomposition,"net edge, contract weighted",p1,-70.46217732808687,,,,603940.0,0,,,,
 decomposition,"net edge, sum over fills (USDC)",p1,-2812889993.3391767,,,,603940.0,0,,,,
 decomposition,"maker fee, sum over fills (USDC)",p1,-943148.8712261802,,,,603940.0,0,,,,
 decomposition,"maker rebate, sum over fills (USDC)",p1,358115.56927556696,,,,603940.0,0,,,,
 decomposition,"net edge, share of fills negative",p1,0.4061181574328575,,,,603940.0,0,,,,
-decomposition_check,net edge (exact),p1,8.93245276836791,,,,,0,,8.93245,"docs/paper1/ABBILDUNGEN.md, T2 check",True
+decomposition_check,net edge (exact),p1,8.93245276836791,,,,,0,,8.93245,"docs/paper1/FIGURE_CHECKS.md, T2 check",True
 decomposition_check,markout (exact),p1,13.050604568391153,,,,,0,,13.050604568391153,results/p1/horizon_means.csv,True
 decomposition,half spread,per_contract,15.701225476954274,9.97717307254324,22.297951693485754,0.95,603940.0,999,20260917.0,,,
 decomposition,adverse selection,per_contract,-2.650620908563112,-4.73996341802922,-0.7619156986113396,0.95,603940.0,999,20260917.0,,,

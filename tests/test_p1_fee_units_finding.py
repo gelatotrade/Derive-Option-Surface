@@ -1,7 +1,7 @@
-"""Offline tests for scripts/p1_befund_gebuehreneinheit.py (synthetic data, known answers).
+"""Offline tests for scripts/p1_fee_units_finding.py (synthetic data, known answers).
 
 The script recomputes the paper 1 numbers with the maker fee and rebate taken per contract; see
-docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md.  Nothing here reads data/p1.
+docs/paper1/FINDING_2026-09-25_FEE_UNITS.md.  Nothing here reads data/p1.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-import p1_befund_gebuehreneinheit as ge  # noqa: E402
+import p1_fee_units_finding as ge  # noqa: E402
 from derive_surface import inference_p1 as inf  # noqa: E402
 
 
@@ -46,7 +46,7 @@ ANALYSIS_FRAME = inf.analysis_frame      # kept before any test patches the modu
 
 
 def analysis_frame_first_version(markouts, funding, horizon="30m", half_spread_bp=1.0):
-    """``inference_p1.analysis_frame`` as it stood in the first version of paper 1 (19.09.2026).
+    """``inference_p1.analysis_frame`` as it stood in the first version of paper 1 (2026-09-19).
 
     Fee and rebate of the fill were subtracted from the per-contract markout without dividing by the
     amount.  The script's ``p1`` mode reproduces this form; paper 1 itself now takes both per contract.
@@ -56,7 +56,7 @@ def analysis_frame_first_version(markouts, funding, horizon="30m", half_spread_b
     return f
 
 
-# ------------------------------------------------------------------------ ported from data/p2/p1befund
+# ------------------------------------------------------ ported from the paper 2 working copy under data/p2
 
 def test_p1_mode_reproduces_the_first_version_of_paper1_exactly():
     f = fills()
@@ -309,17 +309,17 @@ def test_end_to_end_writes_repo_paths_and_appends_the_audit_sections(tmp_path, m
     monkeypatch.setattr(ge, "MARKOUTS", tmp_path / "markouts.parquet")
     monkeypatch.setattr(ge, "FUNDING", tmp_path / "funding.parquet")
     monkeypatch.setattr(ge, "P1_RESULTS", tmp_path / "p1")
-    monkeypatch.setattr(ge, "ABBILDUNGEN", tmp_path / "missing.md")
+    monkeypatch.setattr(ge, "FIGURE_CHECKS", tmp_path / "missing.md")
     out, parts = tmp_path / "out", tmp_path / "parts"
 
     code = ge.main(["--parts", str(parts), "--out-dir", str(out), "--b-cells", str(b), "--b-figure", str(b)])
     assert code == 0
-    report = json.loads((out / "gebuehreneinheit.json").read_text())
-    table = pd.read_csv(out / "gebuehreneinheit.csv")
+    report = json.loads((out / "fee_units.json").read_text())
+    table = pd.read_csv(out / "fee_units.csv")
     assert (out / "h4_cells_per_contract.csv").exists()
 
     # A26: the result names the versioned script, not the ignored copy under data/p2
-    assert report["meta"]["script"] == "scripts/p1_befund_gebuehreneinheit.py"
+    assert report["meta"]["script"] == "scripts/p1_fee_units_finding.py"
     # the checks against paper 1's own functions pass on the same rows
     checks = {(c["section"], c["item"]): c["matches"] for c in report["reproduction"]}
     assert all(checks[("analysis_frame", col)] for col in ("hs", "y_usd", "as_usd", "hedge", "net_edge"))
@@ -341,7 +341,7 @@ def test_end_to_end_writes_repo_paths_and_appends_the_audit_sections(tmp_path, m
     assert set(report["h4"]) == {"{}_{}bp".format(u, h) for u in ("p1", "per_contract") for h in (0, 1, 3)}
 
     # resumable: a second call finds every part and only assembles
-    before = (out / "gebuehreneinheit.csv").read_bytes()
+    before = (out / "fee_units.csv").read_bytes()
     assert ge.main(["--parts", str(parts), "--out-dir", str(out), "--b-cells", str(b), "--b-figure", str(b),
                     "--max-seconds", "0"]) == 0
-    assert (out / "gebuehreneinheit.csv").read_bytes() == before
+    assert (out / "fee_units.csv").read_bytes() == before
