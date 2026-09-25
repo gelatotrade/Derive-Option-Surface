@@ -123,3 +123,11 @@ oben sind damit überholt; Abschnitt 9 der Notiz listet sie. Die wichtigsten:
 
 Nächster Schritt: die Entscheidungen aus Abschnitt 10 der Notiz treffen, dann brainstorming, Spezifikation
 und Präregistrierung.
+
+## Nachtrag 25.09.2026, morgens: Paper 2 geschrieben und auditiert
+
+Stand und offene Entscheidungen stehen in `docs/paper2/BERICHT_2026-09-25.md`. Kurz: Manuskript
+`paper2/main.tex` (12 Seiten, Bau über `python3 scripts/p2_build.py`), Branch `paper2-kapital` (lokal, nicht
+gepusht), Präregistrierung `1d13227` mit vier Nachträgen, Audit `docs/paper2/AUDIT.md`. Vor jedem Push zuerst
+`docs/paper2/HISTORIE_BEREINIGEN.md` lesen. Paper 1 hat einen Einheitenfehler bei Gebühr und Rabatt
+(`docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md`), der vor dem Enddatenlauf korrigiert werden muss.
