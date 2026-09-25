@@ -158,7 +158,7 @@ def test_smoke_build_writes_figures_and_tables(rd, tmp_path):
     names = sorted(p.name for p in paths)
     assert {"f1.pdf", "f1.png", "fig_f1_a.csv", "fig_f1_b.csv"} <= set(names)
     w, h = pdf_size_in(out / "f1.pdf")
-    assert w == pytest.approx(7.0, abs=0.02) and h == pytest.approx(3.9, abs=0.02)
+    assert w == pytest.approx(6.84, abs=0.005) and h == pytest.approx(3.9, abs=0.02)
     a = pd.read_csv(rd / "fig_f1_a.csv", keep_default_na=False)
     assert len(a) == 210
     assert (a.loc[a["occupied"].astype(str) == "False", "printed"] == "×").all()
@@ -209,3 +209,11 @@ def test_checks_pass_on_consistent_data(rd, tmp_path):
 def test_caption_is_english_without_dashes():
     assert "—" not in f1.CAPTION and "–" not in f1.CAPTION
     assert f1.CAPTION.startswith("What one contract costs.")
+
+
+def test_buy_row_says_capital_is_about_the_premium_only_out_of_the_money():
+    """A13: PM2 binds about the premium only for buys out of the money; in the money it binds less (the strip
+    shows SM/PM2 up to 4.7 on buys, and SM charges the premium)."""
+    assert "OTM" in f1.SIDE_TITLE["buy"]
+    assert "premium" in f1.SIDE_TITLE["buy"]
+    assert "PM2 about the premium out of the money (OTM) and less in the money" in f1.CAPTION

@@ -51,7 +51,8 @@ SECTION_DE = {"a_maps": "(a) Karten unter anderen Managern", "b_mm": "(b) MM sta
               "c_p1_net_edge": "(c) Netto-Edge in der Form von Paper 1 (Gebühr und Rabatt ungeteilt)",
               "d_h2": "(d) H2-Varianten", "e_h3": "(e) H3-Varianten", "f_time": "(f) Zeitnormierung",
               "g_by_ccy": "(g) Werte je Basiswert",
-              "h1_sign": "(h) Vorzeichenstruktur von H1 (Review-Runde 1)"}
+              "h1_sign": "(h) Vorzeichenstruktur von H1 (Review-Runde 1; Gruppen nach dem Vorzeichen des Edge wählen "
+                         "ihre Zellen in jeder Replikation neu, Audit A04)"}
 VARIANT_DE = {
     ("a_maps", "pm2"): "PM2, PM2-Fenster (gleich Test H1)",
     ("a_maps", "sm_all"): "SM, ganzer Zeitraum",
@@ -769,6 +770,21 @@ def h4_sensitivity(d: Dict[str, Any], s: Summary) -> List[str]:
     for k in ("p95", "median", "share_ge_beta", "n"):
         s.put(f"sens_h4_all_timelines_placebo_{k}", apl.get(k))
     s.put("sens_h4_all_timelines_rejected", al.get("rejected"))
+    mt0 = sh.get("placebo_matched") or {}
+    mp0 = mt0.get("placebo") or {}
+    for k in ("n", "p95", "median", "share_ge_beta", "t_sd", "t_p05", "t_p95", "share_abs_t_gt_crit"):
+        s.put(f"sens_h4_matched_placebo_{k}", mp0.get(k))
+    for k in ("min", "median", "max"):
+        s.put(f"sens_h4_matched_events_drawn_{k}", (mt0.get("events_drawn") or {}).get(k))
+    s.put("sens_h4_matched_rejected", mt0.get("rejected"))
+    dr0 = (sh.get("audit") or {}).get("dose_robust") or {}
+    for k in ("pairs", "pairs_without_fills", "pairs_with_large_log_ratio", "fills_with_large_log_ratio",
+              "pairs_median_differs", "trim_abs_log_ratio", "check_mean_max_abs_diff"):
+        s.put(f"sens_h4_dose_{k}", dr0.get(k))
+    for name in ("median", "trimmed"):
+        v = dr0.get(name) or {}
+        for k in ("beta", "se", "t", "p", "lo", "hi", "n", "rows_dropped", "cell_events"):
+            s.put(f"sens_h4_dose_{name}_{k}", v.get(k))
     lines = ["### (h) H4-Varianten", "",
              f"| Variante | β | {lvl(h4.get('level'))}-Intervall | p | n | Placebo-P95 | Anteil Placebo-β ≥ β | "
              "Urteil nach Regel |",
@@ -787,6 +803,20 @@ def h4_sensitivity(d: Dict[str, Any], s: Summary) -> List[str]:
         lines.append(f"| Placebo-Abstand zu allen Zeitlinien | {de(h4.get('stat'), 2)} | [{de(h4.get('lo'), 2)}; "
                      f"{de(h4.get('hi'), 2)}] | {de(h4.get('p'), 4)} | {di(h4.get('n'))} | {de(apl.get('p95'), 2)} | "
                      f"{pct(apl.get('share_ge_beta'), 0)} | {verdict_plain(al.get('rejected'))} |")
+    mt = sh.get("placebo_matched") or {}
+    mpl = mt.get("placebo") or {}
+    if mt:
+        lines.append(f"| Placebos nur Ereignisse mit Zellen, Fenster getrennt | {de(h4.get('stat'), 2)} | "
+                     f"[{de(h4.get('lo'), 2)}; {de(h4.get('hi'), 2)}] | {de(h4.get('p'), 4)} | {di(h4.get('n'))} | "
+                     f"{de(mpl.get('p95'), 2)} | {pct(mpl.get('share_ge_beta'), 0)} | "
+                     f"{verdict_plain(mt.get('rejected'))} |")
+    dr = (sh.get("audit") or {}).get("dose_robust") or {}
+    for name, label in (("median", "Dosis als Median der log-Verhältnisse"),
+                        ("trimmed", f"Dosis ohne Fills mit \\|log-Verhältnis\\| > {de(dr.get('trim_abs_log_ratio'), 0)}")):
+        v = dr.get(name)
+        if v:
+            lines.append(f"| {label} | {de(v.get('beta'), 2)} | [{de(v.get('lo'), 2)}; {de(v.get('hi'), 2)}] | "
+                         f"{de(v.get('p'), 4)} | {di(v.get('n'))} | – | – | – |")
     lines.append("")
     above = no.get("dose_cells_above") or []
     if no:
@@ -796,6 +826,11 @@ def h4_sensitivity(d: Dict[str, Any], s: Summary) -> List[str]:
     if al:
         lines += ["- Abstand zu allen Zeitlinien: Placebo-Termine halten 28 Tage Abstand zu jeder Parameteränderung "
                   "des Basiswerts unter SM, Legacy-PM, PM2-Standard-Lib und den Konto-Libs."]
+    if mt:
+        ed = mt.get("events_drawn") or {}
+        lines += [f"- Placebos nur für Ereignisse mit Zellen im echten Panel, Placebo-Fenster eines Basiswerts ohne "
+                  f"Überlappung (Audit A29): {di(ed.get('min'))} bis {di(ed.get('max'))} Ereignisse je Replikation "
+                  f"(Median {de(ed.get('median'), 0)}); sd(t) der Placebos {de(mpl.get('t_sd'), 2)}."]
     return lines + [""]
 
 
@@ -1087,6 +1122,104 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
     return lines
 
 
+SIGN_GROUPS = ("within_pos", "within_nonpos", "within_pos_sell", "within_pos_buy")
+H1_INTERVAL_KEYS = ("mean_draw", "median_draw", "share_ge_stat", "z0", "basic_lo", "basic_hi", "bc_lo", "bc_hi")
+H4_CAL_KEYS = ("n", "t_sd", "t_mad_sd", "t_mean", "t_median", "t_p05", "t_p95", "crit", "share_t_gt_crit",
+               "share_abs_t_gt_crit", "beta_sd", "se_median", "p_placebo_t", "lo", "hi", "sd_scaled_lo",
+               "sd_scaled_hi", "y_mean", "ten_pct_change_lo", "ten_pct_change_hi", "ten_pct_change_sd_scaled_lo",
+               "ten_pct_change_sd_scaled_hi", "ten_pct_narrowing_share", "ten_pct_narrowing_share_sd_scaled",
+               "ten_pct_narrowing_share_descriptive")
+H4_COMP_KEYS = ("events_kept", "events_with_cells_real", "events_with_cells_placebo_min",
+                "events_with_cells_placebo_max", "rows_real", "rows_per_fill_real", "rows_placebo_median",
+                "clusters_real", "clusters_placebo_median", "overlap_pairs_real", "overlap_pairs_placebo_mean",
+                "same_day_draws_placebo_mean")
+
+
+def _span_de(lo, hi) -> str:
+    """'8 bis 10', or 'je 14' when both ends are equal."""
+    return f"je {di(lo)}" if not _missing(lo) and lo == hi else f"{di(lo)} bis {di(hi)}"
+
+
+def audit_section(d: Dict[str, Any], s: Summary) -> List[str]:
+    """Numbers of the audit (docs/paper2/AUDIT.md, A04, A05, A28 to A30): all exploratory or descriptive; no
+    registered number changes."""
+    sens, sh, h1, h4 = d["sensitivity.json"], d["sensitivity_h4.json"], d["h1.json"], d["h4.json"]
+    sign = sens.get("h1_sign") or {}
+    for g in SIGN_GROUPS:
+        v = sign.get(g) or {}
+        s.put(f"h1_sign_{g}_switch_share_mean", v.get("switch_share_mean"))
+        s.put(f"h1_sign_{g}_n_rep_median", v.get("n_rep_median"))
+        s.put(f"h1_sign_{g}_per_replicate", (v.get("selection") == "per replicate") if v else None)
+    hi_ = sens.get("h1_interval") or {}
+    for k in H1_INTERVAL_KEYS:
+        s.put(f"h1_interval_{k}", hi_.get(k))
+    au = sh.get("audit") or {}
+    cal, comp, dr = au.get("placebo_calibration") or {}, au.get("placebo_composition") or {}, au.get("dose_robust") or {}
+    for k in H4_CAL_KEYS:
+        s.put(f"h4_cal_{k}", cal.get(k))
+    for k in H4_COMP_KEYS:
+        s.put(f"h4_comp_{k}", comp.get(k))
+    without = comp.get("events_without_cells_real")
+    s.put("h4_comp_events_without_cells_real", "; ".join(map(str, without)) if without is not None else None)
+    s.put("h4_comp_events_without_cells_real_n", len(without) if without is not None else None)
+    lines = ["## Audit (explorativ)", "",
+             "Explorativ oder beschreibend (docs/paper2/AUDIT.md); kein registriertes Urteil ändert sich.", ""]
+    wp, wn = sign.get("within_pos") or {}, sign.get("within_nonpos") or {}
+    wps, wpb = sign.get("within_pos_sell") or {}, sign.get("within_pos_buy") or {}
+    if wp:
+        lines.append(
+            f"- H1 in Vorzeichengruppen (A04, Auswahl je Replikation neu: jede Replikation wählt die Zellen nach ihrem "
+            f"eigenen Edge): Edge > 0 {ci(wp.get('stat'), wp.get('lo'), wp.get('hi'), 3)}, Edge ≤ 0 "
+            f"{ci(wn.get('stat'), wn.get('lo'), wn.get('hi'), 3)}, Verkäufe mit Edge > 0 "
+            f"{ci(wps.get('stat'), wps.get('lo'), wps.get('hi'), 3)}, Käufe mit Edge > 0 "
+            f"{ci(wpb.get('stat'), wpb.get('lo'), wpb.get('hi'), 3)}; im Mittel fallen je Replikation "
+            f"{pct(wp.get('switch_share_mean'), 1)} (Edge > 0) und {pct(wn.get('switch_share_mean'), 1)} (Edge ≤ 0) "
+            f"der Zellen aus ihrer Gruppe. Gruppen nach Seite bleiben fest.")
+    if hi_:
+        lines.append(
+            f"- H1-Intervall (A28): {pct(hi_.get('share_ge_stat'), 1)} der {di(h1.get('b'))} Ziehungen liegen auf oder "
+            f"über dem Schätzer {de(h1.get('stat'), 4)} (Mittel {de(hi_.get('mean_draw'), 4)}, Median "
+            f"{de(hi_.get('median_draw'), 4)}); das Perzentilintervall [{de(h1.get('lo'), 3)}; {de(h1.get('hi'), 3)}] "
+            f"ist nicht zentriert. Gespiegelt [{de(hi_.get('basic_lo'), 3)}; {de(hi_.get('basic_hi'), 3)}], "
+            f"bias-korrigiert [{de(hi_.get('bc_lo'), 3)}; {de(hi_.get('bc_hi'), 3)}].")
+    if cal:
+        lines += [
+            f"- H4, Placebo-t (A05): sd(t) {de(cal.get('t_sd'), 2)} (MAD-sd {de(cal.get('t_mad_sd'), 2)}), 5./95. "
+            f"Perzentil {de(cal.get('t_p05'), 2)}/{de(cal.get('t_p95'), 2)}; Anteil t > {de(cal.get('crit'), 3)} "
+            f"{pct(cal.get('share_t_gt_crit'), 0)}, |t| > {de(cal.get('crit'), 3)} {pct(cal.get('share_abs_t_gt_crit'), 0)}; "
+            f"sd der Placebo-β {de(cal.get('beta_sd'), 1)} bei Median-SE {de(cal.get('se_median'), 1)}.",
+            f"- H4, an den Placebo-t kalibrierte Spanne für β: [{de(cal.get('lo'), 1)}; {de(cal.get('hi'), 1)}] "
+            f"(SE mal sd(t): [{de(cal.get('sd_scaled_lo'), 1)}; {de(cal.get('sd_scaled_hi'), 1)}]); p gegen die "
+            f"Placebo-t {de(cal.get('p_placebo_t'), 2)}. Kapital zehn Prozent billiger: "
+            f"{de(cal.get('ten_pct_change_lo'), 2, sign=True)} bis {de(cal.get('ten_pct_change_hi'), 2, sign=True)} bp "
+            f"(SE mal sd(t): {de(cal.get('ten_pct_change_sd_scaled_lo'), 2, sign=True)} bis "
+            f"{de(cal.get('ten_pct_change_sd_scaled_hi'), 2, sign=True)} bp); grösste Verengung in der Spanne "
+            f"{pct(cal.get('ten_pct_narrowing_share'), 0)} des mittleren Halbspreads {de(cal.get('y_mean'), 2)} bp "
+            f"(beschreibendes Intervall: {pct(cal.get('ten_pct_narrowing_share_descriptive'), 0)}; SE mal sd(t): "
+            f"{pct(cal.get('ten_pct_narrowing_share_sd_scaled'), 0)})."]
+    if comp:
+        ev_span = _span_de(comp.get("events_with_cells_placebo_min"), comp.get("events_with_cells_placebo_max"))
+        lines.append(
+            f"- H4, Bau der Placebo-Panels (A29): {ev_span} Ereignisse mit Zellen je Replikation, im echten Panel "
+            f"{di(comp.get('events_with_cells_real'))} von {di(comp.get('events_kept'))} (ohne Zellen: "
+            f"{'; '.join(map(str, without or [])) or 'keines'}); Zeilen im Median {di(comp.get('rows_placebo_median'))} "
+            f"gegen {di(comp.get('rows_real'))} ({de(comp.get('rows_per_fill_real'), 2)} je Fill), Tages-Cluster im "
+            f"Median {di(comp.get('clusters_placebo_median'))} gegen {di(comp.get('clusters_real'))}; Paare "
+            f"überlappender Fenster eines Basiswerts je Replikation im Mittel "
+            f"{de(comp.get('overlap_pairs_placebo_mean'), 1)} gegen {di(comp.get('overlap_pairs_real'))} im echten "
+            f"Panel, doppelt gezogene Tage im Mittel {de(comp.get('same_day_draws_placebo_mean'), 2)}.")
+    if dr:
+        dm, dt_ = dr.get("median") or {}, dr.get("trimmed") or {}
+        lines.append(
+            f"- H4, Dosis (A30): {di(dr.get('pairs_with_large_log_ratio'))} von {di(dr.get('pairs'))} "
+            f"Zell-Ereignis-Paaren enthalten Fills mit |log-Verhältnis| > {de(dr.get('trim_abs_log_ratio'), 0)} "
+            f"({di(dr.get('fills_with_large_log_ratio'))} Fills), bei {di(dr.get('pairs_median_differs'))} weicht der "
+            f"Median um mehr als {de(dr.get('median_diff', 0.05), 2)} vom Mittel ab. β mit Median-Dosis "
+            f"{de(dm.get('beta'), 2)} (p {de(dm.get('p'), 4)}), ohne diese Fills {de(dt_.get('beta'), 2)} "
+            f"(p {de(dt_.get('p'), 4)}); registriert {de(h4.get('stat'), 2)}.")
+    return lines + [""]
+
+
 def checks_section(checks: Checks, s: Summary) -> List[str]:
     failed = sum(1 for _, ok, _ in checks if not ok)
     s.put("checks_n", len(checks))
@@ -1102,6 +1235,7 @@ def checks_section(checks: Checks, s: Summary) -> List[str]:
 
 def limits_section(d: Dict[str, Any], cut: dict) -> List[str]:
     h1, h2, h3, h4 = d["h1.json"], d["h2.json"], d["h3.json"], d["h4.json"]
+    cal = (d["sensitivity_h4.json"].get("audit") or {}).get("placebo_calibration") or {}
     lines = ["## Einschränkungen dieser Zahlen", ""]
     if cut["is_pilot"]:
         lines.append(f"- Pilotstand: Die Stichprobe endet am {ts_de(cut['end'])}, vor dem präregistrierten Ende "
@@ -1113,8 +1247,10 @@ def limits_section(d: Dict[str, Any], cut: dict) -> List[str]:
         f"- H1: {di(h1.get('n_fills_k_le_0'))} Fills mit K_PM2 ≤ 0 (weit vom Mark bepreiste RFQ-Beine) bleiben in "
         f"den Summen.",
         f"- H2 beruht auf {len(h2.get('accounts') or [])} Konten unter PM2; die Verteilung je Konto steht unter (d).",
-        f"- H4: Das Intervall für β ist beschreibend; das Urteil folgt aus dem einseitigen p und dem Placebo-P95. "
-        f"{di(h4.get('clusters'))} Tages-Cluster, {di(h4.get('events'))} Ereignisse mit Zellen.",
+        f"- H4: Das Intervall für β ist beschreibend und auf die Ereignistermine bedingt; das Urteil folgt aus dem "
+        f"einseitigen p und dem Placebo-P95. {di(h4.get('clusters'))} Tages-Cluster, {di(h4.get('events'))} "
+        f"Ereignisse mit Zellen." + (f" An Placebo-Terminen streut t mit sd {de(cal.get('t_sd'), 2)} statt 1; die an "
+                                     f"den Placebo-t kalibrierte Spanne steht unter Audit." if cal.get("t_sd") else ""),
         "- Kapital je Fill ist das Kapital eines leeren Buchs mit genau diesem Kontrakt (Einzelkontrakt); "
         "Nicht-USDC-Collateral bleibt ausserhalb von K."]
     return lines + [""]
@@ -1138,7 +1274,7 @@ def build(results: Path = RESULTS, now: Optional[dt.datetime] = None, prereg_end
     body = (sample_section(d, s, checks) + validation_section(d, s, checks) + h1_section(d, s, checks)
             + h2_section(d, s, checks) + h3_section(d, s, checks) + h4_section(d, s, checks)
             + sensitivity_section(d, s, checks) + events_section(d, s, checks) + oi_section(d, s)
-            + review_section(d, s, checks, results))
+            + review_section(d, s, checks, results) + audit_section(d, s))
     tail = checks_section(checks, s) + limits_section(d, cut)
     md = "\n".join(head + body + tail).rstrip() + "\n"
     return md, dict(sorted(s.items()))

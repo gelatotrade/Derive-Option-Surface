@@ -17,3 +17,7 @@ paper/main.pdf
 # paper 2 probe archives (large)
 data/p2/
 paper2/main.pdf
+
+# operating system and editor artefacts
+.DS_Store
+.Rhistory

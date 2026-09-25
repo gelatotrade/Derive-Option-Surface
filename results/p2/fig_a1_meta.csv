@@ -8,5 +8,8 @@ fwd_age_max_s,1100.0,
 vol_limit_s,1200.0,
 fwd_limit_s,3600.0,
 pm2_window_fills,336087,
-feed_sentence_holds,True,In the PM2 window no fill uses a feed older than the limits of the validation blocks.
+spot_age_max_s,1161.0,
+spot_limit_s,180.0,
+spot_stale_fills,17,
+feed_sentence_holds,True,In the PM2 window no fill uses a vol or forward feed older than the limits of the validation blocks; 17 fills use a spot price older than the heartbeat of the spot feed (180 seconds) and stay in the sample.
 capital_path,data/p2/derived/capital.parquet,

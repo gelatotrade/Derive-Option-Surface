@@ -1,4 +1,4 @@
-"""F4 · What netting is worth (H3) · 3.4 x 4.0 in, the same frame as F3.
+"""F4 · What netting is worth (H3) · 3.29 x 4.0 in (the column width of main.tex), the same frame as F3.
 
 Panel a is K_SM / K_PM2 of the opening book against the number of option legs, as the median per bin with the
 interquartile band, read from the maker-day series that the inference wrote (``fig_h3_series.csv``, rows with

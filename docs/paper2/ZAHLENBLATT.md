@@ -1,6 +1,6 @@
 # Zahlenblatt Paper 2
 
-Erzeugt 2026-09-25 01:47 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
+Erzeugt 2026-09-25 03:22 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
 
 - **Datenstand:** Stichprobe vom 11.01.2024 00:00 UTC bis zum letzten Fill am 17.09.2026 11:51:53 UTC. **Pilotstand:** Die Stichprobe endet vor dem präregistrierten Ende (30.09.2026 08:00 UTC); die Zahlen des Manuskripts entstehen mit dem Enddatenlauf. Stichtag 17.09.2026.
 - **Inferenz:** B = 9 999, Seed 20260924, 90-%-Perzentilintervalle aus einem Cluster-Bootstrap über UTC-Tage (H1 bis H3, Nachtrag 3). H4: Wild-Cluster-Bootstrap mit Rademacher-Gewichten und restringierten Residuen, Cluster UTC-Tag, einseitiges p für β > 0, 100 Placebo-Termine.
@@ -198,16 +198,16 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 | HYPE, PM2-Fenster | ρ | 0,888 [0,818; 0,911] | 45 | abgelehnt |
 | HYPE, SM, ganzer Zeitraum | ρ | 0,887 [0,817; 0,910] | 45 | abgelehnt |
 
-### (h) Vorzeichenstruktur von H1 (Review-Runde 1)
+### (h) Vorzeichenstruktur von H1 (Review-Runde 1; Gruppen nach dem Vorzeichen des Edge wählen ihre Zellen in jeder Replikation neu, Audit A04)
 
 | Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
 |---|---|---|---:|---|
-| nur Zellen mit Edge > 0 | ρ | 0,634 [0,623; 0,737] | 99 | abgelehnt |
-| nur Zellen mit Edge ≤ 0 | ρ | 0,636 [0,674; 0,830] | 74 | abgelehnt |
+| nur Zellen mit Edge > 0 | ρ | 0,634 [0,572; 0,702] | 99 | abgelehnt |
+| nur Zellen mit Edge ≤ 0 | ρ | 0,636 [0,460; 0,684] | 74 | abgelehnt |
 | nur Maker-Verkäufe | ρ | 0,990 [0,985; 0,992] | 86 | abgelehnt |
 | nur Maker-Käufe | ρ | 0,721 [0,689; 0,784] | 87 | abgelehnt |
-| Maker-Verkäufe mit Edge > 0 | ρ | 0,940 [0,937; 0,978] | 38 | abgelehnt |
-| Maker-Käufe mit Edge > 0 | ρ | 0,243 [0,231; 0,476] | 61 | nicht abgelehnt |
+| Maker-Verkäufe mit Edge > 0 | ρ | 0,940 [0,924; 0,968] | 38 | abgelehnt |
+| Maker-Käufe mit Edge > 0 | ρ | 0,243 [0,207; 0,446] | 61 | nicht abgelehnt |
 
 ### (h) H4-Varianten
 
@@ -218,9 +218,13 @@ Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die 
 | nur HYPE (3 Ereignisse) | −10,12 | [−85,84; 64,68] | 0,5778 | 13 470 | – | – | – |
 | ohne Zellen mit \|d\| > 1 | −4,60 | [−26,04; 16,59] | 0,6224 | 91 446 | 23,41 | 65 % | abgelehnt |
 | Placebo-Abstand zu allen Zeitlinien | −4,60 | [−26,04; 16,59] | 0,6224 | 91 446 | 21,57 | 88 % | abgelehnt |
+| Placebos nur Ereignisse mit Zellen, Fenster getrennt | −4,60 | [−26,04; 16,59] | 0,6224 | 91 446 | 26,02 | 48 % | abgelehnt |
+| Dosis als Median der log-Verhältnisse | −4,52 | [−26,50; 17,29] | 0,6161 | 91 446 | – | – | – |
+| Dosis ohne Fills mit \|log-Verhältnis\| > 1 | −4,08 | [−25,66; 17,26] | 0,6070 | 91 446 | – | – | – |
 
 - Zellen mit \|d\| > 1: HYPE-pm2-20260820 HYPE|buy|00-10|2-7d (d = −1,648). Im echten Panel fallen 0 Zeilen weg; die Variante wirkt sonst nur in den Placebo-Panels.
 - Abstand zu allen Zeitlinien: Placebo-Termine halten 28 Tage Abstand zu jeder Parameteränderung des Basiswerts unter SM, Legacy-PM, PM2-Standard-Lib und den Konto-Libs.
+- Placebos nur für Ereignisse mit Zellen im echten Panel, Placebo-Fenster eines Basiswerts ohne Überlappung (Audit A29): 8 bis 10 Ereignisse je Replikation (Median 9); sd(t) der Placebos 1,77.
 
 ## Referenzbuch-Effekte der Ereignisse
 
@@ -323,6 +327,17 @@ Anteil von `OptionAsset.totalPosition` je Manager an der Summe über die Manager
 - H4 Niveau: Halbspread im Panel im Mittel 7,93 bp des Index (Median 3,34); Kapital zehn Prozent billiger (Dosis −0,105): Änderung des Halbspreads +0,48 bp, Intervall −1,75 bis +2,74 bp.
 - H4 nur Verkaufszellen: β −3,81, p 0,5766; OI-gewichtete Dosis (Anteil 54,5 % bis 94,9 %): β −5,13, p 0,5926.
 
+## Audit (explorativ)
+
+Explorativ oder beschreibend (docs/paper2/AUDIT.md); kein registriertes Urteil ändert sich.
+
+- H1 in Vorzeichengruppen (A04, Auswahl je Replikation neu: jede Replikation wählt die Zellen nach ihrem eigenen Edge): Edge > 0 0,634 [0,572; 0,702], Edge ≤ 0 0,636 [0,460; 0,684], Verkäufe mit Edge > 0 0,940 [0,924; 0,968], Käufe mit Edge > 0 0,243 [0,207; 0,446]; im Mittel fallen je Replikation 9,2 % (Edge > 0) und 19,2 % (Edge ≤ 0) der Zellen aus ihrer Gruppe. Gruppen nach Seite bleiben fest.
+- H1-Intervall (A28): 15,2 % der 9 999 Ziehungen liegen auf oder über dem Schätzer 0,9029 (Mittel 0,8946, Median 0,8950); das Perzentilintervall [0,881; 0,907] ist nicht zentriert. Gespiegelt [0,898; 0,925], bias-korrigiert [0,898; 0,920].
+- H4, Placebo-t (A05): sd(t) 1,82 (MAD-sd 2,13), 5./95. Perzentil −2,62/2,83; Anteil t > 1,645 21 %, |t| > 1,645 43 %; sd der Placebo-β 28,7 bei Median-SE 8,8.
+- H4, an den Placebo-t kalibrierte Spanne für β: [−41,6; 29,7] (SE mal sd(t): [−43,7; 34,5]); p gegen die Placebo-t 0,62. Kapital zehn Prozent billiger: −3,13 bis +4,39 bp (SE mal sd(t): −3,64 bis +4,61 bp); grösste Verengung in der Spanne 39 % des mittleren Halbspreads 7,93 bp (beschreibendes Intervall: 22 %; SE mal sd(t): 46 %).
+- H4, Bau der Placebo-Panels (A29): je 14 Ereignisse mit Zellen je Replikation, im echten Panel 13 von 14 (ohne Zellen: HYPE-pm2-20260108); Zeilen im Median 97 997 gegen 91 446 (1,08 je Fill), Tages-Cluster im Median 189 gegen 141; Paare überlappender Fenster eines Basiswerts je Replikation im Mittel 11,6 gegen 3 im echten Panel, doppelt gezogene Tage im Mittel 0,82.
+- H4, Dosis (A30): 4 von 475 Zell-Ereignis-Paaren enthalten Fills mit |log-Verhältnis| > 1 (6 Fills), bei 6 weicht der Median um mehr als 0,05 vom Mittel ab. β mit Median-Dosis −4,52 (p 0,6161), ohne diese Fills −4,08 (p 0,6070); registriert −4,60.
+
 ## Konsistenzprüfungen
 
 15 von 15 Prüfungen erfüllt. Die Prüfungen rechnen die Urteile aus den Zahlen und Regeln nach und gleichen die Dateien untereinander ab.
@@ -349,5 +364,5 @@ Anteil von `OptionAsset.totalPosition` je Manager an der Summe über die Manager
 - H3: An 73,6 % der Maker-Tage hält das Buch mehr Optionen, als ein SM-Konto auf v2 halten kann; K_SM ist dort kontrafaktisch.
 - H1: 20 Fills mit K_PM2 ≤ 0 (weit vom Mark bepreiste RFQ-Beine) bleiben in den Summen.
 - H2 beruht auf 4 Konten unter PM2; die Verteilung je Konto steht unter (d).
-- H4: Das Intervall für β ist beschreibend; das Urteil folgt aus dem einseitigen p und dem Placebo-P95. 141 Tages-Cluster, 13 Ereignisse mit Zellen.
+- H4: Das Intervall für β ist beschreibend und auf die Ereignistermine bedingt; das Urteil folgt aus dem einseitigen p und dem Placebo-P95. 141 Tages-Cluster, 13 Ereignisse mit Zellen. An Placebo-Terminen streut t mit sd 1,82 statt 1; die an den Placebo-t kalibrierte Spanne steht unter Audit.
 - Kapital je Fill ist das Kapital eines leeren Buchs mit genau diesem Kontrakt (Einzelkontrakt); Nicht-USDC-Collateral bleibt ausserhalb von K.

@@ -12,7 +12,9 @@ x (a) and y (b) are logarithmic from 1e-13 to 1e-1. Exact zeros are drawn in a s
 b); deviations above zero but below 1e-13 (floating-point residue, down to about 1e-16) are drawn on the axis edge,
 labelled "≤1e−13". The caption sentence on feed ages is checked against ``data/p2/derived/capital.parquet``: every
 fill in the PM2 window must use a vol feed no older than ``p2validate.MAX_VOL_AGE`` and a forward no older than
-``p2validate.MAX_FWD_AGE`` (the limits of the validation blocks); otherwise the sentence is left out.
+``p2validate.MAX_FWD_AGE`` (the limits of the validation blocks); otherwise the sentence is left out. The spot feed
+has no such limit in the validation; the sentence counts the fills whose spot price is older than the heartbeat of the
+spot feed (``p2feeds.HEARTBEAT["spot"]``), which stay in the sample as registered.
 
 Command line: ``python3 -m derive_surface.figs_p2.a1`` (writes ``paper2/figures/a1.{pdf,png}`` and
 ``results/p2/fig_a1_{a,b,meta}.csv``, prints the checks).
@@ -33,7 +35,7 @@ import pandas as pd  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.ticker import FixedLocator, NullFormatter  # noqa: E402
 
-from .. import p2validate  # noqa: E402
+from .. import p2feeds, p2validate  # noqa: E402
 from . import _kit_t2a1 as kit  # noqa: E402
 
 SLOT = "a1"
@@ -51,7 +53,10 @@ SEED = 20260924
 STRIP_BG = "#E6E6E6"
 MS_SINGLE, MS_BOOK = 2.0, 3.0
 
-FEED_SENTENCE = "In the PM2 window no fill uses a feed older than the limits of the validation blocks."
+FEED_SENTENCE = "In the PM2 window no fill uses a vol or forward feed older than the limits of the validation blocks"
+SPOT_CLAUSE = ("; {n} fills use a spot price older than the heartbeat of the spot feed ({hb} seconds) and stay in the "
+               "sample.")
+SPOT_NONE = (", and none uses a spot price older than the heartbeat of the spot feed ({hb} seconds).")
 _CAPTION_HEAD = (
     r"\textbf{Does the replica match the chain?} Absolute relative deviation of initial-margin capital between each "
     r"offline replica and \texttt{eth\_call} on the deployed contracts, for single contracts per underlying and "
@@ -63,13 +68,25 @@ _CAPTION_HEAD = (
 )
 _CAPTION_TAIL = r"The replica follows the contracts on chain; the venue's off-chain engine discounts PM2 at a flat two " \
                 r"per cent."
-CAPTION = " ".join([_CAPTION_HEAD, FEED_SENTENCE, _CAPTION_TAIL])
+# the spot clause with placeholders, as a literal: scripts/p2_build.py reads CAPTION without importing the module
+_SPOT_CLAUSE_PH = (r"; \PH{a1-spot-stale} fills use a spot price older than the heartbeat of the spot feed "
+                   r"(\PH{a1-spot-heartbeat} seconds) and stay in the sample.")
+CAPTION = " ".join([_CAPTION_HEAD, FEED_SENTENCE + _SPOT_CLAUSE_PH, _CAPTION_TAIL])
+
+
+def feed_sentence(fa: dict) -> str:
+    """The feed-age sentence of the caption: vol and forward within the validation limits, and the count of fills
+    with a spot price older than the spot heartbeat; empty unless ``capital.parquet`` confirms the first part."""
+    if fa["holds"] is not True:
+        return ""
+    n, hb = int(fa["spot_stale_fills"]), f"{fa['spot_limit_s']:g}"
+    return FEED_SENTENCE + (SPOT_CLAUSE.format(n=n, hb=hb) if n > 0 else SPOT_NONE.format(hb=hb))
 
 
 def caption(data: dict) -> str:
     """The caption; the feed-age sentence only when ``capital.parquet`` confirms it."""
-    parts = [_CAPTION_HEAD] + ([FEED_SENTENCE] if data["feed_age"]["holds"] is True else []) + [_CAPTION_TAIL]
-    return " ".join(parts)
+    sentence = feed_sentence(data["feed_age"])
+    return " ".join([_CAPTION_HEAD] + ([sentence] if sentence else []) + [_CAPTION_TAIL])
 
 
 # ---------------------------------------------------------------------------------------------------- data
@@ -117,11 +134,14 @@ def row_stats(pts: pd.DataFrame) -> pd.DataFrame:
 
 
 def feed_age(capital_path: Optional[Path]) -> dict:
-    """Largest vol and forward feed age over the fills of the PM2 window, against the validation limits."""
-    lim = {"vol_limit_s": float(p2validate.MAX_VOL_AGE), "fwd_limit_s": float(p2validate.MAX_FWD_AGE)}
+    """Largest vol and forward feed age over the fills of the PM2 window, against the validation limits, and the
+    fills of the window whose spot price is older than the spot heartbeat."""
+    lim = {"vol_limit_s": float(p2validate.MAX_VOL_AGE), "fwd_limit_s": float(p2validate.MAX_FWD_AGE),
+           "spot_limit_s": float(p2feeds.HEARTBEAT["spot"])}
     if capital_path is None or not Path(capital_path).exists():
-        return dict(lim, vol_age_max_s=np.nan, fwd_age_max_s=np.nan, fills=0, holds=None, capital_path="")
-    c = pd.read_parquet(capital_path, columns=["currency", "ts", "vol_age", "fwd_age"])
+        return dict(lim, vol_age_max_s=np.nan, fwd_age_max_s=np.nan, spot_age_max_s=np.nan, spot_stale_fills=0,
+                    fills=0, holds=None, capital_path="")
+    c = pd.read_parquet(capital_path, columns=["currency", "ts", "vol_age", "fwd_age", "spot_age"])
     ts = c["ts"].astype("int64")
     ts = ts // 1000 if len(ts) and ts.max() > 10 ** 11 else ts      # capital.parquet keeps the tape's milliseconds
     start = c["currency"].map(p2validate.PM2_START_TS)
@@ -129,7 +149,8 @@ def feed_age(capital_path: Optional[Path]) -> dict:
     vmax, fmax = float(w["vol_age"].max()), float(w["fwd_age"].max())
     holds = bool(len(w) > 0 and w["vol_age"].notna().all() and w["fwd_age"].notna().all()
                  and vmax <= lim["vol_limit_s"] and fmax <= lim["fwd_limit_s"])
-    return dict(lim, vol_age_max_s=vmax, fwd_age_max_s=fmax, fills=int(len(w)), holds=holds,
+    return dict(lim, vol_age_max_s=vmax, fwd_age_max_s=fmax, spot_age_max_s=float(w["spot_age"].max()),
+                spot_stale_fills=int((w["spot_age"] > lim["spot_limit_s"]).sum()), fills=int(len(w)), holds=holds,
                 capital_path=str(capital_path))
 
 
@@ -208,9 +229,10 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
         ("x_lo", X_LO), ("x_hi", X_HI), ("revert_cases", data["revert_cases"]), ("revert_rows", data["revert_rows"]),
         ("vol_age_max_s", fa["vol_age_max_s"]), ("fwd_age_max_s", fa["fwd_age_max_s"]),
         ("vol_limit_s", fa["vol_limit_s"]), ("fwd_limit_s", fa["fwd_limit_s"]), ("pm2_window_fills", fa["fills"]),
+        ("spot_age_max_s", fa["spot_age_max_s"]), ("spot_limit_s", fa["spot_limit_s"]),
+        ("spot_stale_fills", fa["spot_stale_fills"]),
         ("feed_sentence_holds", fa["holds"]), ("capital_path", fa["capital_path"]))])
-    meta["printed"] = np.where(meta["key"] == "feed_sentence_holds",
-                               FEED_SENTENCE if fa["holds"] is True else "", "")
+    meta["printed"] = np.where(meta["key"] == "feed_sentence_holds", feed_sentence(fa), "")
     return {"fig_a1_a.csv": a[cols], "fig_a1_b.csv": b[cols], "fig_a1_meta.csv": meta}
 
 
@@ -447,6 +469,11 @@ def _src_feed(rd: Path) -> float:
     return float(fa["holds"] is True)
 
 
+def _src_spot_stale(rd: Path) -> float:
+    path = str(_fmeta(rd)["capital_path"])
+    return float(feed_age(Path(path) if path else None)["spot_stale_fills"])
+
+
 def _largest_single_mgr(rd: Path) -> str:
     p = _fig_points(rd, "a")
     r = p.loc[p["rel_err"].astype(float).abs().idxmax()]
@@ -519,7 +546,9 @@ CHECKS: List[dict] = (
                  (lambda c=c: lambda rd: float(_src_ok(rd, "book").loc[lambda d: d["ccy"] == c, "book"].nunique()))(),
                  expected=e) for c, e in (("BTC", 7), ("ETH", 18), ("HYPE", 1))]
     + [kit.check("feed_age", "caption: no PM2-window fill uses a feed older than the validation limits",
-                 lambda rd: float(str(_fmeta(rd)["feed_sentence_holds"]) == "True"), _src_feed, expected=1.0)]
+                 lambda rd: float(str(_fmeta(rd)["feed_sentence_holds"]) == "True"), _src_feed, expected=1.0),
+       kit.check("spot_stale", "caption: PM2-window fills with a spot price older than the spot heartbeat",
+                 lambda rd: float(_fmeta(rd)["spot_stale_fills"]), _src_spot_stale)]
 )
 
 

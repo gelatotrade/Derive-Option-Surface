@@ -1,7 +1,20 @@
 key,value,printed,source
-stat,0.9029439440785052,0.90,summary.json h1_stat
-lo,0.8805637576426197,0.88,summary.json h1_lo
-hi,0.9074328677844167,0.91,summary.json h1_hi
-n_cells,173.0,173,summary.json h1_n_cells
-points,173.0,173,fig_f2_b.csv rows
-within_pos,0.6341249226963512,0.63,summary.json sens_h1_sign_within_pos_stat
+h1_stat,0.9029439440785052,"ρ 0.90 [0.88, 0.91]",h1.json:stat
+h1_lo,0.8805637576426197,"ρ 0.90 [0.88, 0.91]",h1.json:lo
+h1_hi,0.9074328677844167,"ρ 0.90 [0.88, 0.91]",h1.json:hi
+h1_threshold,0.5,"ρ 0.90 [0.88, 0.91]",h1.json:threshold
+h1_rejected,1.0,rejected,h1.json:rejected
+h2_stat,0.034540122450644445,"median 0.035 [0.031, 0.039]",h2.json:stat
+h2_lo,0.03070183757603388,"median 0.035 [0.031, 0.039]",h2.json:lo
+h2_hi,0.03855716844133305,"median 0.035 [0.031, 0.039]",h2.json:hi
+h2_threshold,0.5,"median 0.035 [0.031, 0.039]",h2.json:threshold
+h2_rejected,0.0,not rejected,h2.json:rejected
+h3_stat,4.7467261022171625,"median 4.75 [4.66, 4.82]",h3.json:stat
+h3_lo,4.661926808686567,"median 4.75 [4.66, 4.82]",h3.json:lo
+h3_hi,4.823628547372672,"median 4.75 [4.66, 4.82]",h3.json:hi
+h3_threshold,2.0,"median 4.75 [4.66, 4.82]",h3.json:threshold
+h3_rejected,0.0,not rejected,h3.json:rejected
+h4_stat,-4.599234789460463,"β = −4.6, one-sided p = 0.62, P95 23.4",h4.json:stat
+h4_p,0.6224,"β = −4.6, one-sided p = 0.62, P95 23.4",h4.json:p
+h4_p95,23.40989788852172,"β = −4.6, one-sided p = 0.62, P95 23.4",h4.json:placebo.p95
+h4_rejected,1.0,rejected,h4.json:rejected

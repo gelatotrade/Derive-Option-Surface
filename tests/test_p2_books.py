@@ -12,10 +12,26 @@ from derive_surface import books
 from derive_surface.p2chain import Rpc, ts_at_block
 
 FIX = Path(__file__).parent / "fixtures" / "p2"
+# Real chain data of top-maker accounts (a whole multicall answer, a day of BalanceAdjusted logs with tx hashes)
+# identifies the account, so these fixtures live in data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01);
+# without them the tests that need them are skipped. books_registry.json holds the non-identifying part.
+PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
+
+
+def _private(name: str) -> dict:
+    path = PRIVATE / name
+    if not path.exists():
+        pytest.skip(f"private chain fixture missing (account-identifying, not in the repository): {path}")
+    return json.loads(path.read_text())
 
 
 def _snap_fixture() -> dict:
-    return json.loads((FIX / "books_chain_snapshot.json").read_text())
+    return _private("books_chain_snapshot.json")
+
+
+def _reg_fixture() -> dict:
+    """Asset registry (protocol addresses, managers, cash asset, a day-start block) without account data."""
+    return json.loads((FIX / "books_registry.json").read_text())
 
 
 def _registry(fx: dict) -> "books.AssetRegistry":
@@ -55,7 +71,7 @@ def test_decode_option_subid_bit_layout():
 # ---------------------------------------------------------------- ABI
 
 def test_encode_aggregate3_matches_reference_calldata():
-    fx = _snap_fixture()
+    fx = _reg_fixture()
     calls = []
     for acc in fx["encoder_reference"]["accounts"]:
         calls += books.account_calls(acc)
@@ -98,22 +114,23 @@ def test_snapshot_decodes_real_balances():
     chain = _FakeChain(fx)
     rpc = Rpc(client=chain, rate=1000.0)
     rows = books.snapshot(rpc, 12345, fx["block"], registry=_registry(fx))
+    exp = fx["expected"]  # account-specific values stay in the private fixture
     kinds = pd.Series([r["kind"] for r in rows]).value_counts().to_dict()
-    assert kinds == {"option": 33, "base": 4, "cash": 1}
+    assert kinds == exp["kinds"] and sum(kinds.values()) == 38
     assert {r["manager"] for r in rows} == {fx["manager"]}
     opts = [r for r in rows if r["kind"] == "option"]
-    assert {r["ccy"] for r in opts} == {"BTC", "ETH"}
+    assert {r["ccy"] for r in opts} == set(exp["option_ccys"])
     open_names = set(fx["open_tape_instruments"])
     # every on-chain option leg decodes to an instrument this account traded before the block, except one leg
-    # (ETH-20260327-2800-C, -34.01) that reached the account without a tape fill (first tape row 2026-02-06)
+    # that reached the account without a tape fill
     missing = {books.instrument_name(r["ccy"], r["expiry"], r["strike"], r["is_call"]) for r in opts} - open_names
-    assert missing == {"ETH-20260327-2800-C"}
+    assert missing == set(exp["missing_from_tape"]) and len(missing) == 1
     for r in opts:
         assert r["amount"] == r["balance"] / 1e18
     base = {r["ccy"] for r in rows if r["kind"] == "base"}
-    assert base == {"ETH", "USDT", "WEETH", "WSTETH"}
+    assert base == set(exp["base_ccys"])
     cash = [r for r in rows if r["kind"] == "cash"][0]
-    assert cash["ccy"] == "USDC" and cash["amount"] == pytest.approx(-23767.677972645975)
+    assert cash["ccy"] == "USDC" and cash["amount"] == pytest.approx(exp["cash_usdc"]) and cash["amount"] < 0
     # one aggregate3 call and one cashAsset() call for the (new) manager
     assert [c[0] for c in chain.calls] == ["eth_call", "eth_call"]
 
@@ -124,7 +141,7 @@ def _aggregate3_response(entries) -> str:
 
 
 def test_snapshot_empty_and_missing_account():
-    fx = _snap_fixture()
+    fx = _reg_fixture()
     empty_bal = books._encode_balances([])
     mgr_word = bytes(12) + bytes.fromhex(fx["manager"][2:])
     resp = _aggregate3_response([(True, empty_bal), (True, mgr_word)])
@@ -414,7 +431,7 @@ def test_book_at_perp_only_account():
 
 
 def test_registry_labels_and_unknown_assets():
-    fx = _snap_fixture()
+    fx = _reg_fixture()
     reg = _registry(fx)
     assert reg.classify("0x" + "ab" * 20) == ("other", None)
     assert reg.manager_label(books.ZERO_ADDRESS) == "none" and reg.manager_label(None) == "none"
@@ -434,7 +451,7 @@ class _NetDownChain:
 
 
 def test_fetch_raw_does_not_split_on_network_errors():
-    fx = _snap_fixture()
+    fx = _reg_fixture()
     chain = _NetDownChain()
     with pytest.raises(RuntimeError):
         books.snapshot_many(Rpc(client=chain, rate=1000.0), [1, 2, 3, 4], fx["block"], registry=_registry(fx))
@@ -444,11 +461,11 @@ def test_fetch_raw_does_not_split_on_network_errors():
 # ---------------------------------------------------------------- fix round: exact on-chain book (BalanceAdjusted)
 
 def _ev_fixture() -> dict:
-    return json.loads((FIX / "books_events_day.json").read_text())
+    return _private("books_events_day.json")
 
 
 def _ev_registry() -> "books.AssetRegistry":
-    fx, ev = _snap_fixture(), _ev_fixture()
+    fx, ev = _reg_fixture(), _ev_fixture()
     reg = _registry(fx)
     reg.cash_by_manager[ev["day_start"]["manager"].lower()] = fx["cash_asset"].lower()
     return reg
@@ -506,7 +523,7 @@ def test_replay_before_and_through_fill_tx_match_eth_call():
 
 def test_replay_detects_missing_events_and_missing_snapshot():
     ev, reg, s0, _, events = _ev_frames()
-    cash = _snap_fixture()["cash_asset"].lower()
+    cash = _reg_fixture()["cash_asset"].lower()
     gap = events.drop(index=events.index[events.asset == cash][0])
     with pytest.raises(ValueError):
         books.replay_balances(s0, gap)
@@ -551,7 +568,7 @@ def test_onchain_book_before_fill_vs_tape_book():
 
 
 def test_onchain_book_applies_perp_events_before_the_fill_tx():
-    fx = _snap_fixture()
+    fx = _reg_fixture()
     reg = _registry(fx)
     btc = fx["addresses_head_cur"]["BTC"]
     perp, opt = btc["perp"].lower(), btc["option"].lower()
@@ -714,7 +731,7 @@ def test_verify_event_days_against_next_snapshot():
     assert len(out) == 1
     r = out.iloc[0]
     assert r.chain_ok == True and r.exact == True and r.n_events == 109 and r.n_diff == 0  # noqa: E712
-    cash = _snap_fixture()["cash_asset"].lower()
+    cash = _reg_fixture()["cash_asset"].lower()
     gap = events.drop(index=events.index[events.asset == cash][0])
     r2 = books.verify_event_days(snaps, gap).iloc[0]
     assert r2.chain_ok == False and r2.exact == False  # noqa: E712

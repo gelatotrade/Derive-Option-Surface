@@ -2,7 +2,7 @@
 
 Reference cases come from v2-core (commit 96796a6, read from data/p2/v2-core), from historical eth_calls of the
 deployed PMRMLib on Chain 957 (tests/fixtures/p2/pm_chain_cases.json) and from PMRM.getMargin on whole legacy-PM
-maker accounts (tests/fixtures/p2/pm_chain_accounts.json); see gen_a4_chain_fixtures.py.
+maker accounts (data/p2/fixtures_private/pm_chain_accounts.json, not tracked); see gen_a4_chain_fixtures.py.
 """
 from __future__ import annotations
 
@@ -28,6 +28,18 @@ def _v2core(rel: str) -> dict:
     path = V2CORE_TESTS / rel
     if not path.exists():
         pytest.skip(f"v2-core reference cases missing: {path}")
+    return json.loads(path.read_text())
+
+
+# Chain fixtures of real accounts (whole balances at a block) identify the account, so they live in
+# data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01); without them these tests are skipped.
+PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
+
+
+def _private(name: str) -> dict:
+    path = PRIVATE / name
+    if not path.exists():
+        pytest.skip(f"private chain fixture missing (account-identifying, not in the repository): {path}")
     return json.loads(path.read_text())
 E18 = 10 ** 18
 T0 = 1_640_995_200  # PMRMTestBase warps to 1 Jan 2022
@@ -448,7 +460,7 @@ def test_pm_chain_whole_accounts_match_get_margin():
     unsettled cash, cash) at blocks in all three parameter regimes, every feed value read at the same block. Checks
     the portfolio arrangement (``PMRM._arrangePortfolio``) independently of the library cases above. The legacy rate
     is not passed: the engine's default 0 must reproduce the chain."""
-    doc = json.loads((FIX / "pm_chain_accounts.json").read_text())
+    doc = _private("pm_chain_accounts.json")
     cases = [c for c in doc["cases"] if "skipped" not in c]
     assert len(cases) >= 3 and {c["ccy"] for c in cases} == {"BTC", "ETH"}
     for c in cases:
@@ -495,11 +507,15 @@ def _assert_same_params(chain: dict, timeline: dict, where) -> None:
 def test_chain_parameters_equal_a2_timelines():
     """The parameters read at the 13 legacy-PM chain blocks equal p2params.Timeline(ccy, "pm").at(ts) field by field
     (all three regimes: basis 1.0/1.2 until 12.06.2024, maxExpiries 11 -> 18 on 25.09.2024, volRangeUp,
-    optionPercent and scenarios on 22.02.2025)."""
+    optionPercent and scenarios on 22.02.2025). The 5 account blocks come from the private fixture; without it the
+    8 library blocks are checked."""
     from derive_surface.p2params import Timeline
+    docs = {"pm_chain_cases.json": json.loads((FIX / "pm_chain_cases.json").read_text())}
+    if (PRIVATE / "pm_chain_accounts.json").exists():
+        docs["pm_chain_accounts.json"] = _private("pm_chain_accounts.json")
     n = 0
-    for name in ("pm_chain_cases.json", "pm_chain_accounts.json"):
-        for c in json.loads((FIX / name).read_text())["cases"]:
+    for name, doc in docs.items():
+        for c in doc["cases"]:
             if "skipped" in c:
                 continue
             path = Timeline.path(c["ccy"], "pm")
@@ -507,4 +523,4 @@ def test_chain_parameters_equal_a2_timelines():
                 pytest.skip(f"A2 timeline missing: {path}")
             _assert_same_params(c["params"], Timeline(c["ccy"], "pm").at(c["ts"]), (name, c["ccy"], c["day"]))
             n += 1
-    assert n >= 13
+    assert n >= (13 if len(docs) == 2 else 8)

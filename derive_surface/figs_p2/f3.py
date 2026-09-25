@@ -1,11 +1,12 @@
-"""F3 · A fill in the book (H2) · 3.4 x 4.0 in.
+"""F3 · A fill in the book (H2) · 3.29 x 4.0 in (the column width of main.tex).
 
 Panel a is the cumulative distribution of dK per contract over the stand-alone PM2 capital, read from the binned
 distribution that the inference wrote (``fig_h2_dist.csv``, label ``all``, variant ``ratio``): the value at every
 right bin edge is the cumulative count over n, from the left overflow at x = -1 to one minus the right overflow at
 x = 2.  Bands behind the curve split the fills into free (<= 0), cheap (0 to 1/2), partial (1/2 to 1) and full
-(>= 1, the whole stand-alone capital); the share <= 0 comes from ``share_le_0``, the others from the bins.  The median with its day-cluster
-interval sits at height one half.  Panel b is the verdict forest (``f34_frame.ruler``) on the same x-axis.
+(>= 1, the whole stand-alone capital); the share <= 0 comes from ``share_le_0``, the others from the bins.  The
+median with its day-cluster interval sits at height one half (the interval is narrower than the circle; its bounds
+are in the header).  Panel b is the verdict forest (``f34_frame.ruler``) on the same x-axis.
 
 No test statistic is computed here; the figure only sums bins and sorts rows.
 """
@@ -38,8 +39,9 @@ CAPTION = (
     r"marginal capital of a fill per contract over its stand-alone PM2 capital, $\Delta K / K_{\text{single}}$, "
     r"for the \PH{h2-n} tested fills of the four PM2 subaccounts, which trade ETH and HYPE only; the numbers above "
     r"the bands are the shares of fills in each band, and the shares beyond the axis are given at both ends. The "
-    r"dashed line is the registered threshold of one half, and the bar at height one half is the median with its "
-    r"90 per cent day-cluster interval. Panel b repeats the registered row above the sensitivities and, on grey, "
+    r"dashed line is the registered threshold of one half, and the circle at height one half is the median; its 90 per "
+    r"cent day-cluster interval is narrower than the circle and printed at the top. Panel b repeats the registered "
+    r"row above the sensitivities and, on grey, "
     r"exploratory rows per account and per parameter regime. A maker who starts from an empty book pays the "
     r"stand-alone capital of Figure~\ref{fig:f1}."
 )

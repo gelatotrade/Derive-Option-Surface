@@ -173,6 +173,51 @@ def shape_checks(figures: Path = FIGURES, gif: Path = GIF, social: Path = SOCIAL
     return pd.DataFrame(rows, columns=["what", "figure", "target", "ok"])
 
 
+def _smallest_type_pt(pdf: Path) -> float:
+    """Smallest font size of any text span in a PDF (PyMuPDF)."""
+    import fitz
+
+    sizes = []
+    with fitz.open(str(pdf)) as doc:
+        for page in doc:
+            for block in page.get_text("dict")["blocks"]:
+                for line in block.get("lines", []):
+                    sizes += [s["size"] for s in line["spans"] if s["text"].strip()]
+    return min(sizes) if sizes else float("nan")
+
+
+def placement_checks(tex: str, figures: Path = FIGURES, fs_min: float = figures_p2.FS_MIN) -> pd.DataFrame:
+    """The smallest type of every figure as main.tex sets it (audit A48): the width of ``\\includegraphics`` (a
+    multiple of ``\\linewidth``, which is the text width of cas-dc in ``figure*`` and its column width in
+    ``figure``) over the width of the PDF, times the smallest type in the PDF. Nothing when PyMuPDF is missing."""
+    try:
+        import fitz  # noqa: F401
+    except ImportError:
+        return pd.DataFrame(columns=["what", "figure", "target", "ok"])
+    from derive_surface.figs_p2 import _print
+
+    tex = re.sub(r"(?<!\\)%.*", "", tex)
+    rows = []
+    for m in re.finditer(r"\\begin\{(figure\*?)\}(.*?)\\end\{\1\}", tex, re.S):
+        g = re.search(r"\\includegraphics\s*(?:\[([^\]]*)\])?\{([^}]*)\}", m.group(2))
+        if not g:
+            continue
+        pdf = Path(figures) / Path(g.group(2)).name
+        pdf = pdf if pdf.suffix else pdf.with_suffix(".pdf")
+        line = _print.TEXTWIDTH_IN if m.group(1) == "figure*" else _print.COLUMNWIDTH_IN
+        w = re.search(r"width\s*=\s*([\d.]*)\s*\\(?:linewidth|textwidth|columnwidth)", g.group(1) or "")
+        what = f"{pdf.name} set in main.tex"
+        if not pdf.exists() or not w:
+            rows.append({"what": what, "figure": "fehlt" if not pdf.exists() else f"Breite {g.group(1)!r}",
+                         "target": f"≥ {fs_min:g} pt", "ok": False})
+            continue
+        scale = (float(w.group(1)) if w.group(1) else 1.0) * line / pdf_size(pdf)[0]
+        small = _smallest_type_pt(pdf)
+        rows.append({"what": what, "figure": f"{small:.2f} pt × {scale:.4f} = {small * scale:.2f} pt",
+                     "target": f"≥ {fs_min:g} pt", "ok": bool(small * scale >= fs_min - 1e-3)})
+    return pd.DataFrame(rows, columns=["what", "figure", "target", "ok"])
+
+
 # ---------------------------------------------------------------------------------------------------- media
 
 def _row(slot: str, check: str, figure, source, ok: bool, error: str = "") -> dict:
@@ -180,9 +225,63 @@ def _row(slot: str, check: str, figure, source, ok: bool, error: str = "") -> di
             "error": error}
 
 
+def card_source(rd: Path, source: str):
+    """Value of the source of a card number: ``<file>.json:<dotted key>``, ``<file>.csv:<column>@<col>=<value>,...``
+    (exactly one row), ``step <event_id>`` (the step the parameters alone make to the reference straddle, simple
+    per cent, as F5 b and the GIF) or ``summary.json <key>``."""
+    import json
+
+    rd = Path(rd)
+    if source.startswith("summary.json "):
+        return json.loads((rd / "summary.json").read_text())[source.split(" ", 1)[1]]
+    if source.startswith("step "):
+        from derive_surface import gif_p2
+        from derive_surface.figs_p2.f5 import pure_jump
+
+        ev = pd.read_csv(rd / "events.csv").set_index("event_id").loc[source.split(" ", 1)[1]]
+        jump, _ = pure_jump(pd.read_csv(rd / "reference_book.csv"), str(ev["ccy"]), str(ev["manager"]),
+                            int(ev["event_ts"]), str(ev["event_day"]))
+        return gif_p2.step_pct(jump)
+    name, key = source.split(":", 1)
+    if name.endswith(".json"):
+        node = json.loads((rd / name).read_text())
+        for part in key.split("."):
+            node = node[part]
+        return float(node)
+    column, _, where = key.partition("@")
+    df = pd.read_csv(rd / name)
+    for cond in filter(None, where.split(",")):
+        col, value = cond.split("=", 1)
+        df = df[df[col].astype(str) == value]
+    if len(df) != 1:
+        raise ValueError(f"{source}: {len(df)} rows")
+    return df[column].iloc[0]
+
+
+FORESTS = ("fig_f2_c.csv", "fig_f3_b.csv", "fig_f4_b.csv", "fig_f6_d.csv")
+FOREST_KINDS = ("registered", "sensitivity", "exploratory")
+
+
+def forest_checks(results: Path = RESULTS, tables: Sequence[str] = FORESTS) -> pd.DataFrame:
+    """Every drawn forest row has its estimate inside its interval (audit A04: an interval of a group chosen by the
+    sign of the estimate left the estimate outside)."""
+    rows = []
+    for name in tables:
+        path = Path(results) / name
+        if not path.exists():
+            continue
+        t = pd.read_csv(path)
+        t = t[t["kind"].astype(str).isin(FOREST_KINDS)]
+        bad = t[(t["stat"] < t["lo"]) | (t["stat"] > t["hi"])]
+        rows.append(_row(name.split("_")[1], "forest: every estimate inside its interval",
+                         f"{name}: {len(t)} rows", [str(x) for x in bad["label"]], bad.empty))
+    return pd.DataFrame(rows, columns=["slot", "check", "figure", "source", "ok", "instruction", "error"])
+
+
 def media_checks(results: Path = RESULTS) -> pd.DataFrame:
-    """GIF (``gif_meta.json``, ``gif_frames.csv``) and social cards (``fig_s{1,2,3}.csv``) against ``results/p2``;
-    nothing when they were not built."""
+    """GIF (``gif_meta.json``, ``gif_frames.csv``: last frame, steps, frames, colour scale, MP4) and social cards
+    (every number of ``fig_s{1,2,3}.csv`` against its source, :func:`card_source`) against ``results/p2``; nothing
+    when they were not built."""
     import json
     import math
 
@@ -218,21 +317,30 @@ def media_checks(results: Path = RESULTS) -> pd.DataFrame:
         rows.append(_row("gif", "last frame block time = T1 block", int(last["ts"]),
                          int(json.loads((rd / "t1_grid_meta.json").read_text())["ts"]),
                          int(last["ts"]) == int(json.loads((rd / "t1_grid_meta.json").read_text())["ts"])))
-    summary_path = rd / "summary.json"
-    if summary_path.exists():
-        summary = json.loads(summary_path.read_text())
-        for i in (1, 2, 3):
-            path = rd / f"fig_s{i}.csv"
-            if not path.exists():
-                continue
-            tab = pd.read_csv(path, dtype={"printed": str})
-            for r in tab.itertuples():
-                if not str(r.source).startswith("summary.json "):
-                    continue
-                key = str(r.source).split(" ", 1)[1]
-                src = summary.get(key)
-                ok = src is not None and np.isclose(float(r.value), float(src), rtol=1e-12, atol=0.0)
-                rows.append(_row(f"s{i}", f"card number {r.key} (printed {r.printed})", r.value, src, ok))
+        lo, hi = (float(v) for v in meta.get("clim_pct", [math.nan, math.nan]))
+        kmin, kmax = float(drawn["K_min_pct"].min()), float(drawn["K_max_pct"].max())
+        extend = str(meta.get("extend", "neither"))
+        cut_lo, cut_hi = kmin < lo, kmax > hi
+        arrows_ok = (not cut_lo or extend in ("min", "both")) and (not cut_hi or extend in ("max", "both"))
+        rows.append(_row("gif", "colour scale covers every node or ends in arrows (clim, extend)",
+                         [lo, hi, extend], [kmin, kmax], arrows_ok,
+                         "" if arrows_ok else "values beyond the colour scale without arrows"))
+        mp4 = meta.get("mp4")
+        rows.append(_row("gif", "MP4 next to the GIF (section 8)", mp4, str(Path(meta["gif"]).with_suffix(".mp4")),
+                         bool(mp4) and Path(mp4).exists() and Path(mp4) == Path(meta["gif"]).with_suffix(".mp4")))
+    for i in (1, 2, 3):
+        path = rd / f"fig_s{i}.csv"
+        if not path.exists():
+            continue
+        tab = pd.read_csv(path, dtype={"printed": str})
+        for r in tab.itertuples():
+            try:
+                src = card_source(rd, str(r.source))
+                ok = np.isclose(float(r.value), float(src), rtol=1e-12, atol=0.0)
+                err = ""
+            except Exception as exc:  # noqa: BLE001 - reported, not raised
+                src, ok, err = None, False, repr(exc)
+            rows.append(_row(f"s{i}", f"card number {r.key} (printed {r.printed})", r.value, src, ok, err))
     return pd.DataFrame(rows, columns=["slot", "check", "figure", "source", "ok", "instruction", "error"])
 
 
@@ -330,8 +438,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = ap.parse_args(argv)
     tex = args.tex.read_text() if args.tex.exists() else ""
     checks = pd.concat([figures_p2.run_all_checks(args.results), media_checks(args.results),
-                        element_checks(tex, args.results)], ignore_index=True)
-    shapes = shape_checks(args.figures)
+                        element_checks(tex, args.results), forest_checks(args.results)], ignore_index=True)
+    shapes = pd.concat([shape_checks(args.figures), placement_checks(tex, args.figures)], ignore_index=True)
     captions = compare_captions(tex, figures_p2.CAPTIONS, caption_exceptions())
     args.sheet.parent.mkdir(parents=True, exist_ok=True)
     args.sheet.write_text(sheet(checks, shapes, captions, args.results))

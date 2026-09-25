@@ -78,16 +78,16 @@ def test_build_writes_tables_and_figures(tmp_path):
     for p in (out / "f3.pdf", out / "f3.png", res / "fig_f3_a.csv", res / "fig_f3_b.csv"):
         assert p.exists() and p in paths
     with Image.open(out / "f3.png") as im:
-        assert im.size == (round(3.4 * 400), round(4.0 * 400))
+        assert im.size == (round(3.29 * 400), round(4.0 * 400))
     box = re.search(rb"/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]", (out / "f3.pdf").read_bytes())
-    assert abs(float(box.group(1)) / 72 - 3.4) <= 0.02 and abs(float(box.group(2)) / 72 - 4.0) <= 0.02
+    assert abs(float(box.group(1)) / 72 - 3.29) <= 0.005 and abs(float(box.group(2)) / 72 - 4.0) <= 0.02
 
 
 def test_type_size_and_canvas(tmp_path):
     make_results(tmp_path)
     fig, _ = f3.make(tmp_path)
     w, h = fig.get_size_inches()
-    assert (round(w, 3), round(h, 3)) == (3.4, 4.0)
+    assert (round(w, 3), round(h, 3)) == (3.29, 4.0)
     r = fig.canvas.get_renderer()
     box = fig.bbox
     for t in _visible_texts(fig):
@@ -179,3 +179,11 @@ def test_checks_catch_a_wrong_figure_table(tmp_path):
 def test_caption_is_english_without_dashes():
     assert "—" not in f3.CAPTION and "–" not in f3.CAPTION and " - " not in f3.CAPTION
     assert f3.CAPTION.startswith("\\textbf{A fill in a dominant")
+
+
+def test_caption_says_the_interval_hides_under_the_circle():
+    """A50: the median's interval (about 0.4 pt long) is narrower than the circle; the caption must not promise a
+    visible bar."""
+    assert "the bar at height one half" not in f3.CAPTION
+    assert ("the circle at height one half is the median; its 90 per cent day-cluster interval is narrower than the "
+            "circle and printed at the top") in f3.CAPTION

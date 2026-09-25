@@ -1108,8 +1108,8 @@
   "sign_agree": 173,
   "within_pos": {
    "stat": 0.6341249226963512,
-   "lo": 0.6231131725417439,
-   "hi": 0.7368101422387137,
+   "lo": 0.5720706022431847,
+   "hi": 0.7017456805545731,
    "rejected": true,
    "n": 99,
    "n_days": 463,
@@ -1121,12 +1121,16 @@
    "level": 0.9,
    "rule": "H1",
    "exploratory": true,
-   "cells": "within_pos"
+   "cells": "within_pos",
+   "selection": "per replicate",
+   "n_rep_median": 104.0,
+   "switch_share_mean": 0.09233953698400144,
+   "n_nan_draws": 0
   },
   "within_nonpos": {
    "stat": 0.6358385783043318,
-   "lo": 0.67383635690485,
-   "hi": 0.8296127360236949,
+   "lo": 0.460377508014841,
+   "hi": 0.6840647571962637,
    "rejected": true,
    "n": 74,
    "n_days": 463,
@@ -1138,7 +1142,11 @@
    "level": 0.9,
    "rule": "H1",
    "exploratory": true,
-   "cells": "within_nonpos"
+   "cells": "within_nonpos",
+   "selection": "per replicate",
+   "n_rep_median": 69.0,
+   "switch_share_mean": 0.191973251379192,
+   "n_nan_draws": 0
   },
   "within_sell": {
    "stat": 0.9898674465776688,
@@ -1155,7 +1163,8 @@
    "level": 0.9,
    "rule": "H1",
    "exploratory": true,
-   "cells": "within_sell"
+   "cells": "within_sell",
+   "selection": "fixed"
   },
   "within_buy": {
    "stat": 0.7210395859152876,
@@ -1172,12 +1181,13 @@
    "level": 0.9,
    "rule": "H1",
    "exploratory": true,
-   "cells": "within_buy"
+   "cells": "within_buy",
+   "selection": "fixed"
   },
   "within_pos_sell": {
    "stat": 0.9404748878433089,
-   "lo": 0.9367545683335157,
-   "hi": 0.9776780829412408,
+   "lo": 0.9244837990856966,
+   "hi": 0.96843853820598,
    "rejected": true,
    "n": 38,
    "n_days": 463,
@@ -1189,12 +1199,16 @@
    "level": 0.9,
    "rule": "H1",
    "exploratory": true,
-   "cells": "within_pos_sell"
+   "cells": "within_pos_sell",
+   "selection": "per replicate",
+   "n_rep_median": 42.0,
+   "switch_share_mean": 0.15421015785789105,
+   "n_nan_draws": 0
   },
   "within_pos_buy": {
    "stat": 0.2429402432575357,
-   "lo": 0.23080380750925433,
-   "hi": 0.47637228979375995,
+   "lo": 0.20696073175340454,
+   "hi": 0.4461564109688589,
    "rejected": false,
    "n": 61,
    "n_days": 463,
@@ -1206,7 +1220,30 @@
    "level": 0.9,
    "rule": "H1",
    "exploratory": true,
-   "cells": "within_pos_buy"
+   "cells": "within_pos_buy",
+   "selection": "per replicate",
+   "n_rep_median": 62.0,
+   "switch_share_mean": 0.05379718299698822,
+   "n_nan_draws": 0
   }
+ },
+ "h1_interval": {
+  "stat": 0.9029439440785052,
+  "level": 0.9,
+  "n_draws": 9999,
+  "exploratory": true,
+  "rule": "descriptive (no preregistered threshold)",
+  "b": 9999,
+  "seed": 20260924,
+  "lo": 0.8805637576426197,
+  "hi": 0.9074328677844167,
+  "mean_draw": 0.894600050045379,
+  "median_draw": 0.8949872758203503,
+  "share_ge_stat": 0.15231523152315232,
+  "z0": 1.026554129067791,
+  "basic_lo": 0.8984550203725937,
+  "basic_hi": 0.9253241305143907,
+  "bc_lo": 0.8982668230342418,
+  "bc_hi": 0.9196433796258809
  }
 }

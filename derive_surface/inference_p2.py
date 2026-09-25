@@ -34,6 +34,10 @@ best cells), H2 and H3 per parameter regime (``regime=R1`` to ``R4``, section 6.
 of the account (``account_manager=SM/PM/PM2``) and on small books without the SM account, and the size of the H2
 population before the draw. None of it changes a registered number.
 
+Audit (docs/paper2/AUDIT.md, exploratory): the groups of ``h1_sign`` chosen by the sign of the estimated edge choose
+again in every replicate (A04, ``selection = per replicate``); ``h1_interval`` describes the registered percentile
+interval of H1 (share of draws at or above the estimate, reflected and bias-corrected intervals; A28).
+
 CLI: ``python3 -m derive_surface p2 infer run`` (H1 to H3), ``... infer sensitivity`` (exploratory tables and
 figure data) and ``... infer extras`` (only the review-round entries, merged into the existing ``sensitivity.json``,
 ``sens_h2.csv`` and ``sens_h3.csv``), each with ``--root`` (repository root), ``--out``, ``--b``, ``--seed``.
@@ -52,7 +56,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy.stats import rankdata
+from scipy.stats import norm, rankdata
 
 from .capital import WINDOW_START, in_window
 from .inference_p1 import analysis_frame
@@ -359,14 +363,16 @@ def _cell_columns(labels: Sequence[str]) -> pd.DataFrame:
 def edge_map(frame: pd.DataFrame, k_col: str, edge_col: str = "edge", index_col: str = "index_price",
              amount_col: str = "amount", min_fills: int = MIN_CELL_FILLS, b: int = B, seed: int = SEED,
              level: float = LEVEL, tau_col: Optional[str] = None,
-             cell_scale: Optional[pd.Series] = None) -> Tuple[pd.DataFrame, dict]:
+             cell_scale: Optional[pd.Series] = None, return_replicates: bool = False) -> Tuple[pd.DataFrame, dict]:
     """Edge per notional (A) and per capital (B) of every cell and the day-cluster bootstrap of Spearman's rho.
 
     ``frame`` holds one row per fill with ``cell, day``, the fill's edge (``edge_col``, USDC), ``index_col``,
     ``amount_col`` and the capital per contract ``k_col``. ``A = 1e4 sum(edge) / sum(index a)``,
     ``B = 1e4 sum(edge) / sum(K a [tau])`` times ``cell_scale`` (per cell; cells without a finite scale are not
     occupied). Occupied cells have at least ``min_fills`` fills with finite inputs. Replicates draw the UTC days of the
-    occupied cells' fills with replacement (addendum 3, item 1) and use the cells with a fill in the replicate."""
+    occupied cells' fills with replacement (addendum 3, item 1) and use the cells with a fill in the replicate.
+    ``return_replicates`` adds the (b, occupied cells) matrices ``_A_rep``, ``_B_rep`` and ``_present`` to the result
+    (columns in the order of the occupied rows of the returned cells; not written to any file)."""
     cols = ["cell", "day", edge_col, index_col, amount_col, k_col] + ([tau_col] if tau_col else [])
     f = frame[cols]
     amt = f[amount_col].to_numpy(float)
@@ -455,6 +461,8 @@ def edge_map(frame: pd.DataFrame, k_col: str, edge_col: str = "edge", index_col:
     res.update({"lo": lo, "hi": hi, "n_days": int(G), "n_nan_draws": int((~np.isfinite(draws)).sum()),
                 "cells_present_min": int(n_present.min()), "cells_present_median": float(np.median(n_present)),
                 "first_day": str(dlabels[0]), "last_day": str(dlabels[-1]), "_draws": draws})
+    if return_replicates:
+        res.update({"_A_rep": A_rep, "_B_rep": B_rep, "_present": present})
     return cells, res
 
 
@@ -716,32 +724,108 @@ def top_overlap(cells: pd.DataFrame, ks: Sequence[int] = (10, 20)) -> dict:
 
 
 H1_SIGN_GROUPS = ("within_pos", "within_nonpos", "within_sell", "within_buy", "within_pos_sell", "within_pos_buy")
+# Groups chosen by the sign of the estimated edge: (edge > 0 wanted, maker side or None). Audit A04: the choice depends
+# on the result, so every bootstrap replicate chooses again on its own A*; the maker-side groups stay fixed.
+H1_SIGN_SELECT: Dict[str, Tuple[bool, Optional[str]]] = {
+    "within_pos": (True, None), "within_nonpos": (False, None),
+    "within_pos_sell": (True, "sell"), "within_pos_buy": (True, "buy")}
+H1_SIDE_GROUPS = {"within_sell": "sell", "within_buy": "buy"}
+
+
+def _sign_select(a: np.ndarray, side: np.ndarray, positive: bool, want_side: Optional[str]) -> np.ndarray:
+    """Cells of a sign group: ``a > 0`` (or ``a <= 0``), optionally of one maker side; NaN (cell absent) is never in."""
+    with np.errstate(invalid="ignore"):
+        m = (a > 0) if positive else (a <= 0)
+    m = np.asarray(m, dtype=bool) & np.isfinite(a)
+    return m & (side == want_side) if want_side is not None else m
 
 
 def h1_sign(frame: pd.DataFrame, cells: pd.DataFrame, k_col: str = "K_pm2", min_fills: int = MIN_CELL_FILLS,
-            b: int = B, seed: int = SEED, level: float = LEVEL, draws: int = SIGN_DRAWS) -> dict:
+            b: int = B, seed: int = SEED, level: float = LEVEL, draws: int = SIGN_DRAWS,
+            full: Optional[Tuple[pd.DataFrame, dict]] = None) -> dict:
     """Sign structure of H1 on the occupied cells of the registered map (``cells``, from ``edge_map``).
 
     ``sign_floor``: rho from the sign pattern alone (see ``sign_floor``). ``within_*``: rho between edge per notional
-    and edge per capital over the occupied cells of one group (sign of the edge, maker side, or both), with the same
-    day-cluster bootstrap as H1 on the fills of those cells. ``top_overlap``: overlap of the best cells."""
-    occ = cells[cells["occupied"].astype(bool)]
-    pos = occ["A_bp"].to_numpy(float) > 0
+    and edge per capital over the occupied cells of one group, with the day-cluster bootstrap of H1.
+    ``top_overlap``: overlap of the best cells.
+
+    Groups by the sign of the edge (``within_pos``, ``within_nonpos``, ``within_pos_sell``, ``within_pos_buy``;
+    ``selection = per replicate``): the group depends on the estimate, so the statistic is "rho over the cells whose
+    estimated edge is > 0 (<= 0)" and every replicate applies that rule to its own A* over all occupied cells present
+    in it (the draws of the registered H1 bootstrap, ``full`` = ``edge_map`` of ``frame`` with replicates, computed
+    here when not given). With the cells held fixed (the version before audit A04) the replicates lost the cut at
+    zero that shapes the estimate, and the estimate could fall outside its own interval. ``switch_share_mean``: share
+    of the estimate's cells that a replicate does not choose, mean over replicates. Groups by maker side
+    (``within_sell``, ``within_buy``; ``selection = fixed``) do not choose on the result and keep the fixed cells."""
+    occ = cells[cells["occupied"].astype(bool)].reset_index(drop=True)
+    a_bp, b_bp = occ["A_bp"].to_numpy(float), occ["B_bp"].to_numpy(float)
     side = occ["side"].astype(str).to_numpy()
-    masks = {"within_pos": pos, "within_nonpos": ~pos, "within_sell": side == "sell", "within_buy": side == "buy",
-             "within_pos_sell": pos & (side == "sell"), "within_pos_buy": pos & (side == "buy")}
-    out: dict = {"sign_floor": sign_floor(occ["A_bp"].to_numpy(float), draws=draws, seed=seed),
+    out: dict = {"sign_floor": sign_floor(a_bp, draws=draws, seed=seed),
                  "top_overlap": top_overlap(cells),
-                 "sign_agree": int((np.sign(occ["A_bp"].to_numpy(float)) == np.sign(occ["B_bp"].to_numpy(float)))
-                                   .sum())}
+                 "sign_agree": int((np.sign(a_bp) == np.sign(b_bp)).sum())}
+    if full is None:
+        full = edge_map(frame, k_col, min_fills=min_fills, b=b, seed=seed, level=level, return_replicates=True)
+    fcells, fres = full
+    if fcells.loc[fcells["occupied"].astype(bool), "cell"].tolist() != occ["cell"].tolist():
+        raise ValueError("h1_sign: the occupied cells of the replicate map differ from the cells given")
+    A_rep, B_rep, present = fres["_A_rep"], fres["_B_rep"], fres["_present"]
     for name in H1_SIGN_GROUPS:
-        chosen = set(occ.loc[masks[name], "cell"])
-        sub = frame[frame["cell"].isin(chosen).to_numpy()]
-        _, res = edge_map(sub, k_col, min_fills=min_fills, b=b, seed=seed, level=level)
+        if name in H1_SIDE_GROUPS:
+            chosen = set(occ.loc[side == H1_SIDE_GROUPS[name], "cell"])
+            sub = frame[frame["cell"].isin(chosen).to_numpy()]
+            _, res = edge_map(sub, k_col, min_fills=min_fills, b=b, seed=seed, level=level)
+            v = h1_verdict(res)
+            v["capital"] = k_col
+            out[name] = {**_stats(v, "H1"), "cells": name, "selection": "fixed", "_draws": res["_draws"]}
+            continue
+        positive, want = H1_SIGN_SELECT[name]
+        m0 = _sign_select(a_bp, side, positive, want)
+        chosen_rep = present & _sign_select(A_rep, side[None, :], positive, want)
+        d = spearman_rows(A_rep, B_rep, chosen_rep)
+        lo, hi = _interval(d, level)
+        res = {"stat": spearman(a_bp[m0], b_bp[m0]), "lo": lo, "hi": hi, "n": int(m0.sum()),
+               "n_days": fres["n_days"], "n_fills": int(occ.loc[m0, "fills"].sum()),
+               "n_fills_k_le_0": int(occ.loc[m0, "fills_k_le_0"].sum()), "min_fills": int(min_fills),
+               "b": int(b), "seed": int(seed), "level": float(level)}
         v = h1_verdict(res)
-        v["capital"] = k_col
-        out[name] = {**_stats(v, "H1"), "cells": name}
+        leave = (m0[None, :] & ~chosen_rep).sum(axis=1) / max(int(m0.sum()), 1)
+        out[name] = {**_stats(v, "H1"), "cells": name, "selection": "per replicate",
+                     "n_rep_median": float(np.median(chosen_rep.sum(axis=1))),
+                     "switch_share_mean": float(leave.mean()), "n_nan_draws": int((~np.isfinite(d)).sum()),
+                     "_draws": d}
     return out
+
+
+def h1_interval_shape(draws: np.ndarray, stat: float, level: float = LEVEL, b: Optional[int] = None,
+                      seed: Optional[int] = None) -> dict:
+    """Shape of the percentile interval of H1 (audit A28, exploratory; the registered verdict uses ``lo, hi``).
+
+    ``lo, hi``: the registered percentile interval of the draws. ``share_ge_stat``: share of draws at or above the
+    estimate (0.5 for a centred interval). ``basic_lo, basic_hi``: the reflected interval ``2 stat - (hi, lo)``.
+    ``bc_lo, bc_hi``: bias-corrected percentile interval (Efron), quantiles ``Phi(2 z0 -/+ z)`` with
+    ``z0 = Phi^-1(share of draws < stat)`` and ``z = Phi^-1(1 - (1 - level) / 2)``."""
+    d = np.asarray(draws, dtype=float)
+    d = d[np.isfinite(d)]
+    alpha = (1.0 - level) / 2.0
+    out = {"stat": float(stat), "level": float(level), "n_draws": int(len(d)), "exploratory": True,
+           "rule": "descriptive (no preregistered threshold)"}
+    if b is not None:
+        out["b"] = int(b)
+    if seed is not None:
+        out["seed"] = int(seed)
+    if len(d) == 0 or not np.isfinite(stat):
+        return {**out, **{k: float("nan") for k in ("lo", "hi", "mean_draw", "median_draw", "share_ge_stat", "z0",
+                                                   "basic_lo", "basic_hi", "bc_lo", "bc_hi")}}
+    lo, hi = float(np.quantile(d, alpha)), float(np.quantile(d, 1.0 - alpha))
+    z0 = float(norm.ppf(np.mean(d < stat)))
+    z = float(norm.ppf(1.0 - alpha))
+    if np.isfinite(z0):
+        bc_lo, bc_hi = float(np.quantile(d, norm.cdf(2 * z0 - z))), float(np.quantile(d, norm.cdf(2 * z0 + z)))
+    else:
+        bc_lo = bc_hi = float("nan")
+    return {**out, "lo": lo, "hi": hi, "mean_draw": float(d.mean()), "median_draw": float(np.median(d)),
+            "share_ge_stat": float(np.mean(d >= stat)), "z0": z0, "basic_lo": 2 * float(stat) - hi,
+            "basic_hi": 2 * float(stat) - lo, "bc_lo": bc_lo, "bc_hi": bc_hi}
 
 
 def h2_regime_rows(mg: pd.DataFrame, **kw) -> Tuple[dict, List[dict]]:
@@ -803,12 +887,17 @@ def h2_population(root: Path) -> Optional[dict]:
 
 
 def review_entries(pm2: pd.DataFrame, cells: pd.DataFrame, mg: pd.DataFrame, md: pd.DataFrame,
-                   min_fills: int = MIN_CELL_FILLS, **kw) -> Tuple[dict, dict, dict, List[dict], List[dict]]:
-    """(h1_sign, d_h2 additions, e_h3 additions, sens_h2 rows, sens_h3 rows) of the review round."""
-    sign = h1_sign(pm2, cells, min_fills=min_fills, **kw)
+                   min_fills: int = MIN_CELL_FILLS, **kw) -> Tuple[dict, dict, dict, List[dict], List[dict], dict]:
+    """(h1_sign, d_h2 additions, e_h3 additions, sens_h2 rows, sens_h3 rows, h1_interval) of the review round and
+    the audit (A04: sign groups chosen again in every replicate; A28: shape of the registered H1 interval). Both H1
+    entries use the replicates of the registered map (same draws as ``h1.json``)."""
+    full = edge_map(pm2, "K_pm2", min_fills=min_fills, return_replicates=True, **kw)
+    sign = h1_sign(pm2, cells, min_fills=min_fills, full=full, **kw)
+    interval = h1_interval_shape(full[1]["_draws"], full[1]["stat"], level=kw.get("level", LEVEL),
+                                 b=kw.get("b", B), seed=kw.get("seed", SEED))
     d_reg, h2_rows = h2_regime_rows(mg, **kw)
     e_add, h3_rows = h3_review_rows(md, **kw)
-    return sign, {"by_regime": d_reg}, e_add, h2_rows, h3_rows
+    return sign, {"by_regime": d_reg}, e_add, h2_rows, h3_rows, interval
 
 
 def _merge_rows(old: pd.DataFrame, new: List[dict]) -> pd.DataFrame:
@@ -835,8 +924,9 @@ def run_extras(root: Path = REPO, out: Optional[Path] = None, b: int = B, seed: 
     mg = pd.read_parquet(p["marginal"])
     md = pd.read_parquet(p["maker_days"])
     kw = dict(b=b, seed=seed, level=level)
-    sign, d_add, e_add, h2_rows, h3_rows = review_entries(pm2, cells, mg, md, min_fills=min_fills, **kw)
+    sign, d_add, e_add, h2_rows, h3_rows, interval = review_entries(pm2, cells, mg, md, min_fills=min_fills, **kw)
     sens["h1_sign"] = sign
+    sens["h1_interval"] = interval
     sens.setdefault("d_h2", {}).update(d_add)
     pop = h2_population(root)
     if pop is not None:
@@ -1037,8 +1127,10 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
 
     # review round 1: sign structure of H1, regimes, account managers, small books without SM, H2 population
     main_cells = maps[0].drop(columns="map")
-    sign, d_add, e_add, more_h2, more_h3 = review_entries(pm2, main_cells, mg, md, min_fills=min_fills, **kw)
+    sign, d_add, e_add, more_h2, more_h3, interval = review_entries(pm2, main_cells, mg, md, min_fills=min_fills,
+                                                                    **kw)
     sens["h1_sign"] = sign
+    sens["h1_interval"] = interval
     sens["d_h2"].update(d_add)
     pop = h2_population(root)
     if pop is not None:

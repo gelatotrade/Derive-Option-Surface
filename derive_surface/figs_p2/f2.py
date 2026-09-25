@@ -33,6 +33,7 @@ from matplotlib.patches import Rectangle  # noqa: E402
 from matplotlib.transforms import blended_transform_factory  # noqa: E402
 
 from derive_surface import figstyle  # noqa: E402
+from derive_surface.figs_p2._print import to_print  # noqa: E402
 from derive_surface.figs_p2 import f1 as base  # noqa: E402
 from derive_surface.markouts import DELTA_LABELS, TENOR_LABELS  # noqa: E402
 
@@ -48,7 +49,8 @@ EXPLORATORY_BAND = "#F0F0F0"
 HATCH_GREY = "#BBBBBB"
 MINUS = "-"            # hyphen-minus in the cells: "−725" (0.27 in) does not fit a 0.24 in column, "-725" does
 CCYS, SIDES = base.CCYS, base.SIDES
-SIDE_TITLE = {"sell": "maker sells (short)", "buy": "maker buys (long):\nedge per premium"}
+SIDE_TITLE = {"sell": "maker sells (short)",
+              "buy": "maker buys (long):\ncapital ≈ premium OTM"}      # OTM: out of the money (caption)
 HEADER = ("number = net edge per unit of PM2 capital, bp, per fill · hatched = negative\n"
           "× = under 200 fills · PM2 window, pooled over four regimes")
 X_RHO = (-0.2, 1.0)
@@ -77,14 +79,17 @@ BAND_LABEL = "sign pattern alone"
 CAPTION = (
     "The map in two denominators (H1). Panel a is net edge per unit of PM2 capital in basis points, per fill, for "
     "every cell of the PM2 window by underlying and maker side; negative cells are hatched and an empty cross marks "
-    "fewer than 200 fills. For a maker buy the denominator is close to the premium, so the lower row is edge per unit "
-    "of premium and is shaded on its own scale. The map per notional is Figure~\\PH{p1-map-fig} of the companion paper. "
+    "fewer than 200 fills. For a maker buy the denominator is about the premium when the option is out of the money "
+    "(OTM) and less in the money; the lower row is shaded on its own scale. The map per notional is "
+    "Figure~\\PH{p1-map-fig} of the companion paper. "
     "Panel b ranks the \\PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because "
     "capital is positive in every cell, the \\PH{h1-pos} cells with positive edge come first in both rankings, and "
     "the grey lines mark that boundary. Crosses give the 90 per cent rank intervals of the ten largest moves. Panel "
-    "c is the registered test, Spearman's $\\rho$ with its 90 per cent day-cluster interval against the threshold "
-    "of 0.5, followed by sensitivities and, on grey, exploratory rows; the grey band is the $\\rho$ that the sign "
-    "pattern alone produces when ranks are shuffled within each sign group. Edge is a flow per fill and capital a "
+    "c is the registered test, Spearman's $\\rho$ with its 90 per cent day-cluster interval, which is narrower than "
+    "its circle and printed above the panel, against the threshold of 0.5, followed by sensitivities and, on grey, "
+    "exploratory rows; in the rows by the sign of the edge the cells are chosen again in every replicate. The grey "
+    "band is the $\\rho$ that the sign pattern alone produces when ranks are shuffled within each sign group. Edge "
+    "is a flow per fill and capital a "
     "stock, so a cell's value is not a return per unit of time.")
 
 
@@ -428,7 +433,7 @@ def build(out_dir: Path = Path("paper2/figures"), results_dir: Path = Path("resu
         frame.to_csv(p, index=False)
         paths.append(p)
     with matplotlib.rc_context(base.rc()):
-        paths += figstyle.save(fig, SLOT, Path(out_dir))
+        paths += figstyle.save(to_print(fig), SLOT, Path(out_dir))       # the width main.tex sets the figure at
     return paths
 
 

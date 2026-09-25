@@ -1,6 +1,9 @@
-"""Social cards of Paper 2 (``derive_surface.social_p2``): size, type, frame, numbers from ``summary.json``."""
+"""Social cards of Paper 2 (``derive_surface.social_p2``, ABBILDUNGSWAHL section 9): size, type, frame, the title
+rule of card 2, a verdict card whose title and layout do not depend on the outcome, and numbers read from
+``results/p2`` that ``scripts/p2_figure_check.py`` finds again in their sources."""
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 
@@ -16,30 +19,46 @@ import pytest  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from derive_surface import social_p2  # noqa: E402
+from tests import test_p2_gif as G  # noqa: E402
 
 CARDS = ["s1", "s2", "s3"]
+REPO = Path(__file__).resolve().parents[1]
+RULE_UP = "rejected if the upper bound of the 90% day-cluster bootstrap percentile interval is >= {t}"
+RULE_LO = "rejected if the lower bound of the 90% day-cluster bootstrap percentile interval is <= {t}"
 
 
-def results(root: Path, h1=0.8123, h2=0.0417, h3=3.9876) -> Path:
+def _h(stat, lo, hi, thr, rejected, rule):
+    return {"stat": stat, "lo": lo, "hi": hi, "threshold": thr, "rejected": rejected, "rule": rule.format(t=thr)}
+
+
+def _h4(beta=-4.6, p=0.6224, p95=23.4):
+    c1, c2 = beta > 0 and p <= 0.05, beta > p95
+    return {"stat": beta, "p": p, "placebo": {"p95": p95}, "rejected": not (c1 and c2),
+            "criteria": {"beta_positive": beta > 0, "p_le_alpha": p <= 0.05, "beta_gt_placebo_p95": c2}}
+
+
+def results(root: Path, *, h1=(0.8123, 0.79, 0.82), h2=(0.0417, 0.037, 0.046), h3=(3.9876, 3.9, 4.1),
+            straddle=(10.03, 12.02, 29.61, 14.66)) -> Path:
     rd = root / "results"
     rd.mkdir(parents=True)
-    summary = {"h1_stat": h1, "h1_lo": h1 - 0.02, "h1_hi": h1 + 0.01, "h1_n_cells": 12, "h1_first_day": "2025-06-12",
-               "h1_last_day": "2026-09-17",
-               "h2_stat": h2, "h2_lo": h2 - 0.004, "h2_hi": h2 + 0.005, "h2_share_nonpositive": 0.3871,
-               "h2_n": 1999, "h2_n_accounts": 3, "h2_first_day": "2025-09-04", "h2_last_day": "2026-09-17",
-               "h3_stat": h3, "h3_lo": h3 - 0.1, "h3_hi": h3 + 0.1, "h3_n": 321, "h3_n_accounts": 5,
-               "h3_first_day": "2025-06-13", "h3_last_day": "2026-09-17", "h3_share_days_over_63_options": 0.61}
-    (rd / "summary.json").write_text(json.dumps(summary))
-    edges = [1, 4, 8, 16, 32, 64, 128, 256, 512]
-    rows = [{"kind": "bin", "key": f"[{a}, {b})", "lo": a, "hi": b, "centre": float(np.sqrt(a * b)), "n": 30,
-             "median": 0.9 + 0.8 * i, "p25": 0.7 + 0.6 * i, "p75": 1.1 + 1.0 * i, "printed": "30"}
-            for i, (a, b) in enumerate(zip(edges[:-1], edges[1:]))]
-    pd.DataFrame(rows).to_csv(rd / "fig_f4_a.csv", index=False)
-    rng = np.random.default_rng(3)
-    a = np.arange(1, 13)
-    b = np.argsort(np.argsort(a + rng.normal(0, 2, 12))) + 1
-    pd.DataFrame({"cell": [f"c{i}" for i in a], "side": ["sell", "buy"] * 6, "rank_A": a.astype(float),
-                  "rank_B": b.astype(float)}).to_csv(rd / "fig_f2_b.csv", index=False)
+    hs = {"h1": _h(*h1, 0.5, h1[2] >= 0.5, RULE_UP), "h2": _h(*h2, 0.5, h2[2] >= 0.5, RULE_UP),
+          "h3": _h(*h3, 2.0, h3[1] <= 2.0, RULE_LO), "h4": _h4()}
+    for k, v in hs.items():
+        (rd / f"{k}.json").write_text(json.dumps(v))
+    days = pd.date_range("2024-01-11", "2026-09-17", freq="D")
+    n = len(days)
+    pm2 = np.where(days >= pd.Timestamp("2025-06-13"), 14.5, np.nan)
+    pd.DataFrame({"ccy": "BTC", "day": days.strftime("%Y-%m-%d"), "ts": 0, "tenor_days": 22.0,
+                  "K_sm_pct": np.full(n, 29.61), "K_pm_pct": np.linspace(23.5, 19.68, n), "K_pm2_pct": pm2,
+                  "legacy_thin": False, "drawn": True, "printed": ""}).to_csv(rd / "fig_f5_c.csv", index=False)
+    G.events().to_csv(rd / "events.csv", index=False)
+    G.reference_book().to_csv(rd / "reference_book.csv", index=False)
+    book, call, sm, sm_call = straddle
+    rows = [{"kind": "capital", "item": i, "value_pct_forward": v, "value_usdc": v * 765.0}
+            for i, v in (("K_pm2_book", book), ("K_pm2_call", call), ("K_sm", sm), ("K_sm_call", sm_call))]
+    rows += [{"kind": "meta", "item": "ts", "value_usdc": 1_789_632_000.0},
+             {"kind": "meta", "item": "tenor_days", "value_usdc": 22.0}]
+    pd.DataFrame(rows).to_csv(rd / "fig_t2_c.csv", index=False)
     return rd
 
 
@@ -60,31 +79,93 @@ def test_card_is_1600_by_900_with_large_type_inside_the_frame(tmp_path, name):
         e = t.get_window_extent(r)
         assert e.x0 >= 0 and e.y0 >= 0 and e.x1 <= 1600 and e.y1 <= 900, t.get_text()
     assert any(t.get_text() == social_p2.FOOTER for t in _texts(fig))
+    assert path.name == social_p2.NAMES[name] + ".png"
     plt.close(fig)
 
 
-def test_numbers_come_from_summary_and_stand_in_the_drawing(tmp_path):
+def test_texts_of_a_card_do_not_overlap(tmp_path):
     rd = results(tmp_path)
     data = social_p2.load(rd)
-    expected = {"s1": "4.2 %", "s2": "4.0", "s3": "0.81"}
-    for name, number in expected.items():
+    for name in CARDS:
         fig, _ = social_p2.CARDS[name](data, tmp_path / "out", keep=True)
-        title = fig.texts[0].get_text()                      # the first text of the card is its title
-        texts = [t.get_text() for t in _texts(fig) if t is not fig.texts[0]]
-        assert number in title, (name, title)
-        assert any(number in t for t in texts), (name, texts)
+        r = fig.canvas.get_renderer()
+        boxes = [(t.get_text(), t.get_window_extent(r)) for t in _texts(fig)]
+        clash = [(a, b) for i, (a, ea) in enumerate(boxes) for b, eb in boxes[i + 1:] if ea.overlaps(eb)]
+        assert clash == [], (name, clash)
         plt.close(fig)
+
+
+def test_verdict_card_keeps_title_and_layout_whatever_the_outcome(tmp_path):
+    """A22: the verdict card is the same card for any outcome; only the verdict words follow the rules."""
+    shapes, verdicts = [], []
+    for k, kw in enumerate(({}, {"h1": (0.41, 0.35, 0.47), "h2": (0.61, 0.55, 0.66), "h3": (1.8, 1.7, 1.9)})):
+        rd = results(tmp_path / str(k), **kw)
+        fig, _ = social_p2.card_verdicts(social_p2.load(rd), tmp_path / str(k) / "out", keep=True)
+        texts = _texts(fig)
+        shapes.append((fig.texts[0].get_text(), len(fig.axes), len(fig.texts)))
+        verdicts.append([t.get_text() for t in fig.texts if t.get_text() in ("rejected", "not rejected")])
+        plt.close(fig)
+        assert any("H4" == t.get_text() for t in texts)
+    assert shapes[0] == shapes[1] and shapes[0][0] == "Four pre-registered tests. Four verdicts."
+    assert verdicts == [["rejected", "not rejected", "not rejected", "rejected"],
+                        ["not rejected", "rejected", "rejected", "rejected"]]
+
+
+def test_verdict_card_refuses_a_verdict_that_breaks_its_rule(tmp_path):
+    rd = results(tmp_path)
+    h = json.loads((rd / "h2.json").read_text())
+    h["rejected"] = True
+    (rd / "h2.json").write_text(json.dumps(h))
+    with pytest.raises(ValueError):
+        social_p2.card_verdicts(social_p2.load(rd), tmp_path / "out")
+
+
+def test_verdict_card_shows_no_interval_for_h4_and_no_exploratory_number(tmp_path):
+    """A22: nothing exploratory on the cards; H4 shows the estimate, the one-sided p and the placebo P95."""
+    rd = results(tmp_path)
+    fig, _ = social_p2.card_verdicts(social_p2.load(rd), tmp_path / "out", keep=True)
+    texts = [t.get_text() for t in _texts(fig)]
+    assert "β = −4.6, one-sided p = 0.62, P95 23.4" in texts
+    assert not any("[" in t for t in texts if t.startswith("β"))
+    assert not any("0.63" in t or "profitable" in t for t in texts)
+    plt.close(fig)
+
+
+def test_straddle_card_follows_the_title_rule(tmp_path):
+    assert social_p2.straddle_title(10.0, 12.0) == social_p2.TITLE_LESS
+    assert social_p2.straddle_title(13.0, 12.0) == social_p2.TITLE_LITTLE
+    assert social_p2.straddle_title(15.5, 12.0) is None
+    rd = results(tmp_path, straddle=(15.5, 12.0, 29.6, 14.7))
+    paths = social_p2.build(rd, tmp_path / "social")
+    assert [p.name for p in paths] == ["s1_three_engines.png", "s3_verdicts.png"]
+
+
+def test_straddle_series_card_prints_the_steps_in_whole_simple_per_cent(tmp_path):
+    rd = results(tmp_path)
+    social_p2.card_straddle_series(social_p2.load(rd), tmp_path / "out")
     s1 = pd.read_csv(rd / "fig_s1.csv").set_index("key")
-    assert s1.loc["stat", "printed"] == "4.2 %" and s1.loc["stat", "source"] == "summary.json h2_stat"
-    assert pd.read_csv(rd / "fig_s2.csv").set_index("key").loc["stat", "printed"] == "4.0×"
-    assert pd.read_csv(rd / "fig_s3.csv").set_index("key").loc["points", "value"] == 12
+    steps = s1.loc[s1.index.str.startswith("step_"), "printed"].to_dict()
+    assert steps == {"step_BTC-pm2-20260108": "+2 %", "step_BTC-pm2-20260123": "−10 %",
+                     "step_BTC-pm2-20260524": "−8 %", "step_BTC-pm2-20260820": "−23 %"}
+    assert s1.loc["last_sm", "printed"] == "30 %" and s1.loc["last_pm2", "source"].startswith("fig_f5_c.csv:K_pm2_pct@")
 
 
-def test_build_writes_the_three_cards(tmp_path):
+def test_build_writes_the_three_cards_and_the_check_finds_every_number(tmp_path):
     rd = results(tmp_path)
     paths = social_p2.build(rd, tmp_path / "social")
-    assert [p.name for p in paths] == ["s1_h2_next_contract.png", "s2_h3_netting.png", "s3_h1_map.png"]
-    assert all(p.exists() for p in paths)
+    assert [p.name for p in paths] == ["s1_three_engines.png", "s2_straddle_vs_call.png", "s3_verdicts.png"]
+    spec = importlib.util.spec_from_file_location("p2_figure_check", REPO / "scripts" / "p2_figure_check.py")
+    fc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fc)
+    res = fc.media_checks(rd)
+    cards = res[res["slot"].isin(CARDS)]
+    n_rows = sum(len(pd.read_csv(rd / f"fig_{c}.csv")) for c in CARDS)
+    assert len(cards) == n_rows and cards["ok"].all(), cards.loc[~cards["ok"]].to_string()
+    s3 = pd.read_csv(rd / "fig_s3.csv")
+    s3.loc[s3["key"] == "h3_stat", "value"] += 0.01
+    s3.to_csv(rd / "fig_s3.csv", index=False)
+    res = fc.media_checks(rd)
+    assert not res.loc[res["check"].str.contains("h3_stat"), "ok"].any()
 
 
 def test_titles_have_no_dashes():

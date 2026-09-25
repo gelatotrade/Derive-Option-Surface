@@ -69,7 +69,11 @@ def letter(fig, x: float, y: float, s: str):
 
 
 def save(fig, name: str, out_dir: Path) -> List[Path]:
-    """``name.pdf`` and ``name.png`` (400 dpi) at print size, plus the luminance copy ``gray/name.png``."""
+    """``name.pdf`` and ``name.png`` (400 dpi) at print size (``_print.to_print``: the width main.tex sets), plus the
+    luminance copy ``gray/name.png``."""
+    from ._print import to_print
+
+    to_print(fig)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []

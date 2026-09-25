@@ -529,6 +529,10 @@ def test_main_run_and_sensitivity_write_all_outputs(tmp_path):
     assert sens["e_h3"]["sm_pm_be"]["rejected"] in (True, False)
     assert sens["e_h3"]["pm_pm2_be"]["rejected"] is None      # legacy PM vs PM2: no preregistered threshold
     assert "holding" in sens["f_time"] and "to_expiry" in sens["f_time"]
+    hi = sens["h1_interval"]                                   # A28: shape of the registered interval (same draws)
+    assert (hi["stat"], hi["lo"], hi["hi"]) == pytest.approx(
+        (sens["a_maps"]["pm2"]["stat"], sens["a_maps"]["pm2"]["lo"], sens["a_maps"]["pm2"]["hi"]))
+    assert hi["exploratory"] is True and hi["b"] == 19
     mg = pd.read_parquet(root / "data/p2/derived/marginal.parquet")
     for sec, key, variant in (("d_h2", "ratio_mm", "ratio_mm"), ("d_h2", "ratio_mm_std", "ratio_mm_std"),
                               ("b_mm", "h2_ratio_mm", "ratio_mm"), ("b_mm", "h2_ratio_mm_std", "ratio_mm_std")):
@@ -609,6 +613,92 @@ def test_h1_sign_groups_reuse_the_h1_bootstrap_on_their_cells():
     assert out["within_pos"]["b"] == 9 and out["within_pos"]["rule"] == "H1"
 
 
+def _near_zero_frame(seed: int, n_cells: int = 60, n_days: int = 80, per: int = 3, sd: float = 6.0) -> pd.DataFrame:
+    """Many cells with true edge near zero, capital independent of the edge (the design of the audit's
+    synthetic_sign_groups.py, A04); the cells and their capital are fixed, ``seed`` draws the fills."""
+    mu = np.linspace(-1.5, 1.5, n_cells)
+    kcap = np.exp(np.random.default_rng(1).normal(4, 1.5, n_cells))
+    rng = np.random.default_rng(seed)
+    n = n_days * per
+    fr = pd.DataFrame({"cell": np.repeat([f"BTC|{'sell' if c % 2 else 'buy'}|c{c:02d}|t" for c in range(n_cells)], n),
+                       "day": np.tile(np.repeat([f"d{d:03d}" for d in range(n_days)], per), n_cells),
+                       "edge": (mu[:, None, None] + rng.normal(0, sd, (n_cells, n_days, per))).ravel(),
+                       "index_price": 1e4, "amount": 1.0, "K": np.repeat(kcap, n)})
+    fr["side"] = fr["cell"].str.split("|").str[1]
+    return fr
+
+
+def test_h1_sign_groups_by_edge_sign_choose_again_and_mostly_cover_their_estimate():
+    """A04: the sign groups are chosen by the estimated edge, so every replicate chooses again on its own A*. Over 30
+    data sets of the audit's design the estimate lies inside its interval in 95 % of the group intervals (with the
+    cells held fixed, as before the audit: 77 %); single data sets can still miss (percentile interval of a
+    non-smooth statistic)."""
+    inside = []
+    for s in range(30):
+        fr = _near_zero_frame(100 + s)
+        cells, _ = ip.edge_map(fr, "K", min_fills=10, b=1)
+        out = ip.h1_sign(fr, cells, k_col="K", min_fills=10, b=199, draws=2)
+        for name in ("within_pos", "within_nonpos"):
+            v = out[name]
+            inside.append(v["lo"] <= v["stat"] <= v["hi"])
+            assert v["selection"] == "per replicate", name
+            assert 0.0 < v["switch_share_mean"] < 1.0, name
+        for name in ("within_sell", "within_buy"):          # chosen by the maker side, not by the result
+            assert out[name]["selection"] == "fixed", name
+        assert out["within_pos_sell"]["selection"] == out["within_pos_buy"]["selection"] == "per replicate"
+    assert np.mean(inside) >= 0.9
+
+
+def test_h1_sign_reselected_draws_match_bruteforce_resampling():
+    rng = np.random.default_rng(3)
+    rows = []
+    for c in range(8):
+        side = "sell" if c < 4 else "buy"
+        for d in range(10):
+            for _ in range(int(rng.integers(1, 4))):
+                rows.append((f"BTC|{side}|d{c}|t", f"d{d}", float(rng.normal((c - 3.5) * 0.3, 2.0)), 1e4,
+                             float(rng.uniform(50, 150)) * (c + 1), 1.0))
+    fr = _fill_frame(rows)
+    b = 40
+    cells, _ = ip.edge_map(fr, "K", min_fills=5, b=1)
+    out = ip.h1_sign(fr, cells, k_col="K", min_fills=5, b=b, seed=4, draws=5)
+    occ = sorted(cells.loc[cells["occupied"], "cell"])
+    days = np.array(sorted(fr["day"].unique()))
+    W = ip.day_multiplicities(len(days), b=b, seed=4)
+    want = {"within_pos": [], "within_nonpos": [], "within_pos_buy": []}
+    for w in W:
+        rep = pd.concat([fr[fr["day"] == day] for day, m in zip(days, w) for _ in range(m)])
+        g = rep[rep["cell"].isin(occ)].groupby("cell")
+        A = 1e4 * g["edge"].sum() / g["idx"].sum()
+        Bv = 1e4 * g["edge"].sum() / g["kk"].sum()
+        buy = A.index.str.split("|").str[1] == "buy"
+        for name, m in (("within_pos", A > 0), ("within_nonpos", A <= 0), ("within_pos_buy", (A > 0) & buy)):
+            want[name].append(stats.spearmanr(A[m], Bv[m]).correlation if m.sum() >= 3 else np.nan)
+    for name, brute in want.items():
+        np.testing.assert_allclose(out[name]["_draws"], brute, atol=1e-12, err_msg=name)
+        assert out[name]["lo"] == pytest.approx(np.nanquantile(brute, 0.05)), name
+        assert out[name]["hi"] == pytest.approx(np.nanquantile(brute, 0.95)), name
+
+
+def test_h1_interval_shape_percentile_basic_and_bias_corrected():
+    """A28: exploratory description of the registered percentile interval (not centred on the estimate)."""
+    rng = np.random.default_rng(0)
+    draws = rng.normal(0.0, 1.0, 20_000)
+    sym = ip.h1_interval_shape(draws, 0.0)
+    assert sym["lo"] == pytest.approx(np.quantile(draws, 0.05)) and sym["hi"] == pytest.approx(np.quantile(draws, 0.95))
+    assert sym["share_ge_stat"] == pytest.approx(np.mean(draws >= 0.0))
+    assert sym["bc_lo"] == pytest.approx(sym["lo"], abs=0.03) and sym["bc_hi"] == pytest.approx(sym["hi"], abs=0.03)
+    shifted = ip.h1_interval_shape(draws, 1.0)            # estimate at the 84th percentile of its draws
+    assert shifted["basic_lo"] == pytest.approx(2.0 - shifted["hi"])
+    assert shifted["basic_hi"] == pytest.approx(2.0 - shifted["lo"])
+    z0 = stats.norm.ppf(np.mean(draws < 1.0))
+    assert shifted["z0"] == pytest.approx(z0)
+    z = stats.norm.ppf(0.95)
+    assert shifted["bc_lo"] == pytest.approx(np.quantile(draws, stats.norm.cdf(2 * z0 - z)))
+    assert shifted["bc_hi"] == pytest.approx(np.quantile(draws, stats.norm.cdf(2 * z0 + z)))
+    assert shifted["mean_draw"] == pytest.approx(draws.mean()) and shifted["exploratory"] is True
+
+
 def test_h3_review_rows_by_regime_manager_and_small_books_without_sm():
     md = _maker_days(40)
     md["manager"] = ["SM", "PM:ETH", "PM2:ETH", "PM2:HYPE"] * 10
@@ -642,12 +732,13 @@ def test_main_extras_adds_review_entries_and_keeps_the_rest(tmp_path):
     sens = json.loads((out / "sensitivity.json").read_text())
     assert {"sign_floor", "top_overlap", "within_pos", "within_nonpos"} <= set(sens["h1_sign"])
     assert "by_regime" in sens["d_h2"] and "by_account_manager" in sens["e_h3"]
-    before = {k: v for k, v in sens.items() if k != "h1_sign"}
+    before = {k: v for k, v in sens.items() if k not in ("h1_sign", "h1_interval")}
     (out / "sensitivity.json").write_text(json.dumps(before))
     sh3 = pd.read_csv(out / "sens_h3.csv")
     n_before = len(sh3)
     assert ip.main(["extras", "--root", str(root), "--b", "19", "--min-fills", "20"]) == 0
     again = json.loads((out / "sensitivity.json").read_text())
     assert again["h1_sign"] == sens["h1_sign"]
+    assert again["h1_interval"] == sens["h1_interval"]
     assert again["a_maps"] == sens["a_maps"]
     assert len(pd.read_csv(out / "sens_h3.csv")) == n_before     # replaced, not appended twice

@@ -13,7 +13,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 
-from derive_surface import p2validate  # noqa: E402
+from derive_surface import p2feeds, p2validate  # noqa: E402
 from derive_surface.figs_p2 import _kit_t2a1 as kit  # noqa: E402
 from derive_surface.figs_p2 import a1  # noqa: E402
 
@@ -60,11 +60,12 @@ def _summary(v: pd.DataFrame) -> dict:
             "cells": p2validate.summarize(ok).to_dict("records")}
 
 
-def _capital(vol_max=1100.0, fwd_max=1000.0) -> pd.DataFrame:
+def _capital(vol_max=1100.0, fwd_max=1000.0, spot=(900.0, 20.0, 30.0, 40.0)) -> pd.DataFrame:
     ts = np.array([p2validate.PM2_START_TS["BTC"] - 10, p2validate.PM2_START_TS["BTC"] + 10,
                    p2validate.PM2_START_TS["ETH"] + 20, p2validate.PM2_START_TS["HYPE"] + 30])
     return pd.DataFrame({"currency": ["BTC", "BTC", "ETH", "HYPE"], "ts": ts,
-                         "vol_age": [5000.0, 60.0, vol_max, 30.0], "fwd_age": [9000.0, 40.0, 50.0, fwd_max]})
+                         "vol_age": [5000.0, 60.0, vol_max, 30.0], "fwd_age": [9000.0, 40.0, 50.0, fwd_max],
+                         "spot_age": list(spot)})
 
 
 @pytest.fixture
@@ -109,7 +110,7 @@ def test_build_writes_figure_and_tables(res, tmp_path):
     names = {p.name for p in paths}
     assert {"a1.pdf", "a1.png", "fig_a1_a.csv", "fig_a1_b.csv", "fig_a1_meta.csv"} <= names
     w, h = kit.pdf_size_inches(out / "a1.pdf")
-    assert abs(w - 7.0) <= 0.02 and abs(h - 2.5) <= 0.02
+    assert abs(w - 6.84) <= 0.005 and abs(h - 2.5) <= 0.02
     b = pd.read_csv(res / "fig_a1_b.csv")
     pts = b[b["item"] == "point"]
     mm = pts[~pts["is_initial"].astype(str).str.lower().eq("true")]
@@ -156,3 +157,34 @@ def test_real_data_meets_the_build_instruction(tmp_path):
     out = a1.run_checks(rd)
     bad = out[~out["agrees"] | (out["matches_instruction"] == False)]  # noqa: E712
     assert bad.empty, bad.to_string()
+
+
+def test_spot_feed_age_is_counted_and_named_in_the_caption(res, tmp_path):
+    """A47: the vol and forward limits say nothing about the spot feed; fills of the PM2 window with a spot price
+    older than the spot heartbeat are counted, named in the caption and kept (the first row lies before the
+    window and does not count)."""
+    hb = int(p2feeds.HEARTBEAT["spot"])
+    data = _load(res)
+    assert data["feed_age"]["spot_stale_fills"] == 0 and data["feed_age"]["spot_limit_s"] == hb
+    assert a1.FEED_SENTENCE in a1.caption(data)
+    assert f"none uses a spot price older than the heartbeat of the spot feed ({hb} seconds)" in a1.caption(data)
+    _capital(spot=(5000.0, hb + 6.0, 20.0, 1161.0)).to_parquet(res.parent / "capital.parquet")
+    data = _load(res)
+    fa = data["feed_age"]
+    assert fa["spot_stale_fills"] == 2 and fa["spot_age_max_s"] == 1161.0 and fa["holds"] is True
+    assert (f"; 2 fills use a spot price older than the heartbeat of the spot feed ({hb} seconds) and stay in the "
+            "sample.") in a1.caption(data)
+    a1.build(out_dir=tmp_path / "figures", results_dir=res, capital_path=res.parent / "capital.parquet")
+    meta = pd.read_csv(res / "fig_a1_meta.csv").set_index("key")["value"]
+    assert float(meta["spot_stale_fills"]) == 2 and float(meta["spot_limit_s"]) == hb
+    out = a1.run_checks(res, with_expected=False)
+    assert out["agrees"].all(), out.loc[~out["agrees"], ["id", "figure", "source", "error"]].to_string()
+
+
+def test_module_caption_names_vol_and_forward_and_the_spot_count():
+    assert "no fill uses a vol or forward feed older than the limits of the validation blocks" in a1.CAPTION
+    assert "\\PH{a1-spot-stale} fills use a spot price older than the heartbeat of the spot feed" in a1.CAPTION
+
+
+def test_placeholder_clause_is_the_spot_clause():
+    assert a1._SPOT_CLAUSE_PH == a1.SPOT_CLAUSE.format(n="\\PH{a1-spot-stale}", hb="\\PH{a1-spot-heartbeat}")

@@ -23,7 +23,8 @@ Preregistration ``docs/paper2/PRAEREGISTRIERUNG.md`` (H4, Inferenz, Nachtrag 3 p
 
 Outputs: ``results/p2/h4.json``, ``h4_placebo.csv``, ``fig_h4_events.csv`` and the exploratory
 ``sensitivity_h4.json`` (per currency; without cells with ``|dose| > 1``; placebo dates at a distance from all
-timelines of the currency including SM and account libs). The placebo stage is resumable
+timelines of the currency including SM and account libs; ``placebo_matched``: placebos only for the events with cells
+in the real panel and with disjoint windows per currency; ``audit``: see below). The placebo stage is resumable
 (``data/p2/derived/h4_placebo/``)::
 
     python3 scripts/p2_heavy.py --wait-max 500 -- python3 -m derive_surface.inference_p2_h4 run --max-seconds 420
@@ -34,6 +35,14 @@ residualised regressor and outcome in 20 equal-count bins with their histogram a
 ``run`` writes both; ``figtables`` rebuilds them from the stored panel and results without the placebo stage::
 
     python3 -m derive_surface.inference_p2_h4 figtables
+
+Audit entries (docs/paper2/AUDIT.md; exploratory, no registered number changes), ``sensitivity_h4.json`` ``audit``:
+``placebo_calibration`` (A05): the day-cluster SE and the wild bootstrap measure the noise at one given date, not the
+spread from date to date; the placebo t give the reference distribution, their spread (``t_sd``) and the span
+``beta - (t_p95, t_p05) * se`` with its reading for capital ten per cent cheaper. ``placebo_composition`` (A29): how
+the placebo panels differ from the real one (an event without cells, overlapping windows). ``dose_robust`` (A30):
+beta with the median log ratio per cell and with the mean without fills with ``|log ratio| > 1``
+(``data/p2/derived/h4_doses/*_fills.parquet``). ``extras`` rebuilds ``review`` and ``audit`` from stored results.
 """
 from __future__ import annotations
 
@@ -48,6 +57,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
+from scipy.stats import norm
 
 from . import p2events
 
@@ -77,7 +87,10 @@ FIG_COLUMNS = (["event_id", "ccy", "manager", "event_day", "event_utc", "kinds",
                 "median_dose"]
                + [f"t{k}_{c}" for k in (1, 2, 3) for c in ("cells", "dose_lo", "dose_hi", "median_dose", "n_pre",
                                                            "n_post", "y_pre", "y_post")])
-VARIANTS = {"main": "event", "all_timelines": "all"}
+VARIANTS = {"main": "event", "all_timelines": "all", "matched": "event"}
+SEP_DAYS = 2 * WINDOW_DAYS + 1          # placebo days of one currency this far apart have disjoint windows (A29)
+TRIM_ABS_LOG_RATIO = 1.0                # dose sensitivity: fills with |log(K_after / K_before)| above left out (A30)
+MEDIAN_DIFF = 0.05                      # dose sensitivity: pairs counted whose median and mean log ratio differ more
 FWL_BINS = 20
 FWL_HIST_BINS = 40
 FWL_COLUMNS = ["kind", "bin", "x_mean", "y_mean", "n_rows", "n_fills", "x", "x_hi", "count", "fwl_slope"]
@@ -337,6 +350,43 @@ def draw_placebos(kept: pd.DataFrame, days: Mapping[str, np.ndarray], n_rep: int
             rep.append({"event_id": ev.event_id, "ccy": ev.ccy, "placebo_ts": day * DAY + int(ev.event_ts) % DAY,
                         "source": src})
         out.append(rep)
+    return out
+
+
+def draw_placebos_apart(kept: pd.DataFrame, days: Mapping[str, np.ndarray], n_rep: int = N_PLACEBO,
+                        seed: int = SEED, sep_days: int = SEP_DAYS) -> List[List[dict]]:
+    """Placebos with disjoint windows per currency (audit A29, exploratory; the registered draw is
+    :func:`draw_placebos`). ``kept`` are the events to replace (in ``run``: those with cells in the real panel). Per
+    replication the events are visited in a random order; each takes a day uniformly from its admissible days that
+    are at least ``sep_days`` from the days already drawn for its currency in this replication (so no fill enters two
+    placebo windows), or is left out when none is left; the dose vector comes uniformly from ``kept`` of the same
+    currency. The list of a replication follows the order of ``kept``."""
+    for ev in kept.itertuples():
+        if len(days[ev.event_id]) == 0:
+            raise ValueError(f"no admissible placebo day for {ev.event_id}")
+    by_ccy: Dict[str, List[str]] = {}
+    for ev in kept.itertuples():
+        by_ccy.setdefault(ev.ccy, []).append(ev.event_id)
+    evs = list(kept.itertuples())
+    rng = np.random.default_rng(seed)
+    out = []
+    for _ in range(n_rep):
+        chosen: Dict[int, dict] = {}
+        taken: Dict[str, List[int]] = {}
+        for i in rng.permutation(len(evs)):
+            ev = evs[int(i)]
+            dd = np.asarray(days[ev.event_id], dtype=np.int64)
+            prev = taken.get(ev.ccy)
+            if prev:
+                dd = dd[np.all(np.abs(dd[:, None] - np.asarray(prev, dtype=np.int64)[None, :]) >= sep_days, axis=1)]
+            if len(dd) == 0:
+                continue
+            day = int(dd[rng.integers(len(dd))])
+            src = by_ccy[ev.ccy][int(rng.integers(len(by_ccy[ev.ccy])))]
+            taken.setdefault(ev.ccy, []).append(day)
+            chosen[int(i)] = {"event_id": ev.event_id, "ccy": ev.ccy,
+                              "placebo_ts": day * DAY + int(ev.event_ts) % DAY, "source": src}
+        out.append([chosen[i] for i in sorted(chosen)])
     return out
 
 
@@ -626,7 +676,14 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
                                   if len(v) else None,
                                   "last": pd.Timestamp(int(v.max()) * DAY, unit="s").strftime("%Y-%m-%d")
                                   if len(v) else None} for k, v in days.items()}
-        draws = draw_placebos(kept, days, n_placebo, seed)
+        if variant == "matched":        # A29: events with cells in the real panel, disjoint windows per currency
+            matched = kept[kept["event_id"].isin(set(panel["event_id"].astype(str)))].reset_index(drop=True)
+            if matched.empty:
+                placebo[variant] = pd.DataFrame(columns=PART_COLUMNS)
+                continue
+            draws = draw_placebos_apart(matched, days, n_placebo, seed)
+        else:
+            draws = draw_placebos(kept, days, n_placebo, seed)
         if variant == "main":
             day_table = placebo_day_table(kept, changes, sample, drawn_counts(draws))
         dstr = [draws_string(r) for r in draws]
@@ -711,9 +768,23 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
                                       "placebo_betas": all_pl["beta"].tolist(),
                                       **verdict(f.beta, test["p"], ps_all["p95"])}}
 
+    mt = placebo["matched"]
+    ps_m = placebo_summary(mt["beta"].to_numpy(float), f.beta)
+    ps_m.update(t_spread(mt["t"].to_numpy(float)))
+    drawn = np.array([len(_parse_draws(x)) for x in mt["draws"].astype(str)], dtype=float)
+    sens["placebo_matched"] = {
+        "design": "placebos only for the kept events with cells in the real panel; per replication the placebo days "
+                  f"of one currency are at least {SEP_DAYS} days apart (disjoint windows), events that do not fit "
+                  "are left out (audit A29)",
+        "placebo": ps_m, "events_drawn": _min_med_max(drawn),
+        "events_with_cells": _min_med_max(mt["events_with_cells"].to_numpy(float)),
+        "placebo_betas": mt["beta"].tolist(), **verdict(f.beta, test["p"], ps_m["p95"])}
+
     oi_path = out_dir / "manager_oi_share.csv"
     sens["review"] = review_extras(panel, h4, kept, pd.read_csv(oi_path) if oi_path.exists() else None, b=b,
                                    seed=seed)
+    fills = load_fill_doses(sorted(map(str, panel["event_id"].unique())), dose_dir)
+    sens["audit"] = audit_extras(panel, h4, kept, main_pl, fills, b=b, seed=seed)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_json(out_dir / "h4.json", h4)
@@ -778,9 +849,202 @@ def review_extras(panel: pd.DataFrame, h4: Mapping, events: pd.DataFrame, oi: Op
     return out
 
 
+def _ten_pct(lo: float, hi: float) -> List[float]:
+    """Change in the half spread (bp) for capital ten per cent cheaper at the bounds ``lo, hi`` of beta, sorted."""
+    return sorted([TEN_PCT_DOSE * float(lo), TEN_PCT_DOSE * float(hi)])
+
+
+def t_spread(t: Sequence[float], level: float = LEVEL) -> dict:
+    """Spread of placebo t statistics: sample sd, MAD-based sd, percentiles and the shares beyond the normal
+    critical value of ``level`` (nominal: ``1 - level`` two-sided, ``(1 - level) / 2`` one-sided)."""
+    x = np.asarray(t, dtype=float)
+    x = x[np.isfinite(x)]
+    alpha = (1.0 - level) / 2.0
+    crit = float(norm.ppf(1.0 - alpha))
+    if len(x) < 2:
+        return {"n": int(len(x)), "crit": crit, "t_sd": np.nan, "t_mad_sd": np.nan, "t_mean": np.nan,
+                "t_median": np.nan, "t_p05": np.nan, "t_p95": np.nan, "share_t_gt_crit": np.nan,
+                "share_abs_t_gt_crit": np.nan}
+    med = float(np.median(x))
+    return {"n": int(len(x)), "crit": crit, "t_sd": float(np.std(x, ddof=1)),
+            "t_mad_sd": float(np.median(np.abs(x - med)) / norm.ppf(0.75)), "t_mean": float(x.mean()),
+            "t_median": med, "t_p05": float(np.quantile(x, alpha)), "t_p95": float(np.quantile(x, 1.0 - alpha)),
+            "share_t_gt_crit": float(np.mean(x > crit)), "share_abs_t_gt_crit": float(np.mean(np.abs(x) > crit))}
+
+
+def placebo_calibration(placebo: pd.DataFrame, res: Mapping, y_mean: float, level: float = LEVEL) -> dict:
+    """Span of beta calibrated on the placebo distribution of t (audit A05, exploratory).
+
+    The day-cluster SE and the wild cluster bootstrap measure the noise of ``beta`` at the given dates; at random
+    dates (the placebos, each with its own day-cluster SE) t spreads wider, because the cells do not move in parallel
+    from date to date. Taking the placebo t as the reference distribution of ``(beta_hat - beta) / se``:
+    ``lo, hi = beta - (t_p95, t_p05) * se`` (percentiles at ``level``); ``sd_scaled_lo, sd_scaled_hi`` =
+    ``beta -/+ z * se * t_sd`` (normal, SE scaled by the sd of the placebo t); ``p_placebo_t`` = one-sided
+    ``(1 + #{t_placebo >= t}) / (n + 1)``. ``ten_pct_*``: change in the half spread for capital ten per cent cheaper
+    (``ln 0.9`` times the bounds); ``ten_pct_narrowing_share*``: the largest narrowing inside the span as a share of
+    ``y_mean``, the mean half spread of the panel (negative: no narrowing inside the span). The registered verdict and
+    ``h4.json`` stay as they are."""
+    beta, se, t0 = float(res["stat"]), float(res["se"]), float(res["t"])
+    sp_ = t_spread(placebo["t"].to_numpy(float), level)
+    fin = np.isfinite(placebo["t"].to_numpy(float))
+    betas = placebo["beta"].to_numpy(float)[fin]
+    ses = placebo["se"].to_numpy(float)
+    ses = ses[np.isfinite(ses)]
+    lo, hi = beta - sp_["t_p95"] * se, beta - sp_["t_p05"] * se
+    k = sp_["crit"] * se * sp_["t_sd"]
+    ch, ch_sd, ch_d = _ten_pct(lo, hi), _ten_pct(beta - k, beta + k), _ten_pct(res["lo"], res["hi"])
+    n = sp_["n"]
+    return {"exploratory": True, "level": float(level), **sp_,
+            "beta": beta, "se": se, "t": t0,
+            "beta_sd": float(np.std(betas, ddof=1)) if len(betas) > 1 else np.nan,
+            "se_median": float(np.median(ses)) if len(ses) else np.nan,
+            "p_placebo_t": (1 + int(np.sum(placebo["t"].to_numpy(float)[fin] >= t0))) / (n + 1) if n else np.nan,
+            "lo": lo, "hi": hi, "sd_scaled_lo": beta - k, "sd_scaled_hi": beta + k,
+            "y_mean": float(y_mean), "ten_pct_dose": TEN_PCT_DOSE,
+            "ten_pct_change_lo": ch[0], "ten_pct_change_hi": ch[1],
+            "ten_pct_change_sd_scaled_lo": ch_sd[0], "ten_pct_change_sd_scaled_hi": ch_sd[1],
+            "ten_pct_narrowing_share": -ch[0] / float(y_mean),
+            "ten_pct_narrowing_share_sd_scaled": -ch_sd[0] / float(y_mean),
+            "ten_pct_narrowing_share_descriptive": -ch_d[0] / float(y_mean),
+            "note": "span of beta calibrated on the placebo t (percentiles); the descriptive interval of h4.json and "
+                    "the wild bootstrap p condition on the given dates. The placebo panels contain an event without "
+                    "cells in the real panel and overlapping windows (placebo_composition, placebo_matched)."}
+
+
+def _min_med_max(x: np.ndarray) -> dict:
+    x = np.asarray(x, dtype=float)
+    if len(x) == 0:
+        return {"min": None, "median": None, "max": None}
+    return {"min": int(x.min()), "median": float(np.median(x)), "max": int(x.max())}
+
+
+def _parse_draws(s: str) -> List[Tuple[str, int]]:
+    """(event_id, UTC day number) of a ``draws`` string of ``h4_placebo.csv``."""
+    out = []
+    for part in str(s).split(";"):
+        if part:
+            eid, day, _ = part.split("@")
+            out.append((eid, int(pd.Timestamp(day, tz="UTC").timestamp()) // DAY))
+    return out
+
+
+def _overlap_pairs(days_by_ccy: Mapping[str, List[int]], sep_days: int = SEP_DAYS) -> int:
+    return int(sum(abs(a - b) < sep_days for dd in days_by_ccy.values() for i, a in enumerate(dd) for b in dd[i + 1:]))
+
+
+def placebo_composition(placebo: pd.DataFrame, panel: pd.DataFrame, kept: pd.DataFrame) -> dict:
+    """How the placebo panels are built compared with the real panel (audit A29, descriptive): events with cells,
+    rows, day clusters, pairs of dates of one currency whose windows overlap (days less than ``SEP_DAYS`` apart) and
+    days drawn twice for one currency in a replication."""
+    ccy_of = dict(zip(kept["event_id"].astype(str), kept["ccy"].astype(str)))
+    real = set(panel["event_id"].astype(str))
+    ids = [str(e) for e in kept["event_id"]]
+    real_days: Dict[str, List[int]] = {}
+    for e, ts in zip(ids, kept["event_ts"]):
+        if e in real:
+            real_days.setdefault(ccy_of[e], []).append(int(ts) // DAY)
+    overlaps, same = [], []
+    for s in placebo["draws"]:
+        by: Dict[str, List[int]] = {}
+        for eid, day in _parse_draws(s):
+            by.setdefault(ccy_of.get(eid, eid.split("-")[0]), []).append(day)
+        overlaps.append(_overlap_pairs(by))
+        same.append(sum(len(v) - len(set(v)) for v in by.values()))
+    ev_pl = placebo["events_with_cells"].to_numpy(float)
+    rows = placebo["n"].to_numpy(float)
+    return {"exploratory": True, "events_kept": int(len(ids)), "events_with_cells_real": int(len(real)),
+            "events_without_cells_real": [e for e in ids if e not in real],
+            "events_with_cells_placebo_min": int(ev_pl.min()),
+            "events_with_cells_placebo_median": float(np.median(ev_pl)),
+            "events_with_cells_placebo_max": int(ev_pl.max()), "rows_real": int(len(panel)),
+            "rows_per_fill_real": float(len(panel) / max(panel["fill_key"].nunique(), 1)),
+            "rows_placebo_min": int(rows.min()), "rows_placebo_median": float(np.median(rows)),
+            "rows_placebo_max": int(rows.max()),
+            "clusters_real": int(panel["day"].nunique()),
+            "clusters_placebo_median": float(np.median(placebo["clusters"].to_numpy(float))),
+            "overlap_pairs_real": _overlap_pairs(real_days), "overlap_pairs_placebo_mean": float(np.mean(overlaps)),
+            "same_day_draws_placebo_mean": float(np.mean(same)), "sep_days": SEP_DAYS}
+
+
+def load_fill_doses(event_ids: Sequence[str], dose_dir: Path = p2events.DOSE_DIR) -> Optional[pd.DataFrame]:
+    """Per-fill log ratios (``<event_id>_fills.parquet`` of ``p2events``) of the given events with an ``event_id``
+    column; None when no file is there."""
+    parts = []
+    for eid in event_ids:
+        path = Path(dose_dir) / f"{eid}_fills.parquet"
+        if path.exists():
+            d = pd.read_parquet(path)
+            d.insert(0, "event_id", str(eid))
+            parts.append(d)
+    return pd.concat(parts, ignore_index=True) if parts else None
+
+
+def robust_doses(fills: pd.DataFrame, trim: float = TRIM_ABS_LOG_RATIO) -> pd.DataFrame:
+    """Per (event, cell): the registered dose (mean log ratio over the fills with one), the median, the mean without
+    fills with ``|log ratio| > trim`` (NaN when none is left), the fills with a log ratio and those above ``trim``."""
+    f = fills[np.isfinite(fills["log_ratio"].to_numpy(float))]
+    key = [f["event_id"].astype(str), f["cell"].astype(str)]
+    g = f["log_ratio"].astype(float).groupby(key)
+    large = f["log_ratio"].abs() > trim
+    out = pd.DataFrame({"dose_mean": g.mean(), "dose_median": g.median(), "n_valid": g.size(),
+                        "n_large": large.groupby(key).sum().astype(int)})
+    small = f[~large.to_numpy()]
+    out["dose_trimmed"] = small["log_ratio"].astype(float).groupby(
+        [small["event_id"].astype(str), small["cell"].astype(str)]).mean().reindex(out.index)
+    out.index.names = ["event_id", "cell"]
+    return out.reset_index()
+
+
+def dose_robust(panel: pd.DataFrame, fills: Optional[pd.DataFrame], b: int = B, seed: int = SEED,
+                trim: float = TRIM_ABS_LOG_RATIO, median_diff: float = MEDIAN_DIFF) -> Optional[dict]:
+    """beta with robust doses (audit A30, exploratory; the registered dose is the mean log ratio). A few fills near
+    zero capital (maker buys at the minimum price) give log ratios of -6 and move the mean. ``median``: the median
+    log ratio per (event, cell); ``trimmed``: the mean without fills with ``|log ratio| > trim``; rows of cells
+    without a dose are dropped. ``check_mean_max_abs_diff``: the stored panel dose against the mean of the fills."""
+    if fills is None or len(fills) == 0:
+        return None
+    t = robust_doses(fills, trim).set_index(["event_id", "cell"])
+    key = pd.MultiIndex.from_arrays([panel["event_id"].astype(str), panel["cell"].astype(str)])
+    tab = t.reindex(key)
+    pairs = t.reindex(pd.MultiIndex.from_frame(panel[["event_id", "cell"]].astype(str).drop_duplicates()))
+    diff = np.abs(tab["dose_mean"].to_numpy(float) - panel["dose"].to_numpy(float))
+    out: dict = {"exploratory": True, "trim_abs_log_ratio": float(trim), "median_diff": float(median_diff),
+                 "pairs": int(len(pairs)), "pairs_without_fills": int(pairs["dose_mean"].isna().sum()),
+                 "pairs_with_large_log_ratio": int((pairs["n_large"] > 0).sum()),
+                 "fills_with_large_log_ratio": int(np.nansum(pairs["n_large"].to_numpy(float))),
+                 "pairs_median_differs": int((np.abs(pairs["dose_median"] - pairs["dose_mean"]) > median_diff).sum()),
+                 "check_mean_max_abs_diff": float(np.nanmax(diff)) if np.isfinite(diff).any() else np.nan}
+    for name, col in (("median", "dose_median"), ("trimmed", "dose_trimmed")):
+        d = tab[col].to_numpy(float)
+        keep = np.isfinite(d)
+        alt = panel.assign(dose=d)[keep].reset_index(drop=True)
+        r = wild_cluster_test(fit(alt), b=b, seed=seed)
+        r.update(exploratory=True, rows_dropped=int((~keep).sum()),
+                 cell_events=int(alt.groupby(["cell", "event_id"]).ngroups) if len(alt) else 0,
+                 events=int(alt["event_id"].nunique()))
+        out[name] = r
+    return out
+
+
+def audit_extras(panel: pd.DataFrame, res: Mapping, kept: pd.DataFrame, placebo: pd.DataFrame,
+                 fills: Optional[pd.DataFrame], b: int = B, seed: int = SEED) -> dict:
+    """Audit entries of ``sensitivity_h4.json`` (A05, A29, A30; exploratory): ``placebo_calibration``,
+    ``placebo_composition``, ``dose_robust`` (None without per-fill doses)."""
+    return {"exploratory": True, "b": int(b), "seed": int(seed),
+            "placebo_calibration": placebo_calibration(placebo, res, float(np.mean(panel["y_hs_bp"].to_numpy(float)))),
+            "placebo_composition": placebo_composition(placebo, panel, kept),
+            "dose_robust": dose_robust(panel, fills, b=b, seed=seed)}
+
+
+def _sorted_kept(events: pd.DataFrame) -> pd.DataFrame:
+    return (events[events["kept"].astype(bool)].sort_values(["ccy", "event_ts"], kind="mergesort")
+            .reset_index(drop=True))
+
+
 def run_extras(results_dir: Path = RESULTS_DIR, panel_path: Path = p2events.PANEL_PATH, b: int = B,
-               seed: int = SEED) -> dict:
-    """``review_extras`` on the stored panel and results, merged into ``sensitivity_h4.json`` as ``review``."""
+               seed: int = SEED, dose_dir: Path = p2events.DOSE_DIR) -> dict:
+    """``review_extras`` and ``audit_extras`` on the stored panel and results (``h4_placebo.csv``, per-fill doses),
+    merged into ``sensitivity_h4.json`` as ``review`` and ``audit``."""
     results_dir = Path(results_dir)
     h4 = json.loads((results_dir / "h4.json").read_text())
     sens = json.loads((results_dir / "sensitivity_h4.json").read_text())
@@ -791,6 +1055,9 @@ def run_extras(results_dir: Path = RESULTS_DIR, panel_path: Path = p2events.PANE
     if abs(fit(panel).beta - float(h4["stat"])) > 1e-8 * max(1.0, abs(float(h4["stat"]))):
         raise RuntimeError("stored panel does not reproduce h4.json stat")
     sens["review"] = review_extras(panel, h4, events[events["kept"].astype(bool)], oi, b=b, seed=seed)
+    placebo = pd.read_csv(results_dir / "h4_placebo.csv", dtype={"draws": str})
+    fills = load_fill_doses(sorted(map(str, panel["event_id"].unique())), dose_dir)
+    sens["audit"] = audit_extras(panel, h4, _sorted_kept(events), placebo, fills, b=b, seed=seed)
     _write_json(results_dir / "sensitivity_h4.json", sens)
     r = sens["review"]
     return {"status": "DONE", "y_mean": r["readings"]["y_mean"], "sells_beta": r["sells_only"]["beta"],
@@ -840,7 +1107,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--seed", type=int, default=SEED)
     r.add_argument("--max-seconds", type=float, default=420.0)
     sub.add_parser("figtables", help="rebuild fig_h4_fwl_bins.csv and h4_placebo_days.csv from stored results")
-    x = sub.add_parser("extras", help="review-round readings and side splits into sensitivity_h4.json (review)")
+    x = sub.add_parser("extras", help="review-round readings, side splits and audit entries into "
+                                      "sensitivity_h4.json (review, audit) from stored results")
     x.add_argument("--b", type=int, default=B)
     x.add_argument("--seed", type=int, default=SEED)
     a = ap.parse_args(argv)

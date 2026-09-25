@@ -154,10 +154,10 @@ def test_build_writes_pdf_png_and_tables(results, tmp_path):
     out = tmp_path / "fig"
     paths = f5.build(out_dir=out, results_dir=results)
     assert {p.name for p in paths} >= {"f5.pdf", "f5.png"}
-    assert _pdf_width_in(out / "f5.pdf") == pytest.approx(7.0, abs=0.02)
+    assert _pdf_width_in(out / "f5.pdf") == pytest.approx(6.84, abs=0.005)
     from PIL import Image
     with Image.open(out / "f5.png") as im:
-        assert im.size == (2800, 1720)
+        assert im.size == (2736, 1720)
     for name in ("fig_f5_a.csv", "fig_f5_b.csv", "fig_f5_c.csv"):
         assert (results / name).exists()
 
@@ -229,3 +229,15 @@ def test_checks_agree_on_synthetic_results(results):
 def test_caption_has_no_dashes():
     assert "—" not in f5.CAPTION and "–" not in f5.CAPTION and " - " not in f5.CAPTION
     assert f5.CAPTION.startswith("\\textbf{The engine over time.}")
+
+
+def test_caption_and_table_explain_the_thin_legacy_line_and_the_month_start(results):
+    """A51: panel a samples the share at the start of each month, and panel c thins the legacy line in months where
+    the legacy manager holds under LEGACY_THICK_SHARE of BTC open interest; both are said, and the share is in
+    the table for the manuscript to cite."""
+    assert "at the start of each month" in f5.CAPTION and "monthly share" not in f5.CAPTION
+    assert "the legacy line is thin in months" in f5.CAPTION and "\\PH{f5-legacy-thin}" in f5.CAPTION
+    assert "start of each month" in f5.PANEL_A_TITLE and "monthly" not in f5.PANEL_A_TITLE
+    f5.build(out_dir=results.parent / "fig", results_dir=results)
+    c = pd.read_csv(results / "fig_f5_c.csv")
+    assert (c["legacy_thin_below"] == f5.LEGACY_THICK_SHARE).all()

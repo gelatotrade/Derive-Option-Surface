@@ -15,7 +15,9 @@ behind a clean-looking console.  This builds ``paper2/main.tex`` with the full l
   (a ``\\PH{key}`` in the module caption stands for any number in the manuscript; deliberate departures are
   listed with their reason in ``CAPTION_EXCEPTIONS`` and printed on every build);
 * a section over its word budget (``p2_wordcount.py``);
-* a number in the text that ``p2_number_check.py`` cannot trace to ``results/p2`` or the pre-registration.
+* a number, date or clock time in the text that ``p2_number_check.py`` finds without its declaration or
+  that its declared source no longer covers, and a declaration that binds no number of its unit (every
+  number is declared in its unit, one entry per occurrence, in the order of the text).
 
     python3 scripts/p2_build.py [--allow-caption-drift] [--no-numbers]
 
@@ -287,9 +289,11 @@ def check_sources(tex: str, paper: Path = PAPER, bib: str = "", literatur: str =
     rep.problems["budgeted section missing"] = [r["section"] for r in rows if r["missing"]]
     if numbers:
         verdicts = nc.check(tex, results, resolve_commit=resolve_commit)
-        rep.numbers = len(verdicts)
-        rep.problems["numbers without source"] = ["{}: {}".format(v.unit, v.token.raw) for v in verdicts
-                                                  if not v.ok]
+        rep.numbers = sum(1 for v in verdicts if v.how != "decl")
+        rep.problems["numbers without source"] = ["{}: {} ({})".format(v.unit, v.token.rel + v.token.raw, v.detail)
+                                                  for v in verdicts if not v.ok and v.how != "decl"]
+        rep.problems["number declarations unused or invalid"] = [
+            "{}: {} (line {}: {})".format(v.unit, v.token.raw, v.line, v.detail) for v in verdicts if v.how == "decl"]
     return rep
 
 

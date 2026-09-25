@@ -1,8 +1,8 @@
 # Abbildungen Paper 2: Prüfliste
 
-Erzeugt 2026-09-25 02:03 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. Jede Zeile vergleicht den Wert, den die Abbildung druckt (ihre Tabelle `results/p2/fig_<slot>_*.csv`), mit der Datei in `results/p2`, aus der er stammt, nie mit sich selbst. Spalte *Bauanweisung*: dieselbe Zahl gegen die Prüfzahl in `docs/paper2/ABBILDUNGSWAHL.md` (Pilotschnitt 17.09.2026), wo der Slot eine hat.
+Erzeugt 2026-09-25 04:54 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. Jede Zeile vergleicht den Wert, den die Abbildung druckt (ihre Tabelle `results/p2/fig_<slot>_*.csv`), mit der Datei in `results/p2`, aus der er stammt, nie mit sich selbst. Spalte *Bauanweisung*: dieselbe Zahl gegen die Prüfzahl in `docs/paper2/ABBILDUNGSWAHL.md` (Pilotschnitt 17.09.2026), wo der Slot eine hat.
 
-**Ergebnis:** 206 von 206 Prüfungen ja; Bauanweisung 108 von 108 ja; Gestalt 13 von 13 ja; Captions 9 von 9 gleich.
+**Ergebnis:** 231 von 231 Prüfungen ja; Bauanweisung 108 von 108 ja; Gestalt 22 von 22 ja; Captions 9 von 9 gleich.
 
 ## Prüfzahlen
 
@@ -74,7 +74,7 @@ Erzeugt 2026-09-25 02:03 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. 
 | F2 | ten largest \|rank_shift\| (ties by cell id) | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | ja | – |
 | F2 | header line = verdict rebuilt from h1.json rule and bounds | registered: 0.90 [0.88, 0.91] → rejected | registered: 0.90 [0.88, 0.91] → rejected | ja | – |
 | F2 | sample line: cells and day clusters | 173 cells · 463 day clusters | 173 cells · 463 day clusters | ja | ja |
-| F2 | forest rows (stat, lo, hi) = h1.json and sensitivity.json | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:b_mm.h1_pm2_mm: [0.902559, 0.8… | {sensitivity.json:f_time.holding: [0.833378, 0.79533, 0.840752], sensitivity.json:a_maps.… | ja | – |
+| F2 | forest rows (stat, lo, hi) = h1.json and sensitivity.json | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:b_mm.h1_pm2_mm: [0.902559, 0.8… | {sensitivity.json:h1_sign.sign_floor: [0.734164, 0.699743, 0.769757], h1.json: [0.902944,… | ja | – |
 | F2 | fills in occupied cells (panel a) = h1.json n_fills | 331813 | 331813 | ja | ja |
 | F2 | cells present in every replicate | 173 | 173 | ja | ja |
 | F2 | kappa span of the occupied cells | [0.0736079, 38.7334] | [0.0736079, 38.7334] | ja | ja |
@@ -187,25 +187,46 @@ Erzeugt 2026-09-25 02:03 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. 
 | A1 | b_books_ETH: b: books of ETH | 18 | 18 | ja | ja |
 | A1 | b_books_HYPE: b: books of HYPE | 1 | 1 | ja | ja |
 | A1 | feed_age: caption: no PM2-window fill uses a feed older than the validation limits | 1 | 1 | ja | ja |
+| A1 | spot_stale: caption: PM2-window fills with a spot price older than the spot heartbeat | 17 | 17 | ja | – |
 | GIF | last frame = T1 a: nodes matched, largest gap of K (USDC) | [740, 1.81899e-12] | [740, 0] | ja | – |
 | GIF | steps of the straddle in the time strip (simple %) | {BTC-pm2-20260108: +1.6 %, BTC-pm2-20260123: −10 %, BTC-pm2-20260524: −7.5 %, BTC-pm2-202… | {BTC-pm2-20260108: +1.6 %, BTC-pm2-20260123: −10 %, BTC-pm2-20260524: −7.5 %, BTC-pm2-202… | ja | – |
 | GIF | frames drawn / skipped (no live expiry) | [80, 0] | [80, 0] | ja | – |
 | GIF | last frame block time = T1 block | 1789632000 | 1789632000 | ja | – |
-| S1 | card number stat (printed 3.5 %) | 0.0345401 | 0.0345401 | ja | – |
-| S1 | card number lo (printed 3.1 %) | 0.0307018 | 0.0307018 | ja | – |
-| S1 | card number hi (printed 3.9 %) | 0.0385572 | 0.0385572 | ja | – |
-| S1 | card number share_nonpositive (printed 42 %) | 0.419621 | 0.419621 | ja | – |
-| S1 | card number n (printed 19 999) | 19999 | 19999 | ja | – |
-| S2 | card number stat (printed 4.7×) | 4.74673 | 4.74673 | ja | – |
-| S2 | card number lo (printed 4.66) | 4.66193 | 4.66193 | ja | – |
-| S2 | card number hi (printed 4.82) | 4.82363 | 4.82363 | ja | – |
-| S2 | card number n (printed 1 943) | 1943 | 1943 | ja | – |
-| S2 | card number share_over_63 (printed 74 %) | 0.73649 | 0.73649 | ja | – |
-| S3 | card number stat (printed 0.90) | 0.902944 | 0.902944 | ja | – |
-| S3 | card number lo (printed 0.88) | 0.880564 | 0.880564 | ja | – |
-| S3 | card number hi (printed 0.91) | 0.907433 | 0.907433 | ja | – |
-| S3 | card number n_cells (printed 173) | 173 | 173 | ja | – |
-| S3 | card number within_pos (printed 0.63) | 0.634125 | 0.634125 | ja | – |
+| GIF | colour scale covers every node or ends in arrows (clim, extend) | [3, 19, neither] | [3.4086, 18.8207] | ja | – |
+| GIF | MP4 next to the GIF (section 8) | docs/media/p2_btc_capital_surface.mp4 | docs/media/p2_btc_capital_surface.mp4 | ja | – |
+| S1 | card number last_sm (printed 30 %) | 29.6109 | 29.6109 | ja | – |
+| S1 | card number last_pm (printed 20 %) | 19.6794 | 19.6794 | ja | – |
+| S1 | card number last_pm2 (printed 10 %) | 10.0339 | 10.0339 | ja | – |
+| S1 | card number tenor_days (printed 22 d) | 22 | 22 | ja | – |
+| S1 | card number step_BTC-pm-20250222 (printed −17 %) | -16.9425 | -16.9425 | ja | – |
+| S1 | card number step_BTC-pm2-20260108 (printed +2 %) | 1.61076 | 1.61076 | ja | – |
+| S1 | card number step_BTC-pm2-20260123 (printed −10 %) | -9.95623 | -9.95623 | ja | – |
+| S1 | card number step_BTC-pm2-20260524 (printed −8 %) | -7.54196 | -7.54196 | ja | – |
+| S1 | card number step_BTC-pm2-20260820 (printed −23 %) | -22.9303 | -22.9303 | ja | – |
+| S2 | card number K_pm2_call (printed 12.0 %) | 12.0169 | 12.0169 | ja | – |
+| S2 | card number K_pm2_book (printed 10.0 %) | 10.0339 | 10.0339 | ja | – |
+| S2 | card number K_sm_call (printed 14.7 %) | 14.6558 | 14.6558 | ja | – |
+| S2 | card number K_sm (printed 29.6 %) | 29.6109 | 29.6109 | ja | – |
+| S2 | card number tenor_days (printed 22 days) | 22 | 22 | ja | – |
+| S3 | card number h1_stat (printed ρ 0.90 [0.88, 0.91]) | 0.902944 | 0.902944 | ja | – |
+| S3 | card number h1_lo (printed ρ 0.90 [0.88, 0.91]) | 0.880564 | 0.880564 | ja | – |
+| S3 | card number h1_hi (printed ρ 0.90 [0.88, 0.91]) | 0.907433 | 0.907433 | ja | – |
+| S3 | card number h1_threshold (printed ρ 0.90 [0.88, 0.91]) | 0.5 | 0.5 | ja | – |
+| S3 | card number h1_rejected (printed rejected) | 1 | 1 | ja | – |
+| S3 | card number h2_stat (printed median 0.035 [0.031, 0.039]) | 0.0345401 | 0.0345401 | ja | – |
+| S3 | card number h2_lo (printed median 0.035 [0.031, 0.039]) | 0.0307018 | 0.0307018 | ja | – |
+| S3 | card number h2_hi (printed median 0.035 [0.031, 0.039]) | 0.0385572 | 0.0385572 | ja | – |
+| S3 | card number h2_threshold (printed median 0.035 [0.031, 0.039]) | 0.5 | 0.5 | ja | – |
+| S3 | card number h2_rejected (printed not rejected) | 0 | 0 | ja | – |
+| S3 | card number h3_stat (printed median 4.75 [4.66, 4.82]) | 4.74673 | 4.74673 | ja | – |
+| S3 | card number h3_lo (printed median 4.75 [4.66, 4.82]) | 4.66193 | 4.66193 | ja | – |
+| S3 | card number h3_hi (printed median 4.75 [4.66, 4.82]) | 4.82363 | 4.82363 | ja | – |
+| S3 | card number h3_threshold (printed median 4.75 [4.66, 4.82]) | 2 | 2 | ja | – |
+| S3 | card number h3_rejected (printed not rejected) | 0 | 0 | ja | – |
+| S3 | card number h4_stat (printed β = −4.6, one-sided p = 0.62, P95 23.4) | -4.59923 | -4.59923 | ja | – |
+| S3 | card number h4_p (printed β = −4.6, one-sided p = 0.62, P95 23.4) | 0.6224 | 0.6224 | ja | – |
+| S3 | card number h4_p95 (printed β = −4.6, one-sided p = 0.62, P95 23.4) | 23.4099 | 23.4099 | ja | – |
+| S3 | card number h4_rejected (printed rejected) | 1 | 1 | ja | – |
 | F2 | caption "grey band": a row of kind band (h1_sign.sign_floor) | fig_f2_c.csv | drawn | ja | – |
 | F2 | caption "exploratory rows": rows of kind exploratory | fig_f2_c.csv | drawn | ja | – |
 | F3 | caption "per account": rows with group label= | fig_f3_b.csv | drawn | ja | – |
@@ -214,24 +235,37 @@ Erzeugt 2026-09-25 02:03 UTC mit `scripts/p2_figure_check.py` aus `results/p2`. 
 | F4 | caption "by parameter regime": rows with group regime= | fig_f4_b.csv | drawn | ja | – |
 | F4 | caption "by book size": rows sm_pm2_le63 and sm_pm2_gt63 | fig_f4_b.csv | drawn | ja | – |
 | F4 | caption "on the same BTC and ETH legs": row sm_pm2_be | fig_f4_b.csv | drawn | ja | – |
+| F2 | forest: every estimate inside its interval | fig_f2_c.csv: 12 rows | [] | ja | – |
+| F3 | forest: every estimate inside its interval | fig_f3_b.csv: 12 rows | [] | ja | – |
+| F4 | forest: every estimate inside its interval | fig_f4_b.csv: 13 rows | [] | ja | – |
+| F6 | forest: every estimate inside its interval | fig_f6_d.csv: 4 rows | [] | ja | – |
 
 ## Gestalt
 
 | Datei | gemessen | Vorgabe | ja/nein |
 |---|---|---|---|
-| `t1.pdf` | 7.000 × 4.200 in | 7.0 × 4.2 in | ja |
-| `t2.pdf` | 7.000 × 2.600 in | 7.0 × 2.6 in | ja |
-| `f1.pdf` | 7.000 × 3.900 in | 7.0 × 3.9 in | ja |
-| `f2.pdf` | 7.000 × 4.400 in | 7.0 × 4.4 in | ja |
-| `f3.pdf` | 3.400 × 4.000 in | 3.4 × 4.0 in | ja |
-| `f4.pdf` | 3.400 × 4.000 in | 3.4 × 4.0 in | ja |
-| `f5.pdf` | 7.000 × 4.300 in | 7.0 × 4.3 in | ja |
-| `f6.pdf` | 7.000 × 4.200 in | 7.0 × 4.2 in | ja |
-| `a1.pdf` | 7.000 × 2.500 in | 7.0 × 2.5 in | ja |
-| `docs/media/p2_btc_capital_surface.gif` | 5.24 MB | ≤ 8 MB | ja |
-| `paper2/social/s1_h2_next_contract.png` | 1600 × 900 px | 1600 × 900 px | ja |
-| `paper2/social/s2_h3_netting.png` | 1600 × 900 px | 1600 × 900 px | ja |
-| `paper2/social/s3_h1_map.png` | 1600 × 900 px | 1600 × 900 px | ja |
+| `t1.pdf` | 6.840 × 4.200 in | 6.84 × 4.2 in | ja |
+| `t2.pdf` | 6.840 × 2.600 in | 6.84 × 2.6 in | ja |
+| `f1.pdf` | 6.840 × 3.900 in | 6.84 × 3.9 in | ja |
+| `f2.pdf` | 6.840 × 4.400 in | 6.84 × 4.4 in | ja |
+| `f3.pdf` | 3.290 × 4.000 in | 3.29 × 4.0 in | ja |
+| `f4.pdf` | 3.290 × 4.000 in | 3.29 × 4.0 in | ja |
+| `f5.pdf` | 6.840 × 4.300 in | 6.84 × 4.3 in | ja |
+| `f6.pdf` | 6.840 × 4.200 in | 6.84 × 4.2 in | ja |
+| `a1.pdf` | 6.840 × 2.500 in | 6.84 × 2.5 in | ja |
+| `docs/media/p2_btc_capital_surface.gif` | 5.19 MB | ≤ 8 MB | ja |
+| `paper2/social/s1_three_engines.png` | 1600 × 900 px | 1600 × 900 px | ja |
+| `paper2/social/s2_straddle_vs_call.png` | 1600 × 900 px | 1600 × 900 px | ja |
+| `paper2/social/s3_verdicts.png` | 1600 × 900 px | 1600 × 900 px | ja |
+| `t1.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
+| `t2.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
+| `f1.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
+| `f2.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
+| `f3.pdf set in main.tex` | 7.00 pt × 1.0020 = 7.01 pt | ≥ 7 pt | ja |
+| `f4.pdf set in main.tex` | 7.00 pt × 1.0020 = 7.01 pt | ≥ 7 pt | ja |
+| `f5.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
+| `f6.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
+| `a1.pdf set in main.tex` | 7.00 pt × 1.0004 = 7.00 pt | ≥ 7 pt | ja |
 
 ## Captions: `paper2/main.tex` gegen `figures_p2.CAPTIONS`
 

@@ -1,11 +1,13 @@
 """F5 of Paper 2: the engine over time (ABBILDUNGSWAHL section 7, F5; 7.0 x 4.3 in).
 
-a  monthly share of option open interest per manager, one strip per underlying (PM2 at the bottom).
+a  share of option open interest per manager at the start of each month (``manager_oi_share.csv`` samples
+   00:00:01 UTC on the 1st), one strip per underlying (PM2 at the bottom).
 b  five rails (BTC legacy PM, BTC PM2, ETH legacy PM, ETH PM2, HYPE PM2): every row of the parameter timeline as a
    grey tick, the registered H4 events in the status grammar of section 6.2 (filled = in the H4 panel, left half =
    kept without a panel cell, hollow = dropped by the dose rule), the effect of the parameters alone on the reference
    straddle in log-%, the +-14 day windows of the kept events and the admissible placebo days.
-c  capital of the BTC reference straddle per manager in per cent of the forward.
+c  capital of the BTC reference straddle per manager in per cent of the forward; the legacy line is thin in months
+   where the legacy manager holds less than ``LEGACY_THICK_SHARE`` of BTC open interest (``legacy_thin_below``).
 
 Inputs in ``results_dir``: ``manager_oi_share.csv``, ``params/{CCY}_{pm,pm2}.json``, ``events.csv``,
 ``reference_book.csv``, ``h4.json`` and, when the inference delivered it, ``h4_placebo_days.csv``. Tables:
@@ -35,7 +37,8 @@ CCYS = ("BTC", "ETH", "HYPE")
 WINDOW_DAYS = p2events.WINDOW_DAYS
 PM2_START_TS = p2events.PM2_START_TS
 CLOSE_DAYS = 30               # two events closer than this on one rail: earlier number left, later right
-LEGACY_THICK_SHARE = 0.05
+LEGACY_THICK_SHARE = 0.05     # legacy line thin (0.5 pt) in months where the legacy manager holds less of BTC OI
+PANEL_A_TITLE = "share of option open interest at the start of each month"
 MAX_JUMP_LAG_DAYS = 1
 PLACEBO_OFFSET = 0.40          # rows below the rail (0.3 in the instruction; 0.4 keeps numbers from looking underlined)
 NEAR_DAYS = 7                 # timeline rows this close before the PM2 window mark sit between it and its label
@@ -50,17 +53,18 @@ B_TOP, B_H = 1.88, 1.00
 C_TOP, C_H = 3.12, 0.90
 
 CAPTION = (
-    r"\textbf{The engine over time.} Panel a is the monthly share of option open interest per manager and "
-    r"underlying. Panel b marks every parameter change of the legacy manager and of PM2 as a grey tick and the "
-    r"registered H4 events as symbols: filled when they enter the panel, half filled when kept without a cell of 20 "
+    r"\textbf{The engine over time.} Panel a is the share of option open interest per manager and underlying at "
+    r"the start of each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey "
+    r"tick and the registered H4 events as symbols: filled when they enter the panel, half filled when kept without a cell of 20 "
     r"fills on each side, and hollow when dropped by the one per cent dose rule. The number is the change that the "
     r"parameters alone make to the capital of the reference straddle, in log per cent. Grey bars are the windows of "
     r"14 days on either side of each kept event; the windows of January and of May 2026 overlap, so "
     r"\PH{h4-dup-fills} fills enter two events. Black dashes below each line are the days from which placebo dates "
     r"may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the forward on the "
     r"listed expiry nearest to 30 days, one contract per leg, in per cent of the forward; the small saw teeth come "
-    r"from rolling between expiries of 21 and 36 days. Parameter changes of standard margin left the reference book "
-    r"unchanged."
+    r"from rolling between expiries of 21 and 36 days, and the legacy line is thin in months in which the legacy "
+    r"manager held less than \PH{f5-legacy-thin} per cent of BTC open interest. Parameter changes of standard margin "
+    r"left the reference book unchanged."
 )
 
 
@@ -196,6 +200,7 @@ def table_c(results_dir: Path) -> pd.DataFrame:
     month = pd.to_datetime(out["day"]).dt.strftime("%Y-%m")
     s = pd.Series([share.get((c, mo), np.nan) for c, mo in zip(out["ccy"], month)], index=out.index)
     out["legacy_thin"] = ~(s >= LEGACY_THICK_SHARE)
+    out["legacy_thin_below"] = LEGACY_THICK_SHARE
     out["drawn"] = out["ccy"] == "BTC"
     out["printed"] = ""
     out = out.sort_values(["ccy", "day"], kind="mergesort").reset_index(drop=True)
@@ -225,7 +230,7 @@ def _calendar(ax, labels: bool) -> None:
 
 def _panel_a(fig, a: pd.DataFrame) -> None:
     kit.letter(fig, 0.02, 0.03, "a")
-    kit.fig_text(fig, L, 0.04, "monthly share of option open interest per manager", ha="left")
+    kit.fig_text(fig, L, 0.04, PANEL_A_TITLE, ha="left")
     sty = {"pm2": dict(facecolor=kit.MANAGER["pm2"][0], edgecolor="none"),
            "pm": dict(facecolor=kit.MANAGER["pm"][0], alpha=0.35, edgecolor="none"),
            "sm": dict(facecolor="white", edgecolor=kit.MANAGER["sm"][0], hatch="////", linewidth=0.4)}

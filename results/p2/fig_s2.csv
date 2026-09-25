@@ -1,6 +1,6 @@
 key,value,printed,source
-stat,4.7467261022171625,4.7×,summary.json h3_stat
-lo,4.661926808686567,4.66,summary.json h3_lo
-hi,4.823628547372672,4.82,summary.json h3_hi
-n,1943.0,1 943,summary.json h3_n
-share_over_63,0.7364899639732373,74 %,summary.json h3_share_days_over_63_options
+K_pm2_call,12.0169434082,12.0 %,fig_t2_c.csv:value_pct_forward@item=K_pm2_call
+K_pm2_book,10.0338868165,10.0 %,fig_t2_c.csv:value_pct_forward@item=K_pm2_book
+K_sm_call,14.6557841199,14.7 %,fig_t2_c.csv:value_pct_forward@item=K_sm_call
+K_sm,29.6108863964,29.6 %,fig_t2_c.csv:value_pct_forward@item=K_sm
+tenor_days,22.0,22 days,fig_t2_c.csv:value_usdc@item=tenor_days

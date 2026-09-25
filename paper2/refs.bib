@@ -1,6 +1,7 @@
-% Bibliography for paper 2. Every field was checked on 24.09.2026 against the DOI record at
-% api.crossref.org and the resolving publisher link at doi.org; several entries also against RePEc.
-% Keys shared with paper 1 (garleanu2009, muravyev2016, christoffersen2018) are identical to paper/refs.bib.
+% Bibliography for paper 2. Every field was checked on 24.09.2026 (sections (a2), (g), (h): 25.09.2026)
+% against the DOI record at api.crossref.org and the resolving publisher link at doi.org; several entries
+% also against RePEc. Keys shared with paper 1 (garleanu2009, muravyev2016, christoffersen2018, cameron2008,
+% mackinnon2017, roodman2019, burlig2018) are identical to paper/refs.bib (tests/test_p2_refs.py).
 % Details of the check per entry: docs/paper2/LITERATUR.md.
 
 % --- (a) Funding and margin constraints, liquidity -------------------------------------------
@@ -25,6 +26,41 @@
   number  = {6},
   pages   = {1980--2022},
   doi     = {10.1093/rfs/hhr027}
+}
+
+% --- (a2) Dealer capital, intermediary constraints and option prices -------------------------
+
+@article{fournier2020,
+  author  = {Fournier, Mathieu and Jacobs, Kris},
+  title   = {A Tractable Framework for Option Pricing with Dynamic Market Maker Inventory and Wealth},
+  journal = {Journal of Financial and Quantitative Analysis},
+  year    = {2020},
+  volume  = {55},
+  number  = {4},
+  pages   = {1117--1162},
+  doi     = {10.1017/S0022109019000462}
+}
+
+@article{chen2019,
+  author  = {Chen, Hui and Joslin, Scott and Ni, Sophie Xiaoyan},
+  title   = {Demand for Crash Insurance, Intermediary Constraints, and Risk Premia in Financial Markets},
+  journal = {Review of Financial Studies},
+  year    = {2019},
+  volume  = {32},
+  number  = {1},
+  pages   = {228--265},
+  doi     = {10.1093/rfs/hhy004}
+}
+
+@article{ahn2025,
+  author  = {Ahn, Jungkyu},
+  title   = {Margin Constraints and Asset Prices},
+  journal = {Review of Finance},
+  year    = {2025},
+  volume  = {29},
+  number  = {1},
+  pages   = {141--168},
+  doi     = {10.1093/rof/rfae039}
 }
 
 % --- (b) Market making with inventory ---------------------------------------------------------
@@ -240,4 +276,72 @@
   title  = {Who trades against the maker? {A}dverse selection with counterparty identity on an on-chain options order book},
   note   = {Working paper, University of Applied Sciences and Arts Northwestern Switzerland (FHNW)},
   year   = {2026}
+}
+
+% --- (g) Inference and pre-registration ----------------------------------------------------------
+% Copied character for character from paper/refs.bib (burlig2018 there has no doi field; the DOI
+% 10.1016/j.econlet.2018.03.036 is recorded in docs/paper2/LITERATUR.md).
+
+@article{cameron2008,
+  author  = {Cameron, A. Colin and Gelbach, Jonah B. and Miller, Douglas L.},
+  title   = {Bootstrap-Based Improvements for Inference with Clustered Errors},
+  journal = {Review of Economics and Statistics},
+  year    = {2008},
+  volume  = {90},
+  number  = {3},
+  pages   = {414--427},
+  doi     = {10.1162/rest.90.3.414}
+}
+
+@article{mackinnon2017,
+  author  = {MacKinnon, James G. and Webb, Matthew D.},
+  title   = {Wild Bootstrap Inference for Wildly Different Cluster Sizes},
+  journal = {Journal of Applied Econometrics},
+  year    = {2017},
+  volume  = {32},
+  number  = {2},
+  pages   = {233--254},
+  doi     = {10.1002/jae.2508}
+}
+
+@article{roodman2019,
+  author  = {Roodman, David and Nielsen, Morten {\O}rregaard and MacKinnon, James G. and Webb, Matthew D.},
+  title   = {Fast and Wild: Bootstrap Inference in Stata Using boottest},
+  journal = {Stata Journal},
+  year    = {2019},
+  volume  = {19},
+  number  = {1},
+  pages   = {4--60},
+  doi     = {10.1177/1536867X19830877}
+}
+
+@article{burlig2018,
+  author  = {Burlig, Fiona},
+  title   = {Improving Transparency in Observational Social Science Research: A Pre-Analysis Plan Approach},
+  journal = {Economics Letters},
+  year    = {2018},
+  volume  = {168},
+  pages   = {56--60},
+}
+
+% --- (h) Primary sources of the margin rules -----------------------------------------------------
+% No DOI exists. The commit is the one the replica was built from (docs/paper2/DATENSTAND.md); the API page
+% was read on 24.09.2026 and compared again with the live page on 25.09.2026 (identical).
+
+@misc{derivev2core,
+  author       = {{Derive}},
+  title        = {{v2-core}: Core Smart Contracts for the {Lyra V2} Protocol},
+  howpublished = {GitHub repository derivexyz/v2-core},
+  year         = {2026},
+  url          = {https://github.com/derivexyz/v2-core/tree/96796a6},
+  note         = {{C}ommit 96796a6 of 16 February 2026, accessed 24 September 2026; Business Source License 1.1, licensor Lyra Foundation}
+}
+
+@misc{derivegetmargin,
+  author       = {{Derive}},
+  title        = {{public/get\_margin}},
+  howpublished = {Derive API reference},
+  year         = {2026},
+  url          = {https://docs.derive.xyz/api-reference/subaccounts/publicget_margin},
+  note         = {{A}ccessed 24 September 2026}
 }

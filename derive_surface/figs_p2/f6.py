@@ -185,7 +185,7 @@ def checklist(h4: dict) -> List[Tuple[str, bool]]:
     if rejected != bool(h4["rejected"]):
         raise ValueError(f"H4 check list gives rejected={rejected}, h4.json says rejected={h4['rejected']}")
     met = {True: "met", False: "not met"}
-    return [(f"β > 0 and one-sided wild p = {p:.3f} ≤ 0.05: {met[c1]}", c1),
+    return [(f"β > 0 and one-sided wild p ≤ 0.05 (p = {p:.3f}): {met[c1]}", c1),
             (f"β above placebo P95 ({kit.num(p95, 1)}): {met[c2]}", c2),
             ("H4: rejected" if rejected else "H4: not rejected", rejected)]
 

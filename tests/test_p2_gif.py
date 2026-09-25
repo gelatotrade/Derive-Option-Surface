@@ -234,3 +234,58 @@ def test_build_writes_gif_poster_table_and_meta(tmp_path, monkeypatch):
     assert tab.loc[tab["kind"] == "after", "banner"].str.contains("straddle −23 %").all()
     assert meta["last_frame_nodes_matched_t1"] == len(last) and meta["last_frame_max_abs_diff_usdc_t1"] < 1e-6
     assert json.loads((rd / gif_p2.META_JSON).read_text())["steps"]["BTC-pm2-20260820"] == "−23 %"
+
+
+def test_colour_scale_covers_every_frame_so_nothing_is_cut_silently():
+    """A23: the fixed scale runs from the smallest to the largest capital of all frames (whole half per cent
+    outwards); the 1st to 99th percentile of before painted the cheapest nodes in the colour of 5.5 %."""
+    a, b = grid(0), grid(1, 1.3)
+    b.loc[0, "K_per_forward_bp"] = 341.0            # a single very cheap node, as on 20 Aug 2026
+    lim = gif_p2.limits([a, b])
+    k = np.concatenate([a["K_per_forward_bp"], b["K_per_forward_bp"]]) / 100.0
+    assert lim["clim"][0] <= k.min() and lim["clim"][1] >= k.max()
+    assert lim["clim"] == (3.0, float(np.ceil(k.max() * 2) / 2))
+    assert lim["extend"] == "neither"
+
+
+def test_colour_bar_shows_arrows_when_a_scale_cuts_values():
+    """A23: a scale that does not cover the values ends in arrows and says so; a covering scale has none."""
+    fig = _frame_fig()
+    note = [t.get_text() for t in fig.findobj(matplotlib.text.Text) if t.get_text().startswith("fixed:")]
+    cbar = [a for a in fig.axes if getattr(a, "_colorbar", None) is not None]
+    assert note == [f"fixed: {gif_p2.limits([grid(1_789_632_000, tenors=p2surface.ANIM_DAYS[2:18])])['clim'][0]:g} "
+                    f"to {gif_p2.limits([grid(1_789_632_000, tenors=p2surface.ANIM_DAYS[2:18])])['clim'][1]:g} %"]
+    assert cbar and cbar[0]._colorbar.extend == "neither"
+    plt.close(fig)
+    ev = gif_p2.kept_events(events())
+    fig = gif_p2.render(grid(1_789_632_000), ts=1_789_632_000,
+                        lim={"clim": (6.0, 10.0), "zlim": (20.0, 80.0), "extend": "both"},
+                        series=gif_p2.reference_series(reference_book()), marks=gif_p2.banners(ev, reference_book()),
+                        return_figure=True)
+    texts = [t.get_text() for t in fig.findobj(matplotlib.text.Text)]
+    cbar = [a for a in fig.axes if getattr(a, "_colorbar", None) is not None]
+    assert cbar[0]._colorbar.extend == "both"
+    assert "fixed: 6 to 10 %, beyond at the ends" in texts
+    plt.close(fig)
+
+
+def test_build_writes_the_mp4_and_records_the_scale(tmp_path, monkeypatch):
+    """A23: the MP4 of section 8 is written next to the GIF (``animate.write_mp4``) and the meta records it, the
+    scale and the nodes outside the scale (none)."""
+    pytest.importorskip("imageio_ffmpeg")
+    rd = tmp_path / "results"
+    rd.mkdir()
+    events().to_csv(rd / "events.csv", index=False)
+    reference_book().to_csv(rd / "reference_book.csv", index=False)
+
+    def fake_compute(plan, **kw):
+        return [{"ts": int(ts), "grid": grid(int(ts), 1.0 + 0.1 * i), "sm": grid(int(ts), 1.4), "n_expiries": 12,
+                 "n_left_out": 0, "skipped": ""} for i, ts in enumerate(plan["ts"])]
+
+    monkeypatch.setattr(gif_p2, "compute", fake_compute)
+    monkeypatch.setattr(gif_p2, "grid_widths", lambda ccy, ts: None)
+    meta = gif_p2.build(start="2026-09-01", end="2026-09-17", out=tmp_path / "media" / "g.gif", results_dir=rd)
+    assert meta["mp4"] == str(tmp_path / "media" / "g.mp4") and (tmp_path / "media" / "g.mp4").stat().st_size > 0
+    assert meta["extend"] == "neither" and meta["nodes_outside_scale"] == 0
+    tab = pd.read_csv(rd / gif_p2.FRAMES_CSV)
+    assert meta["clim_pct"][0] <= tab["K_min_pct"].min() and meta["clim_pct"][1] >= tab["K_max_pct"].max()

@@ -593,6 +593,34 @@ def _draw_3d(fig, ax, g: pd.DataFrame, mgr: str, norm, zlim) -> None:
     ax.set_zlabel("implied vol, %", fontsize=FS_MIN, labelpad=-8)
 
 
+def label_missing_levels(ax, x, days, C, labelled) -> List[matplotlib.text.Text]:
+    """Label every iso level that ``clabel`` left without a label (pieces too short for an inline label, such as
+    the 4 % line at the upper right of panel c): the text sits beside the middle vertex of the level's longest piece
+    in the panel, towards the inside of the axes, with the white stroke of the other labels."""
+    import contourpy
+
+    gen = contourpy.contour_generator(np.asarray(x, float), np.asarray(days, float), np.ma.masked_invalid(C),
+                                      line_type="Separate")
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    added = []
+    for lev in ISO:
+        text = f"{lev:g} %"
+        if text in labelled:
+            continue
+        segs = [s[(s[:, 0] >= x0) & (s[:, 0] <= x1) & (s[:, 1] >= y0) & (s[:, 1] <= y1)] for s in gen.lines(lev)]
+        segs = [s for s in segs if len(s) >= 2]
+        if not segs:
+            continue
+        seg = max(segs, key=lambda s: float(np.abs(np.diff(ax.transData.transform(s), axis=0)).sum()))
+        px, py = seg[len(seg) // 2]
+        right = px > (x0 + x1) / 2.0
+        added.append(ax.annotate(text, (px, py), xytext=(-3 if right else 3, 0), textcoords="offset points",
+                                 ha="right" if right else "left", va="center", fontsize=FS_MIN, color=INK, zorder=4,
+                                 path_effects=STROKE))
+    return added
+
+
 def figstyle_cmap():
     return matplotlib.colormaps["cividis"]
 
@@ -624,6 +652,7 @@ def _draw_rules(fig, ax, g: pd.DataFrame, r: pd.DataFrame, mgr: str, expiry_days
         lbl = ax.clabel(cs, fmt=lambda v: f"{v:g} %", fontsize=FS_MIN, inline=True, inline_spacing=2)
         for t in lbl:
             t.set_path_effects(STROKE)
+        label_missing_levels(ax, x, days, C, labelled={t.get_text() for t in lbl})
     ax.set_xticks([0.10, 0.25, 0.40, 0.60, 0.75, 0.90])
     ax.set_xticklabels(["0.10", "0.25", "0.40", "0.60", "0.75", "0.90"])
     ax.set_yticks([1, 2, 7, 30, 90, 365])
@@ -638,12 +667,12 @@ def _draw_rules(fig, ax, g: pd.DataFrame, r: pd.DataFrame, mgr: str, expiry_days
     for s in ax.spines.values():
         s.set_linewidth(0.6)
         s.set_zorder(5)
-    # listed expiries: short inward ticks on the right axis (0.06 in)
+    # listed expiries: short outward ticks on the right axis (0.06 in), so that no iso-line hides among them
     w_in = ax.get_position().width * fig.get_size_inches()[0]
     tr = transforms.blended_transform_factory(ax.transAxes, ax.transData)
     for t in expiry_days:
         if 1.0 <= t <= 365.0:
-            ax.plot([1.0 - 0.06 / w_in, 1.0], [t, t], transform=tr, color=INK, lw=0.7, zorder=6, clip_on=False,
+            ax.plot([1.0, 1.0 + 0.06 / w_in], [t, t], transform=tr, color=INK, lw=0.7, zorder=6, clip_on=False,
                     solid_capstyle="butt")
     ax.plot([float(atm["delta"])], [float(atm["tenor_days"])], "o", ms=3, mfc=INK, mec="white", mew=0.6, zorder=7)
     ax.annotate("ATM 30 d", (float(atm["delta"]), float(atm["tenor_days"])), xytext=(3, 2),
@@ -727,6 +756,9 @@ def build(out_dir: Path = Path("paper2/figures"), results_dir: Path = Path("resu
         df.to_csv(p, index=False)
         paths.append(p)
     fig = draw(data, tabs)
+    from ._print import to_print
+
+    to_print(fig)                                  # the width main.tex sets the figure at
     with matplotlib.rc_context({"savefig.bbox": None, "savefig.pad_inches": 0.0, "savefig.dpi": 400}):
         figs = figstyle.save(fig, SLOT, out)
     paths += figs

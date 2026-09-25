@@ -5,7 +5,8 @@ frame) or per day; for every kept BTC PM2 event three extra day frames: the last
 first after it (held 1.5 s under a banner) and the day after. Each frame shows
 
 * the chain surface of the day in 3D as in Figure T1 a (height = implied vol, colour = PM2 capital of one short
-  contract in % of the forward on one fixed scale for all frames, iso-capital lines at 8 and 12 %);
+  contract in % of the forward on one fixed scale for all frames that covers every node, iso-capital lines
+  at 8 and 12 %);
 * in the corner the SM capital of the same ATM 30 d short from the SM grid of the same frame;
 * a time strip with the BTC reference straddle per manager (colour and line style as F5 c), a cursor, and the kept
   BTC PM2 events as vertical lines with the step of the straddle in simple per cent.
@@ -19,7 +20,9 @@ Heavy (feed history with SVI, loaded per quarter): run through ``scripts/p2_heav
     python3 scripts/p2_heavy.py --wait-max 500 -- python3 -m derive_surface p2 figures gif [--step daily]
 
 Writes ``docs/media/p2_btc_capital_surface.gif`` (at most 8 MB), ``..._end.png`` (the last frame, poster),
-``..._surface.mp4`` when ffmpeg is there, ``results/p2/gif_frames.csv`` and ``results/p2/gif_meta.json``.
+``docs/media/p2_btc_capital_surface.mp4`` (``animate.write_mp4``, needs ``imageio-ffmpeg`` of requirements.txt),
+``results/p2/gif_frames.csv`` and ``results/p2/gif_meta.json``. The file names differ from section 8
+(``BTC_p2_capital_pm2.*``): every Paper 2 medium in ``docs/media`` starts with ``p2_``.
 """
 from __future__ import annotations
 
@@ -231,19 +234,29 @@ def atm_pct(grid: Optional[pd.DataFrame]) -> float:
 
 
 def limits(grids: Iterable[Optional[pd.DataFrame]]) -> dict:
-    """Colour and height limits shared by every frame. Colour: ``p2surface.fit_limits`` (1st to 99th percentile of
-    the capital over all frames) in % of the forward, widened to whole half per cent; height: the full range of the
-    implied vol over all frames, to whole 5 vol points (no surface leaves the box)."""
+    """Colour and height limits shared by every frame. Colour: the full range of the capital over all frames in % of
+    the forward, widened to whole half per cent, so that no node is cut (a percentile scale painted the cheapest
+    nodes of August 2026 in the colour of its lower end); ``extend`` is therefore "neither". Height: the full range
+    of the implied vol over all frames, to whole 5 vol points (no surface leaves the box)."""
     grids = [g for g in grids if g is not None and len(g)]
-    lim = p2surface.fit_limits([{"pm2": g} for g in grids])
-    lo, hi = (v / 100.0 for v in lim["clim"])
-    lo, hi = np.floor(lo * 2) / 2, np.ceil(hi * 2) / 2
     if grids:
+        k = np.concatenate([g["K_per_forward_bp"].to_numpy(float) for g in grids]) / 100.0
+        lo, hi = float(np.nanmin(k)), float(np.nanmax(k))
         iv = np.concatenate([g["iv"].to_numpy(float) for g in grids]) * 100.0
         z0, z1 = float(np.nanmin(iv)), float(np.nanmax(iv))
     else:
+        lo, hi = (v / 100.0 for v in p2surface.fit_limits([])["clim"])
         z0, z1 = 20.0, 80.0
-    return {"clim": (float(lo), float(hi)), "zlim": (float(np.floor(z0 / 5) * 5), float(np.ceil(z1 / 5) * 5))}
+    lo, hi = np.floor(lo * 2) / 2, np.ceil(hi * 2) / 2
+    return {"clim": (float(lo), float(hi)), "zlim": (float(np.floor(z0 / 5) * 5), float(np.ceil(z1 / 5) * 5)),
+            "extend": "neither"}
+
+
+def outside_scale(k_pct: np.ndarray, clim: Sequence[float]) -> int:
+    """Nodes whose capital (% of forward) lies outside the colour scale."""
+    k = np.asarray(k_pct, dtype=float)
+    k = k[np.isfinite(k)]
+    return int(((k < clim[0]) | (k > clim[1])).sum())
 
 
 def _iso(ax, x, ly, Z, C, zlim) -> None:
@@ -361,7 +374,9 @@ def render(grid: Optional[pd.DataFrame], *, ts: int, lim: dict, series: pd.DataF
         if grid is not None and len(grid):
             _surface(ax, grid, norm, lim["zlim"])
         cax = fig.add_axes([0.805, 0.37, 0.017, 0.37])
-        cb = fig.colorbar(ScalarMappable(norm=norm, cmap=matplotlib.colormaps[p2surface.CMAP_NAME]), cax=cax)
+        extend = lim.get("extend", "neither")
+        cb = fig.colorbar(ScalarMappable(norm=norm, cmap=matplotlib.colormaps[p2surface.CMAP_NAME]), cax=cax,
+                          extend=extend, extendfrac=0.06)
         span = lim["clim"][1] - lim["clim"][0]
         step = 2 if span <= 12 else 4
         ticks = np.arange(np.ceil(lim["clim"][0] / step) * step, lim["clim"][1] + 1e-9, step)
@@ -371,8 +386,10 @@ def render(grid: Optional[pd.DataFrame], *, ts: int, lim: dict, series: pd.DataF
         for lev in ISO:
             cb.ax.axhline(lev, color=INK, lw=1.6)
         cb.set_label("capital, % of forward", fontsize=FS_LABEL, labelpad=6)
-        fig.text(0.785, 0.345, f"fixed: {lim['clim'][0]:g} to {lim['clim'][1]:g} %", fontsize=FS_TICK, color=GREY,
-                 va="top")
+        note = f"fixed: {lim['clim'][0]:g} to {lim['clim'][1]:g} %"
+        if extend != "neither":            # arrows: values beyond the scale take the colour of its ends
+            note += ", beyond at the ends"
+        fig.text(0.785, 0.345, note, fontsize=FS_TICK, color=GREY, va="top")
         when = dt.datetime.fromtimestamp(int(ts), dt.timezone.utc)
         fig.text(0.012, 0.975, "BTC · PM2 capital of one short contract", fontsize=FS_TITLE, fontweight="bold",
                  color=INK, va="top")
@@ -554,9 +571,11 @@ def build(step: str = "weekly", start: str = START, end: str = END, out: Path = 
     mp4 = write_mp4([f for f, h in zip(frames, holds) for _ in range(h)], out.with_suffix(".mp4"), FPS)
     tab = pd.DataFrame(table)
     tab.to_csv(rd / FRAMES_CSV, index=False)
+    outside = sum(outside_scale(g["K_per_forward_bp"].to_numpy(float) / 100.0, lim["clim"]) for g in grids)
     meta = {"gif": str(gif), "bytes": gif.stat().st_size, "max_bytes": MAX_BYTES, "frames": len(frames),
             "skipped": int((tab["frame"] < 0).sum()), "step": step, "start": start, "end": end,
-            "clim_pct": list(lim["clim"]), "zlim": list(lim["zlim"]), "poster": str(poster),
+            "clim_pct": list(lim["clim"]), "extend": lim.get("extend", "neither"), "nodes_outside_scale": outside,
+            "zlim": list(lim["zlim"]), "poster": str(poster),
             "mp4": str(mp4) if mp4 else None, "steps": dict(zip(marks["event_id"], marks["printed_step"]))}
     last = recs[-1]["grid"] if recs and recs[-1]["grid"] is not None else None
     t1_path = Path(t1_grid) if t1_grid is not None else rd / "t1_grid.csv"

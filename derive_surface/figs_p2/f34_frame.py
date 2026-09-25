@@ -1,4 +1,5 @@
-"""The frame that F3 (H2) and F4 (H3) share: one column, 3.4 x 4.0 in, and the verdict forest.
+"""The frame that F3 (H2) and F4 (H3) share: one column, 3.29 x 4.0 in (the column width of main.tex), and the
+verdict forest.
 
 Both figures stand side by side at the top of a page, so they have the same canvas, the same header block, the
 same axes boxes and the same forest grammatics (ABBILDUNGSWAHL.md, 6.5): the bold verdict line is rebuilt from the
@@ -32,11 +33,12 @@ from matplotlib.textpath import TextToPath  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from .. import figstyle  # noqa: E402
+from ._print import PRINT_WIDTH  # noqa: E402
 
 FS_MIN = float(getattr(figstyle, "FS_MIN", 7.0))
 FS = 7.0                     # every text in these two figures except axis titles and panel letters
 FS_LABEL = 8.0
-W, H = figstyle.SINGLE, 4.0
+W, H = PRINT_WIDTH[figstyle.SINGLE], 4.0   # laid out at the column width of main.tex (3.29 in, _print)
 DPI = 400
 GREY = "#666666"             # n column, exploratory rows, counts
 LIGHT = "#F0F0F0"            # band behind exploratory rows
@@ -53,7 +55,7 @@ RC.update({"savefig.bbox": None, "savefig.pad_inches": 0.0, "savefig.dpi": DPI, 
 
 # ---------------------------------------------------------------------------------------------- layout, inches
 PAD = 0.03
-AX_LEFT, AX_RIGHT = 1.075, 2.99         # common left and right edge: widest row label, widest n (19 999)
+AX_LEFT, AX_RIGHT = 1.075, W - 0.41      # common left and right edge: widest row label, widest n (19 999)
 N_RIGHT = W - PAD                        # right edge of the n column
 HEADER_TOP = H - 0.04
 LINE = 0.125                             # pitch of 7 pt lines
@@ -306,7 +308,11 @@ def header_table(lines: Sequence[str]) -> pd.DataFrame:
 # -------------------------------------------------------------------------------------------------------- save
 
 def save(fig: plt.Figure, name: str, out_dir: Path) -> List[Path]:
-    """PDF and PNG (400 dpi) at the printed size, plus a luminance copy under ``gray/`` for the grey check."""
+    """PDF and PNG (400 dpi) at the printed size (``_print.to_print``: the width main.tex sets), plus a luminance copy
+    under ``gray/`` for the grey check."""
+    from ._print import to_print
+
+    to_print(fig)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     pdf, png = out_dir / f"{name}.pdf", out_dir / f"{name}.png"

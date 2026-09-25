@@ -15,7 +15,16 @@ from derive_surface.p2chain import block_at_ts, ts_at_block
 from derive_surface.p2feeds import FeedExpiryState, FeedHistory
 from derive_surface.p2types import Book, MarketState, OptionLeg
 
-FIX = Path(__file__).parent / "fixtures" / "p2"
+# b1_chain_cases.json holds real maker books (M-labels and their positions on a day), so fixture and generator live
+# in data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01); without them these tests are skipped.
+PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
+
+
+def _private(name: str) -> dict:
+    path = PRIVATE / name
+    if not path.exists():
+        pytest.skip(f"private chain fixture missing (account-identifying, not in the repository): {path}")
+    return json.loads(path.read_text())
 
 
 def _ts(text: str) -> int:
@@ -296,7 +305,7 @@ def test_replica_net_returns_nan_when_the_chain_would_refuse_too_many_expiries()
     states = {e: _state(ts, e).expiries[e] for e in exps}
     st = MarketState(currency="BTC", ts=ts, spot=99.0, expiries=states)
     book = Book(options=[OptionLeg(e, 100.0, True, -1.0) for e in exps])
-    cases = json.loads((FIX / "b1_chain_cases.json").read_text())["cases"]
+    cases = _private("b1_chain_cases.json")["cases"]
     pm = next(c["params"] for c in cases if c["manager"] == "pm")
     pm2 = next(c["params"] for c in cases if c["manager"] == "pm2")
     assert math.isnan(pv.replica_net("pm", book, st, dict(pm, maxExpiries=2), True))
@@ -308,7 +317,7 @@ def test_replica_net_returns_nan_when_the_chain_would_refuse_too_many_expiries()
 def test_replica_matches_state_override_chain_values_of_the_fixture():
     """Real eth_call results (StandardManager, PMRM, PMRM_2 getMargin of a synthetic account under state override)
     against the replica on the same feed state (from data/p2/feeds and the Paper 1 SVI history) and parameters."""
-    fx = json.loads((FIX / "b1_chain_cases.json").read_text())
+    fx = _private("b1_chain_cases.json")
     assert len(fx["cases"]) >= 8
     kinds = {(c["kind"], c["manager"]) for c in fx["cases"]}
     assert {("single", "sm"), ("single", "pm"), ("single", "pm2"), ("book", "pm2"), ("book", "sm")} <= kinds

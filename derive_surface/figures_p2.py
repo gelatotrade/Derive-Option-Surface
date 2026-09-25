@@ -4,7 +4,8 @@ Every slot lives in its own module ``derive_surface/figs_p2/<slot>.py`` (build i
 ``docs/paper2/ABBILDUNGSWAHL.md``, sections 6 and 7). A slot module has
 
 * ``build(out_dir, results_dir) -> list[Path]``: writes the numbers of the figure as ``results/p2/fig_<slot>*.csv``
-  and ``<slot>.pdf`` / ``<slot>.png`` (400 dpi) at print size to ``paper2/figures/``;
+  and ``<slot>.pdf`` / ``<slot>.png`` (400 dpi) at print size to ``paper2/figures/`` (laid out at 7.0 or 3.4 in,
+  saved at the width main.tex sets it, 6.84 or 3.29 in: ``figs_p2._print``);
 * ``CAPTION``: the caption of the manuscript (English, no dashes, result numbers as ``\\PH{key}``);
 * ``CHECKS``: the test numbers of the build instruction, the value in the figure table against the file in
   ``results/p2`` it comes from.
@@ -35,8 +36,9 @@ import pandas as pd
 SLOTS = ("t1", "t2", "f1", "f2", "f3", "f4", "f5", "f6", "a1")
 FIGURES: Dict[str, ModuleType] = {s: importlib.import_module(f"derive_surface.figs_p2.{s}") for s in SLOTS}
 CAPTIONS: Dict[str, str] = {s: m.CAPTION for s, m in FIGURES.items()}
-SIZES: Dict[str, tuple] = {"t1": (7.0, 4.2), "t2": (7.0, 2.6), "f1": (7.0, 3.9), "f2": (7.0, 4.4), "f3": (3.4, 4.0),
-                           "f4": (3.4, 4.0), "f5": (7.0, 4.3), "f6": (7.0, 4.2), "a1": (7.0, 2.5)}
+# print size of the saved PDF: laid out at 7.0 or 3.4 in, saved at the width main.tex sets it (``figs_p2._print``)
+SIZES: Dict[str, tuple] = {"t1": (6.84, 4.2), "t2": (6.84, 2.6), "f1": (6.84, 3.9), "f2": (6.84, 4.4),
+                           "f3": (3.29, 4.0), "f4": (3.29, 4.0), "f5": (6.84, 4.3), "f6": (6.84, 4.2), "a1": (6.84, 2.5)}
 FS_MIN = 7.0
 OUT_DIR = Path("paper2/figures")
 RESULTS_DIR = Path("results/p2")

@@ -1,6 +1,6 @@
 {
  "gif": "docs/media/p2_btc_capital_surface.gif",
- "bytes": 5494148,
+ "bytes": 5439597,
  "max_bytes": 8388608,
  "frames": 80,
  "skipped": 0,
@@ -8,15 +8,17 @@
  "start": "2025-06-13",
  "end": "2026-09-17",
  "clim_pct": [
-  5.5,
-  17.5
+  3.0,
+  19.0
  ],
+ "extend": "neither",
+ "nodes_outside_scale": 0,
  "zlim": [
   10.0,
   105.0
  ],
  "poster": "docs/media/p2_btc_capital_surface_end.png",
- "mp4": null,
+ "mp4": "docs/media/p2_btc_capital_surface.mp4",
  "steps": {
   "BTC-pm2-20260108": "+1.6 %",
   "BTC-pm2-20260123": "\u221210 %",

@@ -10,7 +10,12 @@
   ``StandardManager.getMarginAndMarkToMarket`` with all feed values of the account's markets.
 * ``pm_chain_accounts.json``: whole legacy-PM maker accounts against ``PMRM.getMargin(account, isInitial)`` (and the
   MtM of ``getMarginAndMarkToMarket(account, true, 0)``) with every feed value; accounts are chosen from
-  ``data/p2/books/snapshots.parquet`` (Task A5) by fixed criteria, ids stored only as ``sha256(str(id))[:10]``.
+  ``data/p2/books/snapshots.parquet`` (Task A5) by fixed criteria.
+
+The two account fixtures identify real accounts (whole balances at a block, ``sha256(str(id))[:10]`` is reversible by
+enumeration), so they are written to ``data/p2/fixtures_private`` (not tracked, Nachtrag 1.4, audit A01); the tests
+skip without them. The case fixtures ``sm_chain_cases.json`` and ``pm_chain_cases.json`` hold synthetic portfolios
+and stay in tests/fixtures/p2.
 
 Needs network access to https://rpc.lyra.finance through ``derive_surface.p2chain.Rpc`` (<= 2 requests/s, every
 request logged to ``data/p2/logs/A4.jsonl``), view calls bundled through Multicall3 (deployed on Chain 957 before
@@ -37,6 +42,7 @@ sys.path.insert(0, str(ROOT))
 from derive_surface.p2chain import Rpc, block_at_ts, ts_at_block  # noqa: E402
 
 OUT = Path(__file__).resolve().parent
+PRIVATE = ROOT / "data" / "p2" / "fixtures_private"  # account-identifying outputs, not tracked
 LOG = ROOT / "data" / "p2" / "logs" / "A4.jsonl"
 MC3 = "0xcA11bde05977b3631167028862bE2a173976CA11"
 SRM = "0x28c9ddF9A3B29c2E6a561c1BC520954e5A33de5D"
@@ -612,7 +618,8 @@ def run(kind: str, max_seconds: float) -> None:
             save(path, doc)
             print(ccy, day, "ok", flush=True)
     elif kind == "accounts":
-        path = OUT / "sm_chain_accounts.json"
+        PRIVATE.mkdir(parents=True, exist_ok=True)
+        path = PRIVATE / "sm_chain_accounts.json"
         doc = load(path)
         doc["source"] = ("StandardManager.getMarginAndMarkToMarket(account, isInitial, 0) per eth_call for SM "
                          "accounts active in Paper 1 (SubAccounts.getAccountBalances), with every feed input; "
@@ -637,7 +644,8 @@ def run(kind: str, max_seconds: float) -> None:
                 doc["cases"].append({"day": day, "skipped": "no SM account with 2 to 30 options"})
             save(path, doc)
     elif kind == "pm_accounts":
-        path = OUT / "pm_chain_accounts.json"
+        PRIVATE.mkdir(parents=True, exist_ok=True)
+        path = PRIVATE / "pm_chain_accounts.json"
         doc = load(path)
         doc["source"] = ("legacy PMRM.getMargin(account, isInitial) and getMarginAndMarkToMarket(account, true, 0) per "
                          "eth_call for legacy-PM maker accounts (chosen from data/p2/books/snapshots.parquet), with "

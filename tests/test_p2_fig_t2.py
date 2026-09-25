@@ -129,7 +129,7 @@ def test_build_writes_figure_and_tables(res, tmp_path):
     names = {p.name for p in paths}
     assert {"t2.pdf", "t2.png", "fig_t2_a.csv", "fig_t2_b.csv", "fig_t2_c.csv"} <= names
     w, h = kit.pdf_size_inches(out / "t2.pdf")
-    assert abs(w - 7.0) <= 0.02 and abs(h - 2.6) <= 0.02
+    assert abs(w - 6.84) <= 0.005 and abs(h - 2.6) <= 0.02
     c = pd.read_csv(res / "fig_t2_c.csv")
     scen = c[c["kind"] == "scenario"]
     assert scen["binding"].sum() == 1
@@ -172,3 +172,25 @@ def test_real_data_meets_the_build_instruction(tmp_path):
     out = t2.run_checks(rd)
     bad = out[~out["agrees"] | (out["matches_instruction"] == False)]  # noqa: E712
     assert bad.empty, bad.to_string()
+
+
+def test_panel_c_says_the_shock_axis_is_not_to_scale():
+    """A53: the 17 spot shocks sit at equal steps (0.34, 0.67, 0.86, then 0.035 apart, then up to 6); axis and
+    caption say so."""
+    assert "not to scale" in t2.XLABEL_C and t2.XLABEL_C.startswith("spot shock")
+    assert "spot shocks in order, not to scale" in t2.CAPTION
+
+
+def test_single_legs_under_sm_are_in_the_table_for_card_2(res, tmp_path, real_params):
+    """Section 10: card 2 sets one short call against the short straddle under PM2 and SM, from the same reference
+    row; T2 computes the SM legs with the same engine and state (not drawn in T2)."""
+    t2.build(out_dir=tmp_path / "figures", results_dir=res)
+    c = pd.read_csv(res / "fig_t2_c.csv").set_index("item")
+    for item in ("K_sm_call", "K_sm_put", "K_pm2_call", "K_pm2_put"):
+        assert c.loc[item, "kind"] == "capital" and not bool(c.loc[item, "drawn"])
+        assert np.isfinite(c.loc[item, "value_usdc"]) and c.loc[item, "value_usdc"] > 0
+    row = pd.read_csv(res / "reference_book.csv").iloc[-1]
+    book, state, vols = t2.straddle_inputs(row)
+    call = [leg for leg in book.options if leg.is_call][0]
+    net, _ = margin_sm.net_margin(t2.Book(options=[call]), state, real_params["sm"]["params"], True, vols=vols)
+    assert c.loc["K_sm_call", "value_usdc"] == pytest.approx(-float(row["price_call"]) - net, rel=1e-12)

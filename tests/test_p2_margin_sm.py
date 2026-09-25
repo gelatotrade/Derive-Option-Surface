@@ -28,6 +28,18 @@ def _v2core(rel: str) -> dict:
     if not path.exists():
         pytest.skip(f"v2-core reference cases missing: {path}")
     return json.loads(path.read_text())
+
+
+# Chain fixtures of real accounts (whole balances at a block) identify the account, so they live in
+# data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01); without them these tests are skipped.
+PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
+
+
+def _private(name: str) -> dict:
+    path = PRIVATE / name
+    if not path.exists():
+        pytest.skip(f"private chain fixture missing (account-identifying, not in the repository): {path}")
+    return json.loads(path.read_text())
 E18 = 10 ** 18
 
 # Config.getSRMParams() in v2-core test/config-test.sol plus the overrides of the two test contracts
@@ -398,7 +410,7 @@ def test_sm_chain_single_and_net_margin_agree(is_initial):
 def test_sm_chain_whole_accounts_match_eth_call():
     """StandardManager.getMarginAndMarkToMarket for 12 real SM accounts (14 to 30 options, up to 8 markets, perps
     with unrealised PnL, base collateral) at six blocks between 2024 and 2026."""
-    doc = json.loads((FIX / "sm_chain_accounts.json").read_text())
+    doc = _private("sm_chain_accounts.json")
     cases = [c for c in doc["cases"] if "skipped" not in c]
     assert len(cases) >= 10
     for c in cases:

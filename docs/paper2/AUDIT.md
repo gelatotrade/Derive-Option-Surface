@@ -6,6 +6,8 @@ Datum: 25.09.2026. Stand: Branch `paper2-kapital`, Commit `3ec74f4` (Stufe E). S
 
 **Umfang der Liste.** 69 Befunde: 1 kritisch, 26 wichtig, 42 klein. Aus 90 Einzelbefunden der neun Auditoren wurden Duplikate zusammengeführt; die Spalte Blickwinkel nennt alle Quellen.
 
+**Stand nach der Korrekturrunde.** Die Korrekturrunde vom 25.09.2026 ist in der Spalte Status der Kurzliste und im Abschnitt „Status nach der Korrekturrunde (25.09.2026)“ festgehalten, samt Prüfkette und unabhängiger Schlussprüfung.
+
 ## Schwere
 
 - **kritisch**: vor dem ersten Push oder einer Veröffentlichung zwingend zu beheben, weil der Schaden danach nicht mehr rückgängig zu machen ist.
@@ -35,77 +37,204 @@ Abweichungen von den Einstufungen der Auditoren: A01 aus drei „wichtig“ (p1_
 
 ## Kurzliste
 
-| ID | Schwere | Befund | Bereich |
+| ID | Schwere | Befund | Bereich | Status 25.09.2026 |
+|---|---|---|---|---|
+| A01 | kritisch | Pseudonym-Schlüssel und umkehrbare Kontohashes in tests/ und Historie | hygiene | Arbeitsbaum behoben, Historie offen (Autor) |
+| A02 | wichtig | Präregistrierung nur lokal datiert, Repo und Commits nicht öffentlich | manuskript | behoben, Rest offen |
+| A03 | wichtig | Post-hoc-Analysen im Text nicht als explorativ gekennzeichnet | manuskript | behoben |
+| A04 | wichtig | Intervalle der Vorzeichengruppen ungültig (Post-Selektion), F2 c | inferenz | behoben |
+| A05 | wichtig | H4-Spanne und p-Werte zu eng (Überstreuung zwischen Terminen), Trennschärfe | inferenz | behoben |
+| A06 | wichtig | Placebo-Regel im Manuskript falsch beschrieben | manuskript | behoben |
+| A07 | wichtig | „every test runs inside it“ falsch: H4 enthält Legacy-Ereignisse | manuskript | behoben |
+| A08 | wichtig | H3-Faktor im Abstract den falschen Büchern zugeschrieben | manuskript | behoben |
+| A09 | wichtig | „makers“ sind Subaccounts von fünf Wallets; SM-Deutung ungedeckt | manuskript | behoben |
+| A10 | wichtig | H2-Median mischt Käufe und Verkäufe mit entgegengesetztem Vorzeichen | manuskript | behoben, Rest offen |
+| A11 | wichtig | Praktische Folgerung aus H1 widerspricht H2 | manuskript | behoben |
+| A12 | wichtig | Spitze der Kapitalkarte = Abstand zur SVI-Mark im Flügel, RFQ-lastig | manuskript | behoben, Rest offen |
+| A13 | wichtig | „capital ≈ premium“ gilt nur aus dem Geld (F1, F2, Text) | abbildungen | behoben |
+| A14 | wichtig | „public engine“ widerspricht Abschnitt 2; soska2021 widerspricht dem Zitat | manuskript | behoben |
+| A15 | wichtig | Inventarmodelle falsch charakterisiert (ho1981, avellaneda2008) | literatur | behoben |
+| A16 | wichtig | Literatur zu Kapitalbeschränkungen von Options-Market-Makern fehlt | literatur | behoben |
+| A17 | wichtig | Primärquelle der Regeln (v2-core 96796a6, API-Doku) nicht zitiert | literatur | behoben |
+| A18 | wichtig | Hinweis auf die Einheitenfehler von Paper 1 unvollständig | manuskript | behoben |
+| A19 | wichtig | Zahlenprüfung: Vereinigung der Schlüssel deckt veraltete Zahlen | code | behoben |
+| A20 | wichtig | Zahlenprüfung: generische Stufe deckt fast jede Zahl zufällig | code | behoben |
+| A21 | wichtig | Zahlenprüfung: Globs ohne Zeilenbindung lassen Vertauschungen durch | code | behoben |
+| A22 | wichtig | Social-Karten: explorative und günstige Titel, H4 fehlt | abbildungen | behoben |
+| A23 | wichtig | GIF: Farbskala schneidet stumm ab, MP4 fehlt | abbildungen | behoben |
+| A24 | wichtig | results/p1/h1_lorenz.csv mit 1 388 rohen Taker-Wallets | hygiene | offen (Autor) |
+| A25 | wichtig | Befund Paper 1: Code-Empfehlung lässt Wasserfall und Klassen aus | paper1 | behoben |
+| A26 | wichtig | Befund Paper 1: Skript und Tests nur im gitignorierten data/p2 | paper1 | behoben |
+| A27 | wichtig | Befund Paper 1: Liste der betroffenen Stellen unvollständig | paper1 | behoben |
+| A28 | klein | H1-Perzentilintervall nicht zentriert; Begründung in MANUSKRIPT 7.3.1 falsch | inferenz | behoben |
+| A29 | klein | Placebo-Panels anders gebaut als das echte Panel | inferenz | behoben |
+| A30 | klein | Dosis als Mittel der log-Ratios empfindlich für Fills nahe K = 0 | inferenz | behoben |
+| A31 | klein | Tests prüfen den Code mit sich selbst | code | behoben, Rest offen |
+| A32 | klein | Placebo-Cache ohne Code-Version im Fingerabdruck; CLI ohne --out | code | offen (Autor) |
+| A33 | klein | Zahlenprüfung: Konstanten und Daten ohne Kontextbindung | code | behoben |
+| A34 | klein | Referenzbuch als BTC-Straddle definiert, Spanne aus ETH und HYPE | manuskript | behoben, Rest offen |
+| A35 | klein | Gepoolt gegen R4 auf verschiedenen Zellmengen verglichen | manuskript | behoben |
+| A36 | klein | „without it … 3.43“ enthält das SM-Konto | manuskript | behoben |
+| A37 | klein | Nachtrag 4 nach Dosen und H4-Panel (nicht offengelegt) | manuskript | behoben |
+| A38 | klein | H2-Statistik ratio statt ratio_unit als Lesart nach Vorliegen der Werte | manuskript | behoben |
+| A39 | klein | MM-Sensitivität von H2 nach den Ergebnissen umdefiniert | manuskript | behoben |
+| A40 | klein | Vorab-Proben mit Kapitalzahlen nicht vollständig offengelegt | manuskript | behoben |
+| A41 | klein | K_p „at traded prices“, Eröffnungsbücher aber zur Modell-Mark | manuskript | behoben |
+| A42 | klein | H2 extrapoliert über die validierten Bücher hinaus | manuskript | behoben |
+| A43 | klein | API-Chain-Abstand nur für Einzelkontrakte beziffert | manuskript | behoben |
+| A44 | klein | Nicht-USDC-Collateral „not measured“, ist aber messbar und erheblich | manuskript | behoben |
+| A45 | klein | Multi-Leg-RFQ: Beine ohne Gegenbeine gemessen, nicht erwähnt | manuskript | behoben |
+| A46 | klein | „last pushed before its block“ beschreibt den Code falsch | manuskript | behoben |
+| A47 | klein | A1-Caption: Spot-Feed-Alter ungeprüft (17 Fills) | abbildungen | behoben |
+| A48 | klein | Abbildungsschrift im Satz unter 7 pt | abbildungen | behoben |
+| A49 | klein | Floatlage: H2- bis H4-Abbildungen nach dem Schluss | abbildungen | behoben |
+| A50 | klein | F3 a: Intervallbalken unsichtbar | abbildungen | behoben |
+| A51 | klein | F5: Linienkodierung und Stichtag nicht erklärt | abbildungen | behoben |
+| A52 | klein | F6 c: gedruckte Ungleichung „p = 0.622 ≤ 0.05“ | abbildungen | behoben |
+| A53 | klein | T2 c: kategoriale Achse nicht als solche gekennzeichnet | abbildungen | behoben |
+| A54 | klein | T1 c: 4-%-Isolinie unbeschriftet | abbildungen | behoben |
+| A55 | klein | Labels M\*, R1-R4, „legacy PM“, „Paper 1“ nicht eingeführt | manuskript | behoben, Rest offen |
+| A56 | klein | Notation uneindeutig (NE, Regression, post_i, K_after) | manuskript | behoben |
+| A57 | klein | PDF-Metadaten und Lesezeichen fehlerhaft | manuskript | behoben |
+| A58 | klein | Datumsformate uneinheitlich | manuskript | behoben |
+| A59 | klein | Underfull-Boxen und Schreibweise „standard margin account“ | manuskript | behoben, Rest offen |
+| A60 | klein | Zuschreibungen an albiez2026 ungenau | literatur | behoben |
+| A61 | klein | Inferenzverfahren nicht zitiert | literatur | behoben, Rest offen |
+| A62 | klein | LITERATUR.md veraltet (20 statt 21 Einträge, cont2014) | doku | behoben |
+| A63 | klein | Reihenfolge Validierung vor Messung laut Spezifikation nicht eingehalten | doku | behoben |
+| A64 | klein | Präregistrierung nur deutsch, Manuskript sagt „Addendum“ | doku | behoben |
+| A65 | klein | Befund Paper 1: Faktoren und Reihenfolgeaussage ungenau | paper1 | behoben |
+| A66 | klein | Befund Paper 1: Vault-Intervall mit nur 8 Clustern | paper1 | behoben |
+| A67 | klein | RFQ-Gebühr auf einem Bein gebucht (auch Nachtrag 2 von Paper 2) | paper1 | behoben, Rest offen |
+| A68 | klein | Befund Paper 1: B = 999 gegen B = 9 999 im Manuskript | paper1 | behoben |
+| A69 | klein | .DS_Store und .Rhistory committed | hygiene | behoben |
+
+## Status nach der Korrekturrunde (25.09.2026)
+
+Stand: Arbeitsbaum auf `d51ede0`, nicht committet. Sieben Bearbeiter (Inferenz, Zahlenprüfung, Hygiene, Paper 1, Literatur, Abbildungen, Manuskript) haben jeden zugeteilten Befund zuerst selbst geprüft und dann testgetrieben behoben oder begründet offen gelassen. Alle 69 Befunde wurden als zutreffend bestätigt; kein Befund ist nicht zutreffend. Die Schlussprüfung hat die kritischen und wichtigen Befunde unabhängig an Code, results/p2 und dem neu gebauten PDF nachgeprüft und die ganze Prüfkette ausgeführt.
+
+**Bilanz.** 57 behoben, 9 behoben mit einem offenen Rest für den Autor, 3 offen für den Autor (A01 davon im Arbeitsbaum behoben, in der Historie offen), 0 nicht zutreffend. Die registrierten Urteile sind unverändert: h1.json bis h4.json sind bitgleich zu HEAD, PRAEREGISTRIERUNG.md ist unverändert. Rote Ergebnisse der Prüfkette: keine.
+
+### Prüfkette der Schlussprüfung
+
+| Schritt | Ergebnis |
+|---|---|
+| `python3 -m pytest -q` | grün: 987 bestanden, 0 fehlgeschlagen, 0 übersprungen (die privaten Fixtures unter data/p2/fixtures_private liegen lokal), 49 s |
+| `python3 scripts/p2_build.py` | grün, „build clean“: 12 Seiten, 5 580 Wörter, 352 Zahlen; keine Platzhalter, Gedankenstriche, fehlenden Zitate, Caption-Abweichungen (ausser der begründeten Ausnahme F2), Überschreitungen des Wortbudgets, unbelegten Zahlen, unbenutzten Erklärungen, Fehler, Overfull-Boxen oder undefinierten Verweise |
+| `python3 scripts/p2_number_check.py` | grün: 352 Zahlen, 17 Zählwörter, 0 Fehler |
+| `python3 scripts/p2_figure_check.py` (auch mit `--strict-captions`) | grün: 231 von 231 Prüfungen ja (t1 18, t2 20, f1 16, f2 19, f3 14, f4 14, f5 16, f6 22, a1 53, gif 6, s1 9, s2 5, s3 19) |
+| `python3 scripts/p2_wordcount.py` | grün, aber ohne Reserve (Beobachtung B4) |
+| h1.json bis h4.json gegen HEAD | bitgleich (sha256 beginnt mit c7bbf6233c90, 6045fcba2203, 788d166bb91f, 8e2d976e2540); `git diff HEAD` leer; PRAEREGISTRIERUNG.md ohne Diff |
+
+Die Läufe von Zahlen- und Abbildungsprüfung schreiben ZAHLENPRUEFUNG.md und ABBILDUNGEN.md neu. Inhaltlich waren beide gleich (nur Zeitstempel und die Reihenfolge einer Sollwert-Spalte, siehe B5); die Fassungen der Bearbeiter sind wiederhergestellt. main.pdf (gitignoriert) ist neu gebaut.
+
+### Unabhängige Stichproben der Schlussprüfung
+
+- **A01:** Scan aller versionierten und unversionierten, nicht ignorierten Dateien: kein unsalzter sha256(str(id))[:10]-Hash für die IDs 1 bis 200 000, keine der fünfstelligen Top-IDs; die privaten Fixtures sind im Index gelöscht und liegen unter data/p2 (gitignoriert). Die Historie enthält die Lecks weiter.
+- **A04:** h1_sign gelesen (Auswahl je Replikation auf A\* über die vorhandenen Zellen); in sensitivity.json tragen alle vier Vorzeichengruppen selection = per replicate, jeder Schätzer liegt im Intervall, die Grenzen gleichen der Nachrechnung des Audits (Spalte „neu“) bis auf Rundung in der dritten Stelle.
+- **A05:** Aus β = −4,599, SE 13,095 und den Placebo-Perzentilen −2,619 und 2,828 folgt [−41,64; 29,70]; mal log(0,9) ergibt das −3,13 bis +4,39 bp, 3,13 von 7,93 bp sind 39 %. Text in 4.4, Diskussion und Schluss entsprechend.
+- **A19 bis A21, A33:** 15 Mutanten an einer Kopie von main.tex (Abstract-ρ, vertauschte BTC-Spanne, Placebo-Anteil, kalibrierte Grenze, Verengungsanteil, ρ unter profitablen Zellen, Zählwort, Datum, Schwelle von H1, 28 Tage, Zahl der Placebo-Termine, Zahlwort, Commit-Hash, Uhrzeit, Richtungswort): 14 gefangen, nicht gefangen nur „fell“ zu „rose“ (B2).
+- **A03, A06 bis A18:** Wortlaut im gebauten PDF bzw. in main.tex geprüft (Abstract, Einleitung, Abschnitte 2 bis 4, Diskussion, Schluss, Back Matter, Anhang B).
+- **A22, A23:** s3_verdicts.png angesehen (vier Urteile, H4 mit β, p und P95); gif_meta.json (Skala 3 bis 19 %, nodes_outside_scale 0, MP4 vorhanden) gegen gif_frames.csv (3,41 bis 18,82 %).
+- **A13, A47, A48, A49, A52 bis A54, A57:** Beschriftungen in den Abbildungs-PDFs, Breiten und kleinste Schrift, Reihenfolge der ersten Nennung gegen die Float-Reihenfolge, Metadaten und Lesezeichen von main.pdf.
+- **A17, A61:** 30 Bib-Einträge, alle zitiert; die sieben mit paper/refs.bib geteilten Einträge zeichengleich.
+- **Paper 1:** paper/, derive_surface/\*p1\*, figures_p1 und die bestehenden scripts/p1_\* sind inhaltlich unverändert gegenüber HEAD (Ausnahmen in B6).
+
+### Status je Befund
+
+| ID | Status | Umsetzung und Nachweis | Rest oder Grund |
 |---|---|---|---|
-| A01 | kritisch | Pseudonym-Schlüssel und umkehrbare Kontohashes in tests/ und Historie | hygiene |
-| A02 | wichtig | Präregistrierung nur lokal datiert, Repo und Commits nicht öffentlich | manuskript |
-| A03 | wichtig | Post-hoc-Analysen im Text nicht als explorativ gekennzeichnet | manuskript |
-| A04 | wichtig | Intervalle der Vorzeichengruppen ungültig (Post-Selektion), F2 c | inferenz |
-| A05 | wichtig | H4-Spanne und p-Werte zu eng (Überstreuung zwischen Terminen), Trennschärfe | inferenz |
-| A06 | wichtig | Placebo-Regel im Manuskript falsch beschrieben | manuskript |
-| A07 | wichtig | „every test runs inside it“ falsch: H4 enthält Legacy-Ereignisse | manuskript |
-| A08 | wichtig | H3-Faktor im Abstract den falschen Büchern zugeschrieben | manuskript |
-| A09 | wichtig | „makers“ sind Subaccounts von fünf Wallets; SM-Deutung ungedeckt | manuskript |
-| A10 | wichtig | H2-Median mischt Käufe und Verkäufe mit entgegengesetztem Vorzeichen | manuskript |
-| A11 | wichtig | Praktische Folgerung aus H1 widerspricht H2 | manuskript |
-| A12 | wichtig | Spitze der Kapitalkarte = Abstand zur SVI-Mark im Flügel, RFQ-lastig | manuskript |
-| A13 | wichtig | „capital ≈ premium“ gilt nur aus dem Geld (F1, F2, Text) | abbildungen |
-| A14 | wichtig | „public engine“ widerspricht Abschnitt 2; soska2021 widerspricht dem Zitat | manuskript |
-| A15 | wichtig | Inventarmodelle falsch charakterisiert (ho1981, avellaneda2008) | literatur |
-| A16 | wichtig | Literatur zu Kapitalbeschränkungen von Options-Market-Makern fehlt | literatur |
-| A17 | wichtig | Primärquelle der Regeln (v2-core 96796a6, API-Doku) nicht zitiert | literatur |
-| A18 | wichtig | Hinweis auf die Einheitenfehler von Paper 1 unvollständig | manuskript |
-| A19 | wichtig | Zahlenprüfung: Vereinigung der Schlüssel deckt veraltete Zahlen | code |
-| A20 | wichtig | Zahlenprüfung: generische Stufe deckt fast jede Zahl zufällig | code |
-| A21 | wichtig | Zahlenprüfung: Globs ohne Zeilenbindung lassen Vertauschungen durch | code |
-| A22 | wichtig | Social-Karten: explorative und günstige Titel, H4 fehlt | abbildungen |
-| A23 | wichtig | GIF: Farbskala schneidet stumm ab, MP4 fehlt | abbildungen |
-| A24 | wichtig | results/p1/h1_lorenz.csv mit 1 388 rohen Taker-Wallets | hygiene |
-| A25 | wichtig | Befund Paper 1: Code-Empfehlung lässt Wasserfall und Klassen aus | paper1 |
-| A26 | wichtig | Befund Paper 1: Skript und Tests nur im gitignorierten data/p2 | paper1 |
-| A27 | wichtig | Befund Paper 1: Liste der betroffenen Stellen unvollständig | paper1 |
-| A28 | klein | H1-Perzentilintervall nicht zentriert; Begründung in MANUSKRIPT 7.3.1 falsch | inferenz |
-| A29 | klein | Placebo-Panels anders gebaut als das echte Panel | inferenz |
-| A30 | klein | Dosis als Mittel der log-Ratios empfindlich für Fills nahe K = 0 | inferenz |
-| A31 | klein | Tests prüfen den Code mit sich selbst | code |
-| A32 | klein | Placebo-Cache ohne Code-Version im Fingerabdruck; CLI ohne --out | code |
-| A33 | klein | Zahlenprüfung: Konstanten und Daten ohne Kontextbindung | code |
-| A34 | klein | Referenzbuch als BTC-Straddle definiert, Spanne aus ETH und HYPE | manuskript |
-| A35 | klein | Gepoolt gegen R4 auf verschiedenen Zellmengen verglichen | manuskript |
-| A36 | klein | „without it … 3.43“ enthält das SM-Konto | manuskript |
-| A37 | klein | Nachtrag 4 nach Dosen und H4-Panel (nicht offengelegt) | manuskript |
-| A38 | klein | H2-Statistik ratio statt ratio_unit als Lesart nach Vorliegen der Werte | manuskript |
-| A39 | klein | MM-Sensitivität von H2 nach den Ergebnissen umdefiniert | manuskript |
-| A40 | klein | Vorab-Proben mit Kapitalzahlen nicht vollständig offengelegt | manuskript |
-| A41 | klein | K_p „at traded prices“, Eröffnungsbücher aber zur Modell-Mark | manuskript |
-| A42 | klein | H2 extrapoliert über die validierten Bücher hinaus | manuskript |
-| A43 | klein | API-Chain-Abstand nur für Einzelkontrakte beziffert | manuskript |
-| A44 | klein | Nicht-USDC-Collateral „not measured“, ist aber messbar und erheblich | manuskript |
-| A45 | klein | Multi-Leg-RFQ: Beine ohne Gegenbeine gemessen, nicht erwähnt | manuskript |
-| A46 | klein | „last pushed before its block“ beschreibt den Code falsch | manuskript |
-| A47 | klein | A1-Caption: Spot-Feed-Alter ungeprüft (17 Fills) | abbildungen |
-| A48 | klein | Abbildungsschrift im Satz unter 7 pt | abbildungen |
-| A49 | klein | Floatlage: H2- bis H4-Abbildungen nach dem Schluss | abbildungen |
-| A50 | klein | F3 a: Intervallbalken unsichtbar | abbildungen |
-| A51 | klein | F5: Linienkodierung und Stichtag nicht erklärt | abbildungen |
-| A52 | klein | F6 c: gedruckte Ungleichung „p = 0.622 ≤ 0.05“ | abbildungen |
-| A53 | klein | T2 c: kategoriale Achse nicht als solche gekennzeichnet | abbildungen |
-| A54 | klein | T1 c: 4-%-Isolinie unbeschriftet | abbildungen |
-| A55 | klein | Labels M\*, R1-R4, „legacy PM“, „Paper 1“ nicht eingeführt | manuskript |
-| A56 | klein | Notation uneindeutig (NE, Regression, post_i, K_after) | manuskript |
-| A57 | klein | PDF-Metadaten und Lesezeichen fehlerhaft | manuskript |
-| A58 | klein | Datumsformate uneinheitlich | manuskript |
-| A59 | klein | Underfull-Boxen und Schreibweise „standard margin account“ | manuskript |
-| A60 | klein | Zuschreibungen an albiez2026 ungenau | literatur |
-| A61 | klein | Inferenzverfahren nicht zitiert | literatur |
-| A62 | klein | LITERATUR.md veraltet (20 statt 21 Einträge, cont2014) | doku |
-| A63 | klein | Reihenfolge Validierung vor Messung laut Spezifikation nicht eingehalten | doku |
-| A64 | klein | Präregistrierung nur deutsch, Manuskript sagt „Addendum“ | doku |
-| A65 | klein | Befund Paper 1: Faktoren und Reihenfolgeaussage ungenau | paper1 |
-| A66 | klein | Befund Paper 1: Vault-Intervall mit nur 8 Clustern | paper1 |
-| A67 | klein | RFQ-Gebühr auf einem Bein gebucht (auch Nachtrag 2 von Paper 2) | paper1 |
-| A68 | klein | Befund Paper 1: B = 999 gegen B = 9 999 im Manuskript | paper1 |
-| A69 | klein | .DS_Store und .Rhistory committed | hygiene |
+| A01 | Arbeitsbaum behoben, Historie offen (Autor) | TOP und das Zweitkonto in den Tests sind synthetisch. Die sechs Dateien mit Kontobezug (pm/sm_chain_accounts, books_chain_snapshot, books_events_day, b1_chain_cases, gen_b1_fixture.py) sind aus dem Index genommen (gestaged) und liegen bytegleich unter data/p2/fixtures_private; die Tests überspringen ohne sie. Der nicht identifizierende Teil liegt in tests/fixtures/p2/books_registry.json. Neue Wächter über tests/ (unsalzte Hashes, fünfstellige Roh-IDs, private Fixtures im Index, OS-Artefakte). Schlussprüfung: kein unsalzter sha10-Hash für die IDs 1 bis 200 000 und keine fünfstellige Top-ID im Arbeitsbaum (versioniert und unversioniert). | Die Historie ab e7361d2 ist nicht umgeschrieben (Vorgabe der Runde). docs/paper2/HISTORIE_BEREINIGEN.md und scripts/p2_history_scrub.py liegen bereit und sind in Wegwerf-Klonen erprobt. Ausführung vor dem ersten Push ist Schritt des Autors; danach in main.tex die Nachtrags-Hashes eb534fe, 9465210, bfc34c8, c4fcb59 und `% src git:c4fcb59` nachziehen (MANUSKRIPT.md 6.6). Der Roh-ID-Wächter erfasst nur die fünf fünfstelligen Top-IDs; die kürzeren sind als Zahl im Text nicht unterscheidbar. |
+| A02 | behoben, Rest offen für den Autor | „Data, code and pre-registration“ sagt jetzt, dass die Commit-Zeiten lokale Zeiten des Rechners sind und vor den Ergebnissen kein Commit öffentlich lag; die Nachträge tragen „(UTC+2)“. Empfehlung in MANUSKRIPT.md 6.5. | Offen für den Autor: Push erst nach A01 und mit Merge-Commit (kein Squash, kein Rebase), externe Verankerung (OpenTimestamps oder OSF) und das Datum der Veröffentlichung. |
+| A03 | behoben | Abschnitt 3 legt die Konvention fest („exploratory“ für nicht Registriertes, „post hoc“ für alles nach den ersten Ergebnissen); gekennzeichnet im Abstract und an jeder betroffenen Zahl; „(H1)“ nur am registrierten Befund; Detailzahlen im neuen Anhang B „Post hoc and exploratory results“. Schlussprüfung: 0,734, 0,990, 0,721, 0,243, 0,634, 3,780 und die kalibrierte H4-Spanne stehen neben „post hoc“ oder im Anhang B. | keiner |
+| A04 | behoben | h1_sign wählt die Vorzeichengruppen in jeder Replikation auf dem eigenen A\* neu (selection = per replicate, dieselben Ziehungen wie H1); die Seitengruppen bleiben fest. edge > 0: 0,634 [0,572; 0,702]; edge ≤ 0: 0,636 [0,460; 0,684]; Verkäufe mit edge > 0: 0,940 [0,924; 0,968]; Käufe mit edge > 0: 0,243 [0,207; 0,446]. Das deckt sich mit der Nachrechnung des Audits. F2 neu gebaut, Caption und Text nachgezogen; p2_figure_check prüft in F2 c, F3 b, F4 b und F6 d, dass jeder Schätzer in seinem Intervall liegt (alle ja). Tests: Brute-Force-Resampling und Eigenschaftsprüfung über 30 Datensätze. | keiner. Hinweis: Ein Perzentilintervall einer nicht glatten Statistik garantiert lo ≤ stat ≤ hi nicht in jedem Einzelfall; der Test prüft deshalb eine Eigenschaft über viele Datensätze (siehe A31). |
+| A05 | behoben | sensitivity_h4.json audit.placebo_calibration: sd(t) 1,82; an den Placebo-t kalibrierte 90-%-Spanne für β von −41,6 bis 29,7; für 10 % billigeres Kapital −3,13 bis +4,39 bp, eine Verengung bis 39 % des mittleren Halbspreads (7,93 bp) ist nicht ausgeschlossen. Text in 4.4 („The test has little power“), Diskussion („or the test lacks the power …“) und Schluss („no detectable response … in a test of little power“); „by a fifth“ gestrichen. Schlussprüfung: Spanne aus β, SE und den Placebo-Perzentilen nachgerechnet. | keiner; das Urteil bleibt (h4.json bitgleich). |
+| A06 | behoben | Text: „at least 28 days from every change of the underlying's legacy-manager and standard PM2 parameters (Addendum 4)“; die Variante über alle Zeitlinien (P95 21,57, 88 %) als weitere Lesart von Nachtrag 4 in Anhang B. | keiner |
+| A07 | behoben | „every test runs inside it“ ersetzt durch „only H4 also uses events before it“; 4.4 nennt die Legacy-Ereignisse vom 22.02.2025 mit 75 der 475 Paare (Zeilenbindung an events.csv). | keiner |
+| A08 | behoben | Abstract und Einleitung lösen H3 vom H2-Satz („On the opening books of nine dominant subaccounts“); „no standard-margin account could hold“ ersetzt durch „too large for a standard-margin account“. Im PDF geprüft. | keiner |
+| A09 | behoben | „subaccount“, wo Subaccounts gemeint sind; Abschnitt 3 nennt die gemeinsamen Wallets über die M-Labels; 4.3 und Diskussion deuten das SM-Subaccount als kleinen Rest eines Betreibers, dessen grosse Bücher unter Portfolio-Margin liegen. | Die Zählwörter (drei Betreiber, vier Wallets) fehlen, weil results/p2 dafür keinen Schlüssel hat; optional. |
+| A10 | behoben, Rest offen für den Autor | Einleitung und 4.2: „maker buys there mostly release capital and maker sells mostly bind it“; Diskussion und Schluss auf „the median fill“ beschränkt. | Offen für den Autor: Die vorgeschlagene explorative Zerlegung nach Maker-Seite und der Quotient der Summen (Verkäufe Median 0,075, Käufe −0,137) stehen weder im Text noch in Abb. 5 b, weil results/p2 keinen Schlüssel hat. Schlüssel in inference_p2 ergänzen und die Zahlen nennen oder bewusst beim Wortlaut bleiben. |
+| A11 | behoben | Der erste Diskussionspunkt gilt „from an empty or small book“; ergänzt ist, dass in den dominanten PM2-Büchern Käufe meist Kapital freisetzen und das Grenzkapital die Seiten anders ordnet. | keiner |
+| A12 | behoben, Rest offen für den Autor | 4.1 und Diskussion: Der Edge der obersten Kapitalzellen liegt nahe am Abstand zur SVI-Mark im Flügel und kommt überwiegend aus RFQ-Beinen (post hoc). | Offen für den Autor: Die explorative F2c-Zeile ohne RFQ-Fills fehlt (Inferenz- und Abbildungsschritt). |
+| A13 | behoben | F1 und F2: Zeilentitel „maker buys (long): capital ≈ premium OTM“, Captions „about the premium out of the money (OTM) and less in the money“; Text in 4.1 und Diskussion eingeschränkt. Tests in test_p2_fig_f1.py und test_p2_fig_f2.py; im Abbildungs-PDF geprüft. | keiner |
+| A14 | behoben | soska2021 in LITERATUR.md berichtigt. Abstract: „the margin rules are public contracts with parameters on chain, and the venue's off-chain engine can be queried for any book“; Abschnitt 2 zitiert derivev2core und stellt die Prozent-Margin von BitMEX (soska2021) der Szenario-Engine gegenüber; „only the operator … can run“ gestrichen. | Der Titel („public portfolio-margin engine“) ist unverändert. Nach der Bedingung des Audits ist er zulässig, weil das Abstract die Einschränkung trägt; ob er bleibt, entscheidet der Autor. |
+| A15 | behoben | Quellen geprüft (Ho und Stoll: Wertkonto ohne Schranke; Avellaneda und Stoikov: Stück, Strafe über den CARA-Nutzen; Guéant et al.: harte Schranke). Einleitung: „counts in contracts or their value. Inventory models penalise the position (ho1981, avellaneda2008) or bound it in units (gueant2013)“; LITERATUR.md berichtigt. | keiner |
+| A16 | behoben | fournier2020, chen2019 und ahn2025 über Crossref und doi.org geprüft, aufgenommen und in Einleitung bzw. Beiträgen zitiert; he2017 in der Reserve; Hitzemann et al. sowie Cao, Jacobs und Ke als Working Paper unter „Weggelassen“. | keiner |
+| A17 | behoben | @misc derivev2core (Commit 96796a6 vom 16.02.2026, BUSL 1.1) und derivegetmargin (API-Doku, abgerufen am 24.09.2026) aufgenommen und in Abschnitt 2 sowie in der Back Matter zitiert. Schlussprüfung: 30 Einträge, alle zitiert. | keiner |
+| A18 | behoben | Abschnitt 3 nennt die Fassung vom 19.09.2026, beide Einheitenfehler, die betroffenen Grössen und die angekündigte Korrektur; die Werte je Nominal weichen deshalb ab. | Die Fassung steht im Text, nicht im Bib-Eintrag albiez2026; optional dort nachziehen. |
+| A19 | behoben | scripts/p2_number_check.py bindet jede gedruckte Zahl an genau eine Erklärung ihrer Einheit, in der Reihenfolge des Texts; keine Vereinigung über Schlüssel, keine globalen Erklärungen. Die Simulation veralteter Werte des Audits scheitert jetzt in allen vier Fällen. | keiner |
+| A20 | behoben | Die generische Stufe ist gestrichen; jede Zahl ohne Erklärung ist ein Fehler; Skalen nur mit ~pct oder ~bp, Betrag oder Vorzeichen nur mit ~abs oder ~neg; unbenutzte Erklärungen brechen den Bau ab. Von 281 Audit-Mutanten scheitern 275 (Rest: bewusst ausgenommene Formeln und eine Kennung über einen Zeilenumbruch). | keiner |
+| A21 | behoben | CSV-Bezüge binden Spalte und Zeilenfilter; Globs und Schlüssellisten nur mit Aggregat; alle 12 Vertauschungen des Audits werden gefangen. Schlussprüfung: vertauschte BTC-Spanne gefangen. | keiner; zu Richtungswörtern siehe Beobachtung B2. |
+| A22 | behoben | Karten nach Abschnitt 9 neu: s1_three_engines, s2_straddle_vs_call und die Urteilskarte s3_verdicts (H1 bis H4, H4 mit β, einseitigem p und Placebo-P95, bewusst ohne Intervall); keine explorativen Zahlen und keine fest verdrahteten Verben; jede Kartenzahl wird in p2_figure_check gegen ihre Quelle geprüft (s1 9/9, s2 5/5, s3 19/19). Abweichungen von Abschnitt 9 im Docstring von social_p2.py. | keiner; zur Schraffur von H4 siehe Beobachtung B3. |
+| A23 | behoben | Farbskala über alle Frames (3 bis 19 %, nodes_outside_scale 0); schneidet eine Skala doch ab, zeigt der Farbbalken Pfeile und einen Zusatz. MP4 geschrieben (0,66 MB), GIF 80 Frames, 5,4 MB; p2_figure_check prüft Skala und MP4. Schlussprüfung: gif_frames.csv Minimum 3,41 %, Maximum 18,82 %, beide innerhalb der Skala. | ABBILDUNGSWAHL.md Abschnitt 8 (Dateinamen) nachziehen (Beobachtung B7). |
+| A24 | offen für den Autor | Unverändert nach Vorgabe: results/p1/h1_lorenz.csv enthält weiter die Wallet-Spalte. In HISTORIE_BEREINIGEN.md Abschnitt 6 als offener Punkt benannt. | Zielkonflikt: a26a59d ist Vorfahre von 1d13227; eine Bereinigung ändert den Hash der P2-Präregistrierung. Entscheidung des Autors vor dem ersten Push; Paper 1 lag ausserhalb dieser Runde. |
+| A25 | behoben | Die Code-Empfehlung im Befund zu Paper 1 ist vollständig (Punkte 2a bis 2h: analysis_frame, Klassentabelle, Wasserfall in T2, S1 und Prüfskript, F5, S5, F1c, F2c, Figure-Check, Tests mit amount ungleich 1). Code von Paper 1 unverändert (Vorgabe). | Umsetzung beim Neuschreiben von Paper 1; dabei test_waterfall_components_add_up_to_the_net_edge ersetzen (tautologisch). |
+| A26 | behoben | Skript und Tests versioniert (scripts/p1_befund_gebuehreneinheit.py, tests/test_p1_befund_gebuehreneinheit.py, 15 Tests offline); Zwischenstände unter data/p1/befund_gebuehreneinheit (gitignoriert); Neulauf über p2_heavy bitgleich; meta.script angepasst. | keiner; zum Namensraum scripts/p1_\* siehe Beobachtung B6. |
+| A27 | behoben | Die Liste der betroffenen Stellen ist ergänzt (committete PDF, paper/figures, x_article.md mit Artikel, Thread und Vorbemerkung, Karten s1/s5, Zahlenblatt, ABBILDUNGEN, ABBILDUNGS_BEFUNDE, UEBERGABE, main.tex; zusätzlich ABBILDUNGSWAHL.md Z. 50 und 59). | keiner |
+| A28 | behoben | sensitivity.json h1_interval (15,2 % der Ziehungen auf oder über dem Schätzer; gespiegelt [0,898; 0,925], bias-korrigiert [0,898; 0,920], z0 1,027); Schlüssel im Zahlenblatt; Anhang B; Begründung in MANUSKRIPT.md 7.3.1 korrigiert. Schlussprüfung: z0 und gespiegeltes Intervall nachgerechnet. | keiner; der registrierte Test ist unverändert. |
+| A29 | behoben | audit.placebo_composition beschreibt die Unterschiede (14 statt 13 Ereignisse mit Zellen, im Median 189 statt 141 Tages-Cluster, im Mittel 11,6 statt 3 überlappende Fensterpaare); dritte Placebo-Variante mit getrennten Fenstern (placebo_matched: P95 26,02, 48 % der Placebo-β ≥ β, sd(t) 1,77, abgelehnt); Anhang B. Die registrierte Ziehung und h4_placebo.csv sind unverändert. | keiner |
+| A30 | behoben | audit.dose_robust: mit Median-Dosis β −4,52 (p 0,6161), ohne Fills mit \|log ratio\| > 1 β −4,08 (p 0,6070), registriert −4,60; die Mittelwert-Dosis aus den Fills reproduziert das Panel exakt. Anhang B und Zahlenblatt. | keiner |
+| A31 | behoben, Rest offen für den Autor | Die Vorzeichengruppen haben jetzt einen Brute-Force-Test und eine Eigenschaftsprüfung (A04). | Offen für den Autor oder eine nächste Runde: tests/test_p2_inference.py:339 und :411 („rejected is bool(...)“), der panel_check-Test (tests/test_p2_inference_h4.py:373) und die Tests um change_days und placebo_day_table sind unverändert. Vorschlag: Regeltests gegen feste Sollwerte, panel_check gegen ein unabhängig gebautes Soll-Panel, und panel_check in der Doku als Nachweis von Reproduzierbarkeit statt Richtigkeit benennen (h4.json bleibt bitgleich). Die Bearbeiter hatten die Dateien wegen paralleler Änderungen nicht angefasst. |
+| A32 | offen für den Autor | In dieser Runde nicht umgesetzt: _fingerprint (derive_surface/inference_p2_h4.py:584) enthält weiter weder Code-Version noch WINDOW_DAYS, MIN_SIDE_FILLS, TOL oder OUTLIER_ABS_DOSE; die CLI hat kein --out, --parts-dir oder --fresh. | Ohne Wirkung auf die Ergebnisse. Vorschlag: die Konstanten und einen Hash von inspect.getsource(build_panel, fit, placebo_panel) in den Fingerabdruck, die drei CLI-Optionen und ein Test, der bei geänderter Panelregel „stale placebo parts“ verlangt. |
+| A33 | behoben | 57 benannte Konstanten, nur per const:NAME und exakt; Daten und Uhrzeiten an Datei, Schlüssel und Zeile gebunden; Test jeder Konstante gegen ihren Abschnitt der Präregistrierung. Schlussprüfung: „threshold of 0.6“, „29 days“, „200 placebo dates“, ein geändertes Datum, eine geänderte Uhrzeit und ein geänderter Commit-Hash scheitern. | keiner |
+| A34 | behoben, Rest offen für den Autor | Text: „a short straddle at the forward of each underlying (BTC in panel c)“, „Of the 14 kept events, 11“, Spannen 3,4 bis 37,4 über alle Basiswerte und 7,8 bis 26,0 für BTC, mit Zeilenbindung. | Offen, klein: Die Caption von Abb. 7 (F5, Panel b) sagt weiter „the reference straddle“ statt „the reference straddle of the underlying“; änderbar nur über derive_surface/figs_p2/f5.py (Caption-Drift). |
+| A35 | behoben | 4.1 nennt die 6 und 18 Verkaufszellen, die nach der Änderung noch 200 Fills erreichen (fig_f1_b.csv row_n); der Diskussionssatz gepoolt gegen R4 ist gestrichen. | keiner |
+| A36 | behoben | „books of 32 to 63 legs, M2 included, give 3.43“. | keiner |
+| A37 | behoben | Nachträge 1 bis 3 „committed before the step they govern“; zu Nachtrag 4 steht, dass er nach Kapital je Fill, Grenzkosten, Netting-Quoten, Dosen und dem H4-Panel samt Halbspreads geschrieben ist, umgesetzte Lesarten festhält und vor jeder Teststatistik liegt. | keiner |
+| A38 | behoben | 4.2: Nachtrag 4 wählte den ganzen Fill je Kontrakt statt des nächsten Einzelkontrakts, den der registrierte Wortlaut auch deckt, als beide je Fill vorlagen, aber vor jedem Median; 0,0329 unter den Sensitivitäten. | keiner |
+| A39 | behoben | Die Sensitivitäten nennen 0,0291 (Konto-Lib, n 19 693) und 0,0278 (Standard-Lib) und sagen, dass die Variante nach den ersten Ergebnissen auf eine Lib je Verhältnis gestellt wurde. | Der erste gemischte Wert 0,0190 steht nicht im Text, weil er nicht in results/p2 liegt; die Offenlegung der Umstellung erfüllt die Korrektur des Audits. |
+| A40 | behoben | Abstract und Back Matter: vor der ersten Kapitalzahl der registrierten Form, „with zero cash“; die Validierungs-Fixtures mit on-chain Margins samt Cash vor Nachtrag 1 sind genannt; die Vorab-Proben einzeln (SM-Karte der BTC-Zellen, aus der sich ρ ablesen liess, und Margin-Historien, „which the registration does not list“). | keiner |
+| A41 | behoben | Abschnitt 3: Das Eröffnungsbuch ist „priced at the companion paper's mark“. | keiner |
+| A42 | behoben | Anhang A: H2 bewertet Bücher über dem grössten validierten, und kein Validierungsfall liegt im Settlement-Fenster. | Die Zahlen (321 Beine, HYPE mit einem validierten Buch) fehlen mangels Schlüssel in results/p2; eine Validierung von Intraday-Büchern bleibt Option für den Enddatenlauf. |
+| A43 | behoben | Abschnitt 2: „whole books were only probed at random, with larger gaps“. | Ohne Zahl, weil der Buchabstand nur in get_margin_semantik.md steht; eine API-Momentaufnahme echter Bücher bleibt Option. |
+| A44 | behoben | „its share is not measured“ ersetzt: Diskussion „held on most maker-days“ (1 241 von 1 943 nachgezählt); Anhang B nennt das risikomindernde ETH eines PM2-Kontos. | Die Zahlen fehlen mangels Schlüssel in results/p2; optional. |
+| A45 | behoben | Anhang B: Jedes Bein eines RFQ-Pakets wird gegen das Buch vor dem ganzen Paket gemessen, ohne die übrigen Beine. | keiner |
+| A46 | behoben | „last pushed up to and including its block“ (im PDF geprüft). | keiner |
+| A47 | behoben | a1.feed_age zählt auch das Spot-Alter; die Caption nennt Vol- und Forward-Feed und die 17 Fills mit älterem Spot-Push (Heartbeat 180 s), die nach der Präregistrierung in der Stichprobe bleiben; neue Prüfung spot_stale gegen capital.parquet (ja). | keiner |
+| A48 | behoben | Leinwände auf die gemessenen Satzbreiten (6,8425 bzw. 3,2967 in; gebaut mit 6,84 bzw. 3,29 in); placement_checks lesen die Breite aus main.tex und die kleinste Schrift aus dem PDF. Schlussprüfung: alle neun Abbildungs-PDFs 6,84 bzw. 3,29 in breit, kleinste Schrift 7,00 pt, Skalenfaktor im Satz mindestens 1. | ABBILDUNGSWAHL.md 6.1 (7,0 und 3,4 in) nachziehen (Beobachtung B7). |
+| A49 | behoben | Verweis auf F5 in Abschnitt 3 gestrichen, Floats früher gesetzt, \FloatBarrier vor dem Schluss, A1 im Anhang. Schlussprüfung: Die Reihenfolge der ersten Nennung im Fliesstext gleicht der Float-Reihenfolge; alle Ergebnisabbildungen stehen vor „6. Conclusion“ (S. 9), A1 auf S. 11. | keiner |
+| A50 | behoben | Die Captions von F2 und F3 sagen, dass das Intervall schmaler als der Kreis ist und wo es gedruckt ist. | keiner |
+| A51 | behoben | Panel-Titel und Caption „share of option open interest … at the start of each month“; die Caption erklärt die dünne Legacy-Linie, die Schwelle steht in fig_f5_c.csv (legacy_thin_below). | keiner |
+| A52 | behoben | F6 c druckt „β > 0 and one-sided wild p ≤ 0.05 (p = 0.622): not met“ (im Abbildungs-PDF geprüft). | keiner |
+| A53 | behoben | Achse „spot shock, × spot (in order, not to scale)“, Caption entsprechend (im Abbildungs-PDF geprüft). | keiner |
+| A54 | behoben | Fehlende Isolinienlabels werden ergänzt („4 %“ in Panel c, im Bild geprüft); die Verfallsstriche zeigen nach aussen. | keiner |
+| A55 | behoben, Rest offen für den Autor | Die Einleitung führt „legacy PM“ ein, Abschnitt 3 die Labels M1 bis M10, Anhang B die Regime R1 bis R4. | Offen, klein: Das F2-Label „net edge, Paper 1“ (derive_surface/figs_p2/f2.py:64) passt nicht zu „companion paper“ im Text, und die Caption von Abb. 1 (T1) erklärt die Verfallsstriche am rechten Rand von Panel c und d nicht. Änderbar nur über die Module. |
+| A56 | behoben | \mathit{NE}, nummerierte H4-Regression mit post_i, Ereigniskapital K^{e+} und K^{e−}. | p als Preis und als p-Wert bewusst belassen, aus dem Kontext eindeutig. |
+| A57 | behoben | Metadaten nach \maketitle, Lesezeichen für die Back Matter. Schlussprüfung am PDF: Author „Gregor Albiez“, Subject „Working paper“, Keywords gesetzt, Creator „LaTeX with cas-dc.cls“, 17 Lesezeichen bis References. | keiner |
+| A58 | behoben | Fusszeile „Working paper, 25 September 2026“ statt \today; Nachträge mit „(UTC+2)“. | keiner |
+| A59 | behoben, Rest offen für den Autor | Absatz der Beiträge und Back Matter umformuliert, Pfade in \path; keine Underfull-Box im Fliesstext mehr. | Offen, klein: Die Caption von Abb. 6 (F4) schreibt weiter „standard margin account“ (derive_surface/figs_p2/f4.py:44, main.tex:514), sonst überall „standard-margin account“; änderbar nur über das Modul. |
+| A60 | behoben | (a) „a maker side and the absolute delta and tenor buckets of albiez2026“; (b) „The question extends albiez2026“; LITERATUR.md hält fest, was aus Paper 1 stammt. | keiner |
+| A61 | behoben, Rest offen für den Autor | cameron2008, mackinnon2017, roodman2019 und burlig2018 zeichengleich aus paper/refs.bib übernommen (dauerhafter Test; Schlussprüfung: alle sieben geteilten Einträge gleich) und bei Intervallen, Wild-Bootstrap und Präregistrierung zitiert; MANUSKRIPT.md 5 nachgezogen. | Offen für den Autor, nur über Paper 1 lösbar: burlig2018 ohne Feld doi (10.1016/j.econlet.2018.03.036), Titel von roodman2019 mit klein gesetztem „stata“. Erst in paper/refs.bib beheben, dann zeichengleich übernehmen. |
+| A62 | behoben | cont2014 als multilaterales Netting über Händler gegen bilaterales Netting über Anlageklassen beschrieben; Kopf auf die aktuelle Zahl der Einträge; der Satz „Alle 20 Einträge erscheinen korrekt“ ist auf den Bau vom 24.09. bezogen. | keiner |
+| A63 | behoben | Neuer Abschnitt „Reihenfolge von Validierung und Messung“ in VALIDIERUNG.md mit Datei-Zeitachse: Spezifikation Schritt 3 und Überschrift verletzt, operative Regel und Satz im Manuskript eingehalten. Papier unverändert, wie empfohlen. | keiner |
+| A64 | behoben | docs/paper2/PREREGISTRATION_EN.md als spätere Übersetzung mit Nachtrag 1 bis 4, Original bindend, mit Blob-Hash des Originals; tests/test_p2_prereg_en.py wird rot, sobald das Original einen neuen Nachtrag bekommt. Satz in „Data, code and pre-registration“. | keiner |
+| A65 | behoben | Tabelle mit Zeile p1\|index und Zellmedian; Faktoren aus der Tabelle; Reihenfolgeaussage neu (auf dem richtigen Nenner halbiert die Gebührenkorrektur HYPE); ETH-Zellmedian auf 5,7 korrigiert. | keiner |
+| A66 | behoben | Klassentabelle mit G und Anteil des grössten Wallets; Vault ohne Intervall mit Hinweis G = 8, Vorzeichen an den Mitteln begründet (4,22 − 1,13 + 0,02 − 1,02 = +2,09). | keiner |
+| A67 | behoben, Rest offen für den Autor | Befund zu Paper 1: Absatz zur RFQ-Buchung (4 511 von 4 996 mehrbeinigen Paketen mit Gebühr auf genau einem Bein) und Sensitivität per_contract_package (Gebühr −1,0911 gegen −1,0924, kein Zell-Urteil ändert sich). | Offen für den Autor: Ein datierter Nachtrag zu Nachtrag 2 von Paper 2 (Gebühr bei RFQ je Paket auf einem Bein) ist eine Änderung am Registrierungsdokument; numerisch unerheblich (Grössenordnung 0,001 USDC). |
+| A68 | behoben | Zerlegung und Klassen zusätzlich mit B = 9 999 und Seed 20260917; der Befund zitiert diese Werte (etwa NE 1,56 bis 18,31); Empfehlung 4 für den Text von Paper 1. | Umsetzung beim Neuschreiben von Paper 1. |
+| A69 | behoben | .DS_Store, paper/.DS_Store und paper/social/.Rhistory aus dem Index genommen (gestaged, die Dateien bleiben auf der Platte); .DS_Store und .Rhistory in .gitignore; Wächtertest. | Die Commits fdb8014 und 0afff2c liegen vor 1d13227 und behalten die Dateien; die Historie bleibt unverändert. |
+
+### Neue Beobachtungen der Schlussprüfung
+
+Keine davon ist ein rotes Ergebnis oder berührt ein Urteil.
+
+- **B1 Commit-Vorbereitung.** Neue Dateien, die Code, Bau oder Tests brauchen, sind unversioniert: derive_surface/figs_p2/_print.py, tests/fixtures/p2/books_registry.json, tests/test_p2_manuscript.py, tests/test_p2_refs.py, tests/test_p2_prereg_en.py, tests/test_p2_history_scrub.py, tests/test_p1_befund_gebuehreneinheit.py, scripts/p2_history_scrub.py, scripts/p1_befund_gebuehreneinheit.py, docs/paper2/HISTORIE_BEREINIGEN.md, docs/paper2/PREREGISTRATION_EN.md, docs/media/p2_btc_capital_surface.mp4 und die drei neuen Karten unter paper2/social. Die drei alten Karten sind gelöscht, aber nicht gestaged. Beim Commit alle mit `git add` aufnehmen; ein `git commit -a` allein liesse Tests und Abbildungsbau in einem frischen Klon scheitern (figs_p2 importiert _print.py, test_p2_books.py liest books_registry.json).
+- **B2 Richtungswörter.** Die Zahlenprüfung bindet Wert und Vorzeichen (~neg), aber nicht das Verb: Wird „the PM2 capital of the straddle fell by 22.9“ zu „rose by 22.9“, bleibt sie grün. Vorschlag: eine Erklärung mit zulässigem Verb für Sätze mit Richtungswort.
+- **B3 Karte S3.** Bei H4 ist nur β ≤ 0 schraffiert. Ein β zwischen 0 und der Placebo-P95 (23,4) würde nach Regel ebenfalls abgelehnt, läge aber im weissen Feld. Die Legende („the estimate reaching it rejects“) ist nicht falsch, aber unvollständig; Vorschlag: Schraffur bis zur P95.
+- **B4 Wortbudget.** Alle budgetierten Abschnitte liegen an der Toleranzgrenze (Introduction 660 von 660, Engine 660 von 660, Data 659 von 660, Results 1 536 von 1 540, Discussion 438 von 440); zusammen 4 340 Wörter bei einem Budget von 4 000. Jede weitere Ergänzung, etwa zu A10 oder A12, braucht eine Kürzung.
+- **B5 ABBILDUNGEN.md nicht deterministisch.** In der Zeile „forest rows“ von F2 hängt die Reihenfolge der Sollwert-Spalte von PYTHONHASHSEED ab (Menge statt Liste); jeder Lauf von p2_figure_check.py erzeugt einen Diff (geprüft mit PYTHONHASHSEED 1, 2 und 3). Das Prüfergebnis ist nicht betroffen.
+- **B6 Schutzbereich Paper 1.** scripts/p1_befund_gebuehreneinheit.py ist neu im Namensraum scripts/p1_\* (A26), und paper/.DS_Store sowie paper/social/.Rhistory sind aus dem Index genommen (A69). Bestehende Dateien von Paper 1 sind inhaltlich unverändert; der Autor sollte beides bewusst mitcommitten oder zurückstellen.
+- **B7 Doku nachziehen.** ABBILDUNGSWAHL.md Abschnitt 6.1 (Satzbreiten, A48) und Abschnitt 8 (Dateinamen von GIF und MP4, A23) beschreiben den alten Stand.
+
+### Offen für den Autor, nach Dringlichkeit
+
+1. Vor dem ersten Push: Historie nach docs/paper2/HISTORIE_BEREINIGEN.md bereinigen (A01) und über results/p1/h1_lorenz.csv samt a26a59d entscheiden (A24); danach die Nachtrags-Hashes und `% src git:c4fcb59` in main.tex nachziehen.
+2. Beim Commit die neuen Dateien aufnehmen (B1) und über die Dateien im Bereich von Paper 1 entscheiden (B6).
+3. Push mit Merge-Commit, externe Verankerung und Datum der Veröffentlichung (A02).
+4. Nachtrag zur RFQ-Buchung der Gebühr (A67).
+5. Über Paper 1: burlig2018 und roodman2019 in paper/refs.bib (A61), Umsetzung von A25 und A68 beim Neuschreiben.
+6. Kleine Reste: Zahlen nach Maker-Seite (A10), F2c-Zeile ohne RFQ (A12), Regeltests (A31), Fingerabdruck und CLI des Placebo-Caches (A32), Captions und Labels in den Modulen f2, f4, f5 und t1 (A34, A55, A59), B2 bis B5 und B7.
+7. Titel des Papers (A14), nach der Bedingung des Audits zulässig.
 
 ## Befunde
 

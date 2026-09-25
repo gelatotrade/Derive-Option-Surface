@@ -12,7 +12,8 @@
 The engine is rerun on the reference row only after it reproduces ``K_pm2`` and ``K_sm`` of that row (relative
 1e-9); otherwise the figure is not built. The capital of the single legs is read from ``K_pm2_call``/``K_pm2_put`` of
 the reference book when it carries them (data contract, section 10) and is otherwise computed on the same row with
-the same engine and state. Nothing here needs the feed history.
+the same engine and state. The single legs under SM are computed the same way; they are not drawn and serve social
+card 2 (``social_p2``). Nothing here needs the feed history.
 
 Command line: ``python3 -m derive_surface.figs_p2.t2`` (writes ``paper2/figures/t2.{pdf,png}`` and
 ``results/p2/fig_t2_{a,b,c}.csv``, prints the checks).
@@ -49,6 +50,7 @@ VOL_NAME = {0: "unchanged", 1: "up", 2: "down", 3: "linear skew", 4: "abs skew"}
 VOL_FILL = {1: kit.MANAGER["pm2"][0], 0: "white", 2: "#BBBBBB"}
 CORE_BG = "#F2F2F2"
 LABELLED_SHOCKS = (0.34, 0.86, 1.0, 1.14, 6.0)
+XLABEL_C = "spot shock, × spot (in order, not to scale)"   # scenarios at equal steps
 
 CAPTION = (
     r"\textbf{What \texttt{get\_margin} returns, and how PM2 prices a book.} Panel a splits $C - \mathrm{net}$ into "
@@ -58,7 +60,8 @@ CAPTION = (
     r"their historical blocks. The dashed line is the H3 threshold of two, which was set from these books before any "
     r"maker book was measured. On the mixed book of 17 September $V$ is positive, so the ratio falls from 11.86 to "
     r"10.76. Panel c is the scenario profit and loss of a short BTC straddle struck at the forward on 17 September "
-    r"2026, on the listed expiry nearest to 30 days (22 days), in per cent of the forward. PM2 charges the worst "
+    r"2026, on the listed expiry nearest to 30 days (22 days), in per cent of the forward, over the spot shocks in "
+    r"order, not to scale. PM2 charges the worst "
     r"scenario of the whole book plus contingencies (solid line), which is less than the sum of the legs margined one "
     r"by one (dash dot); standard margin is dashed."
 )
@@ -136,9 +139,11 @@ def load(results_dir: Path = Path("results/p2")) -> dict:
     for name, mine, theirs in (("K_pm2", K_pm2, float(row["K_pm2"])), ("K_sm", K_sm, float(row["K_sm"]))):
         if not abs(mine - theirs) <= REPRO_REL * abs(theirs):
             raise ValueError(f"the engine does not reproduce {name} of the reference row ({mine!r} vs {theirs!r})")
-    legs = {}
+    legs, legs_sm = {}, {}
     for leg, prem in ((book.options[0], -c), (book.options[1], -p)):
         legs["call" if leg.is_call else "put"] = _book_capital(margin_pm2, Book(options=[leg]), state, p_pm2, vols, prem)
+        legs_sm["call" if leg.is_call else "put"] = _book_capital(margin_sm, Book(options=[leg]), state, p_sm, vols,
+                                                                  prem)
     if {"K_pm2_call", "K_pm2_put"} <= set(row.index) and np.isfinite(row["K_pm2_call"]) \
             and np.isfinite(row["K_pm2_put"]):
         K_call, K_put, source = float(row["K_pm2_call"]), float(row["K_pm2_put"]), "reference_book.csv"
@@ -151,6 +156,7 @@ def load(results_dir: Path = Path("results/p2")) -> dict:
     return {"probes": probes, "row": row, "forward": F, "ts": ts, "expiry": int(row["expiry"]),
             "tenor_days": float(row["tenor_days"]), "K_pm2": K_pm2, "K_sm": K_sm, "K_pm2_call": K_call,
             "K_pm2_put": K_put, "K_pm2_legs": K_call + K_put, "legs_source": source,
+            "K_sm_call": legs_sm["call"], "K_sm_put": legs_sm["put"],
             "legs_recomputed": legs, "scenarios": sc, "grid": grid, "basis": sc.attrs["basis"],
             "pm2_param_from_ts": int(tl["pm2"].entry_at(ts)["from_ts"])}
 
@@ -209,7 +215,8 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
     cap = []
     for item, value, drawn in (("K_pm2_book", data["K_pm2"], True), ("K_pm2_legs", data["K_pm2_legs"], True),
                                ("K_pm2_call", data["K_pm2_call"], False), ("K_pm2_put", data["K_pm2_put"], False),
-                               ("K_sm", data["K_sm"], True)):
+                               ("K_sm", data["K_sm"], True), ("K_sm_call", data["K_sm_call"], False),
+                               ("K_sm_put", data["K_sm_put"], False)):
         cap.append({"kind": "capital", "item": item, "pnl_usdc": -value, "pnl_pct_forward": -100.0 * value / F,
                     "value_usdc": value, "value_pct_forward": 100.0 * value / F, "drawn": drawn,
                     "printed": labels.get(item, "")})
@@ -351,7 +358,7 @@ def _panel_c(fig, data: dict) -> None:
     shocks = sorted(pos, key=pos.get)
     ax.set_xticks([pos[s] for s in shocks])
     ax.set_xticklabels([_shock_label(s) if _labelled(s) else "" for s in shocks])
-    ax.set_xlabel("spot shock, × spot")
+    ax.set_xlabel(XLABEL_C)
     ax.set_ylabel("scenario P&L of the book,\n% of forward", linespacing=1.1)
     ax.grid(axis="y", color="#DDDDDD", lw=0.4, zorder=0)
     tr = mtransforms.blended_transform_factory(ax.transData, ax.transAxes)

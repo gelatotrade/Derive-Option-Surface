@@ -119,6 +119,17 @@ def synthetic(slot: str, tmp: Path) -> tuple:
     return rd, SYNTH[slot](rd)
 
 
+def _text_3d(t) -> bool:
+    from mpl_toolkits.mplot3d.art3d import Text3D
+
+    return isinstance(t, Text3D)
+
+
+def _outside(t, r, W: float, H: float) -> bool:
+    e = t.get_window_extent(r)
+    return e.width > 0 and (e.x0 < -0.5 or e.y0 < -0.5 or e.x1 > W + 0.5 or e.y1 > H + 0.5)
+
+
 class Caught:
     """Figures passed to ``Figure.savefig`` during a build, measured before they are written."""
 
@@ -148,6 +159,12 @@ def built(tmp_path_factory):
             self._p2_small = [f"{t.get_text()!r} {t.get_fontsize():.2f}" for t in caught.texts(self)
                               if t.get_fontsize() < figures_p2.FS_MIN - 1e-9]
             self._p2_artists = _encodings(self)
+            from derive_surface.figs_p2 import _kit_f5f6
+
+            r = self.canvas.get_renderer()
+            W, H = self.bbox.width, self.bbox.height
+            self._p2_off = [t.get_text() for t in _kit_f5f6.texts(self)          # texts actually drawn
+                            if not _text_3d(t) and _outside(t, r, W, H)]
         return original(self, *args, **kwargs)
 
     mp.setattr(matplotlib.figure.Figure, "savefig", savefig)
@@ -432,17 +449,22 @@ def test_check_script_reports_caption_drift_without_changing_the_tex():
     assert chk.compare_captions(tex, caps, ex).set_index("slot").loc["f3", "status"] == "gleich mit Ausnahme"
 
 
-def test_check_script_media_checks_compare_cards_with_summary(tmp_path):
+def test_check_script_media_checks_compare_cards_with_their_sources(tmp_path):
+    """Every number of a card is compared with its source (JSON key, one CSV row or summary.json); a source that
+    does not resolve fails."""
     chk = _check_script()
     rd = tmp_path / "results"
     rd.mkdir()
-    (rd / "summary.json").write_text(json.dumps({"h2_stat": 0.0345, "h1_stat": 0.9}))
-    pd.DataFrame([("stat", 0.0345, "3.5 %", "summary.json h2_stat"), ("n", 12, "12", "fig_f2_b.csv rows")],
-                 columns=["key", "value", "printed", "source"]).to_csv(rd / "fig_s1.csv", index=False)
-    pd.DataFrame([("stat", 0.91, "0.91", "summary.json h1_stat")],
+    (rd / "summary.json").write_text(json.dumps({"h2_stat": 0.0345}))
+    (rd / "h1.json").write_text(json.dumps({"stat": 0.9, "placebo": {"p95": 23.4}}))
+    pd.DataFrame({"item": ["a", "b"], "value": [1.5, 2.5]}).to_csv(rd / "fig_x.csv", index=False)
+    rows = [("stat", 0.0345, "3.5 %", "summary.json h2_stat"), ("b", 2.5, "2.5", "fig_x.csv:value@item=b"),
+            ("p95", 23.4, "23.4", "h1.json:placebo.p95"), ("n", 12, "12", "fig_f2_b.csv rows")]
+    pd.DataFrame(rows, columns=["key", "value", "printed", "source"]).to_csv(rd / "fig_s1.csv", index=False)
+    pd.DataFrame([("stat", 0.91, "0.91", "h1.json:stat")],
                  columns=["key", "value", "printed", "source"]).to_csv(rd / "fig_s3.csv", index=False)
     res = chk.media_checks(rd)
-    assert list(res["slot"]) == ["s1", "s3"] and list(res["ok"]) == [True, False]
+    assert list(res["slot"]) == ["s1"] * 4 + ["s3"] and list(res["ok"]) == [True, True, True, False, False]
 
 
 def test_caption_elements_must_be_drawn(tmp_path):
@@ -461,3 +483,75 @@ def test_caption_elements_must_be_drawn(tmp_path):
     pd.DataFrame({"kind": ["registered", "band"]}).to_csv(rd / "fig_f2_c.csv", index=False)
     assert chk.element_checks(tex, rd).set_index("check").loc[
         'caption "grey band": a row of kind band (h1_sign.sign_floor)', "ok"]
+
+
+# ---------------------------------------------------------------------------------------------- set in the paper
+
+def test_print_width_is_the_width_main_tex_sets_the_figure_at():
+    """A48: cas-dc sets figure* at the text width (494.50888 pt) and figure at the column width (238.25444 pt, TeX
+    points); with width=\\linewidth a 7.0 or 3.4 in canvas shrank by 2.3 or 3.0 per cent, and 7 pt type printed at
+    6.8 pt. The canvases are the widths a hair under the set width, so the scale in the paper is at least one."""
+    from derive_surface.figs_p2 import _print
+
+    assert _print.TEXTWIDTH_IN == pytest.approx(6.8425, abs=1e-4)
+    assert _print.COLUMNWIDTH_IN == pytest.approx(3.2967, abs=1e-4)
+    for slot, (w, _) in figures_p2.SIZES.items():
+        placed = _print.COLUMNWIDTH_IN if slot in ("f3", "f4") else _print.TEXTWIDTH_IN
+        assert 1.0 <= placed / w <= 1.003, slot
+
+
+def test_to_print_sets_the_canvas_once():
+    from derive_surface.figs_p2 import _print
+
+    fig = matplotlib.figure.Figure(figsize=(7.0, 4.2))
+    _print.to_print(fig)
+    assert tuple(np.round(fig.get_size_inches(), 3)) == (6.84, 4.2)
+    _print.to_print(fig)
+    assert tuple(np.round(fig.get_size_inches(), 3)) == (6.84, 4.2)
+    with pytest.raises(ValueError):
+        _print.to_print(matplotlib.figure.Figure(figsize=(5.0, 2.0)))
+
+
+def test_saved_figures_keep_every_text_on_the_canvas(built):
+    """After the canvas is set to the print width, nothing leaves it."""
+    off = {slot: f._p2_off for slot in SLOTS for f in built[slot]["figures"] if f._p2_off}
+    assert off == {}
+
+
+def test_check_script_measures_the_type_as_main_tex_sets_it(tmp_path):
+    """A48: the check reads the width main.tex gives each figure and the smallest type in its PDF; 7 pt on a 7.0 in
+    canvas set at the text width prints at 6.84 pt and fails, on a 6.84 in canvas it passes."""
+    pytest.importorskip("fitz")
+    import matplotlib.pyplot as plt
+
+    chk = _check_script()
+    figs = tmp_path / "figures"
+    figs.mkdir()
+    for name, w in (("wide", 7.0), ("fit", 6.84), ("col", 3.29)):
+        fig = plt.figure(figsize=(w, 1.0))
+        fig.text(0.1, 0.5, "seven points", fontsize=7.0)
+        fig.savefig(figs / f"{name}.pdf")
+        plt.close(fig)
+    tex = "\n".join(rf"\begin{{{env}}}\includegraphics[width=\linewidth]{{figures/{n}.pdf}}\caption{{x}}\end{{{env}}}"
+                    for env, n in (("figure*", "wide"), ("figure*", "fit"), ("figure", "col")))
+    res = chk.placement_checks(tex, figs).set_index("what")
+    assert not res.loc["wide.pdf set in main.tex", "ok"]
+    assert res.loc["fit.pdf set in main.tex", "ok"] and res.loc["col.pdf set in main.tex", "ok"]
+
+
+def test_build_script_can_read_every_module_caption():
+    """``scripts/p2_build.py`` compares main.tex with the CAPTION of each slot module, read without importing it; a
+    caption it cannot evaluate would drop out of that comparison unnoticed."""
+    import importlib.util
+    import sys
+
+    spec = importlib.util.spec_from_file_location("p2_build_for_captions", REPO / "scripts" / "p2_build.py")
+    build = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = build                       # dataclasses of the script look their module up
+    try:
+        spec.loader.exec_module(build)
+    finally:
+        sys.modules.pop(spec.name, None)
+    for slot in SLOTS:
+        cap = build.module_caption(REPO / "derive_surface" / "figs_p2" / f"{slot}.py")
+        assert cap is not None and build._norm(cap) == build._norm(figures_p2.CAPTIONS[slot]), slot

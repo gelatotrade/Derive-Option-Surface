@@ -2,7 +2,9 @@
 
 Stand 25.09.2026, Pilotschnitt 17.09.2026 12:00 UTC. Gate der Präregistrierung, Abschnitt „Validierung vor der
 Messung“ (Schwelle: Median der absoluten relativen Abweichung von K unter 0,1 % und 95. Perzentil unter 1 %, je
-Basiswert und Manager). Code `derive_surface/p2validate.py`, Tests `tests/test_p2_validate.py` (21 Tests, offline).
+Basiswert und Manager). Code `derive_surface/p2validate.py`, Tests `tests/test_p2_validate.py` (21 Tests, offline;
+zwei davon lesen die private Fixture `data/p2/fixtures_private/b1_chain_cases.json` mit echten Maker-Büchern und
+werden ohne sie übersprungen, Audit A01).
 Ergebnisse `results/p2/validation.csv` (1 754 Zeilen) und `results/p2/validation_summary.json`, Rohdaten unter
 `data/p2/validation/`. Keine Inferenz: Hier wird nur die Messung geprüft.
 
@@ -133,6 +135,35 @@ MM (Sensitivität), gleiche Fälle:
   `BalanceAdjusted` (Nachtrag 1), die Bewertung ist dieselbe.
 - Für HYPE liegt nur ein Maker-Tag in der Ziehung (M3, 235 Beine). Die Buch-Zellen je Basiswert sind klein; die
   präregistrierte Mindestzahl von 20 Maker-Tagen gilt für alle Basiswerte zusammen.
+
+## Reihenfolge von Validierung und Messung (ergänzt am 25.09.2026, Audit A63)
+
+Die mit der Präregistrierung committete Spezifikation (`docs/superpowers/specs/2026-09-24-p2-kapital-design.md`,
+Abschnitt 8, Schritt 3) sagt „Validierung gegen `eth_call`; erst danach Kapital je Fill, Maker-Bücher, Dosen“, und
+der Abschnitt der Präregistrierung heisst „Validierung vor der Messung“. So ist es nicht gelaufen. Entstehungszeiten
+der Dateien am 25.09.2026 (Dateisystem, Ortszeit UTC+2) und Commit-Zeiten:
+
+| Schritt | Datei oder Commit | Zeit |
+|---|---|---|
+| Kapital je Fill | `data/p2/derived/capital.parquet` | 00:40:00 |
+| H4-Panel mit Dosen | `data/p2/derived/h4_panel.parquet` | 00:40:43 |
+| Plan der Validierung (BTC) | `data/p2/validation/plan_BTC.json` | 00:49:37 |
+| Maker-Tage (H3) | `data/p2/derived/maker_days.parquet` | 00:53:09 |
+| Chain-Antworten | `data/p2/validation/chain.jsonl` | 00:53:40 bis 01:08:47 |
+| Ergebnis der Validierung | `results/p2/validation_summary.json` | 01:16:57 |
+| Nachtrag 4 („Die Validierung gegen `eth_call` ist bestanden“) | Commit `c4fcb59` | 01:29:58 |
+| erste Teststatistik | `results/p2/h1.json` | 01:42:53 |
+
+Kapital je Fill, Dosen und Maker-Tage entstanden also vor oder neben der Validierung. Eingehalten ist die operative
+Regel im Text der Präregistrierung, „Bevor Kapitalzahlen in einen Test eingehen, wird der Nachbau … geprüft“: Die
+Validierung war bestanden und in Nachtrag 4 festgehalten, bevor die erste Teststatistik entstand. Das Manuskript
+behauptet ebenfalls nur diese Reihenfolge („Before any capital entered a test“). Nicht eingehalten sind Schritt 3
+der Spezifikation und der Wortlaut der Überschrift. Die Validierung zieht eigene Stichproben und vergleicht Nachbau
+und Chain direkt; sie verwendet keine der vorher gerechneten Kapitalzahlen. Ob der Nachbau zwischen 00:40 und dem
+Commit `591d2d5` (01:30:22) noch geändert wurde, zeigt die Historie nicht, weil Stufe B ein einziger Commit ist; das
+Audit hat Stichproben der Kapitalzahlen unabhängig nachgerechnet (32 Fills, 5 Maker-Tage, 7 H2-Fills, 16
+Dosis-Fills; `docs/paper2/AUDIT.md`, Blickwinkel engine). Datei- und Git-Zeiten sind lokal gesetzt und kein Beleg
+gegenüber Dritten (Audit A02).
 
 ## Reproduktion
 

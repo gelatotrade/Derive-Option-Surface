@@ -121,10 +121,10 @@ def test_build_writes_pdf_png_and_tables(setup, tmp_path):
     out = tmp_path / "fig"
     paths = f6.build(out_dir=out, results_dir=rd, panel_path=pp)
     assert {p.name for p in paths} >= {"f6.pdf", "f6.png"}
-    assert _pdf_width_in(out / "f6.pdf") == pytest.approx(7.0, abs=0.02)
+    assert _pdf_width_in(out / "f6.pdf") == pytest.approx(6.84, abs=0.005)
     from PIL import Image
     with Image.open(out / "f6.png") as im:
-        assert im.size == (2800, 1680)
+        assert im.size == (2736, 1680)
     for name in ("fig_f6_a.csv", "fig_f6_b.csv", "fig_f6_c.csv", "fig_f6_d.csv", "fig_f6_head.csv"):
         assert (rd / name).exists()
 
@@ -207,3 +207,12 @@ def test_checks_agree_on_synthetic_results(setup, tmp_path):
 def test_caption_has_no_dashes():
     assert "—" not in f6.CAPTION and "–" not in f6.CAPTION and " - " not in f6.CAPTION
     assert f6.CAPTION.startswith("\\textbf{The price of capital (H4).}")
+
+
+def test_checklist_keeps_criterion_and_value_apart():
+    """A52: the printed line must not read as the inequality 'p = 0.622 <= 0.05'."""
+    h4 = {"stat": -4.6, "p": 0.6224, "rejected": True, "placebo": {"p95": 23.4},
+          "criteria": {"beta_positive": False, "p_le_alpha": False, "beta_gt_placebo_p95": False}}
+    first = f6.checklist(h4)[0][0]
+    assert first == "β > 0 and one-sided wild p ≤ 0.05 (p = 0.622): not met"
+    assert "= 0.622 ≤" not in first

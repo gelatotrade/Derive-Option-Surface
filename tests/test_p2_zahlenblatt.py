@@ -367,3 +367,78 @@ def test_main_writes_markdown_and_sorted_summary(results, tmp_path):
     # deterministic summary: a second run gives the same bytes
     zb.main(["--results", str(results), "--out", str(out), "--summary", str(summ), "--quiet"])
     assert summ.read_text() == text
+
+
+# ------------------------------------------------------------------------------------------------ audit (A04, A05, A28-A30)
+
+AUDIT_KEYS = ("h1_interval_share_ge_stat", "h1_interval_bc_lo", "h1_interval_basic_hi",
+              "h1_sign_within_pos_switch_share_mean", "h1_sign_within_nonpos_per_replicate",
+              "h4_cal_t_sd", "h4_cal_lo", "h4_cal_hi", "h4_cal_ten_pct_change_lo", "h4_cal_ten_pct_narrowing_share",
+              "h4_cal_ten_pct_narrowing_share_descriptive", "h4_cal_p_placebo_t", "h4_cal_sd_scaled_lo",
+              "h4_comp_events_without_cells_real", "h4_comp_events_without_cells_real_n", "h4_comp_overlap_pairs_real",
+              "sens_h4_matched_placebo_p95", "sens_h4_matched_placebo_t_sd", "sens_h4_matched_rejected",
+              "sens_h4_dose_median_beta", "sens_h4_dose_trimmed_p", "sens_h4_dose_pairs_with_large_log_ratio")
+
+
+def _audit_inputs() -> dict:
+    inp = base_inputs()
+    sens, sh = inp["sensitivity.json"], inp["sensitivity_h4.json"]
+    sens["h1_sign"] = {"within_pos": _verdict(0.634, 0.572, 0.702, True, 99, "H1", selection="per replicate",
+                                              switch_share_mean=0.21, n_rep_median=97.0),
+                       "within_nonpos": _verdict(0.636, 0.460, 0.684, True, 74, "H1", selection="per replicate",
+                                                 switch_share_mean=0.19, n_rep_median=76.0),
+                       "within_sell": _verdict(0.990, 0.985, 0.992, True, 86, "H1", selection="fixed")}
+    sens["h1_interval"] = {"stat": 0.5, "lo": 0.2, "hi": 0.8, "mean_draw": 0.48, "median_draw": 0.49,
+                           "share_ge_stat": 0.152, "z0": 1.03, "basic_lo": 0.2, "basic_hi": 0.8, "bc_lo": 0.45,
+                           "bc_hi": 0.85, "exploratory": True, "b": B, "seed": SEED, "level": 0.9}
+    sh["audit"] = {"exploratory": True, "b": B, "seed": SEED,
+                   "placebo_calibration": {"n": 100, "t_sd": 1.82, "t_mad_sd": 2.13, "t_p05": -2.62, "t_p95": 2.83,
+                                           "crit": 1.645, "share_t_gt_crit": 0.21, "share_abs_t_gt_crit": 0.43,
+                                           "beta_sd": 28.7, "se_median": 8.8, "p_placebo_t": 0.62, "lo": -41.6,
+                                           "hi": 29.7, "sd_scaled_lo": -43.7, "sd_scaled_hi": 34.5, "y_mean": 7.93,
+                                           "ten_pct_change_lo": -3.13, "ten_pct_change_hi": 4.39,
+                                           "ten_pct_change_sd_scaled_lo": -3.64, "ten_pct_change_sd_scaled_hi": 4.61,
+                                           "ten_pct_narrowing_share": 0.395, "ten_pct_narrowing_share_sd_scaled": 0.46,
+                                           "ten_pct_narrowing_share_descriptive": 0.22},
+                   "placebo_composition": {"events_kept": 14, "events_with_cells_real": 13,
+                                           "events_without_cells_real": ["HYPE-pm2-20260108"],
+                                           "events_with_cells_placebo_min": 14, "events_with_cells_placebo_max": 14,
+                                           "rows_real": 900, "rows_per_fill_real": 1.08, "rows_placebo_median": 980.0,
+                                           "clusters_real": 14, "clusters_placebo_median": 19.0,
+                                           "overlap_pairs_real": 3, "overlap_pairs_placebo_mean": 9.4,
+                                           "same_day_draws_placebo_mean": 0.7},
+                   "dose_robust": {"pairs": 5, "pairs_with_large_log_ratio": 1, "fills_with_large_log_ratio": 2,
+                                   "pairs_median_differs": 1, "pairs_without_fills": 0, "trim_abs_log_ratio": 1.0,
+                                   "check_mean_max_abs_diff": 0.0,
+                                   "median": {"beta": -5.1, "se": 13.0, "t": -0.39, "p": 0.64, "lo": -27.0,
+                                              "hi": 16.0, "n": 900, "rows_dropped": 0, "cell_events": 5},
+                                   "trimmed": {"beta": -4.9, "se": 13.0, "t": -0.38, "p": 0.63, "lo": -26.5,
+                                               "hi": 16.2, "n": 900, "rows_dropped": 0, "cell_events": 5}}}
+    sh["placebo_matched"] = {"placebo": {"n": 100, "p95": 30.1, "median": 0.5, "share_ge_beta": 0.6, "t_sd": 1.7,
+                                         "t_p05": -2.5, "t_p95": 2.6, "share_abs_t_gt_crit": 0.4},
+                             "events_drawn": {"min": 6, "median": 7.0, "max": 9}, "rejected": True, "criteria": {}}
+    return inp
+
+
+def test_audit_numbers_pass_through_and_keys_exist_without_them(tmp_path):
+    md, s = zb.build(write_results(tmp_path / "a", _audit_inputs()), now=NOW, prereg_end_ts=PREREG_END)
+    assert s["h1_interval_share_ge_stat"] == 0.152 and s["h1_interval_bc_lo"] == 0.45
+    assert s["h1_sign_within_pos_switch_share_mean"] == 0.21 and s["h1_sign_within_nonpos_per_replicate"] is True
+    assert s["sens_h1_sign_within_pos_lo"] == 0.572 and s["sens_h1_sign_within_nonpos_hi"] == 0.684
+    assert s["h4_cal_t_sd"] == 1.82 and (s["h4_cal_lo"], s["h4_cal_hi"]) == (-41.6, 29.7)
+    assert s["h4_cal_ten_pct_narrowing_share"] == 0.395 and s["h4_cal_ten_pct_narrowing_share_descriptive"] == 0.22
+    assert s["h4_comp_events_without_cells_real"] == "HYPE-pm2-20260108"
+    assert s["h4_comp_events_without_cells_real_n"] == 1 and s["h4_comp_overlap_pairs_real"] == 3
+    assert s["sens_h4_matched_placebo_p95"] == 30.1 and s["sens_h4_matched_rejected"] is True
+    assert s["sens_h4_dose_median_beta"] == -5.1 and s["sens_h4_dose_trimmed_p"] == 0.63
+    assert s["sens_h4_dose_pairs_with_large_log_ratio"] == 1
+    assert "## Audit (explorativ)" in md
+    assert "Auswahl je Replikation neu" in md and "1,82" in md and "−41,6" in md
+    assert "Placebos nur Ereignisse mit Zellen" in md and "Dosis als Median" in md
+    assert s["checks_failed"] == 0
+    rows = list(_table_rows(md))
+    assert not [line for header, n, line in rows if n != header]
+    _, s0 = run(write_results(tmp_path / "b", base_inputs()))
+    for k in AUDIT_KEYS:
+        assert k in s0 and k in s, k
+        assert s0[k] is None, k

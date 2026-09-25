@@ -37,6 +37,7 @@ from matplotlib.ticker import NullLocator  # noqa: E402
 from matplotlib.transforms import blended_transform_factory  # noqa: E402
 
 from derive_surface import figstyle  # noqa: E402
+from derive_surface.figs_p2._print import to_print  # noqa: E402
 from derive_surface.markouts import DELTA_LABELS, TENOR_LABELS  # noqa: E402
 
 log = logging.getLogger(__name__)
@@ -68,7 +69,8 @@ REGIME_BOUNDS = (1769142245, 1779595507, 1787263765)
 REGIMES = ("R1", "R2", "R3", "R4")
 REGIME_LABELS = {"R1": "R1 to 23 Jan", "R2": "R2 to 24 May", "R3": "R3 to 20 Aug", "R4": "R4 since 20 Aug"}
 
-SIDE_TITLE = {"sell": "maker sells (short)", "buy": "maker buys (long):\ncapital ≈ premium"}
+SIDE_TITLE = {"sell": "maker sells (short)",
+              "buy": "maker buys (long):\ncapital ≈ premium OTM"}      # OTM: out of the money (caption)
 HEADER = ("number = PM2 capital per contract, % of notional, ratio of sums over the PM2 window,\n"
           "pooled over four parameter regimes · × = under 200 fills")
 STRIP_ROWS = [("sm", "BTC", "pooled", "SM BTC"), ("sm", "BTC", "R4", "R4"),
@@ -87,7 +89,8 @@ CAPTION = (
     "fills. The strips on the right give, for every occupied "
     "cell, the capital of the same fills under standard margin (squares) and under the legacy manager (diamonds) "
     "divided by PM2 capital, with the median cell as a bar; hollow squares use only the fills after the parameter "
-    "change of 20 August 2026. For a maker buy, standard margin charges the premium.")
+    "change of 20 August 2026. For a maker buy, standard margin charges the premium, and PM2 about the premium out "
+    "of the money (OTM) and less in the money.")
 
 
 # =====================================================================================================================
@@ -486,7 +489,7 @@ def build(out_dir: Path = Path("paper2/figures"), results_dir: Path = Path("resu
         frame.to_csv(p, index=False)
         paths.append(p)
     with matplotlib.rc_context(rc()):
-        paths += figstyle.save(fig, SLOT, Path(out_dir))
+        paths += figstyle.save(to_print(fig), SLOT, Path(out_dir))       # the width main.tex sets the figure at
     return paths
 
 

@@ -164,3 +164,30 @@ def test_build_fails_over_budget(tmp_path):
 def test_every_slot_of_the_manuscript_is_listed():
     assert pb.SLOTS == ["t1", "t2", "f1", "f2", "f3", "f4", "f5", "f6", "a1"]
     assert {"Competing interest", "Data, code and pre-registration", "References", "G13"} <= set(pb.MUST_CONTAIN)
+
+
+def test_numbers_must_be_declared_and_every_declaration_must_bind(tmp_path):
+    """Audit A20: a number without its declaration and a declaration without its number both fail the build."""
+    results = tmp_path / "results"
+    results.mkdir()
+    (results / "summary.json").write_text('{"h1_stat": 0.9029439}')
+    paper = _paper(tmp_path)
+
+    def numbers(tex):
+        rep = pb.check_sources(tex, paper, BIB, LITERATUR, tmp_path / "nofigs", results, numbers=True,
+                               resolve_commit=lambda sha: True, budget=BUDGET, slots=["f1"])
+        return rep.problems["numbers without source"], rep.problems["number declarations unused or invalid"], \
+            rep.failed()
+
+    missing, unused, failed = numbers(TEX)
+    assert missing == ["caption fig:f1: 200 (nicht erklärt)"] and unused == []
+    assert "numbers without source" in failed
+    declared = TEX.replace("  \\label{fig:f1}\n", "  \\label{fig:f1}\n% src const:cell_min_fills 200\n")
+    assert numbers(declared) == ([], [], [])
+    stale = declared.replace("Done.", "Done.\n% src summary.json:h1_stat 0.903")
+    missing, unused, failed = numbers(stale)
+    assert missing == [] and len(unused) == 1 and "Conclusion: 0.903" in unused[0]
+    assert failed == ["number declarations unused or invalid"]
+    wrong = declared.replace("const:cell_min_fills", "const:placebo_dates")
+    missing, unused, failed = numbers(wrong)
+    assert len(missing) == 1 and missing[0].startswith("caption fig:f1: 200 (") and unused == []

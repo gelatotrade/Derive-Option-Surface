@@ -140,7 +140,7 @@ def test_smoke_build_writes_figures_and_tables(rd, tmp_path):
     names = {p.name for p in paths}
     assert {"f2.pdf", "f2.png", "fig_f2_a.csv", "fig_f2_b.csv", "fig_f2_c.csv", "fig_f2_shift.csv"} <= names
     w, h = pdf_size_in(out / "f2.pdf")
-    assert w == pytest.approx(7.0, abs=0.02) and h == pytest.approx(4.4, abs=0.02)
+    assert w == pytest.approx(6.84, abs=0.005) and h == pytest.approx(4.4, abs=0.02)
     cells = pd.read_csv(rd / "h1_cells.csv")
     b = pd.read_csv(rd / "fig_f2_b.csv")
     assert len(b) == int(cells["occupied"].sum()) and int(b["top10"].sum()) == 10
@@ -194,3 +194,17 @@ def test_caption_is_english_without_dashes_and_uses_placeholders():
     assert "—" not in f2.CAPTION and "–" not in f2.CAPTION
     for key in ("p1-map-fig", "h1-cells", "h1-pos"):
         assert "\\PH{" + key + "}" in f2.CAPTION
+
+
+def test_buy_row_is_not_called_edge_per_premium_without_the_money_qualifier():
+    """A13: the denominator is about the premium only for buys out of the money."""
+    assert "OTM" in f2.SIDE_TITLE["buy"]
+    assert "lower row is edge per unit of premium" not in f2.CAPTION
+    assert "about the premium when the option is out of the money (OTM) and less in the money" in f2.CAPTION
+
+
+def test_caption_names_the_selection_per_replicate_and_the_hidden_interval():
+    """A04: the sign rows choose their cells again in every replicate; A50: the registered interval is narrower
+    than its circle and printed above the panel."""
+    assert "the cells are chosen again in every replicate" in f2.CAPTION
+    assert "narrower than its circle" in f2.CAPTION

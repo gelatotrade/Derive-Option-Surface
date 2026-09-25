@@ -217,11 +217,11 @@ def test_pdf_and_png_have_the_print_size(tmp_path, results_dir):
     t1.build(out_dir=out, results_dir=results_dir)
     pdf = (out / "t1.pdf").read_bytes()
     box = [float(v) for v in re.search(rb"/MediaBox\s*\[\s*([\d.\s]+)\]", pdf).group(1).split()]
-    assert abs(box[2] / 72 - 7.0) <= 0.02 and abs(box[3] / 72 - 4.2) <= 0.02
+    assert abs(box[2] / 72 - 6.84) <= 0.005 and abs(box[3] / 72 - 4.2) <= 0.02
     from PIL import Image
 
     with Image.open(out / "t1.png") as im:
-        assert im.size == (2800, 1680)
+        assert im.size == (2736, 1680)
 
 
 def _extent(t, r):
@@ -285,3 +285,46 @@ def test_caption_and_checks_follow_the_rules():
     expected = {c["id"]: c["expected"] for c in t1.CHECKS}
     assert expected["n_nodes_pm2"] == 740 and expected["n_expiries"] == 15
     assert expected["atm_pm2"] == pytest.approx(11.826) and expected["atm_sm"] == pytest.approx(14.080)
+
+
+def test_a_short_iso_line_that_clabel_skips_gets_its_label_inside_the_panel():
+    """A54: in panel c the 4 % line is a short piece at the upper right edge that ``clabel`` leaves out; it gets a
+    label of its own, inside the axes."""
+    import matplotlib.pyplot as plt
+
+    x = np.linspace(0.05, 0.95, 19)
+    days = np.geomspace(1.0, 365.0, 24)
+    X, D = np.meshgrid(x, days)
+    C = 10.0 - 7.0 * ((X > 0.88) & (D > 120.0))            # 3 % in the corner: a short 4 % piece, 8 % around it
+    fig, ax = plt.subplots(figsize=(2.8, 0.84))
+    try:
+        ax.set_yscale("log")
+        ax.set_xlim(0.05, 0.95)
+        ax.set_ylim(1.0, 365.0)
+        added = t1.label_missing_levels(ax, x, days, C, labelled={"8 %"})
+        assert [t.get_text() for t in added] == ["4 %"]
+        fig.canvas.draw()
+        box, e = ax.get_window_extent(), added[0].get_window_extent()
+        assert box.x0 - 0.5 <= e.x0 and e.x1 <= box.x1 + 0.5 and box.y0 - 0.5 <= e.y0 and e.y1 <= box.y1 + 0.5
+        assert t1.label_missing_levels(ax, x, days, C, labelled={"4 %", "8 %"}) == []
+    finally:
+        plt.close(fig)
+
+
+def test_expiry_ticks_sit_outside_the_rule_panels(results_dir):
+    """A54: the ticks of the listed expiries point outwards, so no iso-line hides among them."""
+    data = t1.load(results_dir)
+    fig = t1.draw(data, t1.tables(data))
+    try:
+        fig.canvas.draw()
+        for ax in fig.axes:
+            if getattr(ax, "name", "") == "3d" or not ax.get_title(loc="left"):
+                continue
+            box = ax.get_window_extent()
+            ticks = [ln for ln in ax.lines if not ln.get_clip_on() and ln.get_linewidth() == pytest.approx(0.7)]
+            assert ticks
+            for ln in ticks:
+                e = ln.get_window_extent()
+                assert e.x0 >= box.x1 - 0.5, ax.get_title(loc="left")
+    finally:
+        matplotlib.pyplot.close(fig)

@@ -66,7 +66,10 @@ def letter(fig, x: float, y: float, s: str):
 
 
 def save(fig, name: str, out_dir: Path) -> List[Path]:
-    """``name.pdf`` and ``name.png`` (400 dpi) at print size."""
+    """``name.pdf`` and ``name.png`` (400 dpi) at print size (``_print.to_print``: the width main.tex sets)."""
+    from ._print import to_print
+
+    to_print(fig)
     with matplotlib.rc_context({"savefig.bbox": None, "savefig.pad_inches": 0.0, "savefig.dpi": 400}):
         return figstyle.save(fig, name, Path(out_dir))
 

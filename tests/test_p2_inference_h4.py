@@ -525,3 +525,156 @@ def test_run_writes_review_entry(tmp_path, params_root):
     h4.run(b=19, n_placebo=3, **kw)
     sens = json.loads((kw["out_dir"] / "sensitivity_h4.json").read_text())
     assert {"readings", "sells_only", "buys_only"} <= set(sens["review"])
+
+
+# ------------------------------------------------------------------------------------------------ audit (A05, A29, A30)
+
+def test_placebo_calibration_span_ten_pct_reading_and_dispersion_of_t():
+    """A05: the day-cluster SE covers the noise at a given date, not the spread between dates; the placebo t give the
+    reference distribution. Span = beta - (t_p95, t_p05) * se; the registered verdict is not touched."""
+    t = np.r_[np.linspace(-3.0, 3.4, 99), np.nan]
+    placebo = pd.DataFrame({"rep": range(100), "t": t, "beta": 10.0 * np.nan_to_num(t), "se": np.linspace(5, 15, 100)})
+    res = {"stat": -4.0, "se": 10.0, "t": -0.4, "lo": -20.0, "hi": 12.0}
+    out = h4.placebo_calibration(placebo, res, y_mean=8.0)
+    fin = t[np.isfinite(t)]
+    assert out["n"] == 99 and out["exploratory"] is True
+    assert out["t_sd"] == pytest.approx(np.std(fin, ddof=1))
+    assert out["t_mad_sd"] == pytest.approx(1.482602218505602 * np.median(np.abs(fin - np.median(fin))))
+    q05, q95 = np.quantile(fin, [0.05, 0.95])
+    assert (out["t_p05"], out["t_p95"]) == pytest.approx((q05, q95))
+    assert out["share_t_gt_crit"] == pytest.approx(np.mean(fin > 1.6448536269514722))
+    assert out["share_abs_t_gt_crit"] == pytest.approx(np.mean(np.abs(fin) > 1.6448536269514722))
+    assert out["p_placebo_t"] == pytest.approx((1 + np.sum(fin >= -0.4)) / (99 + 1))
+    assert (out["lo"], out["hi"]) == pytest.approx((-4.0 - q95 * 10.0, -4.0 - q05 * 10.0))
+    k = 1.6448536269514722 * 10.0 * np.std(fin, ddof=1)
+    assert (out["sd_scaled_lo"], out["sd_scaled_hi"]) == pytest.approx((-4.0 - k, -4.0 + k))
+    ln = np.log(0.9)
+    assert (out["ten_pct_change_lo"], out["ten_pct_change_hi"]) == pytest.approx(
+        tuple(sorted((ln * out["lo"], ln * out["hi"]))))
+    assert out["ten_pct_narrowing_share"] == pytest.approx(-min(ln * out["lo"], ln * out["hi"]) / 8.0)
+    assert out["ten_pct_narrowing_share_descriptive"] == pytest.approx(-ln * 12.0 / 8.0)
+    assert out["beta_sd"] == pytest.approx(np.std(10.0 * fin, ddof=1))
+    assert out["se_median"] == pytest.approx(np.median(placebo["se"]))
+
+
+def test_draw_placebos_apart_keeps_the_windows_of_a_currency_apart():
+    """A29 sensitivity: only the given events (those with cells in the real panel), placebo windows of one currency
+    in a replication do not overlap (days at least 29 apart), events that do not fit are left out."""
+    kept = pd.DataFrame({"event_id": ["BTC-a", "BTC-b", "BTC-c", "ETH-a", "ETH-b"],
+                         "ccy": ["BTC", "BTC", "BTC", "ETH", "ETH"],
+                         "event_ts": [_utc("2025-02-22 19:52"), _utc("2026-01-08 22:50"), _utc("2026-01-23 04:24"),
+                                      _utc("2026-01-08 22:50"), _utc("2026-05-24 04:05")]})
+    days = {"BTC-a": np.arange(20000, 20061), "BTC-b": np.arange(20000, 20061), "BTC-c": np.arange(20000, 20061),
+            "ETH-a": np.arange(20000, 20010), "ETH-b": np.arange(20000, 20010)}
+    d1 = h4.draw_placebos_apart(kept, days, n_rep=60, seed=5)
+    assert d1 == h4.draw_placebos_apart(kept, days, n_rep=60, seed=5) and len(d1) == 60
+    order = {e: i for i, e in enumerate(kept["event_id"])}
+    tod = dict(zip(kept["event_id"], kept["event_ts"] % DAY))
+    n_btc = []
+    for rep in d1:
+        assert [order[d["event_id"]] for d in rep] == sorted(order[d["event_id"]] for d in rep)
+        for ccy in ("BTC", "ETH"):
+            dd = [d["placebo_ts"] // DAY for d in rep if d["ccy"] == ccy]
+            assert all(abs(a - b) >= 2 * h4.WINDOW_DAYS + 1 for i, a in enumerate(dd) for b in dd[i + 1:])
+        assert sum(d["ccy"] == "ETH" for d in rep) == 1            # ten days hold one ETH window only
+        n_btc.append(sum(d["ccy"] == "BTC" for d in rep))
+        for d in rep:
+            assert d["placebo_ts"] // DAY in days[d["event_id"]] and d["placebo_ts"] % DAY == tod[d["event_id"]]
+            assert d["source"].split("-")[0] == d["ccy"]
+    assert set(n_btc) <= {2, 3} and 2 in n_btc                     # 61 days hold two or three BTC windows
+
+
+def test_placebo_composition_counts_events_rows_and_overlaps():
+    """A29: the placebo panels are built unlike the real panel (an event without cells, overlapping windows)."""
+    panel = _panel(seed=2, n_events=2)
+    kept = pd.DataFrame({"event_id": sorted(panel["event_id"].unique()) + ["BTC-pm2-none"],
+                         "ccy": ["BTC", "ETH", "BTC"],
+                         "event_ts": [_utc("2025-09-06 10:00"), _utc("2025-09-09 10:00"), _utc("2025-12-01 10:00")]})
+    placebo = pd.DataFrame({"rep": [0, 1], "n": [900, 1100], "clusters": [20, 30], "events_with_cells": [3, 2],
+                            "draws": ["BTC-pm2-e0@2025-10-01@BTC-pm2-e0;ETH-pm2-e1@2025-10-01@ETH-pm2-e1;"
+                                      "BTC-pm2-none@2025-10-11@BTC-pm2-e0",
+                                      "BTC-pm2-e0@2025-10-01@BTC-pm2-e0;ETH-pm2-e1@2025-10-02@ETH-pm2-e1;"
+                                      "BTC-pm2-none@2025-12-01@BTC-pm2-none"]})
+    out = h4.placebo_composition(placebo, panel, kept)
+    assert out["events_kept"] == 3 and out["events_with_cells_real"] == 2
+    assert out["events_without_cells_real"] == ["BTC-pm2-none"]
+    assert out["events_with_cells_placebo_min"] == 2 and out["events_with_cells_placebo_max"] == 3
+    assert out["rows_real"] == len(panel) and out["rows_placebo_median"] == 1000.0
+    assert out["rows_per_fill_real"] == pytest.approx(len(panel) / panel["fill_key"].nunique())
+    assert out["clusters_real"] == panel["day"].nunique() and out["clusters_placebo_median"] == 25.0
+    # overlapping windows (same currency, days < 29 apart): rep 0 has one BTC pair, rep 1 none; real: none (ccy differ)
+    assert out["overlap_pairs_placebo_mean"] == pytest.approx(0.5) and out["overlap_pairs_real"] == 0
+    assert out["same_day_draws_placebo_mean"] == pytest.approx(0.0)
+
+
+def _fill_doses(panel: pd.DataFrame, outlier_pair) -> pd.DataFrame:
+    """Per-fill log ratios for every (event, cell) of ``panel``: three fills around the cell's dose, and for
+    ``outlier_pair`` one fill at -6.5 (a fill near zero capital, audit A30)."""
+    rows = []
+    for (eid, cell), g in panel.groupby(["event_id", "cell"]):
+        d = float(g["dose"].iloc[0])
+        lrs = [d - 0.03, d, d + 0.01] + ([-6.5] if (eid, cell) == outlier_pair else [])
+        for k, lr in enumerate(lrs):
+            rows.append({"event_id": eid, "fill_key": f"{eid}-{cell}-{k}", "cell": cell, "K_before": 1.0,
+                         "K_after": float(np.exp(lr)), "log_ratio": lr})
+    rows.append({"event_id": eid, "fill_key": "nan", "cell": cell, "K_before": 0.0, "K_after": 1.0,
+                 "log_ratio": np.nan})
+    fills = pd.DataFrame(rows)
+    mean = fills.groupby(["event_id", "cell"])["log_ratio"].mean()          # the registered dose is the mean
+    key = list(zip(panel["event_id"], panel["cell"]))
+    return fills, panel.assign(dose=[float(mean[k]) for k in key])
+
+
+def test_dose_robust_median_and_trimmed_doses_refit_beta():
+    """A30: the dose is the mean of log(K_after / K_before); a few fills near zero capital move it. Exploratory
+    variants: the median, and the mean without fills with |log ratio| > 1."""
+    base = _panel(seed=6, beta=4.0, n_events=4, n_cells=4)
+    pair = (base["event_id"].iloc[0], base["cell"].iloc[0])
+    fills, panel = _fill_doses(base, pair)
+    out = h4.dose_robust(panel, fills, b=49)
+    assert out["check_mean_max_abs_diff"] == pytest.approx(0.0, abs=1e-12)
+    assert out["pairs"] == panel.groupby(["event_id", "cell"]).ngroups
+    assert out["pairs_with_large_log_ratio"] == 1 and out["trim_abs_log_ratio"] == 1.0
+    assert out["pairs_median_differs"] == 1                             # only the outlier pair moves by > 0.05
+    t = h4.robust_doses(fills).set_index(["event_id", "cell"])
+    assert t.loc[pair, "dose_median"] == pytest.approx(np.median(fills.loc[(fills["event_id"] == pair[0])
+                                                                          & (fills["cell"] == pair[1]),
+                                                                          "log_ratio"].dropna()))
+    assert t.loc[pair, "dose_trimmed"] == pytest.approx(float(base.loc[(base["event_id"] == pair[0])
+                                                                     & (base["cell"] == pair[1]), "dose"].iloc[0])
+                                                        - 0.02 / 3)
+    for name, col in (("median", "dose_median"), ("trimmed", "dose_trimmed")):
+        alt = panel.assign(dose=[float(t.loc[k, col]) for k in zip(panel["event_id"], panel["cell"])])
+        assert out[name]["beta"] == pytest.approx(h4.fit(alt).beta, rel=1e-10), name
+        assert out[name]["n"] == len(panel) and out[name]["exploratory"] is True
+    assert h4.dose_robust(panel, None, b=49) is None
+
+
+def test_run_writes_audit_entries_and_matched_placebos(tmp_path, params_root):
+    kw = _setup(tmp_path, params_root, effect=20.0)
+    dose_dir = tmp_path / "doses"
+    dose_dir.mkdir()
+    fills, _ = _fill_doses(kw["panel"], None)
+    fills.drop(columns="event_id").to_parquet(dose_dir / "BTC-pm2-20251215_fills.parquet", index=False)
+    h4.run(b=19, n_placebo=4, dose_dir=dose_dir, **kw)
+    out = kw["out_dir"]
+    res = json.loads((out / "h4.json").read_text())
+    assert "audit" not in res and "placebo_matched" not in res        # the registered file keeps its keys
+    sens = json.loads((out / "sensitivity_h4.json").read_text())
+    cal = sens["audit"]["placebo_calibration"]
+    pl = pd.read_csv(out / "h4_placebo.csv")
+    assert cal["n"] == 4 and cal["t_sd"] == pytest.approx(np.std(pl["t"], ddof=1))
+    assert sens["audit"]["placebo_composition"]["events_kept"] == 1
+    assert sens["audit"]["dose_robust"]["pairs"] == kw["panel"]["cell"].nunique()
+    m = sens["placebo_matched"]
+    assert m["placebo"]["n"] == 4 and len(m["placebo_betas"]) == 4 and "rejected" in m
+    assert (tmp_path / "parts" / "matched.csv").exists()
+    # the extras command rebuilds the audit entries from the stored results
+    (out / "events.csv").write_text(kw["events"].to_csv(index=False))
+    before = sens["audit"]
+    sens.pop("audit")
+    (out / "sensitivity_h4.json").write_text(json.dumps(sens))
+    kw["panel"].to_parquet(tmp_path / "panel.parquet", index=False)
+    h4.run_extras(results_dir=out, panel_path=tmp_path / "panel.parquet", b=19, dose_dir=dose_dir)
+    again = json.loads((out / "sensitivity_h4.json").read_text())
+    assert again["audit"] == before
