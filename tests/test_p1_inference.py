@@ -325,3 +325,22 @@ def test_did_keeps_the_placebo_estimates_not_just_their_count():
     out = inf.did(frame, "y_vol", event_ms=event, treated="HYPE", placebos=6, seed=3, b=99, window_days=45)
     assert len(out["placebo_beta"]) == out["placebos"] == len(out["placebo_t"])
     assert all(np.isfinite(b) for b in out["placebo_beta"])
+
+
+def test_wallet_pseudonym_is_stable_salted_and_hides_the_address():
+    wallets = np.array(["0xAbC0000000000000000000000000000000000001", "0xabc0000000000000000000000000000000000001",
+                        "0x1230000000000000000000000000000000000002"])
+    one = inf.wallet_pseudonym(wallets, b"salt-one")
+    assert one[0] == one[1]                              # case of the address does not matter
+    assert one[0] != one[2]
+    assert all(p.startswith("W") and len(p) == 13 and "0x" not in p for p in one)
+    assert list(inf.wallet_pseudonym(wallets, b"salt-one")) == list(one)       # stable
+    assert inf.wallet_pseudonym(wallets, b"salt-two")[0] != one[0]              # depends on the salt
+
+
+def test_load_salt_creates_once_and_never_overwrites(tmp_path):
+    path = tmp_path / "salt.txt"
+    with pytest.raises(FileNotFoundError):
+        inf.load_salt(path)
+    first = inf.load_salt(path, create=True)
+    assert len(first) == 32 and inf.load_salt(path, create=True) == first

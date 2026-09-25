@@ -10,8 +10,11 @@ O(G·k²) instead of O(n·k) and B = 9 999 stays cheap on 600 000 fills.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import logging
+import secrets
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -26,6 +29,7 @@ B = 9_999
 SEED = 20260917
 HYPE_EVENT_MS = 1_782_205_200_000  # 2026-06-23 09:00 UTC, Deribit HYPE_USDC options
 MIN_CELL_FILLS = 200
+SALT_PATH = Path("data/p1/secret_salt.txt")  # git-ignored; the Lorenz file stores wallets only as pseudonyms
 PERP_HALF_SPREAD_BP = (0.0, 1.0, 3.0)
 PERP_TAKER_FEE = 3e-4
 CLASSES = ["vault", "rfq", "dominant_maker", "mm_programme", "large", "other"]
@@ -195,6 +199,25 @@ def top_loss_share(values: np.ndarray, wallets: np.ndarray, top: int = 10, b: in
             "loss_total": float(per[per < 0].sum()), "wallets": int(len(per)), "top": int(top), "level": level}
 
 
+def load_salt(path: Optional[Path] = None, create: bool = False) -> bytes:
+    """Secret salt for wallet pseudonyms; created once (32 random bytes, hex), never overwritten."""
+    path = Path(path) if path is not None else SALT_PATH
+    if not path.exists():
+        if not create:
+            raise FileNotFoundError(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(secrets.token_hex(32))
+        path.chmod(0o600)
+    return bytes.fromhex(path.read_text().strip())
+
+
+def wallet_pseudonym(wallets, salt: bytes) -> np.ndarray:
+    """'W' plus the first 12 hex digits of HMAC-SHA256(salt, lower-case address): stable, not reversible without the salt."""
+    arr = np.asarray(list(wallets), dtype=object)
+    uniq = {w: "W" + hmac.new(salt, str(w).lower().encode(), hashlib.sha256).hexdigest()[:12] for w in set(arr.tolist())}
+    return np.array([uniq[w] for w in arr.tolist()], dtype=object)
+
+
 def lorenz(values: np.ndarray, wallets: np.ndarray) -> pd.DataFrame:
     """Cumulative share of the maker's loss against the cumulative share of taker wallets (worst first)."""
     per = pd.DataFrame({"w": np.asarray(wallets), "v": np.asarray(values, dtype=float)}).dropna().groupby("w")["v"].sum()
@@ -348,7 +371,9 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
     summary["H1"] = {"top10_share": h1_share, "size_coefficient": h1_size, "sweep_coefficient": h1_sweep,
                      "rejected": bool(h1_share["hi"] < 0.5 or not (h1_size["beta"] < 0 and abs(h1_size["t"]) >= 1.96)
                                       or not (h1_sweep["beta"] < 0 and abs(h1_sweep["t"]) >= 1.96))}
-    lorenz(frame["y_usd"].to_numpy(), frame["cluster"].to_numpy()).to_csv(out_dir / "h1_lorenz.csv", index=False)
+    curve = lorenz(frame["y_usd"].to_numpy(), frame["cluster"].to_numpy())
+    curve["wallet"] = wallet_pseudonym(curve["wallet"], load_salt(create=True))   # no raw addresses in results/
+    curve.to_csv(out_dir / "h1_lorenz.csv", index=False)
 
     # H2: vault flow
     vault = frame[frame["taker_class"] == "vault"]
