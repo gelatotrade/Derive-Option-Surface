@@ -1,0 +1,46 @@
+{
+ "hypothesis": "H1",
+ "claim": "Spearman rho < 0.5",
+ "stat": 0.9029439440785052,
+ "lo": 0.8805637576426197,
+ "hi": 0.9074328677844167,
+ "rejected": true,
+ "rule": "rejected if the upper bound of the 90% day-cluster bootstrap percentile interval of Spearman's rho between edge in bp of notional and edge per PM2 capital over the occupied cells is >= 0.5",
+ "threshold": 0.5,
+ "b": 9999,
+ "seed": 20260924,
+ "level": 0.9,
+ "min_fills": 200,
+ "n": 173,
+ "n_fills": 331813,
+ "n_contracts": 35661583.48041999,
+ "n_fills_k_le_0": 20,
+ "n_fills_nonfinite": 0,
+ "n_cells_any": 210,
+ "n_days": 463,
+ "n_nan_draws": 0,
+ "cells_present_min": 173,
+ "cells_present_median": 173.0,
+ "first_day": "2025-06-12",
+ "last_day": "2026-09-17",
+ "map": "pm2",
+ "window": "PM2 window per currency",
+ "capital": "K_pm2 (IM)",
+ "net_edge": "addendum 2: MO_30m - (fee - rebate) / amount - hedge (1 bp perp half spread)",
+ "n_fills_window": 336087,
+ "window_start_utc": {
+  "BTC": "2025-06-12T23:00:00+00:00",
+  "ETH": "2025-06-12T23:00:00+00:00",
+  "HYPE": "2025-11-11T00:00:00+00:00"
+ },
+ "fills_by_ccy": {
+  "BTC": 97370,
+  "ETH": 193326,
+  "HYPE": 41117
+ },
+ "cells_by_ccy": {
+  "BTC": 60,
+  "ETH": 68,
+  "HYPE": 45
+ }
+}

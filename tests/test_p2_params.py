@@ -335,11 +335,6 @@ def test_overrides_are_labelled_and_resolved_by_time():
     assert rows[0]["account"].startswith("X") and rows[1]["account"] == "M1"
     assert hashlib.sha256(b"92718").hexdigest()[:10] not in json.dumps(rows)
     assert rows[-1]["lib"] is None and rows[-1]["from_block"] == 2_000
-    assert pp.account_lib(rows, 92718, pp.ts_at_block(999), label=LAB.label) is None
-    assert pp.account_lib(rows, 92718, pp.ts_at_block(1_000), label=LAB.label) == "0xabc"
-    assert pp.account_lib(rows, 92718, pp.ts_at_block(2_000), label=LAB.label) is None
-    assert pp.account_lib(rows, 5, pp.ts_at_block(1_600), label=LAB.label) == "0xdef"
-    assert pp.account_lib(rows, 6, pp.ts_at_block(1_600), label=LAB.label) is None
 
 
 def test_overrides_default_to_the_p2ids_label(monkeypatch):
@@ -347,13 +342,54 @@ def test_overrides_default_to_the_p2ids_label(monkeypatch):
     ev = [{"event": "LibOverrideUpdated", "block": 1_000, "log_index": 0, "account": 7, "lib": "0xabc"}]
     rows = pp.overrides_from_events(ev)
     assert rows[0]["account"] == "M2"
-    assert pp.account_lib(rows, 7, pp.ts_at_block(1_000)) == "0xabc"
 
 
 def _raw_overrides():
     return [{"account": 92718, "lib": "0xAbC", "from_block": 1_000, "from_ts": pp.ts_at_block(1_000)},
             {"account": 5, "lib": "0xdef", "from_block": 1_500, "from_ts": pp.ts_at_block(1_500)},
             {"account": 92718, "lib": pp.ZERO_ADDRESS, "from_block": 2_000, "from_ts": pp.ts_at_block(2_000)}]
+
+
+def test_account_lib_resolves_raw_ids_by_time():
+    raw = list(reversed(_raw_overrides()))  # input order does not matter, rows are ordered by time
+    t = pp.ts_at_block
+    assert pp.account_lib(raw, 92718, t(999)) is None
+    assert pp.account_lib(raw, 92718, t(1_000)) == "0xabc"  # lower case
+    assert pp.account_lib(raw, 92718, t(1_999)) == "0xabc"
+    assert pp.account_lib(raw, 92718, t(2_000)) is None  # zero address: standard lib again
+    assert pp.account_lib(raw, 5, t(1_600)) == "0xdef"
+    assert pp.account_lib(raw, "5", t(1_600)) == "0xdef"  # a raw id as digit string (as in some frames)
+    assert pp.account_lib(raw, 6, t(1_600)) is None
+
+
+def test_account_lib_does_not_call_the_labeler(monkeypatch):
+    def boom(_):
+        raise AssertionError("account_lib must not depend on p2ids.label")
+
+    monkeypatch.setattr(p2ids, "label", boom)
+    assert pp.account_lib(_raw_overrides(), 5, pp.ts_at_block(1_600)) == "0xdef"
+
+
+def test_account_lib_refuses_labelled_rows():
+    """Labelled rows (results/ export) are no key: the label of an id changes with the maker ranking."""
+    rows = pp.overrides_from_raw(_raw_overrides(), label=LAB.label)
+    with pytest.raises(ValueError, match="raw"):
+        pp.account_lib(rows, 5, pp.ts_at_block(1_600))
+    with pytest.raises(ValueError):
+        pp.account_lib(rows, 6, pp.ts_at_block(1_600))  # also when no row would match
+    with pytest.raises(ValueError):
+        pp.account_lib(_raw_overrides(), "M1", pp.ts_at_block(1_600))  # a label as account id
+
+
+def test_load_overrides_reads_the_raw_file(tmp_path):
+    raw = list(reversed(_raw_overrides()))
+    (tmp_path / "BTC_pm2_overrides_raw.json").write_text(json.dumps(raw))
+    rows = pp.load_overrides("BTC", data_dir=tmp_path)
+    assert [(r["account"], r["lib"], r["from_block"]) for r in rows] == [
+        (92718, "0xabc", 1_000), (5, "0xdef", 1_500), (92718, None, 2_000)]
+    assert all(type(r["account"]) is int for r in rows)
+    with pytest.raises(FileNotFoundError):  # no silent fallback to the labelled export
+        pp.load_overrides("ETH", data_dir=tmp_path)
 
 
 def test_overrides_from_raw_match_overrides_from_events():
@@ -567,12 +603,68 @@ def test_pm2_params_for_account_uses_override_lib(tmp_path):
             "params": {"MarginParameters": {"mmFactor": 0.35}}}]
     pp.Timeline("BTC", "pm2", entries=std).save(root=tmp_path)
     pp.Timeline("BTC", "pm2", lib="0x4e8ea8afeb", entries=ovr).save(root=tmp_path)
-    rows = [{"account": LAB.label(7), "lib": "0x4e8ea8afeb", "from_block": 30, "from_ts": 300}]
-    (tmp_path / "BTC_pm2_overrides.json").write_text(json.dumps(rows))
-    at = lambda acc, ts: pp.pm2_params_for_account("BTC", acc, ts, root=tmp_path, label=LAB.label)  # noqa: E731
+    raw = [{"account": 7, "lib": "0x4E8EA8AFEB", "from_block": 30, "from_ts": 300}]
+    (tmp_path / "BTC_pm2_overrides_raw.json").write_text(json.dumps(raw))
+    at = lambda acc, ts: pp.pm2_params_for_account("BTC", acc, ts, root=tmp_path, data_dir=tmp_path)  # noqa: E731
     assert at(7, 250)["MarginParameters"]["mmFactor"] == 0.8
     assert at(7, 300)["MarginParameters"]["mmFactor"] == 0.35
     assert at(8, 300)["MarginParameters"]["mmFactor"] == 0.8
+
+
+LIB_A, LIB_B = "0xaaaaaaaa11", "0xbbbbbbbb22"
+
+
+def _two_lib_world(tmp_path):
+    """Standard lib (mmFactor 0.8), lib A (0.35) for account 5 and lib B (0.5) for account 7, both from ts 300."""
+    data, out = tmp_path / "data", tmp_path / "out"
+    data.mkdir()
+    out.mkdir()
+    for lib, mm in ((None, 0.8), (LIB_A, 0.35), (LIB_B, 0.5)):
+        pp.Timeline("BTC", "pm2", lib=lib, entries=[{"from_block": 10, "from_ts": 100, "source": "start",
+                                                     "params": {"MarginParameters": {"mmFactor": mm}}}]).save(root=out)
+    raw = [{"account": 5, "lib": LIB_A, "from_block": 30, "from_ts": 300},
+           {"account": 7, "lib": LIB_B, "from_block": 30, "from_ts": 300}]
+    (data / "BTC_pm2_overrides_raw.json").write_text(json.dumps(raw))
+    return data, out, raw
+
+
+def test_changed_ranking_does_not_silently_switch_the_lib(tmp_path, monkeypatch):
+    """Review of B0: the lib of an account must not follow its rank-dependent label.
+
+    The export in ``out`` was labelled under the ranking [5, 7] (5 = M1, 7 = M2). Under the new ranking [7, 5],
+    account 7 is M1, and a lookup through the label would return lib A of the old M1. The resolution goes through
+    the raw ids and keeps 5 -> A, 7 -> B under both rankings (and with a stale or missing export).
+    """
+    data, out, raw = _two_lib_world(tmp_path)
+    old_rank = p2ids.Labeler([5, 7], bytes(range(32)))
+    new_rank = p2ids.Labeler([7, 5], bytes(range(32)))
+    stale = pp.overrides_from_raw(raw, label=old_rank.label)
+    (out / "BTC_pm2_overrides.json").write_text(json.dumps(stale))
+    # the scenario is a real trap: under the new ranking the label of 7 points at the row of lib A
+    assert new_rank.label(7) == "M1" and [r["lib"] for r in stale if r["account"] == "M1"] == [LIB_A]
+
+    for lab in (old_rank, new_rank):
+        monkeypatch.setattr(p2ids, "label", lab.label)
+        mm = {acc: pp.pm2_params_for_account("BTC", acc, 300, root=out, data_dir=data)["MarginParameters"]["mmFactor"]
+              for acc in (5, 7, 8)}
+        assert mm == {5: 0.35, 7: 0.5, 8: 0.8}
+        rows = pp.load_overrides("BTC", data_dir=data)
+        assert pp.account_lib(rows, 5, 300) == LIB_A and pp.account_lib(rows, 7, 300) == LIB_B
+    (out / "BTC_pm2_overrides.json").unlink()  # the export is not read at all
+    assert pp.pm2_params_for_account("BTC", 7, 300, root=out, data_dir=data)["MarginParameters"]["mmFactor"] == 0.5
+
+
+def test_books_pm2_params_resolves_through_raw_ids(tmp_path, monkeypatch):
+    """``books._Pm2Params`` (B3/B4) calls ``load_overrides(ccy, root)`` and ``account_lib`` with the raw id."""
+    books = pytest.importorskip("derive_surface.books")
+    data, out, raw = _two_lib_world(tmp_path)
+    monkeypatch.setattr(pp, "DATA_DIR", data)
+    monkeypatch.setattr(pp, "PARAMS_DIR", out)
+    monkeypatch.setattr(p2ids, "label", p2ids.Labeler([7, 5], bytes(range(32))).label)
+    prm = books._Pm2Params()
+    assert prm.lib("BTC", 5, 300) == LIB_A and prm.lib("BTC", 7, 300) == LIB_B and prm.lib("BTC", 7, 299) is None
+    params, lib = prm.account("BTC", 7, 300)
+    assert lib == LIB_B and params["MarginParameters"]["mmFactor"] == 0.5
 
 
 def _sc(grid, tail_damp):

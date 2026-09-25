@@ -13,7 +13,9 @@ booleans, ``maxExpiries`` and the scenario ``volShock`` enum stay integers.
   Accounts with a lib override (``LibOverrideUpdated``, PMRM_2_1) get their lib's own timeline
   ``{CCY}_pm2_lib_<addr8>.json`` (same schema, scenarios and maxExpiries from the manager); the account to lib map is
   ``{CCY}_pm2_overrides.json`` with accounts only as ``p2ids.label`` (``M1`` .. ``M10`` for the dominant makers,
-  else salted HMAC); the raw ids stay in ``data/p2/params/{CCY}_pm2_overrides_raw.json``.
+  else salted HMAC); the raw ids stay in ``data/p2/params/{CCY}_pm2_overrides_raw.json``. The lib of an account
+  (``account_lib``, ``pm2_params_for_account``) is resolved only through the raw ids of that file: a label depends on
+  the maker ranking, so the labelled file is an export and never a lookup key.
 * Legacy PM (``PMRM`` + ``PMRMLib``): ``VolShockParameters``, ``MarginParameters`` (getter
   ``getStaticDiscountParams``), ``BasisContingencyParameters``, ``OtherContingencyParameters``, ``scenarios``
   (``spotShock``, ``volShock`` 0 None, 1 Up, 2 Down) and ``maxExpiries``. The lib emits no events: its state is
@@ -35,6 +37,7 @@ import bisect
 import datetime as dt
 import hashlib
 import json
+import numbers
 import sys
 import time
 from dataclasses import dataclass
@@ -719,25 +722,53 @@ def overrides_from_events(events: Iterable[dict], label: Optional[LabelFn] = Non
                                 "from_ts": ts_at_block(e["block"])} for e in rows], label)
 
 
-def account_lib(overrides: Sequence[dict], account_id: int, ts: int, label: Optional[LabelFn] = None) -> Optional[str]:
-    """Override lib of an account at ``ts`` (``None`` = standard lib of the manager)."""
-    h = _label_fn(label)(int(account_id))
+def _raw_id(x, what: str) -> int:
+    """Raw subaccount id (int or digit string); a label (``M1``, ``X...``) or anything else raises ``ValueError``."""
+    if isinstance(x, bool) or x is None:
+        raise ValueError(f"{what} {x!r} is not a raw subaccount id")
+    if isinstance(x, numbers.Integral) and int(x) >= 0:
+        return int(x)
+    if isinstance(x, str) and x.strip().isdigit():
+        return int(x)
+    raise ValueError(f"{what} {x!r} is not a raw subaccount id: overrides are resolved through the raw ids of "
+                     f"data/p2/params/{{CCY}}_pm2_overrides_raw.json, never through the rank-dependent labels")
+
+
+def account_lib(overrides: Sequence[dict], account_id, ts: int) -> Optional[str]:
+    """Override lib of an account at ``ts`` (``None`` = standard lib of the manager).
+
+    ``overrides`` are raw rows (``load_overrides``, ``account`` = subaccount id); labelled rows raise ``ValueError``
+    because a label names another account once the maker ranking changes. The last row with ``from_ts <= ts`` wins
+    (ties in file order); the zero address removes the override.
+    """
+    acc = _raw_id(account_id, "account id")
+    rows = sorted(((int(r["from_ts"]), int(r["from_block"]), i, _raw_id(r["account"], "override account"), r["lib"])
+                   for i, r in enumerate(overrides)), key=lambda x: x[:3])
     lib = None
-    for r in overrides:
-        if r["account"] == h and int(r["from_ts"]) <= int(ts):
-            lib = r["lib"]
+    for from_ts, _, _, a, r_lib in rows:
+        if a == acc and from_ts <= int(ts):
+            lib = _norm_lib(r_lib)
     return lib
 
 
-def load_overrides(ccy: str, root: Optional[Path] = None) -> List[dict]:
-    root = Path(root) if root is not None else PARAMS_DIR
-    return json.loads((root / f"{ccy}_pm2_overrides.json").read_text())
+def load_overrides(ccy: str, data_dir: Optional[Path] = None) -> List[dict]:
+    """Raw override rows of ``ccy`` from ``{data_dir}/{CCY}_pm2_overrides_raw.json`` (default ``data/p2/params``).
+
+    Rows ``{"account": int, "lib": lower case or None, "from_block", "from_ts"}`` in time order. The labelled
+    ``results/p2/params/{CCY}_pm2_overrides.json`` is not read (export only).
+    """
+    data_dir = Path(data_dir) if data_dir is not None else DATA_DIR
+    raw = json.loads((data_dir / f"{ccy}_pm2_overrides_raw.json").read_text())
+    rows = [{"account": _raw_id(r["account"], "override account"), "lib": _norm_lib(r["lib"]),
+             "from_block": int(r["from_block"]), "from_ts": int(r["from_ts"])} for r in raw]
+    return sorted(rows, key=lambda r: (r["from_ts"], r["from_block"]))  # stable: file order within a block
 
 
-def pm2_params_for_account(ccy: str, account_id: int, ts: int, root: Optional[Path] = None,
-                           label: Optional[LabelFn] = None) -> dict:
-    """PM2 parameters that apply to ``account_id`` at ``ts``: its override lib if one is set, else the standard lib."""
-    lib = account_lib(load_overrides(ccy, root), account_id, ts, label)
+def pm2_params_for_account(ccy: str, account_id, ts: int, root: Optional[Path] = None,
+                           data_dir: Optional[Path] = None) -> dict:
+    """PM2 parameters that apply to ``account_id`` (raw id) at ``ts``: its override lib if one is set, else the
+    standard lib. Timelines from ``root`` (default ``results/p2/params``), overrides from ``data_dir``."""
+    lib = account_lib(load_overrides(ccy, data_dir), account_id, ts)
     return Timeline(ccy, "pm2", lib=lib, root=root).at(ts)
 
 
