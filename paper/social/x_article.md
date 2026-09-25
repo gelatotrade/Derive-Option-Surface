@@ -1,8 +1,10 @@
 # X article and thread
 
 Two versions of the same story. The article is the long-form post; the thread is what actually travels.
-Images are in this folder. Post after the final data run, because every number below is from the pilot cut
-to 17 September 2026 and will move slightly.
+Images are in this folder. Revised 25 September 2026 together with the paper: the first version subtracted
+the maker fee and rebate per fill from a result per contract and divided the net edge per contract by the
+notional of the whole fill. Every number below is from the pilot cut to 17 September 2026, the same sample as
+the revised paper on SSRN. The correction note for X is in `docs/paper1/REVISION_2026-09-25.md`.
 
 ---
 
@@ -35,10 +37,10 @@ question directly.
 ![s1_decomposition.png]
 
 On average the maker earns a half spread of 15.70 USDC per contract and gives back 2.65 to adverse
-selection. Fees, rebates and the cost of hedging the resulting delta leave a net edge of 8.93.
+selection. Fees, rebates and the cost of hedging the resulting delta leave a net edge of 9.58.
 
-Note the size of the adverse selection term. It is small. Everyone worries about it, and it is the second
-smallest line on the chart.
+Note the size of the adverse selection term. It is small. Everyone worries about it, and it costs the maker
+less than hedging the delta does.
 
 ### Then, who you traded with
 
@@ -80,11 +82,14 @@ The identity tells you everything. The size tells you nothing.
 
 ![s5_map.png]
 
-Net edge per unit of notional, which is the unit a quoting decision actually uses. It rises with the
-absolute delta and with the tenor, in all three underlyings, and BTC is in a different league.
+Net edge per unit of notional, after fees, rebate and hedging, which is the unit a quoting decision
+actually uses. Two things stand out.
 
-HYPE sits between 0.1 and 0.6 basis points across the entire surface. After any realistic hedging cost that
-is nothing at all.
+The ranking of the underlyings flips. BTC pays the most per contract and the least per notional: the median
+across its cells is 3.3 basis points, against 5.7 for ETH and 15.1 for HYPE.
+
+And the margin is thinnest where the flow is. Short-dated BTC and ETH options with a delta below 60, close to
+half of all their fills, pay 1 to 4 basis points. Beyond ninety days the same deltas pay several times that.
 
 ### The uncomfortable part
 
@@ -94,8 +99,9 @@ before computing a single markout.
 Three of the four are rejected.
 
 Toxicity is concentrated, but it is not identifiable from trade characteristics, so H1 fails on its own
-second clause. The net edge sits at 49.5% of cells against a threshold of 50%, and whether it clears depends
-on an unobserved hedging cost between zero and one basis point, so H4 fails. And an event study around the
+second clause. I expected the net edge to be gone after fees and hedging across most of the surface. It is
+not: 74 of 97 cells, 76%, carry a positive edge, including short-dated at-the-money BTC and ETH, so H4 fails.
+And an event study around the
 listing of HYPE options on a centralised venue has no power on a 33-month panel whose composition changes
 underneath it, so H3 fails too.
 
@@ -133,10 +139,10 @@ The counterparty isn't a statistic. It's an address.
 **3/**
 First, where the maker's money goes.
 
-Half spread +15.70. Adverse selection −2.65. Fees, rebate and hedging leave a net edge of +8.93 USDC per
+Half spread +15.70. Adverse selection −2.65. Fees, rebate and hedging leave a net edge of +9.58 USDC per
 contract.
 
-Adverse selection is the thing everyone fears, and it's the second smallest line here.
+Adverse selection is the thing everyone fears, and it costs less than hedging the delta.
 
 ![s1_decomposition.png]
 
@@ -173,9 +179,10 @@ It was composition, not information. Order shape tells you nothing.
 **7/**
 Where does a maker actually get paid?
 
-Net edge per notional rises with delta and tenor. BTC is in a different league.
+Per unit of notional, after fees and hedging, the ranking flips. Median across cells: HYPE 15.1 bp, ETH
+5.7, BTC 3.3.
 
-HYPE pays 0.1 to 0.6 bp across the whole surface. After hedging, nothing.
+Short-dated BTC and ETH, about half their flow, pay 1 to 4 bp. Longer tenors pay several times more.
 
 ![s5_map.png]
 
@@ -201,8 +208,10 @@ Paper, code and pre-registration: [LINK]
 ## Notes before posting
 
 - Replace `[LINK]` with the SSRN abstract page, or with the GitHub repository if the paper is not up yet.
-- Every number is from the pilot cut to 17 September 2026. Re-render the cards after the final run and
-  re-check the six numbers that appear in the text.
+- Every number is from the pilot cut to 17 September 2026, the sample of the revised paper (25 September
+  2026). Cards S1 and S5 were re-rendered after the fee correction. If the first thread is already out,
+  reply to it with the correction note from `docs/paper1/REVISION_2026-09-25.md` rather than deleting it.
+- After the final data run, re-render the cards and re-check every number in the text.
 - The cards are 1600 x 900 PNG, which is the aspect X renders without cropping in both article and timeline.
 - Keep the framing neutral about the professional addresses. They are running a normal strategy, and the
   paper says their advantage is the entry price rather than private information.

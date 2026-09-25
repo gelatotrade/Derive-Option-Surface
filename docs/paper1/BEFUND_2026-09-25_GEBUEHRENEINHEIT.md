@@ -1,6 +1,6 @@
 # Befund 25.09.2026: Einheit von Gebühr und Rabatt im Netto-Edge von Paper 1
 
-Nur Befund, an Paper 1 ist nichts geändert. Pilotschnitt 17.09.2026 12:00 UTC, 603 940 Fills, Horizont 30 min.
+Stand: Korrektur am 25.09.2026 umgesetzt (Nachtrag 3 der Präregistrierung, `REVISION_2026-09-25.md`). Bei Abfassung dieses Befunds war an Paper 1 noch nichts geändert. Pilotschnitt 17.09.2026 12:00 UTC, 603 940 Fills, Horizont 30 min.
 
 Rechnung: `scripts/p1_befund_gebuehreneinheit.py` (Kopie der Logik von Paper 1 mit wählbarer Gebühreneinheit),
 Aufruf `python3 scripts/p2_heavy.py --wait-max 500 -- python3 scripts/p1_befund_gebuehreneinheit.py`, rund zwei
@@ -96,7 +96,7 @@ an den Fills der Klasse (CSV `class_clusters`). Intervalle mit B = 9 999 (CSV `c
 | Klasse | G (grösstes Wallet) | Markout | NE alt | NE neu (95 %, B = 9 999) | Gebühr alt / neu | Rabatt alt / neu |
 |---|---|---|---|---|---|---|
 | dominant_maker | 17 (82 %) | −25,41 | −30,49 | −31,98 (−35,96 bis −26,95) | 1,23 / 2,75 | 0,08 / 0,11 |
-| mm_programme | 33 (83 %) | −20,67 | −25,15 | −26,76 (−30,28 bis −3,58) | 1,13 / 1,82 | 1,59 / 0,67 |
+| mm_programme | 33 (83 %) | −20,67 | −25,15 | −26,76 (−30,28 bis −3,58) | 1,13 / 1,82 | 1,59 / 0,66 |
 | large | 104 (13 %) | +3,89 | −1,63 | +0,79 (−12,41 bis 15,90) | 4,55 / 1,35 | 1,78 / 1,02 |
 | vault | **8** (36 %) | +4,22 | −28,58 | +2,09 (kein belastbares Intervall, G = 8) | 34,21 / 1,13 | 2,44 / 0,02 |
 | rfq | 4 512 (3 %) | +15,21 | +11,19 | +11,80 (8,89 bis 15,50) | 0,91 / 0,30 | 0 / 0 |

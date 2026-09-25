@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from derive_surface import figdata
+from derive_surface import inference_p1 as inf
 
 WEEK = 7 * 86_400_000
 T0 = 1_735_689_600_000  # 2025-01-01 00:00 UTC (a Wednesday)
@@ -28,6 +29,7 @@ def frame(n=400, seed=0):
         "rebate_maker": np.abs(rng.normal(0.1, 0.05, n)),
         "hedge": np.abs(rng.normal(0.4, 0.1, n)),
     })
+    rows["fee_pc"], rows["rebate_pc"] = rows["fee_maker"], rows["rebate_maker"]     # one contract per fill
     for h in ("1m", "30m", "24h"):
         rows[f"mo_usd_{h}"] = rng.normal(1.5, 2.0, n)
         rows[f"mo_vol_{h}"] = rng.normal(2.0, 3.0, n)
@@ -70,12 +72,57 @@ def test_weekly_series_covers_every_week_and_flags_negatives():
     assert out["fills"].sum() == len(rows)
 
 
-def test_waterfall_components_add_up_to_the_net_edge():
+def fills_with_amounts(amounts=(0.1, 5.0, 1.0, 0.1, 5.0, 1.0), fee=0.4, rebate=0.1, index=50_000.0):
+    """Tape-like fills: fee and rebate are sums over the fill, markout and hedge are per contract."""
+    n = len(amounts)
+    amount = np.asarray(amounts, dtype=float)
+    return pd.DataFrame({
+        "trade_id": ["t{}".format(i) for i in range(n)], "ts": T0 + np.arange(n), "currency": "BTC",
+        "instrument_name": "BTC-1-2-C", "taker_wallet": ["0xt{}".format(i % 3) for i in range(n)],
+        "taker_class": "other", "delta_bucket": "40-60", "tenor_bucket": "<=2d", "price": 100.0,
+        "mark_b_t": 105.0, "delta_t": 0.5, "fwd_t": index, "maker_side": 1, "amount": amount,
+        "index_price": index, "notional": amount * index, "fee_maker": fee * amount, "rebate_maker": rebate * amount,
+        "mo_usd_30m": 10.0 + np.arange(n), "mo_dn_30m": 9.0, "mo_vol_30m": 5.0,
+    })
+
+
+FUNDING = pd.DataFrame({"instrument_name": ["BTC-PERP"], "timestamp": [1], "funding_rate": [1e-5]})
+
+
+def test_waterfall_components_add_up_to_the_mean_net_edge_per_contract():
+    """Checked against the net edge of an analysis frame, not against its own last row (that was a tautology)."""
+    f = inf.analysis_frame(fills_with_amounts(), FUNDING)
+    steps = figdata.waterfall_components(f).set_index("step")["value"]
+    assert steps.drop("net edge").sum() == pytest.approx(np.nanmean(f["net_edge"]))
+    assert steps["maker fee"] == pytest.approx(-np.nanmean(f["fee_maker"] / f["amount"]))
+    assert steps["maker fee"] == pytest.approx(-0.4) and steps["maker rebate"] == pytest.approx(0.1)
+    assert list(steps.index)[:2] == ["half spread", "adverse selection"]
+
+
+def test_waterfall_components_for_one_class():
     rows = frame()
     out = figdata.waterfall_components(rows, taker_class="other")
     total = out.loc[out["step"] != "net edge", "value"].sum()
     assert total == pytest.approx(out.loc[out["step"] == "net edge", "value"].iloc[0], abs=1e-9)
-    assert list(out["step"])[:2] == ["half spread", "adverse selection"]
+    assert out["fills"].iloc[0] == int((rows["taker_class"] == "other").sum())
+
+
+def test_edge_bp_is_the_edge_of_the_fill_over_its_notional():
+    """F5 and S5 once divided the net edge per contract by the notional of the whole fill."""
+    f = inf.analysis_frame(fills_with_amounts(), FUNDING)
+    bp = figdata.edge_bp(f).to_numpy()
+    fill_edge = f["net_edge"] * f["amount"]
+    assert bp == pytest.approx((1e4 * fill_edge / f["notional"]).to_numpy())
+    assert bp == pytest.approx((1e4 * f["net_edge"] / 50_000.0).to_numpy())
+    # the amount drops out: fills 0 (0.1 contracts) and 3 (0.1) differ from 1 (5) only through the markout
+    assert bp[1] - bp[0] == pytest.approx(1e4 * 1.0 / 50_000.0)
+
+
+def test_premium_share_divides_a_per_contract_markout_by_the_price_per_contract():
+    f = inf.analysis_frame(fills_with_amounts(), FUNDING)
+    share = figdata.premium_share(f, "y_usd").to_numpy()
+    assert share == pytest.approx((100.0 * f["y_usd"] / 100.0).to_numpy())
+    assert share[1] == pytest.approx(11.0)            # 11 USDC on a 100 USDC option, five contracts or not
 
 
 def test_example_fill_picks_a_representative_trade():

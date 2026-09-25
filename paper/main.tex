@@ -46,7 +46,7 @@
   \else
     \__short_authors: :~
   \fi
-  { \rmfamily \itshape Working~paper,~\today }
+  { \rmfamily \itshape Working~paper,~25~September~2026 }
   \group_end:
 }
 \ExplSyntaxOff
@@ -57,6 +57,19 @@
 \shortauthors{G. Albiez}
 
 \title[mode=title]{Who trades against the maker? Adverse selection with counterparty identity on an on-chain options order book}
+\tnotemark[1]
+\tnotetext[1]{First version 19 September 2026, revised 25 September 2026. The tape books the maker fee and
+rebate as sums over the whole fill. The first version subtracted them from a markout per contract, divided
+the net edge per contract by the notional of the whole fill in its map, and mixed the same units in the
+markout as a share of the premium. All three are corrected. The net edge moves from $+8.93$ to $+9.58$ USDC
+per contract and the share of positive cells under H4 from 49.5 to 76.3 per cent; against vault flow the net
+edge, not quoted in the first version, turns from $-28.58$ to $+2.09$; the map per notional is redrawn and its
+ranking of the underlyings reverses. Markouts, the tests of H1 to H3 and the rejection of H4 are unchanged; at
+the registered hedging cost H4 is now rejected on both branches rather than one, and at three basis points,
+where the first version did not reject it, it is now rejected by the majority rule. Addendum~3 to the
+pre-registration records the correction. Section~\ref{sec:prereg} now states H2, H3 and H4 in the direction
+the pre-registration gives them; the first version had inverted their wording, not their tests, and claimed
+the headline number of draws for every interval, which holds for the text but not for the figures.}
 
 \author[1]{Gregor Albiez}[orcid=0009-0006-6036-4932]
 \ead{gregor.albiez@students.fhnw.ch}
@@ -68,8 +81,8 @@ A market maker on an options book loses to counterparties who know something and
 not, but on an anonymous venue the two can only be told apart by proxy. Derive settles on chain, so its
 public tape names both wallets. On 603\,940 fills in BTC, ETH and HYPE options between January 2024 and
 September 2026, the maker's mean markout thirty minutes after the fill is $+13.05$ USDC per contract: a half
-spread of $+15.70$ less adverse selection of $-2.65$. Fees, rebates and delta hedging leave a net edge of
-$+8.93$. The loss is extremely concentrated, with ten taker wallets carrying 90.5 per cent of it, and those
+spread of $+15.70$ plus adverse selection of $-2.65$. Fees, rebates and delta hedging leave a net edge of
+$+9.58$. The loss is extremely concentrated, with ten taker wallets carrying 90.5 per cent of it, and those
 ten are almost the entirety of the two professional counterparty classes. Trade size and sweeps, the
 standard proxies for toxic flow, explain none of it once instrument-by-day fixed effects are included. Four
 hypotheses were registered before any markout was computed; three are rejected.
@@ -81,6 +94,11 @@ market microstructure \sep options \sep adverse selection \sep decentralised exc
 \end{keywords}
 
 \maketitle
+% cas-dc leaves a stray character in the author field and its template text in the subject
+\hypersetup{pdfauthor={Gregor Albiez},
+  pdftitle={Who trades against the maker? Adverse selection with counterparty identity on an on-chain options order book},
+  pdfsubject={Market microstructure, options, adverse selection},
+  pdfkeywords={market microstructure, options, adverse selection, decentralised exchange, market making, pre-registration}}
 
 \section{Introduction}
 A market maker on an options book loses money to counterparties who know something and earns it from those
@@ -180,14 +198,19 @@ thirty-minute horizon. The third is the settlement payoff, which is exact but on
 agreement is examined in Figure~\ref{fig:a1}.
 
 Subtracting the maker fee, adding the maker rebate and subtracting a modelled cost of holding the resulting
-delta to the horizon turns the markout into a net edge. Figure~\ref{fig:t2} shows the whole identity with an
-interval on every component. The hedge is the only component that is not observed, and the figure marks it
-as such; its assumed cost is varied in Section~\ref{sec:results}.
+delta to the horizon turns the markout into a net edge. The tape books the fee and the rebate for the whole
+fill, so both are divided by its number of contracts before they enter. For a multi-leg request for quote
+the fee is booked on one leg; spreading it over the package leaves the net edge at $9.58$ and changes no cell
+verdict. Over the sample the fee costs $1.09$
+USDC per contract, the rebate returns $0.77$ and the hedge costs $3.15$, which takes the markout of $+13.05$
+to a net edge of $+9.58$, with a 95 per cent interval from $1.56$ to $18.31$. Figure~\ref{fig:t2} shows the
+whole identity with an interval on every component. The hedge is the only component that is not observed,
+and the figure marks it as such; its assumed cost is varied in Section~\ref{sec:results}.
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/t2.pdf}
-  \caption{\textbf{From the half spread to the net edge.} Error bars in panel a are 95 percent cluster bootstrap intervals over taker wallets. The hedge bar is dotted because it is the only component that is modelled rather than observed. Panel b is the distribution of the fee as a share of the option premium, for both sides of the trade.}
+  \caption{\textbf{From the half spread to the net edge.} Error bars in panel a are 95 per cent cluster bootstrap intervals over taker wallets with 999 draws. Fee and rebate in panel a are per contract, the amount booked for the fill divided by its size. The hedge bar is dotted because it is the only component that is modelled rather than observed. Panel b is the distribution of the fee of a fill as a share of its premium, for both sides of the trade.}
   \label{fig:t2}
 \end{figure*}
 
@@ -204,23 +227,24 @@ programme membership comes from the venue's own published epochs. Figure~\ref{fi
 with the fills it assigns.
 
 \section{Pre-registration and inference}\label{sec:prereg}
-Four hypotheses were committed, with their rejection rules, on 17 September 2026 before any markout existed,
-and two dated addenda resolved questions of definition that arose while the data were being built. H1 holds
-that toxic flow is concentrated in few wallets \emph{and} identifiable from trade size and sweeps; it is
-rejected unless the concentration exceeds one half and both coefficients are negative and significant. H2
-holds that vault flow is toxic to the maker; it is rejected if the mean markout against vaults is
-significantly positive. H3 holds that the listing of HYPE options on a centralised venue on 23 June 2026
-raised the toxicity of HYPE flow on Derive; it is rejected unless the difference-in-differences estimate is
-positive, significant, and extreme against a placebo distribution. H4 holds that a net edge survives in a
-majority of moneyness-by-tenor cells or in short-dated at-the-money options; it is rejected otherwise.
+Four hypotheses were committed, with their rejection rules, on 17 September 2026 before any markout existed.
+Two dated addenda resolved questions of definition while the data were being built; a third, written after
+the first version, corrects the unit of fee and rebate and changes no hypothesis, threshold or
+sample. H1 holds that toxic flow is concentrated in few wallets \emph{and} identifiable from trade size and
+sweeps; it is rejected unless the upper bound of its interval reaches one half and both coefficients are negative and
+significant. H2 holds that vault flow is uninformed; it is rejected if the mean markout against vaults is
+significantly negative. H3 holds that HYPE flow on Derive was more toxic before HYPE options were listed on a
+centralised venue on 23 June 2026 than after; it is rejected unless the difference-in-differences estimate is
+positive, significant, and extreme against a placebo distribution. H4 holds that the net edge is positive in
+fewer than half of the moneyness-by-tenor cells and negative in short-dated at-the-money BTC and ETH; it is
+rejected if half of the cells, or either of those, carry a positive interval.
 
-All inference clusters on the taker wallet. Coefficients are tested with a wild cluster bootstrap using
-restricted residuals and Rademacher weights \citep{cameron2008,mackinnon2017}, with $B = 9\,999$ draws and a
-fixed seed \citep{roodman2019}; means and cell averages carry percentile intervals from a cluster pairs
-bootstrap. Clustering on the taker wallet is the level at which the sampling here is plausibly independent
-\citep{abadie2023}. Fixed effects
-are instrument by day and are applied as a within transformation. Every interval reported in this paper was
-drawn the same number of times as the headline it belongs to.
+All inference clusters on the taker wallet, the level at which the sampling here is plausibly independent
+\citep{abadie2023}. Coefficients are tested with a wild cluster bootstrap using restricted residuals and
+Rademacher weights \citep{cameron2008,mackinnon2017}, with $B = 9\,999$ draws and a fixed seed
+\citep{roodman2019}; means and cell averages carry percentile intervals from a cluster pairs bootstrap with
+the same $B$. Fixed effects are instrument by day and are applied as a within transformation. Error bars and
+bands that appear only in a figure use 999 draws or fewer.
 
 \section{Results}\label{sec:results}
 
@@ -231,22 +255,22 @@ from $+13.05$ to $+0.264$ USDC per contract; trimming five per cent from each ta
 Figure~\ref{fig:f1} shows why. The three underlyings contribute almost the same aggregate dollar amount to
 the maker, 3.67, 3.68 and 3.20 million USDC, while their average index prices differ by a factor of
 1\,599. A per-contract average is therefore in large part a statement about contract size. Expressed as a
-share of the premium actually paid, the distribution a maker books runs from $-1.6$ per cent at the lower
-quartile through $+1.1$ per cent at the median to $+21.1$ per cent at the upper quartile. Every number that
+share of the premium, both taken per contract, the distribution a maker books runs from $-3.3$ per cent at
+the lower quartile through $+3.4$ per cent at the median to $+13.5$ per cent at the upper quartile. Every number that
 follows is reported in the unit that makes it comparable, and the pre-registered unit is kept alongside.
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/f1.pdf}
-  \caption{\textbf{How to read the headline number.} The shaded core of panel a is linear and everything outside it is logarithmic with equal area per decade. Panel b sets the aggregate dollar gain against the average index price, which is what makes a per-contract average a statement about contract size.}
+  \caption{\textbf{How to read the headline number.} The shaded core of panel a is linear and everything outside it is logarithmic with equal area per decade. Panel b sets the aggregate dollar gain against the average index price, which is what makes a per-contract average a statement about contract size. Panel c divides the markout per contract by the price per contract.}
   \label{fig:f1}
 \end{figure*}
 
 \subsection{Adverse selection is small, and it does not grow}
 Restricting the sample to the 511\,237 fills that have every horizon, so that a falling line cannot be a
 shrinking sample, the maker's median result is almost flat from one minute to one day.
-Figure~\ref{fig:f2} shows it in three units. In vol points the median moves from $2.09$ to $1.89$ across the
-five horizons; in USDC per contract the mean moves from $15.96$ to $12.97$. Whatever the counterparty
+Figure~\ref{fig:f2} shows it in three units. In vol points the mean moves from $2.09$ to $1.89$ across the
+five horizons; in USDC per contract it moves from $15.96$ to $12.97$. Whatever the counterparty
 learns, it is priced within the first minute and does not continue to accrue against the maker afterwards.
 Splitting the flow makes the point sharper: the professional classes sit below zero at every horizon and the
 remaining flow above it, and the two curves are already separated at one minute. This is the first sign that
@@ -255,7 +279,7 @@ the maker's problem is not information arriving after the trade.
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/f2.pdf}
-  \caption{\textbf{How long adverse selection lasts.} The subsample is restricted to fills that have every horizon, so a falling line cannot be a shrinking sample. Bands are 95 percent cluster bootstrap intervals of the median, not dispersion.}
+  \caption{\textbf{How long adverse selection lasts.} The subsample is restricted to fills that have every horizon, so a falling line cannot be a shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. The share of the premium in panel c is taken per contract.}
   \label{fig:f2}
 \end{figure*}
 
@@ -269,9 +293,13 @@ mark. Adverse selection adds a further $-8.81$. Against the market-maker program
 $-5.17$ and $-15.50$. Against ordinary takers the half spread is $+25.60$ and adverse selection only
 $-0.87$. The professional counterparties are not principally trading on information the maker lacks; they
 are getting a better entry price. That is a different claim, and it points at quoting policy rather than at
-information.
+information. After fees, rebate and hedge the net edge per class runs from $+22.04$ USDC per contract against
+ordinary takers to $-31.98$ against dominant makers. Against vault flow the markout is $+4.22$, with an
+interval from $1.64$ to $8.55$ over eight wallets, so H2 is not rejected; the net edge is $+2.09$, given
+without an interval. The first version gave $-28.58$, subtracting each fill's fee in full from a result per
+contract; vault fills are large.
 
-Two cautions belong here. The two classes that carry the negative numbers rest on seventeen and thirty-three
+Two cautions belong here. The two classes with negative markouts rest on seventeen and thirty-three
 wallets, and their wild cluster bootstrap $p$-values against zero are $0.100$ and $0.101$, above the five
 per cent the pre-registration demands. The percentile intervals exclude zero and the $p$-values do not, so
 the class result is reported as a description and not as a test.
@@ -303,22 +331,26 @@ not. H1 is rejected because it asserted both.
 \end{figure}
 
 \subsection{Where an edge survives, and the failure of H4}
-Of the 97 moneyness-by-tenor cells with at least two hundred fills, 48 carry a net edge whose interval
-excludes zero, three are significantly negative and all three are low-delta ETH, and 46 are inconclusive.
-Figure~\ref{fig:f5} shows them. That the most common verdict is \emph{inconclusive} is itself the finding,
-and it is not visible in a coloured surface. The pre-registered threshold is a bare majority, and the result
-sits just under it at 49.5 per cent; at the assumed perpetual half spread of zero it would be 57.7 per cent
-and at three basis points 38.1 per cent. A hypothesis whose verdict turns on an unobserved hedging cost
-between zero and one basis point is not one the data can settle. H4 also fails on its second branch: short
-dated at-the-money BTC is positive at $+23.95$ USDC per contract, so the rejection rule fires either way.
-Read per unit of notional the map is orderly, rising with the absolute delta and with the tenor in all three
-underlyings, which is the form Section~\ref{sec:maker} uses, and which is where the illiquidity premium
-documented for equity options would lead one to look \citep{christoffersen2018}.
+Of the 97 moneyness-by-tenor cells with at least two hundred fills, 74 carry a net edge whose 90 per cent
+interval lies above zero, none lies below it, and 23 are inconclusive. Nineteen of those 23 sit in the rows
+with an absolute delta of 60 per cent or more, which carry 13 per cent of the fills. Figure~\ref{fig:f5}
+shows them. H4 asserted the opposite on both of its branches, and both fail. The share of positive cells is
+76.3 per cent against a registered threshold of one half, and 78.4 and 58.8 per cent at an assumed perpetual
+half spread of zero and three basis points. Short-dated at-the-money options are positive in BTC at $+24.19$ USDC per contract, with an interval from
+$6.43$ to $46.37$, and in ETH at $+1.05$, from $0.20$ to $2.10$. At three basis points neither interval
+excludes zero, so there the rejection rests on the majority alone. The first version put the share at 49.5
+per cent and read the verdict as a matter of hedging cost; under the registered rule it no longer is. One qualification remains. The rule reads percentile intervals, and the
+wild cluster bootstrap $p$-values of the two at-the-money cells are $0.104$ and $0.153$; counting only cells
+with a positive mean and $p$ below $0.10$ gives 52 cells, 53.6 per cent, but at three basis points only 44,
+45.4 per cent, below the threshold. Read per unit of notional, the edge is two and a half to ten times higher
+beyond ninety days than within two days in every underlying and every delta row below 75 per cent. That is the form
+Section~\ref{sec:maker} uses, and it is where the illiquidity premium documented for equity options would
+lead one to look \citep{christoffersen2018}.
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/f5.pdf}
-  \caption{\textbf{Where the edge survives.} The upper row is the median net edge per notional, the unit a quoting decision uses, shaded within each panel only. The lower row is the registered quantity in USDC and its verdict per cell, with an empty cross where a cell has fewer than 200 fills.}
+  \caption{\textbf{Where the edge survives.} The upper row is the median net edge in basis points of notional, the edge of a fill over its notional and the unit a quoting decision uses, shaded within each panel only, between its 5th and 95th percentile. The lower row is the registered quantity in USDC and its verdict per cell, with an empty cross where a cell has fewer than 200 fills.}
   \label{fig:f5}
 \end{figure*}
 
@@ -341,14 +373,14 @@ the effect was shown to be absent.
 
 \section{What this means for a maker}\label{sec:maker}
 A quoting decision is not taken in USDC per contract. It is taken per unit of risk, against the alternative
-of quoting the same notional somewhere else, and in that unit the map in Figure~\ref{fig:f5} is orderly in a
-way the pre-registered unit hides. The median net edge per notional rises monotonically with the absolute
-delta and with the tenor in all three underlyings. In BTC it runs from about nine basis points in short
-dated at-the-money options to twenty-nine in the thirty to ninety day bucket and higher still in the wings.
-In ETH the same cells carry roughly one and three basis points. In HYPE the entire surface sits between zero
-and one basis point, which after any realistic cost of hedging is nothing at all. The first consequence is
-therefore negative and useful: two of the three underlyings on this venue do not pay a maker to be there
-across most of the surface.
+of quoting the same notional somewhere else. Measured that way, net of fees, rebate and hedge, Figure~\ref{fig:f5}
+reads differently. At the money the median rises from 2.8 basis points at two days or less to 5.8 at thirty
+to ninety days in BTC, from 3.8 to 9.8 in ETH and from 5.0 to 27.2 in HYPE. BTC, which pays most per contract, pays least per notional: its median over the cells is 3.3
+basis points, against 5.7 in ETH and 15.1 in HYPE. The first consequence is that the margin is thinnest
+where the flow is. Options of up to seven days and an absolute delta below 60 per cent carry close to half
+of the BTC and ETH fills and pay 1.0 to 2.8 and 1.6 to 3.8 basis points respectively. That leaves little
+room for costs the model does not see: at a perpetual half spread of three basis points the share of
+positive cells falls to 58.8 per cent.
 
 The second consequence concerns what a maker should spend effort on. The result of Section~\ref{sec:results}
 is that size and aggressiveness carry no information about the outcome once the instrument and the day are
@@ -383,7 +415,7 @@ the outcome of trading.
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/a1.pdf}
-  \caption{\textbf{Is the on-chain mark good enough?.} Panel a puts the age of the curve and the distance of the next fill on one axis, which is why the next fill is no control at 30 minutes. A flat line in panel b is the reassurance: the markout does not move with the age of the curve.}
+  \caption{\textbf{Is the on-chain mark good enough?} Panel a puts the age of the curve and the distance of the next fill on one axis, which is why the next fill is no control at 30 minutes. A flat profile in panel b is the reassurance: the markout does not move with the age of the curve, and the fills per class stand above each point. Panel c is the mean excess of the curve's forward over the index by tenor.}
   \label{fig:a1}
 \end{figure*}
 
@@ -395,10 +427,11 @@ up at the moment of the fill, in the half spread, not in what the mark does afte
 by ten wallets, and the observables that the literature uses in place of identity do not find them.
 
 Three of four pre-registered hypotheses are rejected, and the rejections are informative rather than empty.
-Toxicity is concentrated but not identifiable from trade characteristics; the venue's net edge sits so close
-to the registered threshold that an unobserved hedging cost decides it; and an event study on a
-thirty-three month panel whose composition changes underneath it has no power. What remains is a
-measurement, a fact about identity, and a map that says where on this surface a maker is paid at all.
+Toxicity is concentrated but not identifiable from trade characteristics; under the registered rule, a
+net edge survives in three quarters of the cells and in short-dated at-the-money options, where H4 expected it to vanish; and an event
+study on a thirty-three month panel whose composition changes underneath it has no power. What remains is a
+measurement, a fact about identity, and a map that says where on this surface a maker is paid, and how
+thinly.
 
 
 \section*{Data, code and pre-registration}
@@ -408,8 +441,9 @@ computes the markouts, runs the inference and draws every figure is at
 \url{https://github.com/gelatotrade/Derive-Option-Surface}, together with a test suite that covers it. The
 four hypotheses, their rejection rules and the inference were committed in
 \texttt{docs/paper1/PRAEREGISTRIERUNG.md} on 17 September 2026 at 15:47 UTC+2, in commit
-\texttt{3fd9caa}, before any markout had been computed; two dated addenda resolved definitional questions
-that arose while the sample was being built and are in the history of the same file. A reader who wants to
+\texttt{3fd9caa}, before any markout had been computed. Two dated addenda resolved definitional questions
+that arose while the sample was being built, and a third records the correction described on the first
+page; all three are in the history of the same file. A reader who wants to
 check the order of events can read that history rather than take this paragraph on trust.
 
 \section*{Competing interest}

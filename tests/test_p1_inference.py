@@ -139,6 +139,74 @@ def test_analysis_frame_decomposes_the_markout():
     assert r.fe_key == "BTC-1-2-C|2023-11-14" and r.cluster == "0xt"
 
 
+FEE_PER_CONTRACT, REBATE_PER_CONTRACT = 0.4, 0.1
+
+
+def fills_with_amounts(amounts=(0.1, 1.0, 5.0)):
+    """Fills as the tape books them: markout per contract, maker fee and rebate as sums over the fill.
+
+    The first test of the net edge used one contract per fill, where both readings agree; the fee unit was
+    only found on 25.09.2026 (docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md).  Amounts of 0.1 and 5
+    make a fee per fill and a fee per contract differ by a factor of ten and five.
+    """
+    rows = []
+    for i, amount in enumerate(amounts):
+        rows.append({
+            "trade_id": "t{}".format(i), "ts": 1_700_000_000_000 + i, "currency": "BTC",
+            "instrument_name": "BTC-1-2-C", "taker_wallet": "0xt{}".format(i), "maker_wallet": "0xm",
+            "taker_class": "other", "delta_bucket": "40-60", "tenor_bucket": "7-30d", "price": 100.0,
+            "mark_b_t": 105.0, "delta_t": 0.5, "fwd_t": 50_000.0, "maker_side": 1, "amount": amount,
+            "index_price": 50_000.0, "notional": amount * 50_000.0,
+            "fee_maker": FEE_PER_CONTRACT * amount, "rebate_maker": REBATE_PER_CONTRACT * amount,
+            "mo_usd_30m": 10.0, "mo_dn_30m": 9.0, "mo_vol_30m": 5.0,
+        })
+    return pd.DataFrame(rows)
+
+
+FUNDING = pd.DataFrame({"instrument_name": ["BTC-PERP"], "timestamp": [1], "funding_rate": [1e-5]})
+
+
+def test_analysis_frame_takes_fee_and_rebate_per_contract():
+    out = inf.analysis_frame(fills_with_amounts(), FUNDING, horizon="30m", half_spread_bp=1.0)
+    assert out["fee_pc"].to_numpy() == pytest.approx([FEE_PER_CONTRACT] * 3)
+    assert out["rebate_pc"].to_numpy() == pytest.approx([REBATE_PER_CONTRACT] * 3)
+    # every fill has the same markout, hedge and fee per contract, so the same net edge per contract
+    expected = 10.0 - FEE_PER_CONTRACT + REBATE_PER_CONTRACT - out["hedge"].to_numpy()
+    assert out["net_edge"].to_numpy() == pytest.approx(expected)
+    # the decomposition holds fill by fill: half spread + adverse selection - fee + rebate - hedge
+    parts = out["hs"] + out["as_usd"] - out["fee_pc"] + out["rebate_pc"] - out["hedge"]
+    assert parts.to_numpy() == pytest.approx(out["net_edge"].to_numpy())
+
+
+def test_analysis_frame_gives_no_net_edge_to_a_fill_without_amount():
+    out = inf.analysis_frame(fills_with_amounts((0.0, 5.0)), FUNDING, horizon="30m", half_spread_bp=1.0)
+    assert np.isnan(out.loc[0, "fee_pc"]) and np.isnan(out.loc[0, "net_edge"])
+    assert np.isfinite(out.loc[1, "net_edge"])
+
+
+def test_class_table_and_cells_report_fee_and_rebate_per_contract(tmp_path):
+    frame = run_all_frame(n_per_cell=220)
+    frame["amount"] = np.resize([0.1, 1.0, 5.0], len(frame))
+    frame["fee_maker"] = FEE_PER_CONTRACT * frame["amount"]
+    frame["rebate_maker"] = REBATE_PER_CONTRACT * frame["amount"]
+    frame["index_price"] = 50_000.0
+    frame["notional"] = frame["amount"] * frame["index_price"]
+    root = write_inputs(tmp_path, frame)
+    out = tmp_path / "results"
+    inf.run_all(root, out, half_spread_bp=1.0, b=199, seed=5)
+    classes = pd.read_csv(out / "class_means.csv").set_index("class")
+    assert classes["mean_fee"].to_numpy() == pytest.approx([FEE_PER_CONTRACT] * len(classes))
+    assert classes["mean_rebate"].to_numpy() == pytest.approx([REBATE_PER_CONTRACT] * len(classes))
+    ref = inf.analysis_frame(frame, pd.read_parquet(root / "ref" / "funding_history.parquet"))
+    expected = ref["y_usd"] - FEE_PER_CONTRACT + REBATE_PER_CONTRACT - ref["hedge"]
+    means = expected.groupby(ref["taker_class"]).mean()
+    assert classes["mean_ne"].to_numpy() == pytest.approx(means.reindex(classes.index).to_numpy())
+    cells = pd.read_csv(out / "h4_cells.csv")
+    by_cell = expected.groupby([ref["currency"], ref["delta_bucket"], ref["tenor_bucket"]]).mean()
+    for _, r in cells.iterrows():
+        assert r["mean"] == pytest.approx(by_cell.loc[(r["currency"], r["delta_bucket"], r["tenor_bucket"])])
+
+
 def test_path_agreement_reports_correlation_and_sign_agreement():
     rows = pd.DataFrame({
         "mo_usd_30m": [1.0, -2.0, 3.0, -4.0, 5.0, np.nan],

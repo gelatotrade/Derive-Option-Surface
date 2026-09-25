@@ -55,3 +55,15 @@ def test_the_print_style_cannot_change_the_card_size(tmp_path):
     from PIL import Image
     with Image.open(paths[0]) as im:
         assert im.size == (1600, 900), im.size
+
+
+def test_s5_takeaway_reports_the_map_it_sits_on():
+    """The first card said HYPE pays almost nothing; that came from dividing by the notional of the whole fill."""
+    import pandas as pd
+
+    grids = {"BTC": pd.DataFrame([[3.0, 4.0], [2.0, float("nan")]]),
+             "ETH": pd.DataFrame([[5.5, 6.0], [-1.0, 9.0]]),
+             "HYPE": pd.DataFrame([[15.0, 30.0], [5.0, 20.0]])}
+    text = figures_social.s5_takeaway(grids)
+    assert "almost nothing" not in text
+    assert "BTC 3.0" in text and "ETH 5.8" in text and "HYPE 17.5" in text

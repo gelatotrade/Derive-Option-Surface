@@ -49,6 +49,10 @@ def main(argv: Optional[List[str]] = None) -> None:
     s.add_argument("--results", type=Path, default=Path("results/p1"))
     s.add_argument("--out", type=Path, default=Path("paper/figures"))
     s.add_argument("--only", default=None, help="comma separated keys, e.g. T1,F5")
+    s = sub.add_parser("cards", help="draw the social media cards")
+    s.add_argument("--results", type=Path, default=Path("results/p1"))
+    s.add_argument("--out", type=Path, default=Path("paper/social"))
+    s.add_argument("--only", default=None, help="comma separated keys, e.g. S1,S5")
     s = sub.add_parser("inference", help="pre-registered hypotheses, net edge, robustness")
     s.add_argument("--results", type=Path, default=Path("results/p1"))
     s.add_argument("--half-spread-bp", type=float, default=1.0)
@@ -104,6 +108,11 @@ def main(argv: Optional[List[str]] = None) -> None:
         from .figures_p1 import build
 
         written = build(a.root, a.results, a.out, only=a.only.split(",") if a.only else None)
+        print(json.dumps({k: [str(q) for q in v] for k, v in written.items()}, indent=1))
+    elif a.cmd == "cards":
+        from .figures_social import build as build_cards
+
+        written = build_cards(a.root, a.results, a.out, only=a.only.split(",") if a.only else None)
         print(json.dumps({k: [str(q) for q in v] for k, v in written.items()}, indent=1))
     elif a.cmd == "markouts":
         from .markouts import build_markouts

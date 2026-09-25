@@ -42,14 +42,39 @@ FUNDING = pd.DataFrame({"instrument_name": ["BTC-PERP", "ETH-PERP"], "timestamp"
                         "funding_rate": [1e-5, 2e-5]})
 
 
+ANALYSIS_FRAME = inf.analysis_frame      # kept before any test patches the module attribute
+
+
+def analysis_frame_first_version(markouts, funding, horizon="30m", half_spread_bp=1.0):
+    """``inference_p1.analysis_frame`` as it stood in the first version of paper 1 (19.09.2026).
+
+    Fee and rebate of the fill were subtracted from the per-contract markout without dividing by the
+    amount.  The script's ``p1`` mode reproduces this form; paper 1 itself now takes both per contract.
+    """
+    f = ANALYSIS_FRAME(markouts, funding, horizon=horizon, half_spread_bp=half_spread_bp)
+    f["net_edge"] = f["y_usd"] - f["fee_maker"].to_numpy() + f["rebate_maker"].to_numpy() - f["hedge"].to_numpy()
+    return f
+
+
 # ------------------------------------------------------------------------ ported from data/p2/p1befund
 
-def test_p1_mode_reproduces_paper1_analysis_frame_exactly():
+def test_p1_mode_reproduces_the_first_version_of_paper1_exactly():
     f = fills()
     ours = ge.net_edge_frame(f, FUNDING, fee_unit="p1")
+    theirs = analysis_frame_first_version(f, FUNDING, horizon="30m", half_spread_bp=1.0)
+    for col in ("hs", "y_usd", "as_usd", "hedge", "net_edge"):
+        assert np.array_equal(ours[col].to_numpy(), theirs[col].to_numpy()), col
+
+
+def test_per_contract_mode_is_the_corrected_paper1_analysis_frame_exactly():
+    """After the correction (pre-registration addendum 3) paper 1 computes what the finding recommended."""
+    f = fills()
+    ours = ge.net_edge_frame(f, FUNDING, fee_unit="per_contract")
     theirs = inf.analysis_frame(f, FUNDING, horizon="30m", half_spread_bp=1.0)
     for col in ("hs", "y_usd", "as_usd", "hedge", "net_edge"):
         assert np.array_equal(ours[col].to_numpy(), theirs[col].to_numpy()), col
+    assert np.array_equal(ours["fee"].to_numpy(), theirs["fee_pc"].to_numpy())
+    assert np.array_equal(ours["rebate"].to_numpy(), theirs["rebate_pc"].to_numpy())
 
 
 def test_per_contract_mode_divides_fee_and_rebate_by_amount():
@@ -274,6 +299,8 @@ def write_p1_results(markouts: pd.DataFrame, funding: pd.DataFrame, out: Path, b
 
 def test_end_to_end_writes_repo_paths_and_appends_the_audit_sections(tmp_path, monkeypatch):
     b = 19
+    # the script checks itself against paper 1 as it stood when the finding was written
+    monkeypatch.setattr(inf, "analysis_frame", analysis_frame_first_version)
     markouts = synthetic_markouts()
     funding = FUNDING.assign(instrument_name=["BTC-PERP", "HYPE-PERP"])
     markouts.to_parquet(tmp_path / "markouts.parquet")

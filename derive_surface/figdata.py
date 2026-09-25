@@ -137,17 +137,29 @@ def weekly_series(rows: pd.DataFrame, horizon: str = "30m", unit: str = "usd") -
     return out
 
 
+# the steps of the decomposition, each a column of ``inference_p1.analysis_frame`` in USDC per contract
+WATERFALL = (("half spread", "hs", 1.0), ("adverse selection", "as_usd", 1.0), ("maker fee", "fee_pc", -1.0),
+             ("maker rebate", "rebate_pc", 1.0), ("hedge cost", "hedge", -1.0))
+
+
 def waterfall_components(rows: pd.DataFrame, taker_class: str = None) -> pd.DataFrame:
-    """Half spread, adverse selection, fee, rebate and hedge that add up to the net edge."""
+    """Half spread, adverse selection, fee, rebate and hedge per contract that add up to the net edge."""
     g = rows if taker_class is None else rows[rows["taker_class"] == taker_class]
-    steps = [("half spread", float(np.nanmean(g["hs"]))),
-             ("adverse selection", float(np.nanmean(g["as_usd"]))),
-             ("maker fee", -float(np.nanmean(g["fee_maker"]))),
-             ("maker rebate", float(np.nanmean(g["rebate_maker"]))),
-             ("hedge cost", -float(np.nanmean(g["hedge"])))]
+    steps = [(name, sign * float(np.nanmean(g[col]))) for name, col, sign in WATERFALL]
     total = sum(v for _, v in steps)
     steps.append(("net edge", total))
     return pd.DataFrame(steps, columns=["step", "value"]).assign(fills=int(len(g)), taker_class=taker_class or "all")
+
+
+def edge_bp(rows: pd.DataFrame) -> pd.Series:
+    """Net edge in basis points of notional: per contract over the index, the same as the edge of the fill
+    (net edge x amount) over its notional (amount x index)."""
+    return 1e4 * rows["net_edge"] / rows["index_price"].replace(0, np.nan)
+
+
+def premium_share(rows: pd.DataFrame, col: str) -> pd.Series:
+    """A per-contract quantity in per cent of the option premium per contract (the fill price)."""
+    return 100.0 * rows[col] / rows["price"].replace(0, np.nan)
 
 
 def example_fill(rows: pd.DataFrame, taker_class: str = "other", horizon: str = "30m") -> pd.Series:

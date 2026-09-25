@@ -11,6 +11,7 @@ has to survive grayscale printing, so colour is always doubled by a marker shape
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Dict, List, Sequence
 
@@ -34,6 +35,8 @@ CASCADE = ["vault", "rfq", "dominant_maker", "mm_programme", "large", "other"]  
 AGE_EDGES = [0, 5, 10, 20, 40, 60, 120, 300, np.inf]
 AGE_LABELS = ["0-5", "5-10", "10-20", "20-40", "40-60", "60-120", "120-300", ">300"]
 BOOTSTRAP = 999                      # figures only draw intervals; the registered ones come from results/p1
+HEADROOM = 1.75                      # histograms: y axis to this multiple of the tallest bar, legend above it
+LINE_TOP = 0.62                      # reference lines on those histograms stop here, below the legend
 SEED = 20260917
 
 
@@ -48,6 +51,7 @@ def _ci(values, clusters, b: int = BOOTSTRAP) -> Dict[str, float]:
 
 
 def _premium(frame: pd.DataFrame) -> pd.Series:
+    """Premium of the whole fill; only for quantities that are themselves sums over the fill (T2 panel b)."""
     return (frame["price"] * frame["amount"]).replace(0, np.nan)
 
 
@@ -59,43 +63,57 @@ def _symlog_core(ax, core: float, axis: str = "x") -> None:
         ax.axhspan(-core, core, color=figstyle.GREY, alpha=0.12, lw=0, zorder=0)
 
 
+_NEGATIVE = re.compile(r"(?<![\w.])-(?=\d)")
+_WHITE = dict(boxstyle="square,pad=0.15", fc="white", ec="none")
+
+
+def minus(text: str) -> str:
+    """A printed negative number takes a real minus sign, as on the axes and in the text; ranges keep their hyphen."""
+    return _NEGATIVE.sub("\u2212", text)
+
+
 def _panel_tag(ax, letter: str) -> None:
     """Only the letter. What the panel shows belongs in the caption, not on top of the drawing."""
     ax.set_title(letter, loc="left", fontweight="bold", fontsize=8.0, pad=3)
 
 
-def _side_note(ax, text: str, y: float, align: str = "left") -> None:
-    """A note pinned to the axes frame, so it can never grow the axis or collide with the data."""
+def _side_note(ax, text: str, y: float, align: str = "left", box: bool = False) -> None:
+    """A note pinned to the axes frame, so it can never grow the axis; ``box`` lays it over a line it crosses."""
     ax.annotate(text, xy=(0.02 if align == "left" else 0.98, y), xycoords="axes fraction",
-                ha=align, va="center", fontsize=6.5)
+                ha=align, va="center", fontsize=6.5, bbox=_WHITE if box else None, zorder=4)
 
 
 CAPTIONS = {
     "T1": "Panels a and b stop at the registered 30 minute horizon, panel c carries every horizon. The "
           "shaded band is the interquartile range of the 100 nearest fills in the same cell, so the example "
           "can be read against its neighbours rather than on its own.",
-    "T2": "Error bars in panel a are 95 percent cluster bootstrap intervals over taker wallets. The hedge "
-          "bar is dotted because it is the only component that is modelled rather than observed. Panel b is "
-          "the distribution of the fee as a share of the option premium, for both sides of the trade.",
+    "T2": "Error bars in panel a are 95 per cent cluster bootstrap intervals over taker wallets with 999 draws. "
+          "Fee and rebate in panel a are per contract, the amount booked for the fill divided by its size. The "
+          "hedge bar is dotted because it is the only component that is modelled rather than observed. Panel b "
+          "is the distribution of the fee of a fill as a share of its premium, for both sides of the trade.",
     "F1": "The shaded core of panel a is linear and everything outside it is logarithmic with equal area per "
           "decade. Panel b sets the aggregate dollar gain against the average index price, which is what "
-          "makes a per-contract average a statement about contract size.",
+          "makes a per-contract average a statement about contract size. Panel c divides the markout per "
+          "contract by the price per contract.",
     "F2": "The subsample is restricted to fills that have every horizon, so a falling line cannot be a "
-          "shrinking sample. Bands are 95 percent cluster bootstrap intervals of the median, not dispersion.",
+          "shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. "
+          "The share of the premium in panel c is taken per contract.",
     "F3": "G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value "
           "against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are "
           "not additive, so the mean markout is marked separately.",
     "F4": "The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the "
           "loss. Panel b sets the raw difference against the coefficient under instrument by day fixed "
           "effects, which is where the hypothesis fails.",
-    "F5": "The upper row is the median net edge per notional, the unit a quoting decision uses, shaded "
-          "within each panel only. The lower row is the registered quantity in USDC and its verdict per "
+    "F5": "The upper row is the median net edge in basis points of notional, the edge of a fill over its "
+          "notional and the unit a quoting decision uses, shaded within each panel only, between its 5th and "
+          "95th percentile. The lower row is the registered quantity in USDC and its verdict per "
           "cell, with an empty cross where a cell has fewer than 200 fills.",
     "F6": "Panels a and b share a calendar axis; hollow markers mark months with fewer than 1000 fills. "
           "Panel c is the distribution of the 100 placebo estimates with the estimated effect marked.",
     "A1": "Panel a puts the age of the curve and the distance of the next fill on one axis, which is why "
-          "the next fill is no control at 30 minutes. A flat line in panel b is the reassurance: the "
-          "markout does not move with the age of the curve.",
+          "the next fill is no control at 30 minutes. A flat profile in panel b is the reassurance: the "
+          "markout does not move with the age of the curve, and the fills per class stand above each point. "
+          "Panel c is the mean excess of the curve's forward over the index by tenor.",
 }
 
 
@@ -136,17 +154,17 @@ def fig_t1(inputs: dict, out_dir: Path) -> List[Path]:
     half = side * (marks[0] - price)
     adverse = side * (marks[3] - marks[0])
     lo, hi = min(min(marks), price), max(max(marks), price)
-    pad = 0.18 * (hi - lo if hi > lo else 1.0)
-    a.set_ylim(lo - pad, hi + pad)
+    span = hi - lo if hi > lo else 1.0
+    a.set_ylim(lo - 0.62 * span, hi + 0.22 * span)   # room under the path, so the legend covers no point
     xb = len(short) + 0.30                          # two brackets side by side, never stacked on one line
     a.annotate("", xy=(xb, marks[0]), xytext=(xb, price), arrowprops=dict(arrowstyle="<->", lw=0.7, color="black"))
-    a.text(xb + 0.10, marks[0] if half > 0 else price, "half spread\n{:+.2f}".format(half), fontsize=6.5,
+    a.text(xb + 0.10, marks[0] if half > 0 else price, minus("half spread\n{:+.2f}".format(half)), fontsize=6.5,
            va="bottom")
     xc = xb + 1.05
     a.annotate("", xy=(xc, marks[3]), xytext=(xc, marks[0]),
                arrowprops=dict(arrowstyle="<->", lw=0.7, color=figstyle.PALETTE[2]))
-    a.text(xc + 0.10, 0.5 * (marks[3] + marks[0]), "adverse selection\n{:+.2f}".format(adverse),
-           fontsize=6.5, va="center", color=figstyle.PALETTE[2])
+    a.text(xc + 0.10, 0.5 * (marks[3] + marks[0]), minus("adverse\nselection\n{:+.2f}".format(adverse)),
+           fontsize=6.5, va="center", color=figstyle.PALETTE[2])    # three short lines stay inside panel a
     a.set_xlim(-0.25, xc + 1.45)
     a.set_ylabel("price, USDC per contract")
     a.legend(loc="lower left", fontsize=6.0)
@@ -176,24 +194,34 @@ def fig_t1(inputs: dict, out_dir: Path) -> List[Path]:
     return figstyle.save(fig, "t1", out_dir)
 
 
+def t2_values(frame: pd.DataFrame, b: int = BOOTSTRAP) -> Dict[str, Dict[str, float]]:
+    """Bar height and cluster bootstrap interval of every T2 bar, all in USDC per contract.
+
+    The steps are ``figdata.WATERFALL`` (fee and rebate per contract), so bars and error bars read the same
+    columns as the net edge; the markout and the net edge are drawn as totals with their own interval.
+    """
+    steps = figdata.waterfall_components(frame)
+    out = {}
+    for name, col, sign in figdata.WATERFALL:
+        ci = _ci(sign * frame[col].to_numpy(float), frame["cluster"].to_numpy(), b=b)
+        out[name] = {"lo": ci["lo"], "hi": ci["hi"]}
+    for name, value in zip(steps["step"], steps["value"]):
+        if name in out:
+            out[name]["value"] = float(value)
+    for name, col in (("markout", "y_usd"), ("net edge", "net_edge")):
+        ci = _ci(frame[col].to_numpy(float), frame["cluster"].to_numpy(), b=b)
+        out[name] = {"value": ci["mean"], "lo": ci["lo"], "hi": ci["hi"]}
+    return out
+
+
 def fig_t2(inputs: dict, out_dir: Path) -> List[Path]:
     """T2: the identity that turns a half spread into a net edge, and where the fee eats the premium."""
     frame = inputs["frame"]
-    steps = figdata.waterfall_components(frame)
-    cols = {"half spread": ("hs", 1.0), "adverse selection": ("as_usd", 1.0), "maker fee": ("fee_maker", -1.0),
-            "maker rebate": ("rebate_maker", 1.0), "hedge cost": ("hedge", -1.0)}
-    intervals = {}
-    for name, (col, sign) in cols.items():
-        ci = _ci(sign * frame[col].to_numpy(float), frame["cluster"].to_numpy())
-        intervals[name] = (ci["mean"] - ci["lo"], ci["hi"] - ci["mean"])
-    markout = _ci(frame["y_usd"].to_numpy(float), frame["cluster"].to_numpy())
-    net = _ci(frame["net_edge"].to_numpy(float), frame["cluster"].to_numpy())
-    intervals["markout"] = (markout["mean"] - markout["lo"], markout["hi"] - markout["mean"])
-    intervals["net edge"] = (net["mean"] - net["lo"], net["hi"] - net["mean"])
-
+    bars = t2_values(frame)
     order = ["half spread", "adverse selection", "markout", "maker fee", "maker rebate", "hedge cost", "net edge"]
-    values = dict(zip(steps["step"], steps["value"]))
-    values["markout"], values["net edge"] = markout["mean"], net["mean"]
+    values = {name: bars[name]["value"] for name in order}
+    intervals = {name: (bars[name]["value"] - bars[name]["lo"], bars[name]["hi"] - bars[name]["value"])
+                 for name in order}
 
     fig = plt.figure(figsize=(figstyle.DOUBLE, 3.1))
     figstyle.use_style()
@@ -219,9 +247,10 @@ def fig_t2(inputs: dict, out_dir: Path) -> List[Path]:
         a.plot([i - 0.12, i + 0.12], [top - down] * 2, color="black", lw=0.7)
         a.plot([i - 0.12, i + 0.12], [top + up] * 2, color="black", lw=0.7)
         if value >= 0:
-            a.text(i, top + up + 0.7, "{:+.2f}".format(value), ha="center", fontsize=6.5)
+            a.text(i, top + up + 0.7, minus("{:+.2f}".format(value)), ha="center", fontsize=6.5)
         else:                                       # a falling step would print its label inside the hatch
-            a.text(i, bottom + value - down - 1.5, "{:+.2f}".format(value), ha="center", va="top", fontsize=6.5)
+            a.text(i, bottom + value - down - 1.5, minus("{:+.2f}".format(value)), ha="center", va="top",
+                   fontsize=6.5)
         tops.append(top + up)
         if not total:
             running += value
@@ -230,7 +259,8 @@ def fig_t2(inputs: dict, out_dir: Path) -> List[Path]:
     a.set_xticks(range(len(order)))
     a.set_xticklabels([o.replace(" ", "\n") for o in order], fontsize=6.5)
     a.set_ylabel("mean per contract, USDC")
-    _side_note(a, "median half spread {:+.2f}: medians are not additive".format(float(frame["hs"].median())), 0.04)
+    _side_note(a, minus("median half spread {:+.2f}: medians are not additive".format(float(frame["hs"].median()))),
+               0.04)
     a.legend(handles=[Patch(facecolor="white", edgecolor="black", ls=":", label="modelled, not observed")],
              loc="upper right", fontsize=6.0)
     _panel_tag(a, "a")
@@ -249,7 +279,7 @@ def fig_t2(inputs: dict, out_dir: Path) -> List[Path]:
                        arrowprops=dict(arrowstyle="->", lw=0.5))
         else:
             b.annotate("{:.1f} % pay more fee\nthan premium".format(100 * float(np.mean(share > 100))),
-                       xy=(3e2, 0.99), xytext=(6e0, 0.48), fontsize=6.5,
+                       xy=(3e2, 0.99), xytext=(6e0, 0.48), fontsize=6.5, bbox=_WHITE, zorder=4,
                        arrowprops=dict(arrowstyle="->", lw=0.5))
     b.axvline(12.5, color=figstyle.GREY, lw=0.8, ls=":")
     b.axvline(100, color="black", lw=0.8)
@@ -286,18 +316,21 @@ def fig_f1(inputs: dict, out_dir: Path) -> List[Path]:
     core = 10.0
     bins = np.concatenate([-np.logspace(3, np.log10(core), 25), np.linspace(-core, core, 21),
                            np.logspace(np.log10(core), 3, 25)])
-    a.hist(y, bins=bins, color=figstyle.PALETTE[0], alpha=0.8)
+    heights, _, _ = a.hist(y, bins=bins, color=figstyle.PALETTE[0], alpha=0.8)
     a.set_xscale("symlog", linthresh=core)
     _symlog_core(a, core)
-    for i, (label, value, style) in enumerate(stats):
+    a.set_ylim(0, HEADROOM * max(float(np.max(heights)), 1.0))
+    handles = []
+    for label, value, style in stats:               # lines stop below the legend, so nothing runs through it
         if not np.isfinite(value):
             continue
-        a.axvline(value, color="black", ls=style, lw=1.0)
-        a.annotate("{} {:.2f}".format(label, value), xy=(value, 1.0), xycoords=("data", "axes fraction"),
-                   xytext=(3, -9 - 11 * i), textcoords="offset points", fontsize=6.5)
+        a.axvline(value, color="black", ls=style, lw=1.0, ymax=LINE_TOP)
+        handles.append(Line2D([], [], color="black", ls=style, lw=1.0, label=minus("{} {:.2f}".format(label, value))))
+    handles.append(Line2D([], [], ls="none", label=minus("contract weighted {:+.3f}".format(contract_weighted))))
+    a.legend(handles=handles, loc="upper left", fontsize=6.0, handlelength=1.8)
+    a.set_xticks([-1e3, -1e1, 0, 1e1, 1e3])       # every decade labelled would run the minus signs together
     a.set_xlabel("markout after 30 min, USDC per contract\nsymlog, shaded core linear, equal area per decade")
     a.set_ylabel("fills")
-    _side_note(a, "contract weighted {:+.3f}".format(contract_weighted), 0.55, align="right")
     _panel_tag(a, "a")
 
     agg = (frame.assign(dollar=frame["y_usd"] * frame["amount"])
@@ -314,15 +347,16 @@ def fig_f1(inputs: dict, out_dir: Path) -> List[Path]:
     b.set_xlabel("aggregate maker gain,\nmillion USDC")
     _panel_tag(b, "b")
 
-    premium = _premium(frame)
-    share = (100.0 * frame["y_usd"] / premium).to_numpy(float)
+    share = figdata.premium_share(frame, "y_usd").to_numpy(float)       # per contract over price per contract
     share = share[np.isfinite(share)]
     q = np.percentile(share, [25, 50, 75])
-    c.hist(share, bins=np.linspace(-100, 150, 60), color=figstyle.PALETTE[2], alpha=0.8)
-    for i, (value, label, style) in enumerate(zip(q, ["q25", "median", "q75"], ["--", "-", "--"])):
-        c.axvline(value, color="black", lw=0.9, ls=style)
-        c.annotate("{} {:+.1f} %".format(label, value), xy=(value, 1.0), xycoords=("data", "axes fraction"),
-                   xytext=(3, -9 - 11 * i), textcoords="offset points", fontsize=6.5)
+    heights, _, _ = c.hist(share, bins=np.linspace(-100, 150, 60), color=figstyle.PALETTE[2], alpha=0.8)
+    c.set_ylim(0, HEADROOM * max(float(np.max(heights)), 1.0))
+    handles = []
+    for value, label, style in zip(q, ["q25", "median", "q75"], ["--", "-", "--"]):
+        c.axvline(value, color="black", lw=0.9, ls=style, ymax=LINE_TOP)
+        handles.append(Line2D([], [], color="black", ls=style, lw=0.9, label=minus("{} {:+.1f} %".format(label, value))))
+    c.legend(handles=handles, loc="upper right", fontsize=6.0, handlelength=1.8)
     c.set_xlabel("markout as a share\nof the premium, %")
     c.set_ylabel("fills")
     _panel_tag(c, "c")
@@ -335,22 +369,21 @@ def fig_f2(inputs: dict, out_dir: Path) -> List[Path]:
     cols = ["mo_usd_{}".format(h) for h in HORIZONS]
     balanced = frame[np.isfinite(frame[cols]).all(axis=1)]
     professional = balanced["taker_class"].isin(PROFESSIONAL)
-    premium = _premium(balanced)
     x = np.arange(len(HORIZONS))
     draws = 249
 
     fig, axes = figstyle.figure(figstyle.DOUBLE, 2.7, ncols=3, gridspec_kw={"wspace": 0.34})
-    fig.subplots_adjust(left=0.075, right=0.985, top=0.90, bottom=0.22)
-    units = [("USDC per contract", lambda h, f, prem: f["mo_usd_{}".format(h)]),
-             ("vol points", lambda h, f, prem: f["mo_vol_{}".format(h)]),
-             ("share of premium, %", lambda h, f, prem: 100.0 * f["mo_usd_{}".format(h)] / prem)]
+    fig.subplots_adjust(left=0.075, right=0.985, top=0.86, bottom=0.22)
+    units = [("USDC per contract", lambda h, f: f["mo_usd_{}".format(h)]),
+             ("vol points", lambda h, f: f["mo_vol_{}".format(h)]),
+             ("share of premium, %", lambda h, f: figdata.premium_share(f, "mo_usd_{}".format(h)))]
     for ax, (label, getter) in zip(axes, units):
         for name, mask, color, style in (("professional flow", professional, figstyle.PALETTE[1], "--"),
                                          ("other flow", ~professional, figstyle.PALETTE[0], "-")):
-            sub, prem = balanced[mask], premium[mask]
+            sub = balanced[mask]
             med, lo, hi = [], [], []
             for h in HORIZONS:
-                values = getter(h, sub, prem).to_numpy(float)
+                values = getter(h, sub).to_numpy(float)
                 ok = np.isfinite(values)
                 if ok.sum() == 0:
                     med.append(np.nan), lo.append(np.nan), hi.append(np.nan)
@@ -359,14 +392,15 @@ def fig_f2(inputs: dict, out_dir: Path) -> List[Path]:
                 med.append(m), lo.append(l), hi.append(u)
             ax.fill_between(x, lo, hi, color=color, alpha=0.22, lw=0)
             ax.plot(x, med, style, color=color, marker="o", ms=3, label=name)
-        full = [float(np.nanmedian(getter(h, frame, _premium(frame)))) for h in HORIZONS]
-        ax.plot(x, full, "-", color=figstyle.GREY, lw=0.8, label="full sample, median")
+        pooled = [float(np.nanmedian(getter(h, balanced))) for h in HORIZONS]    # same fills as the classes
+        ax.plot(x, pooled, "-", color=figstyle.GREY, lw=0.8, label="all flow, median")
         ax.axhline(0, color="black", lw=0.6)
         ax.set_xticks(x)
         ax.set_xticklabels(HORIZONS, fontsize=6.5)
         ax.set_ylabel(label)
         ax.set_xlabel("horizon")
-    axes[0].legend(loc="center left", fontsize=6.0)
+    handles, labels = axes[0].get_legend_handles_labels()    # above the panels: inside, every corner holds data
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3, fontsize=6.5)
     _side_note(axes[2], "{:,} fills carry every horizon".format(len(balanced)).replace(",", " "), 0.06,
                align="right")
     for ax, letter in zip(axes, "abc"):
@@ -515,17 +549,17 @@ def fig_f4(inputs: dict, out_dir: Path) -> List[Path]:
         b.plot([raw, controlled], [i, i], color=figstyle.GREY, lw=0.8)
         b.plot([raw], [i], "o", mfc="none", color=figstyle.PALETTE[1], ms=5)
         b.plot([controlled], [i], "o", color=figstyle.PALETTE[0], ms=5)
-        b.annotate("t {:.2f}".format(t), xy=(1.0, i), xycoords=("axes fraction", "data"),
+        b.annotate(minus("t {:.2f}".format(t)), xy=(1.0, i), xycoords=("axes fraction", "data"),
                    xytext=(-2, 7), textcoords="offset points", ha="right", fontsize=6.5)
     b.axvline(0, color="black", lw=0.6)
     b.set_yticks(range(len(pairs)))
     b.set_yticklabels([p[0] for p in pairs], fontsize=7)
-    b.set_ylim(-0.6, len(pairs) - 0.2)
+    b.set_ylim(-0.6, len(pairs) + 0.15)
     b.set_xlabel("difference in delta-neutral markout,\nUSDC per contract")
     b.legend(handles=[Line2D([], [], marker="o", mfc="none", color=figstyle.PALETTE[1], ls="none", label="raw"),
                       Line2D([], [], marker="o", color=figstyle.PALETTE[0], ls="none",
                              label="instrument x day fixed effects")],
-             loc="upper center", bbox_to_anchor=(0.5, -0.32), ncol=2, fontsize=6.0)
+             loc="upper left", ncol=2, fontsize=6.0)    # inside the axes: below it sat on the axis label
     _panel_tag(b, "b")
     return figstyle.save(fig, "f4", out_dir)
 
@@ -535,7 +569,7 @@ def fig_f5(inputs: dict, out_dir: Path) -> List[Path]:
     frame, results = inputs["frame"], inputs["results"]
     cells = results["cells"]
     currencies = [c for c in ("BTC", "ETH", "HYPE") if (cells["currency"] == c).any()]
-    edge_bp = frame.assign(bp=1e4 * frame["net_edge"] / frame["notional"].replace(0, np.nan))
+    edge_bp = frame.assign(bp=figdata.edge_bp(frame))           # edge of the fill over its notional
 
     fig = plt.figure(figsize=(figstyle.DOUBLE, 4.4))
     figstyle.use_style()
@@ -545,13 +579,16 @@ def fig_f5(inputs: dict, out_dir: Path) -> List[Path]:
         values, counts = figdata.cell_matrix(edge_bp[edge_bp["currency"] == ccy], "bp", stat="median")
         grid = values.to_numpy(float).T                 # delta on the rows: five columns fit the labels
         ax = fig.add_subplot(gs[0, col])
-        ax.imshow(grid, cmap="Greys", aspect="auto")
-        cut = np.nanpercentile(grid, 70) if np.isfinite(grid).any() else np.inf
+        # shade between the 5th and 95th percentile of the panel: one extreme cell (ETH, deep ITM, over
+        # 90 days) would otherwise paint every other cell of its panel the same grey
+        lo_s, hi_s = np.nanpercentile(grid, [5, 95]) if np.isfinite(grid).any() else (0.0, 1.0)
+        ax.imshow(grid, cmap="Greys", aspect="auto", vmin=lo_s, vmax=hi_s)
+        cut = lo_s + 0.55 * (hi_s - lo_s)
         for i in range(grid.shape[0]):
             for j in range(grid.shape[1]):
                 v = grid[i, j]
                 if np.isfinite(v):
-                    ax.text(j, i, "{:.0f}".format(v) if abs(v) >= 10 else "{:.1f}".format(v),
+                    ax.text(j, i, minus("{:.0f}".format(v) if abs(v) >= 10 else "{:.1f}".format(v)),
                             ha="center", va="center", fontsize=7, color="white" if v > cut else "black")
         ax.set_xticks(range(grid.shape[1]))
         ax.set_xticklabels(values.index, rotation=45, ha="right", fontsize=6)
@@ -559,7 +596,7 @@ def fig_f5(inputs: dict, out_dir: Path) -> List[Path]:
         ax.set_yticklabels(values.columns if col == 0 else [], fontsize=6)
         ax.tick_params(length=0 if col else 2)
         finite = grid[np.isfinite(grid)]
-        _panel_tag(ax, "{}  {:.1f} to {:.0f} bp".format(ccy, finite.min(), finite.max()) if finite.size else ccy)
+        _panel_tag(ax, minus("{}  {:.1f} to {:.0f} bp".format(ccy, finite.min(), finite.max())) if finite.size else ccy)
         if col == 0:
             ax.set_ylabel("|delta|, %")
 
@@ -608,14 +645,18 @@ def fig_f5(inputs: dict, out_dir: Path) -> List[Path]:
     last = float(sens["half_spread_bp"].max())
     for _, r in sens.iterrows():
         right = r["half_spread_bp"] < last
+        # above the point for the falling part of the curve, below it for the last one: never on the line
         ax3.annotate("{:.1f}".format(100 * r["share_positive"]), xy=(r["half_spread_bp"], 100 * r["share_positive"]),
-                     xytext=(5 if right else -5, -9), textcoords="offset points", fontsize=6.5,
-                     ha="left" if right else "right")
+                     xytext=(3, 4) if right else (-5, -9), textcoords="offset points", fontsize=6.5,
+                     ha="left" if right else "right", va="bottom" if right else "baseline")
     ax3.set_xlabel("assumed perp\nhalf spread, bp")
     ax3.set_ylabel("cells positive, %")
     ax3.yaxis.set_label_position("right")
     ax3.yaxis.tick_right()
-    _side_note(ax3, "H4 threshold", 0.42)
+    shares = 100 * sens["share_positive"].to_numpy(float)
+    ax3.set_ylim(min(50.0, float(np.nanmin(shares))) - 6, max(50.0, float(np.nanmax(shares))) + 7)
+    ax3.annotate("H4 threshold", xy=(0.02, 50), xycoords=("axes fraction", "data"), xytext=(0, 2),
+                 textcoords="offset points", ha="left", va="bottom", fontsize=6.5)
     _panel_tag(ax3, "sensitivity")
     fig.text(0.5, 0.005, "upper row: median net edge in bp of notional     lower row: verdict on the registered "
                          "net edge in USDC", ha="center", fontsize=6.0, color=figstyle.GREY)
@@ -682,12 +723,12 @@ def fig_f6(inputs: dict, out_dir: Path) -> List[Path]:
     if placebo:
         c.hist(placebo, bins=min(20, max(6, len(placebo) // 4)), color=figstyle.GREY, alpha=0.45,
                label="{} placebo windows".format(len(placebo)))
-        c.axvline(beta, color=figstyle.PALETTE[1], lw=1.4, label="estimate {:+.3f}".format(beta))
+        c.axvline(beta, color=figstyle.PALETTE[1], lw=1.4, label=minus("estimate {:+.3f}".format(beta)))
         c.set_xlabel("difference in differences, vol points")
         c.set_ylabel("placebo windows")
-        c.legend(loc="upper left", fontsize=6.0)
-        _side_note(c, "t {:.2f}, p {:.3f}, {:.0f} % of placebos more extreme".format(
-            float(did["t"]), float(did["p"]), 100 * float(did["placebo_share_more_extreme"])), 0.90, align="right")
+        c.legend(loc="center left", bbox_to_anchor=(1.005, 0.5), fontsize=5.8, frameon=False)   # beside b's
+        _side_note(c, minus("t {:.2f}, p {:.3f}, {:.0f} % of placebos more extreme".format(
+            float(did["t"]), float(did["p"]), 100 * float(did["placebo_share_more_extreme"]))), 0.90, align="right")
     else:
         c.text(0.5, 0.5, "placebo estimates not in the results file", transform=c.transAxes, ha="center",
                fontsize=7, color=figstyle.GREY)
@@ -710,11 +751,13 @@ def fig_a1(inputs: dict, out_dir: Path) -> List[Path]:
 
     age, lag = frame["svi_age_s_t"].to_numpy(float), frame["lag_a_30m_s"].to_numpy(float)
     bins = np.logspace(0, 6, 40)
-    a.hist(age[np.isfinite(age) & (age > 0)], bins=bins, color=figstyle.PALETTE[0], alpha=0.7,
-           label="age of the curve at the fill")
-    a.hist(lag[np.isfinite(lag) & (lag > 0)], bins=bins, color=figstyle.PALETTE[1], alpha=0.55,
-           label="distance of the next fill")
-    a.axvline(1800, color="black", lw=0.9, ls="--")
+    heights, _, _ = a.hist(age[np.isfinite(age) & (age > 0)], bins=bins, color=figstyle.PALETTE[0], alpha=0.7,
+                           label="age of the curve at the fill")
+    heights_lag, _, _ = a.hist(lag[np.isfinite(lag) & (lag > 0)], bins=bins, color=figstyle.PALETTE[1], alpha=0.55,
+                               label="distance of the next fill")
+    peak = max(float(np.max(heights)) if len(heights) else 0.0, float(np.max(heights_lag)) if len(heights_lag) else 0.0)
+    a.set_ylim(0, 1.6 * peak if peak > 0 else 1.0)  # headroom, so legend and note sit above the bars
+    a.axvline(1800, color="black", lw=0.9, ls="--", ymax=0.80)     # stops below the legend
     a.annotate("30 min", xy=(1800, 0.0), xycoords=("data", "axes fraction"), xytext=(4, 12),
                textcoords="offset points", fontsize=6.5)
     a.set_xscale("log")
@@ -733,10 +776,16 @@ def fig_a1(inputs: dict, out_dir: Path) -> List[Path]:
         ns.append(int(ci["n"]))
     pos = np.arange(len(AGE_LABELS))
     b.errorbar(pos, means, yerr=[down, up], fmt="o", color=figstyle.PALETTE[0], ms=4, lw=0.8, capsize=2)
+    for i, (m, u, n) in enumerate(zip(means, up, ns)):     # the count above its point, not in a second tick row
+        if np.isfinite(m) and np.isfinite(u):
+            b.annotate("{:,}".format(n).replace(",", " "), xy=(i, m + u), xytext=(0, 3), textcoords="offset points",
+                       rotation=90, ha="center", va="bottom", fontsize=5.5, color=figstyle.GREY)
+    top = max([m + u for m, u in zip(means, up) if np.isfinite(m) and np.isfinite(u)] or [1.0])
+    bottom_b = min([m - d for m, d in zip(means, down) if np.isfinite(m) and np.isfinite(d)] or [0.0])
+    b.set_ylim(bottom_b - 0.05 * (top - bottom_b), top + 0.30 * (top - bottom_b))
     b.set_xticks(pos)
-    b.set_xticklabels(["{}\n{:,}".format(lbl, n).replace(",", " ") for lbl, n in zip(AGE_LABELS, ns)],
-                      rotation=45, ha="right", fontsize=6)
-    b.set_xlabel("age of the curve at the fill, s, and fills per class")
+    b.set_xticklabels(AGE_LABELS, rotation=45, ha="right", fontsize=6)
+    b.set_xlabel("age of the curve at the fill, s")
     b.set_ylabel("mean markout, USDC per contract")
     _panel_tag(b, "b")
 
@@ -753,9 +802,11 @@ def fig_a1(inputs: dict, out_dir: Path) -> List[Path]:
 
     paths = results.get("paths", pd.DataFrame())
     if len(paths) and (paths["group"] == "lag_a <= 300 s").any() and (paths["group"] == "all").any():
-        _side_note(a, "correlation {:.3f} within 300 s,\n{:.3f} overall".format(
+        # three short lines right of the 30 minute line and above the bars: nothing runs through them
+        a.annotate("correlation {:.3f}\nwithin 300 s,\n{:.3f} overall".format(
             float(paths.loc[paths["group"] == "lag_a <= 300 s", "correlation"].iloc[0]),
-            float(paths.loc[paths["group"] == "all", "correlation"].iloc[0])), 0.55, align="right")
+            float(paths.loc[paths["group"] == "all", "correlation"].iloc[0])), xy=(0.98, 0.52),
+            xycoords="axes fraction", ha="right", va="center", fontsize=6.0)
     return figstyle.save(fig, "a1", out_dir)
 
 
