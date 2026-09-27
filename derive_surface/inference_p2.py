@@ -187,7 +187,11 @@ def edge_frame(markouts: pd.DataFrame, funding: pd.DataFrame, capital: pd.DataFr
     fee_net = a["fee_maker"].to_numpy(float) - a["rebate_maker"].to_numpy(float)   # sums per fill
     hedge = a["hedge"].to_numpy(float)                                               # per contract
     edge = mo * amount - fee_net - hedge * amount
-    ne_p1 = a["net_edge"].to_numpy(float)                                            # Paper 1: fee, rebate undivided
+    # Paper 1's form, fee and rebate undivided. The revised inference_p1.analysis_frame (revision of 25.09.2026)
+    # divides them by the amount, so the form of the pre-registered sensitivity is computed here, in the same
+    # order of operations as the former analysis_frame.
+    ne_p1 = (a["y_usd"] - a["fee_maker"].to_numpy() + a["rebate_maker"].to_numpy()
+             - a["hedge"].to_numpy()).to_numpy(float)
 
     cap = capital.drop_duplicates("trade_id").set_index("trade_id")
     if len(cap) != len(capital):

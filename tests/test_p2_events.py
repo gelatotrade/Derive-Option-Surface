@@ -294,7 +294,8 @@ def test_outcome_is_half_spread_in_bp_of_index():
                        "maker_side": [-1, 1], "delta_bucket": ["25-40", "10-25"], "tenor_bucket": ["7-30d", "7-30d"],
                        "mark_b_t": [980.0, 52.0], "delta_t": [0.3, -0.2], "fwd_t": [95_100.0, 3_101.0],
                        "fee_maker": [0.1, 0.1], "rebate_maker": [0.0, 0.0], "taker_wallet": ["w1", "w2"],
-                       "mo_usd_30m": [1.0, 2.0], "mo_dn_30m": [0.0, 0.0], "mo_vol_30m": [0.0, 0.0]})
+                       "mo_usd_30m": [1.0, 2.0], "mo_dn_30m": [0.0, 0.0], "mo_vol_30m": [0.0, 0.0],
+                       "amount": [1.0, 1.0]})  # Paper 1's revised analysis frame reads the amount of each fill
     funding = pd.DataFrame({"instrument_name": ["BTC-PERP", "ETH-PERP"], "timestamp": [0, 0],
                             "funding_rate": [1e-5, 2e-5]})
     f = p2events.outcome_frame(mk, funding)
