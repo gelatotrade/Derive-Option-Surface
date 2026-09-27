@@ -1,4 +1,4 @@
-"""A1 · Does the replica match the chain? (ABBILDUNGSWAHL.md section 7, A1, appendix), 7.0 x 2.5 in.
+"""A1 · Does the replica match the chain? (FIGURE_SELECTION.md section 7, A1, appendix), 7.0 x 2.5 in.
 
 Absolute relative deviation of initial-margin capital between the offline replicas and ``eth_call`` on the deployed
 managers, from ``results/p2/validation.csv`` (``status == "ok"``, ``is_initial``; maintenance margin only in the

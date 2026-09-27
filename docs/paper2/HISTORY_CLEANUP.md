@@ -1,188 +1,197 @@
-# Historie bereinigen (Audit A01)
+# Cleaning the history (audit A01)
 
-Stand 25.09.2026, Branch `paper2-kapital` bei `d51ede0`, noch ohne Upstream. Diese Anleitung beschreibt, wie die
-Konto-Kennungen aus der Historie von Paper 2 verschwinden, bevor der Branch zum ersten Mal gepusht wird. Sie
-schreibt nichts selbst um. Das Umschreiben geschieht auf einem **neuen** Branch; `paper2-kapital` bleibt, bis der
-neue Branch geprüft ist. Die Präregistrierung `1d13227` und alle Commits davor bleiben unverändert.
+> **Historical guide.** The cleanup was carried out on 27 September 2026; `docs/paper2/HISTORY_REWRITE.md` records
+> it, together with the follow-up steps that are still open. It did not follow section 4 to the letter. The
+> Paper 2 commits were replayed onto `main` as the new branch `paper2-capital` and scrubbed there with
+> `scripts/p2_history_scrub.py` plus two extensions, because a wider scan also found raw ids of override accounts,
+> some of them in commits before `1d13227`. Every Paper 2 hash therefore changed, the pre-registration included
+> (`1d13227` is now `cc0a29f`), and the hash table in section 5 does not apply. A24 (section 6) is settled as well:
+> no commit of `main` or `paper2-capital` holds raw wallet addresses in `results/p1/h1_lorenz.csv`.
+>
+> Below, branch names and commit hashes are those of the old history. Translated on 27 September 2026; files
+> renamed since then appear under their current names, except where a path inside an old commit is meant.
 
-Roh-IDs und unsalzte Hashes sind hier bewusst nicht wiedergegeben (Nachtrag 1.4).
+Status 25 September 2026, branch `paper2-kapital` at `d51ede0`, still without an upstream. This guide describes how
+the account identifiers disappear from the history of Paper 2 before the branch is pushed for the first time. It
+rewrites nothing itself. The rewrite happens on a **new** branch; `paper2-kapital` stays until the new branch has
+been checked. The pre-registration `1d13227` and all commits before it stay unchanged.
 
-## 1. Was im Arbeitsbaum schon behoben ist
+Raw ids and unsalted hashes are deliberately not reproduced here (Addendum 1.4).
 
-Diese Änderungen liegen im Arbeitsbaum und müssen vor dem Umschreiben committet werden (Commit F):
+## 1. What is already fixed in the working tree
 
-- `tests/test_p2_ids.py`: `TOP` ist eine synthetische Liste (104, 101, 110, ...), das zweite Konto ist 4711. Neue
-  Wächter: keine unsalzten Hashes in `results/`, `docs/paper2/`, `paper2/` **und** `tests/` (jetzt auch `.py`),
-  keine Roh-IDs der Top-10 mit fünf und mehr Stellen in `tests/` (liest `data/p2/books/top_makers.json`, ohne die
-  Datei übersprungen), keine `.DS_Store`/`.Rhistory` im Index, keine privaten Fixtures im Index.
-- Die kontoidentifizierenden Fixtures liegen jetzt unter `data/p2/fixtures_private/` (gitignoriert):
+These changes are in the working tree and must be committed before the rewrite (commit F):
+
+- `tests/test_p2_ids.py`: `TOP` is a synthetic list (104, 101, 110, ...), and the second account is 4711. New
+  guards: no unsalted hashes in `results/`, `docs/paper2/`, `paper2/` **and** `tests/` (now also `.py`), no raw ids
+  of the top ten with five or more digits in `tests/` (reads `data/p2/books/top_makers.json`, skipped without the
+  file), no `.DS_Store`/`.Rhistory` in the index, no private fixtures in the index.
+- The fixtures that identify accounts are now under `data/p2/fixtures_private/` (git-ignored):
   `pm_chain_accounts.json`, `sm_chain_accounts.json`, `books_chain_snapshot.json`, `books_events_day.json`,
-  `b1_chain_cases.json` und der Generator `gen_b1_fixture.py`. Die Tests lesen sie dort und werden übersprungen,
-  wenn sie fehlen (wie die v2-core-Fälle). `gen_a4_chain_fixtures.py` bleibt in `tests/fixtures/p2`, weil er auch
-  die öffentlichen Fälle `sm_chain_cases.json` und `pm_chain_cases.json` erzeugt; die Kontofälle schreibt er jetzt
-  nach `data/p2/fixtures_private/`.
-- Der nicht identifizierende Teil von `books_chain_snapshot.json` (Adressen der Assets, Manager, Cash-Asset,
-  Referenz des Encoders für die Konten 1 und 2) liegt öffentlich in `tests/fixtures/p2/books_registry.json`,
-  damit die Tests der Registry weiterlaufen. Die dekodierten Kontostände, die `test_p2_books.py` als Literale
-  prüfte (Cash-Saldo, ein Bein), stehen jetzt in der privaten Fixture unter `expected`.
-- `tests/test_p2_books.py`: die Roh-ID neben dem Label M3 ist durch den Platzhalter 4242 ersetzt.
-- `.DS_Store`, `paper/.DS_Store` und `paper/social/.Rhistory` sind aus dem Index genommen (A69) und in
+  `b1_chain_cases.json` and the generator `gen_b1_fixture.py`. The tests read them there and are skipped when they
+  are missing (like the v2-core cases). `gen_a4_chain_fixtures.py` stays in `tests/fixtures/p2`, because it also
+  generates the public cases `sm_chain_cases.json` and `pm_chain_cases.json`; it now writes the account cases to
+  `data/p2/fixtures_private/`.
+- The non-identifying part of `books_chain_snapshot.json` (addresses of the assets, managers and cash asset, and
+  the encoder reference for accounts 1 and 2) is public in `tests/fixtures/p2/books_registry.json`, so that the
+  registry tests keep running. The decoded balances that `test_p2_books.py` checked as literals (cash balance, one
+  leg) are now in the private fixture under `expected`.
+- `tests/test_p2_books.py`: the raw id next to the label M3 is replaced by the placeholder 4242.
+- `.DS_Store`, `paper/.DS_Store` and `paper/social/.Rhistory` are removed from the index (A69) and listed in
   `.gitignore`.
 
-In einem öffentlichen Klon ohne `data/` werden dadurch 19 Tests wegen fehlender privater Fixtures übersprungen und
-der Wächter für Roh-IDs (1 Test) mangels Liste; auf dem Rechner des Autors laufen alle.
+In a public clone without `data/`, 19 tests are therefore skipped for lack of the private fixtures, and the guard
+for raw ids (1 test) for lack of the list; on the author's machine all of them run.
 
-## 2. Betroffene Commits und Dateien
+## 2. Affected commits and files
 
-Geprüft mit `python3 scripts/p2_history_scrub.py check 1d13227^..paper2-kapital` (zählt nur, nennt keine IDs):
+Checked with `python3 scripts/p2_history_scrub.py check 1d13227^..paper2-kapital` (counts only, names no ids):
 
-| Datei | Befund | Commits |
+| File | Finding | Commits |
 |---|---|---|
-| `tests/fixtures/p2/pm_chain_accounts.json` | ganze Kontostände, 3 unsalzte Hashes | `e7361d2` bis `d51ede0` (13) |
-| `tests/fixtures/p2/sm_chain_accounts.json` | ganze Kontostände, 11 unsalzte Hashes | `e7361d2` bis `d51ede0` (13) |
-| `tests/fixtures/p2/books_chain_snapshot.json` | Multicall-Antwort eines Top-10-Kontos, 1 Hash | `e7361d2` bis `d51ede0` (13) |
-| `tests/fixtures/p2/books_events_day.json` | Tagesereignisse mit 109 Transaktions-Hashes und `tx_hash` des Fills, 1 Hash | `e7361d2` bis `d51ede0` (13) |
-| `tests/fixtures/p2/b1_chain_cases.json` | Bücher von M2 und M3 an je einem Tag | `591d2d5` bis `d51ede0` (7) |
-| `tests/fixtures/p2/gen_b1_fixture.py` | zwei Roh-IDs, die in der Fixture mit ihrem Label stehen | `591d2d5` bis `d51ede0` (7) |
-| `tests/test_p2_ids.py` | geordnete Top-10-Liste, also der Schlüssel Roh-ID zu M1..M10 | `591d2d5` bis `d51ede0` (7) |
-| `tests/test_p2_books.py` | eine Roh-ID neben dem Label M3 | `03ee4ca` bis `d51ede0` (4) |
-| `results/p2/params/BTC_pm2_overrides.json` | 15 unsalzte Hashes | `e7361d2` bis `c4fcb59` (6) |
-| `results/p2/params/ETH_pm2_overrides.json` | 16 unsalzte Hashes | `e7361d2` bis `c4fcb59` (6) |
-| `results/p2/params/HYPE_pm2_overrides.json` | 10 unsalzte Hashes | `e7361d2` bis `c4fcb59` (6) |
-| `docs/paper2/DATENSTAND.md` | Hashes aller zehn dominanten Konten | `e7361d2` bis `c4fcb59` (6) |
+| `tests/fixtures/p2/pm_chain_accounts.json` | whole balances, 3 unsalted hashes | `e7361d2` to `d51ede0` (13) |
+| `tests/fixtures/p2/sm_chain_accounts.json` | whole balances, 11 unsalted hashes | `e7361d2` to `d51ede0` (13) |
+| `tests/fixtures/p2/books_chain_snapshot.json` | Multicall response of a top-ten account, 1 hash | `e7361d2` to `d51ede0` (13) |
+| `tests/fixtures/p2/books_events_day.json` | a day's events with 109 transaction hashes and the `tx_hash` of the fill, 1 hash | `e7361d2` to `d51ede0` (13) |
+| `tests/fixtures/p2/b1_chain_cases.json` | books of M2 and M3 on one day each | `591d2d5` to `d51ede0` (7) |
+| `tests/fixtures/p2/gen_b1_fixture.py` | two raw ids that appear in the fixture with their label | `591d2d5` to `d51ede0` (7) |
+| `tests/test_p2_ids.py` | ordered top-ten list, i.e. the key from raw id to M1..M10 | `591d2d5` to `d51ede0` (7) |
+| `tests/test_p2_books.py` | a raw id next to the label M3 | `03ee4ca` to `d51ede0` (4) |
+| `results/p2/params/BTC_pm2_overrides.json` | 15 unsalted hashes | `e7361d2` to `c4fcb59` (6) |
+| `results/p2/params/ETH_pm2_overrides.json` | 16 unsalted hashes | `e7361d2` to `c4fcb59` (6) |
+| `results/p2/params/HYPE_pm2_overrides.json` | 10 unsalted hashes | `e7361d2` to `c4fcb59` (6) |
+| `docs/paper2/DATENSTAND.md` (now `DATA_STATUS.md`) | hashes of all ten dominant accounts | `e7361d2` to `c4fcb59` (6) |
 
-Nicht betroffen: die Commit-Nachrichten und alle Commits vor `e7361d2`, also auch `1d13227`, `cccfc01`,
-`9b1394f` und `bd11559` (Prüfung über alle 82 Commits des Branches). Die Punkte A24 und A69 liegen vor `1d13227`
-und werden hier nicht bereinigt (Abschnitt 6).
+Not affected: the commit messages and all commits before `e7361d2`, hence also `1d13227`, `cccfc01`, `9b1394f` and
+`bd11559` (check over all 82 commits of the branch). The points A24 and A69 lie before `1d13227` and are not cleaned
+here (section 6).
 
-## 3. Werkzeug
+## 3. Tool
 
-`scripts/p2_history_scrub.py` (Tests: `tests/test_p2_history_scrub.py`, darunter ein Lauf von
-`git filter-branch` auf einem Wegwerf-Repository). Das Skript enthält keine IDs; Liste und Salt liest es aus
-`data/p2` des Checkouts, aus dem es gestartet wird.
+`scripts/p2_history_scrub.py` (tests: `tests/test_p2_history_scrub.py`, including a run of `git filter-branch` on a
+throwaway repository). The script contains no ids; it reads the list and the salt from `data/p2` of the checkout it
+is started from.
 
-- `index` bearbeitet den Index eines Commits, wie ihn `git filter-branch --index-filter` übergibt: entfernt die
-  sechs Fixture-Dateien aus `tests/fixtures/p2`; ersetzt in Textdateien unter `results/p2/`, `docs/paper2/`,
-  `paper2/` und `tests/` jeden unsalzten Hash (Umkehr durch Durchprobieren bis 250 000) durch das p2ids-Label
-  (M1..M10 oder X mit Salt, also dieselben Labels wie ab `591d2d5`); ersetzt in `tests/` Roh-IDs der Top-10 mit fünf
-  und mehr Stellen durch 4242 und in einem `tests/test_p2_ids.py` mit der echten `TOP`-Liste alle zehn IDs durch
-  die synthetische Liste. Dateien von Paper 1 fasst es nicht an. Auf einem schon bereinigten Stand ändert es nichts.
-- `check <Bereich>` durchsucht jeden Commit und gibt je Datei nur Zahlen aus; Exit-Code 1, wenn etwas übrig ist.
+- `index` edits the index of a commit as `git filter-branch --index-filter` passes it: it removes the six fixture
+  files from `tests/fixtures/p2`; in text files under `results/p2/`, `docs/paper2/`, `paper2/` and `tests/` it
+  replaces every unsalted hash (reversed by enumeration up to 250,000) with the p2ids label (M1..M10, or X with
+  salt, i.e. the same labels as from `591d2d5` on); in `tests/` it replaces raw ids of the top ten with five or
+  more digits by 4242, and in a `tests/test_p2_ids.py` with the real `TOP` list it replaces all ten ids with the
+  synthetic list. It does not touch Paper 1 files. On an already cleaned state it changes nothing.
+- `check <range>` searches every commit and prints only counts per file; exit code 1 if anything is left.
 
-## 4. Ablauf
+## 4. Procedure
 
-Voraussetzungen: alle Korrekturen des Audits auf `paper2-kapital` committet, Suite grün, Arbeitsbaum ohne
-Änderungen an getrackten Dateien, `data/p2/secret_salt.txt` und `data/p2/books/top_makers.json` vorhanden. Aus dem
-Wurzelverzeichnis des Repos, in zsh oder bash:
+Prerequisites: all audit fixes committed on `paper2-kapital`, suite green, working tree without changes to tracked
+files, `data/p2/secret_salt.txt` and `data/p2/books/top_makers.json` present. From the root directory of the
+repository, in zsh or bash:
 
 ```sh
-# 1. neuer Branch, umgeschrieben wird nur dieser, ab Stufe A (e7361d2)
-git status --short --untracked-files=no            # muss leer sein
+# 1. new branch; only this one is rewritten, from Stage A (e7361d2) on
+git status --short --untracked-files=no            # must be empty
 git branch paper2-kapital-bereinigt paper2-kapital
 export P2_SCRUB="$PWD/scripts/p2_history_scrub.py"
 FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch \
   --index-filter 'python3 "$P2_SCRUB" index' \
   -- e7361d2^..paper2-kapital-bereinigt
 
-# 2. prüfen
-python3 scripts/p2_history_scrub.py check 1d13227^..paper2-kapital-bereinigt   # 0 Dateien, Exit 0
-git diff --stat paper2-kapital paper2-kapital-bereinigt                        # leer: Endstand gleich
-git merge-base --is-ancestor 1d13227 paper2-kapital-bereinigt && echo "1d13227 unveraendert"
+# 2. check
+python3 scripts/p2_history_scrub.py check 1d13227^..paper2-kapital-bereinigt   # 0 files, exit 0
+git diff --stat paper2-kapital paper2-kapital-bereinigt                        # empty: same end state
+git merge-base --is-ancestor 1d13227 paper2-kapital-bereinigt && echo "1d13227 unchanged"
 git rev-list --reverse e7361d2^..paper2-kapital > data/p2/p2_alt.txt
 git rev-list --reverse e7361d2^..paper2-kapital-bereinigt > data/p2/p2_neu.txt
 paste -d' ' data/p2/p2_alt.txt data/p2/p2_neu.txt | while read alt neu; do
-  p=$(git diff --quiet "$alt:docs/paper2/PRAEREGISTRIERUNG.md" "$neu:docs/paper2/PRAEREGISTRIERUNG.md" && echo gleich || echo ABWEICHUNG)
-  d=$([ "$(git log -1 --format='%an %ad %cn %cd %s' "$alt")" = "$(git log -1 --format='%an %ad %cn %cd %s' "$neu")" ] && echo gleich || echo ABWEICHUNG)
-  echo "$(git rev-parse --short "$alt") -> $(git rev-parse --short "$neu")  Praeregistrierung $p, Metadaten $d  $(git log -1 --format=%s "$alt")"
+  p=$(git diff --quiet "$alt:docs/paper2/PRAEREGISTRIERUNG.md" "$neu:docs/paper2/PRAEREGISTRIERUNG.md" && echo same || echo DIFFERS)
+  d=$([ "$(git log -1 --format='%an %ad %cn %cd %s' "$alt")" = "$(git log -1 --format='%an %ad %cn %cd %s' "$neu")" ] && echo same || echo DIFFERS)
+  echo "$(git rev-parse --short "$alt") -> $(git rev-parse --short "$neu")  pre-registration $p, metadata $d  $(git log -1 --format=%s "$alt")"
 done
 
-# 3. Branches tauschen, Sicherung von filter-branch entfernen
-git branch -m paper2-kapital paper2-kapital-unbereinigt   # nur lokal, nie pushen
+# 3. swap the branches, remove the backup of filter-branch
+git branch -m paper2-kapital paper2-kapital-unbereinigt   # local only, never push
 git branch -m paper2-kapital-bereinigt paper2-kapital
 git checkout -q paper2-kapital
 git update-ref -d refs/original/refs/heads/paper2-kapital-bereinigt
 ```
 
-Bricht Schritt 1 mit „A previous backup already exists“ ab, liegt noch eine Sicherung eines früheren Laufs vor;
-dann den neuen Branch löschen und neu anlegen und `filter-branch -f` verwenden. Schritt 2 muss in jeder Zeile
-„gleich“ zeigen, `git diff --stat` muss leer sein.
+If step 1 stops with "A previous backup already exists", a backup of an earlier run is still present; then delete
+the new branch, create it again and use `filter-branch -f`. Step 2 must show "same" in every line, and
+`git diff --stat` must be empty.
 
-**Testlauf.** Am 25.09.2026 lief diese Folge in drei frischen Klonen dieses Repos (`git clone --no-local`), zuletzt
-wörtlich aus dem Block oben; die Änderungen aus Abschnitt 1 waren dort als Commit F simuliert: 14 Commits umgeschrieben in rund 6 s,
-`check` danach 0 Dateien (vorher 12), Endstand identisch, `PRAEREGISTRIERUNG.md` sowie Autor, Committer, Datum und
-Nachricht in jedem Paar gleich, die Labels in den umgeschriebenen `*_pm2_overrides.json` bytegleich mit denen ab
-`591d2d5`. Alle Läufe ergaben dieselben neuen Hashes. In den umgeschriebenen Commits fehlen die sechs Fixtures;
-die damaligen Tests dieser Commits laufen dort ohne sie nicht, der Endstand ist davon nicht berührt.
+**Test run.** On 25 September 2026 this sequence ran in three fresh clones of this repository
+(`git clone --no-local`), the last time verbatim from the block above as it then stood, with German comments and
+output labels; the changes from section 1 were simulated there as commit F: 14 commits rewritten in about 6 s,
+`check` afterwards 0 files (12 before), end state identical, `PRAEREGISTRIERUNG.md` as well as author, committer,
+date and message the same in every pair, and the labels in the rewritten `*_pm2_overrides.json` byte-identical with
+those from `591d2d5` on. All runs gave the same new hashes. The six fixtures are missing in the rewritten commits;
+the tests of that time in these commits do not run there without them, and the end state is not affected.
 
-## 5. Folgen für die zitierten Hashes
+## 5. Consequences for the cited hashes
 
-`1d13227` (Präregistrierung) und alle Commits davor behalten ihren Hash. Alle Commits ab `e7361d2` erhalten neue
-Hashes, der Inhalt von `PRAEREGISTRIERUNG.md` und die Zeitstempel bleiben je Commit gleich. Der Testlauf ergab:
+`1d13227` (pre-registration) and all commits before it keep their hash. All commits from `e7361d2` on get new
+hashes; the content of `PRAEREGISTRIERUNG.md` and the timestamps stay the same per commit. The test run gave:
 
-| alt | neu | Commit |
+| old | new | Commit |
 |---|---|---|
-| `e7361d2` | `a2aa7c5` | Stufe A |
-| `eb534fe` | `1d6b2de` | Nachtrag 1 |
-| `9465210` | `3872ed0` | Nachtrag 2 |
-| `bfc34c8` | `985ec99` | Nachtrag 3 |
-| `c4fcb59` | `396e180` | Nachtrag 4 |
-| `591d2d5` | `f459643` | Stufe B |
-| `93b42bc` | `defbb03` | Stufe C |
-| `03ee4ca` | `7634832` | MM-Sensitivität H2 |
+| `e7361d2` | `a2aa7c5` | Stage A |
+| `eb534fe` | `1d6b2de` | Addendum 1 |
+| `9465210` | `3872ed0` | Addendum 2 |
+| `bfc34c8` | `985ec99` | Addendum 3 |
+| `c4fcb59` | `396e180` | Addendum 4 |
+| `591d2d5` | `f459643` | Stage B |
+| `93b42bc` | `defbb03` | Stage C |
+| `03ee4ca` | `7634832` | MM sensitivity H2 |
 
-Die Werte gelten nur, wenn Skript, Salt und Liste unverändert sind; massgeblich ist die Ausgabe von Schritt 2 des
-echten Laufs. Danach nachzuziehen (auf dem bereinigten Branch, als neuer Commit):
+The values hold only if script, salt and list are unchanged; what counts is the output of step 2 of the real run.
+To be updated afterwards (on the cleaned branch, as a new commit):
 
-- `paper2/main.tex` Z. 669 bis 671 (`eb534fe`, `9465210`, `bfc34c8`, `c4fcb59`) und der Kommentar
-  `% src git:c4fcb59` Z. 679. `1d13227` in Z. 666 und 678 bleibt.
-- `docs/paper2/ZAHLENPRUEFUNG.md` neu erzeugen (`scripts/p2_number_check.py`). Die Prüfung löst Hashes mit
-  `git cat-file -e` auf; solange der alte Branch lokal liegt, findet sie die alten Hashes noch, in einem frischen
-  Klon nicht mehr.
-- `docs/paper2/MANUSKRIPT.md` Z. 305 und 316, `docs/paper2/ABBILDUNGSWAHL.md` Z. 813 und
-  `tests/test_p2_number_check.py` (Beispiele mit `c4fcb59`, nur der Einheitlichkeit halber; die Tests lösen
-  Hashes über einen Stub auf). `derive_surface/social_p2.py` nennt nur `1d13227` und bleibt.
-- `docs/paper2/AUDIT.md` ist ein datierter Bericht über den alten Stand und bleibt; ein Satz mit Verweis auf diese
-  Datei genügt.
-- Ein datierter **Nachtrag 5** am Ende von `PRAEREGISTRIERUNG.md`: Grund (A01), die Zuordnung alt zu neu für die
-  vier Nachträge, die Feststellung, dass Text und Zeitstempel unverändert sind, und dass kein registriertes Urteil
-  berührt ist. Ihn erst nach dem Lauf schreiben, weil die neuen Hashes erst dann feststehen. Das Manuskript nennt
-  dann die neuen Hashes und verweist auf Nachtrag 5 (siehe A02). Nachtrag 5 auch in
-  `docs/paper2/PREREGISTRATION_EN.md` übersetzen und den Blob-Hash im Kopf nachziehen; `tests/test_p2_prereg_en.py`
-  schlägt sonst fehl. Die Übersetzung selbst nennt nur `1d13227` und den Blob-Hash des Originals, der beim
-  Umschreiben gleich bleibt.
+- `paper2/main.tex` lines 669 to 671 (`eb534fe`, `9465210`, `bfc34c8`, `c4fcb59`) and the comment
+  `% src git:c4fcb59` in line 679. `1d13227` in lines 666 and 678 stays.
+- Regenerate `docs/paper2/NUMBER_CHECK.md` (`scripts/p2_number_check.py`). The check resolves hashes with
+  `git cat-file -e`; as long as the old branch is present locally it still finds the old hashes, in a fresh clone
+  it no longer does.
+- `docs/paper2/MANUSCRIPT.md` lines 305 and 316, `docs/paper2/FIGURE_SELECTION.md` line 813 and
+  `tests/test_p2_number_check.py` (examples with `c4fcb59`, only for consistency; the tests resolve hashes through a
+  stub). `derive_surface/social_p2.py` names only `1d13227` and stays.
+- `docs/paper2/AUDIT.md` is a dated report on the old state and stays; a sentence pointing to this file is enough.
+- A dated **Addendum 5** at the end of `PRAEREGISTRIERUNG.md`: the reason (A01), the mapping from old to new for the
+  four addenda, the statement that text and timestamps are unchanged, and that no registered verdict is affected.
+  Write it only after the run, because only then are the new hashes fixed. The manuscript then names the new hashes
+  and refers to Addendum 5 (see A02). Translate Addendum 5 into `docs/paper2/PREREGISTRATION.md` as well and update
+  the blob hash in its header; otherwise `tests/test_p2_prereg_en.py` fails. The translation itself names only
+  `1d13227` and the blob hash of the original, which stays the same in the rewrite.
 
-## 6. Nicht Teil dieser Bereinigung
+## 6. Not part of this cleanup
 
-- **A24, offene Entscheidung des Autors zu Paper 1.** `results/p1/h1_lorenz.csv` enthält 1 388 Wallet-Adressen
-  (Commit `a26a59d`, in beiden lokalen Branches). `a26a59d` ist ein Vorfahre von `1d13227`. Die Adressen aus der
-  Historie zu nehmen, hiesse ab `a26a59d` umzuschreiben; dann ändern sich `1d13227`, alle Hashes von Paper 2 und
-  die späten Hashes von Paper 1 (die Präregistrierung von Paper 1, `3fd9caa`, `7f67eaf`, `837595c`, liegt davor).
-  Das Skript fasst `results/p1` nicht an, und `check` sucht nicht nach Adressen. Im Arbeitsbaum ist nichts
-  geändert.
-- **A69.** `.DS_Store` (`fdb8014`), `paper/.DS_Store` und `paper/social/.Rhistory` (`0afff2c`) liegen ebenfalls
-  vor `1d13227` und bleiben in der Historie; sie sind nur aus dem Index genommen. `.DS_Store` kann Dateinamen des
-  lokalen Ordners enthalten.
-- **Restliche schwache Merkmale.** Die alten Fassungen von `tests/test_p2_books.py` (`e7361d2` bis `d51ede0`)
-  enthalten dekodierte Werte eines Top-10-Kontos an einem Block (Cash-Saldo, ein Optionsbein), aber keine ID und
-  kein Label. Wer alle Konten an diesem Block per `eth_call` abfragt, fände das Konto; das Skript lässt diese
-  Literale stehen.
-- **Grenzen der Pseudonyme.** Die öffentliche Trade-Historie (`get_trade_history`) liefert je Fill die
-  `subaccount_id`. Die Rangfolge M1 bis M10 (Nachtrag 1.4: meiste Maker-Fills in der Stichprobe von Paper 1) kann
-  daher jeder nachrechnen, der das Tape lädt. Auch die X-Labels der Override-Konten lassen sich über die
-  öffentlichen `LibOverrideUpdated`-Ereignisse und die Blocknummern in `results/p2/params/*_overrides.json`
-  zuordnen. Die Pseudonyme schützen vor beiläufiger Zuordnung, nicht vor gezielter. Die Bereinigung stellt den
-  Zustand her, den Nachtrag 1.4 beschreibt; das Papier sollte keinen weitergehenden Schutz behaupten.
+- **A24, an open decision of the author on Paper 1.** `results/p1/h1_lorenz.csv` contains 1,388 wallet addresses
+  (commit `a26a59d`, in both local branches). `a26a59d` is an ancestor of `1d13227`. Taking the addresses out of
+  the history would mean rewriting from `a26a59d` on; then `1d13227`, all hashes of Paper 2 and the late hashes of
+  Paper 1 change (the pre-registration of Paper 1, `3fd9caa`, `7f67eaf`, `837595c`, lies before it). The script
+  does not touch `results/p1`, and `check` does not search for addresses. Nothing is changed in the working tree.
+- **A69.** `.DS_Store` (`fdb8014`), `paper/.DS_Store` and `paper/social/.Rhistory` (`0afff2c`) also lie before
+  `1d13227` and stay in the history; they are only removed from the index. `.DS_Store` can contain file names of
+  the local folder.
+- **Remaining weak features.** The old versions of `tests/test_p2_books.py` (`e7361d2` to `d51ede0`) contain
+  decoded values of a top-ten account at one block (cash balance, one option leg), but no id and no label. Anyone
+  who queries all accounts at this block with `eth_call` would find the account; the script leaves these literals
+  in place.
+- **Limits of the pseudonyms.** The public trade history (`get_trade_history`) gives the `subaccount_id` of every
+  fill. Anyone who loads the tape can therefore recompute the ranking M1 to M10 (Addendum 1.4: most maker fills in
+  the Paper 1 sample). The X labels of the override accounts can also be matched through the public
+  `LibOverrideUpdated` events and the block numbers in `results/p2/params/*_overrides.json`. The pseudonyms protect
+  against casual matching, not against targeted matching. The cleanup establishes the state that Addendum 1.4
+  describes; the paper should not claim any further protection.
 
-## 7. Empfehlung
+## 7. Recommendation
 
-1. Jetzt bereinigen, solange der Branch lokal ist: Korrekturen committen, Abschnitt 4 ausführen, Nachtrag 5
-   schreiben, Zitate nachziehen, Papier bauen, `scripts/p2_number_check.py` und die Suite laufen lassen. Die
-   Kosten sind vier neue Nachtrags-Hashes bei unverändertem Text und unveränderter Präregistrierung.
-2. Nur den bereinigten Branch pushen (`git push -u origin paper2-kapital`), nie `paper2-kapital-unbereinigt` und
-   nie `git push --all`. Beim Integrieren einen Merge-Commit verwenden, weder Squash noch Rebase (A02). Danach die
-   neuen Hashes extern verankern (OpenTimestamps oder OSF, A02).
-3. `paper2-kapital-unbereinigt` lokal behalten, bis Push und Verankerung stehen; erst dann löschen
-   (`git branch -D paper2-kapital-unbereinigt`). Die alten Objekte bleiben bis zu `git gc` im lokalen Repository
-   und werden nicht gepusht.
-4. A24 getrennt entscheiden. Den Satz über die Pseudonyme im Abschnitt „Data, code and pre-registration“ an
-   Abschnitt 6 ausrichten.
+1. Clean up now, while the branch is local: commit the fixes, carry out section 4, write Addendum 5, update the
+   citations, build the paper, run `scripts/p2_number_check.py` and the suite. The cost is four new addendum
+   hashes, with unchanged text and an unchanged pre-registration.
+2. Push only the cleaned branch (`git push -u origin paper2-kapital`), never `paper2-kapital-unbereinigt` and never
+   `git push --all`. Use a merge commit when integrating, neither squash nor rebase (A02). Then anchor the new
+   hashes externally (OpenTimestamps or OSF, A02).
+3. Keep `paper2-kapital-unbereinigt` locally until push and anchoring are done; only then delete it
+   (`git branch -D paper2-kapital-unbereinigt`). The old objects stay in the local repository until `git gc` and
+   are not pushed.
+4. Decide A24 separately. Align the sentence about the pseudonyms in the section "Data, code and pre-registration"
+   with section 6.

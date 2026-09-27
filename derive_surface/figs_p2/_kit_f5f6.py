@@ -1,4 +1,4 @@
-"""Shared helpers of the Paper 2 figures F5 and F6 (ABBILDUNGSWAHL section 6).
+"""Shared helpers of the Paper 2 figures F5 and F6 (FIGURE_SELECTION section 6).
 
 Canvas = print size (no ``bbox tight``), no text under ``FS_MIN``, manager colours and line styles from section 6.2,
 axes placed in inches from the top left corner, and a small runner for the check lists (``CHECKS``) of the slots.

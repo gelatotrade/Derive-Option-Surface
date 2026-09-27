@@ -1,4 +1,4 @@
-"""Social cards of Paper 2 (``derive_surface.social_p2``, ABBILDUNGSWAHL section 9): size, type, frame, the title
+"""Social cards of Paper 2 (``derive_surface.social_p2``, FIGURE_SELECTION section 9): size, type, frame, the title
 rule of card 2, a verdict card whose title and layout do not depend on the outcome, and numbers read from
 ``results/p2`` that ``scripts/p2_figure_check.py`` finds again in their sources."""
 from __future__ import annotations

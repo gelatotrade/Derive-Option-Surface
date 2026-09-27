@@ -1,368 +1,368 @@
-# Zahlenblatt Paper 2
+# Numbers for Paper 2
 
-Erzeugt 2026-09-25 03:22 UTC aus `results/p2` mit `scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `results/p2/summary.json` (flach, Schlüssel stabil).
+Generated 2026-09-27 11:07 UTC from `results/p2` with `scripts/p2_numbers.py`. All headline numbers machine-readable in `results/p2/summary.json` (flat, stable keys).
 
-- **Datenstand:** Stichprobe vom 11.01.2024 00:00 UTC bis zum letzten Fill am 17.09.2026 11:51:53 UTC. **Pilotstand:** Die Stichprobe endet vor dem präregistrierten Ende (30.09.2026 08:00 UTC); die Zahlen des Manuskripts entstehen mit dem Enddatenlauf. Stichtag 17.09.2026.
-- **Inferenz:** B = 9 999, Seed 20260924, 90-%-Perzentilintervalle aus einem Cluster-Bootstrap über UTC-Tage (H1 bis H3, Nachtrag 3). H4: Wild-Cluster-Bootstrap mit Rademacher-Gewichten und restringierten Residuen, Cluster UTC-Tag, einseitiges p für β > 0, 100 Placebo-Termine.
-- **Messung:** Kapital unter IM (MM als Sensitivität), Netto-Edge je Kontrakt nach Nachtrag 2: NE = MO_30min − (Gebühr − Rabatt)/Menge − Hedge; Edge eines Fills = NE·Menge. Konten nur als Labels (M1 bis M10).
+- **Data status:** Sample from 2024-01-11 00:00 UTC to the last fill at 2026-09-17 11:51:53 UTC. **Pilot state:** the sample ends before the preregistered end (2026-09-30 08:00 UTC); the numbers of the manuscript come from the final data run. Cut-off day 2026-09-17.
+- **Inference:** B = 9 999, seed 20260924, 90 % percentile intervals from a cluster bootstrap over UTC days (H1 to H3, Addendum 3). H4: wild cluster bootstrap with Rademacher weights and restricted residuals, cluster UTC day, one-sided p for β > 0, 100 placebo dates.
+- **Measurement:** capital under IM (MM as a sensitivity), net edge per contract after Addendum 2: NE = MO_30min − (fee − rebate)/amount − hedge; edge of a fill = NE·amount. Accounts only as labels (M1 to M10).
 
-## Stichprobe
+## Sample
 
-- Fills der Stichprobe von Paper 1: 603 940 (BTC 154 676, ETH 405 250, HYPE 44 014).
-- PM2-Fenster ab BTC 12.06.2025 23:00 UTC, ETH 12.06.2025 23:00 UTC, HYPE 11.11.2025 00:00 UTC: 336 087 Fills (BTC 98 479, ETH 193 600, HYPE 44 008).
-- Fills mit Kapital je Kontrakt ≤ 0 unter IM: SM 10, Legacy-PM 9, PM2 20 (nichts ausgeschlossen; Ausschlüsse nur nach den Regeln von H2 und H3).
-- H1: 173 von 210 Zellen besetzt (mindestens 200 Fills; BTC 60, ETH 68, HYPE 45), 331 813 Fills in besetzten Zellen, 463 UTC-Tage vom 12.06.2025 bis 17.09.2026.
-- H2: Stichprobe von 20 000 Fills der Konten M3, M5, M8, M10 (ETH 13 594, HYPE 6 405), n = 19 999 nach Ausschluss, 372 UTC-Tage vom 04.09.2025 bis 17.09.2026.
-- H3: 1 968 Maker-Tage im Fenster, davon 1 943 gerechnet (nicht gerechnet: 24 ohne Optionen, 1 ohne Snapshot), 462 UTC-Tage vom 13.06.2025 bis 17.09.2026.
-- H4: 18 Ereignisse, 14 behalten, davon 13 mit Panel-Zellen; Panel 91 446 Zeilen aus 84 919 Fills, 475 Zell-Ereignis-Paare, 141 Tages-Cluster.
+- Fills of the Paper 1 sample: 603 940 (BTC 154 676, ETH 405 250, HYPE 44 014).
+- PM2 window from BTC 2025-06-12 23:00 UTC, ETH 2025-06-12 23:00 UTC, HYPE 2025-11-11 00:00 UTC: 336 087 fills (BTC 98 479, ETH 193 600, HYPE 44 008).
+- Fills with capital per contract ≤ 0 under IM: SM 10, legacy PM 9, PM2 20 (nothing excluded; exclusions only under the rules of H2 and H3).
+- H1: 173 of 210 cells populated (at least 200 fills; BTC 60, ETH 68, HYPE 45), 331 813 fills in populated cells, 463 UTC days from 2025-06-12 to 2026-09-17.
+- H2: sample of 20 000 fills of the accounts M3, M5, M8, M10 (ETH 13 594, HYPE 6 405), n = 19 999 after exclusion, 372 UTC days from 2025-09-04 to 2026-09-17.
+- H3: 1 968 maker days in the window, of which 1 943 computed (not computed: 24 without options, 1 without snapshot), 462 UTC days from 2025-06-13 to 2026-09-17.
+- H4: 18 events, 14 kept, of which 13 with panel cells; panel 91 446 rows from 84 919 fills, 475 cell-event pairs, 141 day clusters.
 
-## Validierung des Nachbaus gegen eth_call
+## Validation of the replica against eth_call
 
-- Schwelle der Präregistrierung je Basiswert, Manager und Art: Median |rel| < 0,1 %, 95. Perzentil < 1 %. Ergebnis: 32 von 32 Zellen (IM und MM) erfüllt, **bestanden**.
-- 877 Fälle an Blöcken vom 14.01.2024 bis 17.09.2026; 1 Fall ohne Chain-Antwort (Revert), nicht vergleichbar.
-- Einzelkontrakte unter IM: n = 799, Median |rel| 8,7·10⁻¹⁰, p95 1,4·10⁻⁸, Maximum 8,9·10⁻⁸; grösste absolute Abweichung 0,00033 USD.
-- Bücher unter IM: n = 77 (2 bis 245 Beine), Median |rel| 2,2·10⁻⁹, p95 1,3·10⁻⁸, Maximum 3,4·10⁻⁸; grösste absolute Abweichung 0,050 USD.
-- MM (Sensitivität): Einzelkontrakte Median 1,1·10⁻⁹, p95 2,0·10⁻⁸; Bücher Median 2,2·10⁻⁹, p95 1,5·10⁻⁸.
-- Szenario-Weg gegen direkten Aufruf: 6 Bücher, bitgleich: ja.
+- Threshold of the preregistration per underlying, manager and kind: median |rel| < 0.1 %, 95th percentile < 1 %. Result: 32 of 32 cells (IM and MM) met, **passed**.
+- 877 cases at blocks from 2024-01-14 to 2026-09-17; 1 case without a chain answer (revert), not comparable.
+- Single contracts under IM: n = 799, median |rel| 8.7·10⁻¹⁰, p95 1.4·10⁻⁸, maximum 8.9·10⁻⁸; largest absolute deviation 0.00033 USD.
+- Books under IM: n = 77 (2 to 245 legs), median |rel| 2.2·10⁻⁹, p95 1.3·10⁻⁸, maximum 3.4·10⁻⁸; largest absolute deviation 0.050 USD.
+- MM (sensitivity): single contracts median 1.1·10⁻⁹, p95 2.0·10⁻⁸; books median 2.2·10⁻⁹, p95 1.5·10⁻⁸.
+- Scenario path against direct call: 6 books, bit-identical: yes.
 
-| Art | Basiswert | Manager | n | fehlend | Median \|rel\| | p95 \|rel\| | Max \|rel\| | Schwelle |
+| Kind | Underlying | Manager | n | missing | Median \|rel\| | p95 \|rel\| | Max \|rel\| | Threshold |
 |---|---|---|---:|---:|---:|---:|---:|---|
-| Einzelkontrakt | BTC | SM | 100 | 0 | 1,4·10⁻¹⁰ | 6,9·10⁻⁹ | 2,4·10⁻⁸ | erfüllt |
-| Einzelkontrakt | BTC | Legacy-PM | 100 | 0 | 2,4·10⁻⁹ | 1,5·10⁻⁸ | 3,1·10⁻⁸ | erfüllt |
-| Einzelkontrakt | BTC | PM2 | 100 | 0 | 1,8·10⁻¹⁰ | 1,4·10⁻⁸ | 5,0·10⁻⁸ | erfüllt |
-| Einzelkontrakt | ETH | SM | 100 | 0 | 0 | 9,5·10⁻⁹ | 1,4·10⁻⁸ | erfüllt |
-| Einzelkontrakt | ETH | Legacy-PM | 100 | 0 | 3,2·10⁻⁹ | 2,0·10⁻⁸ | 6,5·10⁻⁸ | erfüllt |
-| Einzelkontrakt | ETH | PM2 | 100 | 0 | 7,4·10⁻¹⁰ | 2,3·10⁻⁸ | 8,9·10⁻⁸ | erfüllt |
-| Einzelkontrakt | HYPE | SM | 100 | 0 | 9,2·10⁻¹² | 5,6·10⁻⁹ | 1,2·10⁻⁸ | erfüllt |
-| Einzelkontrakt | HYPE | PM2 | 99 | 1 | 1,7·10⁻⁹ | 1,5·10⁻⁸ | 3,5·10⁻⁸ | erfüllt |
-| Buch | BTC | SM | 7 | 0 | 7,1·10⁻¹⁰ | 9,3·10⁻⁹ | 1,2·10⁻⁸ | erfüllt |
-| Buch | BTC | Legacy-PM | 7 | 0 | 1,3·10⁻⁹ | 8,0·10⁻⁹ | 8,1·10⁻⁹ | erfüllt |
-| Buch | BTC | PM2 | 7 | 0 | 2,2·10⁻¹⁰ | 9,1·10⁻⁹ | 1,1·10⁻⁸ | erfüllt |
-| Buch | ETH | SM | 18 | 0 | 7,5·10⁻¹⁰ | 4,0·10⁻⁹ | 6,8·10⁻⁹ | erfüllt |
-| Buch | ETH | Legacy-PM | 18 | 0 | 3,9·10⁻⁹ | 2,4·10⁻⁸ | 3,4·10⁻⁸ | erfüllt |
-| Buch | ETH | PM2 | 18 | 0 | 3,8·10⁻⁹ | 1,3·10⁻⁸ | 2,1·10⁻⁸ | erfüllt |
-| Buch | HYPE | SM | 1 | 0 | 2,6·10⁻⁹ | 2,6·10⁻⁹ | 2,6·10⁻⁹ | erfüllt |
-| Buch | HYPE | PM2 | 1 | 0 | 4,3·10⁻⁹ | 4,3·10⁻⁹ | 4,3·10⁻⁹ | erfüllt |
+| single contract | BTC | SM | 100 | 0 | 1.4·10⁻¹⁰ | 6.9·10⁻⁹ | 2.4·10⁻⁸ | met |
+| single contract | BTC | legacy PM | 100 | 0 | 2.4·10⁻⁹ | 1.5·10⁻⁸ | 3.1·10⁻⁸ | met |
+| single contract | BTC | PM2 | 100 | 0 | 1.8·10⁻¹⁰ | 1.4·10⁻⁸ | 5.0·10⁻⁸ | met |
+| single contract | ETH | SM | 100 | 0 | 0 | 9.5·10⁻⁹ | 1.4·10⁻⁸ | met |
+| single contract | ETH | legacy PM | 100 | 0 | 3.2·10⁻⁹ | 2.0·10⁻⁸ | 6.5·10⁻⁸ | met |
+| single contract | ETH | PM2 | 100 | 0 | 7.4·10⁻¹⁰ | 2.3·10⁻⁸ | 8.9·10⁻⁸ | met |
+| single contract | HYPE | SM | 100 | 0 | 9.2·10⁻¹² | 5.6·10⁻⁹ | 1.2·10⁻⁸ | met |
+| single contract | HYPE | PM2 | 99 | 1 | 1.7·10⁻⁹ | 1.5·10⁻⁸ | 3.5·10⁻⁸ | met |
+| book | BTC | SM | 7 | 0 | 7.1·10⁻¹⁰ | 9.3·10⁻⁹ | 1.2·10⁻⁸ | met |
+| book | BTC | legacy PM | 7 | 0 | 1.3·10⁻⁹ | 8.0·10⁻⁹ | 8.1·10⁻⁹ | met |
+| book | BTC | PM2 | 7 | 0 | 2.2·10⁻¹⁰ | 9.1·10⁻⁹ | 1.1·10⁻⁸ | met |
+| book | ETH | SM | 18 | 0 | 7.5·10⁻¹⁰ | 4.0·10⁻⁹ | 6.8·10⁻⁹ | met |
+| book | ETH | legacy PM | 18 | 0 | 3.9·10⁻⁹ | 2.4·10⁻⁸ | 3.4·10⁻⁸ | met |
+| book | ETH | PM2 | 18 | 0 | 3.8·10⁻⁹ | 1.3·10⁻⁸ | 2.1·10⁻⁸ | met |
+| book | HYPE | SM | 1 | 0 | 2.6·10⁻⁹ | 2.6·10⁻⁹ | 2.6·10⁻⁹ | met |
+| book | HYPE | PM2 | 1 | 0 | 4.3·10⁻⁹ | 4.3·10⁻⁹ | 4.3·10⁻⁹ | met |
 
-## H1 Rangfolge (präregistriert)
+## H1 ranking (preregistered)
 
-- Spearman-ρ zwischen Edge in bp des Nominals und Edge je PM2-Kapital über 173 besetzte Zellen im PM2-Fenster: **0,903 [0,881; 0,907]** (90-%-Intervall).
-- Regel: abgelehnt, wenn die obere Grenze ≥ 0,5 ist. Urteil: **abgelehnt**.
-- Gepoolt über die besetzten Zellen: Edge 3,38 bp des Nominals und 39,9 bp des PM2-Kapitals.
-- Rangverschiebung (Rang nach Kapital minus Rang nach Nominal, Rang 1 = höchster Edge): Median |Δ| 14,0, grösste |Δ| 72.
-- Bootstrap: jede Replikation enthält mindestens 173 der 173 Zellen; 0 Replikationen ohne ρ.
-- 20 Fills mit K_PM2 ≤ 0 bleiben in den Summen (Nachtrag 4); nicht endlich: 0.
+- Spearman ρ between edge in bp of notional and edge per PM2 capital over 173 populated cells in the PM2 window: **0.903 [0.881; 0.907]** (90 % interval).
+- Rule: rejected if the upper bound is ≥ 0.5. Verdict: **rejected**.
+- Pooled over the populated cells: edge 3.38 bp of notional and 39.9 bp of PM2 capital.
+- Rank shift (rank by capital minus rank by notional, rank 1 = highest edge): median |Δ| 14.0, largest |Δ| 72.
+- Bootstrap: every replication contains at least 173 of the 173 cells; 0 replications without ρ.
+- 20 fills with K_PM2 ≤ 0 stay in the sums (Addendum 4); not finite: 0.
 
-| Basiswert | Zellen | Fills | Edge bp Nominal | Edge bp PM2-Kapital | ρ je Basiswert (explorativ) |
+| Underlying | Cells | Fills | Edge bp notional | Edge bp PM2 capital | ρ per underlying (exploratory) |
 |---|---:|---:|---:|---:|---|
-| BTC | 60 | 97 370 | 1,50 | 20,1 | 0,892 [0,871; 0,915] |
-| ETH | 68 | 193 326 | 2,98 | 37,8 | 0,922 [0,886; 0,925] |
-| HYPE | 45 | 41 117 | 13,48 | 90,8 | 0,888 [0,818; 0,911] |
+| BTC | 60 | 97 370 | 1.50 | 20.1 | 0.892 [0.871; 0.915] |
+| ETH | 68 | 193 326 | 2.98 | 37.8 | 0.922 [0.886; 0.925] |
+| HYPE | 45 | 41 117 | 13.48 | 90.8 | 0.888 [0.818; 0.911] |
 
-Grösste Rangverschiebungen (negativ: die Zelle rückt unter Kapital nach vorn):
+Largest rank shifts (negative: the cell moves up under capital):
 
-| Zelle | Fills | Edge bp Nominal | Rang | Edge bp Kapital | Rang | Verschiebung |
+| Cell | Fills | Edge bp notional | Rank | Edge bp capital | Rank | Shift |
 |---|---:|---:|---:|---:|---:|---:|
-| BTC\|buy\|00-10\|2-7d | 2 149 | 2,63 | 76 | 2 270,0 | 4 | −72 |
-| ETH\|buy\|00-10\|2-7d | 2 905 | 2,63 | 77 | 1 372,4 | 10 | −67 |
-| BTC\|buy\|00-10\|7-30d | 1 933 | 2,85 | 72 | 1 433,8 | 9 | −63 |
-| ETH\|buy\|00-10\|7-30d | 2 990 | 2,83 | 73 | 839,8 | 19 | −54 |
-| BTC\|buy\|10-25\|2-7d | 3 312 | 1,67 | 84 | 401,1 | 32 | −52 |
-| BTC\|buy\|25-40\|<=2d | 2 111 | −2,56 | 127 | −505,0 | 169 | +42 |
-| HYPE\|sell\|40-60\|>90d | 474 | 27,27 | 17 | 85,4 | 60 | +43 |
-| ETH\|buy\|10-25\|<=2d | 4 689 | −0,41 | 106 | −140,2 | 151 | +45 |
-| BTC\|buy\|00-10\|<=2d | 2 057 | −1,68 | 121 | −2 282,1 | 173 | +52 |
-| BTC\|buy\|10-25\|<=2d | 2 778 | −0,81 | 111 | −383,1 | 165 | +54 |
+| BTC\|buy\|00-10\|2-7d | 2 149 | 2.63 | 76 | 2 270.0 | 4 | −72 |
+| ETH\|buy\|00-10\|2-7d | 2 905 | 2.63 | 77 | 1 372.4 | 10 | −67 |
+| BTC\|buy\|00-10\|7-30d | 1 933 | 2.85 | 72 | 1 433.8 | 9 | −63 |
+| ETH\|buy\|00-10\|7-30d | 2 990 | 2.83 | 73 | 839.8 | 19 | −54 |
+| BTC\|buy\|10-25\|2-7d | 3 312 | 1.67 | 84 | 401.1 | 32 | −52 |
+| BTC\|buy\|25-40\|<=2d | 2 111 | −2.56 | 127 | −505.0 | 169 | +42 |
+| HYPE\|sell\|40-60\|>90d | 474 | 27.27 | 17 | 85.4 | 60 | +43 |
+| ETH\|buy\|10-25\|<=2d | 4 689 | −0.41 | 106 | −140.2 | 151 | +45 |
+| BTC\|buy\|00-10\|<=2d | 2 057 | −1.68 | 121 | −2 282.1 | 173 | +52 |
+| BTC\|buy\|10-25\|<=2d | 2 778 | −0.81 | 111 | −383.1 | 165 | +54 |
 
-## H2 Grenzkosten (präregistriert)
+## H2 marginal cost (preregistered)
 
-- Median von ratio = (ΔK/Menge)/K_PM2,Einzel über 19 999 Fills: **0,0345 [0,0307; 0,0386]** (90-%-Intervall).
-- Regel: abgelehnt, wenn die obere Grenze ≥ 0,5 ist. Urteil: nicht abgelehnt.
-- Anteil ratio ≤ 0: 42,0 %. Ausgeschlossen mit K_PM2,Einzel ≤ 0: 1 von 20 000 gezogenen Fills; nicht endlich 0, Status nicht ok 0.
-- Konten (Buch zu Tagesbeginn unter PM2): M3, M5, M8, M10; Fills je Basiswert: ETH 13 594, HYPE 6 405; 372 UTC-Tage.
-- Gegenprobe: gespeicherte Spalte ratio gegen Neuberechnung, grösste Abweichung 0.
+- Median of ratio = (ΔK/amount)/K_PM2,Einzel over 19 999 fills: **0.0345 [0.0307; 0.0386]** (90 % interval).
+- Rule: rejected if the upper bound is ≥ 0.5. Verdict: not rejected.
+- Share ratio ≤ 0: 42.0 %. Excluded with K_PM2,Einzel ≤ 0: 1 of 20 000 drawn fills; not finite 0, status not ok 0.
+- Accounts (book at the start of the day under PM2): M3, M5, M8, M10; fills per underlying: ETH 13 594, HYPE 6 405; 372 UTC days.
+- Cross-check: stored column ratio against recomputation, largest deviation 0.
 
-## H3 Netting-Wert (präregistriert)
+## H3 netting value (preregistered)
 
-- Median von K_SM/K_PM2 über 1 943 Maker-Tage: **4,747 [4,662; 4,824]** (90-%-Intervall).
-- Regel: abgelehnt, wenn die untere Grenze ≤ 2,0 ist. Urteil: nicht abgelehnt.
-- 1 968 Maker-Tage im Fenster, nicht gerechnet: 24 ohne Optionen, 1 ohne Snapshot; ausgeschlossen mit K_PM2 ≤ 0: 0; 462 UTC-Tage vom 13.06.2025 bis 17.09.2026.
-- An 1 431 Tagen (73,6 %) hält das Buch mehr als 63 Optionen; K_SM ist dort kontrafaktisch (Nachtrag 4).
-- Maker-Tage je Konto: M1 120, M2 328, M3 303, M4 203, M5 374, M6 119, M7 10, M8 239, M10 247.
+- Median of K_SM/K_PM2 over 1 943 maker days: **4.747 [4.662; 4.824]** (90 % interval).
+- Rule: rejected if the lower bound is ≤ 2.0. Verdict: not rejected.
+- 1 968 maker days in the window, not computed: 24 without options, 1 without snapshot; excluded with K_PM2 ≤ 0: 0; 462 UTC days from 2025-06-13 to 2026-09-17.
+- On 1 431 days (73.6 %) the book holds more than 63 options; K_SM is counterfactual there (Addendum 4).
+- Maker days per account: M1 120, M2 328, M3 303, M4 203, M5 374, M6 119, M7 10, M8 239, M10 247.
 
-## H4 Preis des Kapitals (präregistriert)
+## H4 price of capital (preregistered)
 
-- β = **−4,60** bp des Index je Einheit log-Dosis; 90-%-Intervall [−26,04; 16,59] (Wild-Cluster-Bootstrap mit unrestringierten Residuen, beschreibend); Cluster-SE 13,09, t −0,351.
-- Einseitiges Wild-Cluster-Bootstrap-p für β > 0: 0,6224 (B = 9 999).
-- Placebo: 100 von 100 Replikationen endlich; 95. Perzentil 23,41, Median 1,15, Mittel −7,56, Spanne −101,30 bis 42,38; Anteil der Placebo-β ≥ β: 64 %.
-- Kriterien: β > 0 nein; p ≤ 0,05 nein; β über dem Placebo-P95 nein.
-- Regel: abgelehnt, wenn β nicht positiv ist mit p ≤ 0,05 oder nicht über dem 95. Perzentil der Placebo-β liegt. Urteil: **abgelehnt**.
-- Umfang: n = 91 446 Zeilen, 84 919 Fills, 13 Ereignisse mit Zellen (14 behalten), 475 Zell-Ereignis-Paare, 322 Tag-Basiswert-Gruppen, 141 Tages-Cluster.
-- Kontrollen: Herausmitteln in 53 Iterationen, Abweichung zur direkten Lösung 1,1·10⁻¹³; Panel neu gebaut identisch: ja.
+- β = **−4.60** bp of the index per unit of log dose; 90 % interval [−26.04; 16.59] (wild cluster bootstrap with unrestricted residuals, descriptive); cluster SE 13.09, t −0.351.
+- One-sided wild cluster bootstrap p for β > 0: 0.6224 (B = 9 999).
+- Placebo: 100 of 100 replications finite; 95th percentile 23.41, median 1.15, mean −7.56, range −101.30 to 42.38; share of placebo β ≥ β: 64 %.
+- Criteria: β > 0 no; p ≤ 0.05 no; β above the placebo P95 no.
+- Rule: rejected if β is not positive with p ≤ 0.05 or does not lie above the 95th percentile of the placebo β. Verdict: **rejected**.
+- Size: n = 91 446 rows, 84 919 fills, 13 events with cells (14 kept), 475 cell-event pairs, 322 day-underlying groups, 141 day clusters.
+- Checks: demeaning in 53 iterations, deviation from the direct solution 1.1·10⁻¹³; panel rebuilt identical: yes.
 
-## Explorative Sensitivitäten
+## Exploratory sensitivities
 
-Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die präregistrierte Regel der jeweiligen Hypothese auf diese Variante gäbe.
+Not preregistered as a test. "Verdict by rule" is the verdict that the preregistered rule of the respective hypothesis would give for this variant.
 
-### (a) Karten unter anderen Managern
+### (a) Maps under other managers
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| PM2, PM2-Fenster (gleich Test H1) | ρ | 0,903 [0,881; 0,907] | 173 | abgelehnt |
-| SM, ganzer Zeitraum | ρ | 0,896 [0,872; 0,903] | 177 | abgelehnt |
-| Legacy-PM, ganzer Zeitraum | ρ | 0,910 [0,885; 0,914] | 132 | abgelehnt |
-| SM auf den Fills des PM2-Fensters | ρ | 0,898 [0,873; 0,902] | 173 | abgelehnt |
-| Legacy-PM auf den Fills des PM2-Fensters | ρ | 0,908 [0,885; 0,912] | 128 | abgelehnt |
+| PM2, PM2 window (equal to test H1) | ρ | 0.903 [0.881; 0.907] | 173 | rejected |
+| SM, whole period | ρ | 0.896 [0.872; 0.903] | 177 | rejected |
+| legacy PM, whole period | ρ | 0.910 [0.885; 0.914] | 132 | rejected |
+| SM on the fills of the PM2 window | ρ | 0.898 [0.873; 0.902] | 173 | rejected |
+| legacy PM on the fills of the PM2 window | ρ | 0.908 [0.885; 0.912] | 128 | rejected |
 
-### (b) MM statt IM
+### (b) MM instead of IM
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| H1 mit MM | ρ | 0,903 [0,880; 0,907] | 173 | abgelehnt |
-| Karte SM, ganzer Zeitraum, mit MM | ρ | 0,902 [0,879; 0,910] | 177 | abgelehnt |
-| H2 mit MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0,0291 [0,0251; 0,0339] | 19 693 | nicht abgelehnt |
-| h2_ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0,0278 [0,0242; 0,0324] | 19 977 | nicht abgelehnt |
-| H3 mit MM | Median K_sm_mm/K_pm2_mm | 5,614 [5,471; 5,802] | 1 943 | nicht abgelehnt |
+| H1 with MM | ρ | 0.903 [0.880; 0.907] | 173 | rejected |
+| map SM, whole period, with MM | ρ | 0.902 [0.879; 0.910] | 177 | rejected |
+| H2 with MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0.0291 [0.0251; 0.0339] | 19 693 | not rejected |
+| h2_ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0.0278 [0.0242; 0.0324] | 19 977 | not rejected |
+| H3 with MM | Median K_sm_mm/K_pm2_mm | 5.614 [5.471; 5.802] | 1 943 | not rejected |
 
-### (c) Netto-Edge in der Form von Paper 1 (Gebühr und Rabatt ungeteilt)
+### (c) Net edge in the form of Paper 1 (fee and rebate undivided)
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| H1 mit Netto-Edge wie Paper 1 | ρ | 0,913 [0,879; 0,915] | 173 | abgelehnt |
+| H1 with net edge as in Paper 1 | ρ | 0.913 [0.879; 0.915] | 173 | rejected |
 
-### (d) H2-Varianten
+### (d) H2 variants
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| ratio (gleich Test H2) | Median dK_per_contract/K_single_pm2 | 0,0345 [0,0307; 0,0386] | 19 999 | nicht abgelehnt |
-| nächster einzelner Kontrakt (ratio_unit) | Median dK_unit/K_single_pm2 | 0,0329 [0,0295; 0,0366] | 19 999 | nicht abgelehnt |
-| Buch aus dem Tape | Median dK_tape_per_contract/K_single_pm2 | 0,0340 [0,0305; 0,0382] | 19 999 | nicht abgelehnt |
-| MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0,0291 [0,0251; 0,0339] | 19 693 | nicht abgelehnt |
-| ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0,0278 [0,0242; 0,0324] | 19 977 | nicht abgelehnt |
-| Konto M3 | Median dK_per_contract/K_single_pm2 | 0,0230 [0,0126; 0,0356] | 6 405 | nicht abgelehnt |
-| Konto M5 | Median dK_per_contract/K_single_pm2 | 0,0505 [0,0387; 0,0743] | 5 957 | nicht abgelehnt |
-| Konto M8 | Median dK_per_contract/K_single_pm2 | 0,0449 [0,0376; 0,0625] | 4 296 | nicht abgelehnt |
-| Konto M10 | Median dK_per_contract/K_single_pm2 | 0,0258 [0,0220; 0,0293] | 3 341 | nicht abgelehnt |
-| Basiswert ETH | Median dK_per_contract/K_single_pm2 | 0,0378 [0,0342; 0,0421] | 13 594 | nicht abgelehnt |
-| Basiswert HYPE | Median dK_per_contract/K_single_pm2 | 0,0230 [0,0126; 0,0356] | 6 405 | nicht abgelehnt |
-| Regime R1 | Median dK_per_contract/K_single_pm2 | 0,0503 [0,0411; 0,0693] | 5 137 | nicht abgelehnt |
-| Regime R2 | Median dK_per_contract/K_single_pm2 | 0,0372 [0,0305; 0,0466] | 7 906 | nicht abgelehnt |
-| Regime R3 | Median dK_per_contract/K_single_pm2 | 0,0117 [−0,0012; 0,0220] | 5 593 | nicht abgelehnt |
-| Regime R4 | Median dK_per_contract/K_single_pm2 | 0,0899 [0,0241; 0,1639] | 1 363 | nicht abgelehnt |
+| ratio (equal to test H2) | Median dK_per_contract/K_single_pm2 | 0.0345 [0.0307; 0.0386] | 19 999 | not rejected |
+| next single contract (ratio_unit) | Median dK_unit/K_single_pm2 | 0.0329 [0.0295; 0.0366] | 19 999 | not rejected |
+| book from the tape | Median dK_tape_per_contract/K_single_pm2 | 0.0340 [0.0305; 0.0382] | 19 999 | not rejected |
+| MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0.0291 [0.0251; 0.0339] | 19 693 | not rejected |
+| ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0.0278 [0.0242; 0.0324] | 19 977 | not rejected |
+| account M3 | Median dK_per_contract/K_single_pm2 | 0.0230 [0.0126; 0.0356] | 6 405 | not rejected |
+| account M5 | Median dK_per_contract/K_single_pm2 | 0.0505 [0.0387; 0.0743] | 5 957 | not rejected |
+| account M8 | Median dK_per_contract/K_single_pm2 | 0.0449 [0.0376; 0.0625] | 4 296 | not rejected |
+| account M10 | Median dK_per_contract/K_single_pm2 | 0.0258 [0.0220; 0.0293] | 3 341 | not rejected |
+| underlying ETH | Median dK_per_contract/K_single_pm2 | 0.0378 [0.0342; 0.0421] | 13 594 | not rejected |
+| underlying HYPE | Median dK_per_contract/K_single_pm2 | 0.0230 [0.0126; 0.0356] | 6 405 | not rejected |
+| regime R1 | Median dK_per_contract/K_single_pm2 | 0.0503 [0.0411; 0.0693] | 5 137 | not rejected |
+| regime R2 | Median dK_per_contract/K_single_pm2 | 0.0372 [0.0305; 0.0466] | 7 906 | not rejected |
+| regime R3 | Median dK_per_contract/K_single_pm2 | 0.0117 [−0.0012; 0.0220] | 5 593 | not rejected |
+| regime R4 | Median dK_per_contract/K_single_pm2 | 0.0899 [0.0241; 0.1639] | 1 363 | not rejected |
 
-### (e) H3-Varianten
+### (e) H3 variants
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| K_SM/K_PM2 (gleich Test H3) | Median K_sm/K_pm2 | 4,747 [4,662; 4,824] | 1 943 | nicht abgelehnt |
-| K_SM/K_PM2 mit MM | Median K_sm_mm/K_pm2_mm | 5,614 [5,471; 5,802] | 1 943 | nicht abgelehnt |
-| K_SM/K_PM, BTC- und ETH-Beine | Median K_sm_be/K_pm_be | 3,245 [3,174; 3,295] | 1 640 | nicht abgelehnt |
-| K_PM/K_PM2, BTC- und ETH-Beine | Median K_pm_be/K_pm2_be | 1,545 [1,535; 1,554] | 1 640 | beschreibend |
-| K_SM/K_PM2, BTC- und ETH-Beine | Median K_sm_be/K_pm2_be | 4,826 [4,746; 4,926] | 1 640 | nicht abgelehnt |
-| Tage mit höchstens 63 Optionen | Median K_sm/K_pm2 | 1,590 [1,532; 1,662] | 512 | abgelehnt |
-| Tage mit mehr als 63 Optionen | Median K_sm/K_pm2 | 5,465 [5,345; 5,606] | 1 431 | nicht abgelehnt |
-| Konto M1 | Median K_sm/K_pm2 | 5,294 [4,942; 5,472] | 120 | nicht abgelehnt |
-| Konto M2 | Median K_sm/K_pm2 | 1,076 [1,049; 1,111] | 328 | abgelehnt |
-| Konto M3 | Median K_sm/K_pm2 | 4,357 [4,193; 4,559] | 303 | nicht abgelehnt |
-| Konto M4 | Median K_sm/K_pm2 | 8,722 [7,524; 9,296] | 203 | nicht abgelehnt |
-| Konto M5 | Median K_sm/K_pm2 | 5,444 [5,216; 5,671] | 374 | nicht abgelehnt |
-| Konto M6 | Median K_sm/K_pm2 | 4,239 [3,987; 4,439] | 119 | nicht abgelehnt |
-| Konto M7 | Median K_sm/K_pm2 | 6,311 [4,925; 12,243] | 10 | nicht abgelehnt |
-| Konto M8 | Median K_sm/K_pm2 | 5,257 [5,134; 5,361] | 239 | nicht abgelehnt |
-| Konto M10 | Median K_sm/K_pm2 | 5,663 [5,329; 5,924] | 247 | nicht abgelehnt |
-| Regime R1 | Median K_sm/K_pm2 | 4,440 [4,272; 4,592] | 990 | nicht abgelehnt |
-| Regime R2 | Median K_sm/K_pm2 | 4,675 [4,496; 4,788] | 590 | nicht abgelehnt |
-| Regime R3 | Median K_sm/K_pm2 | 5,720 [5,447; 5,940] | 279 | nicht abgelehnt |
-| Regime R4 | Median K_sm/K_pm2 | 6,001 [5,756; 6,620] | 84 | nicht abgelehnt |
-| Manager des Kontos PM | Median K_sm/K_pm2 | 5,457 [5,291; 5,719] | 452 | nicht abgelehnt |
-| Manager des Kontos PM2 | Median K_sm/K_pm2 | 5,161 [5,068; 5,262] | 1 163 | nicht abgelehnt |
-| Manager des Kontos SM | Median K_sm/K_pm2 | 1,076 [1,049; 1,111] | 328 | abgelehnt |
-| Tage mit höchstens 63 Optionen ohne SM-Konto | Median K_sm/K_pm2 | 3,780 [3,635; 3,980] | 184 | nicht abgelehnt |
+| K_SM/K_PM2 (equal to test H3) | Median K_sm/K_pm2 | 4.747 [4.662; 4.824] | 1 943 | not rejected |
+| K_SM/K_PM2 with MM | Median K_sm_mm/K_pm2_mm | 5.614 [5.471; 5.802] | 1 943 | not rejected |
+| K_SM/K_PM, BTC and ETH legs | Median K_sm_be/K_pm_be | 3.245 [3.174; 3.295] | 1 640 | not rejected |
+| K_PM/K_PM2, BTC and ETH legs | Median K_pm_be/K_pm2_be | 1.545 [1.535; 1.554] | 1 640 | descriptive |
+| K_SM/K_PM2, BTC and ETH legs | Median K_sm_be/K_pm2_be | 4.826 [4.746; 4.926] | 1 640 | not rejected |
+| days with at most 63 options | Median K_sm/K_pm2 | 1.590 [1.532; 1.662] | 512 | rejected |
+| days with more than 63 options | Median K_sm/K_pm2 | 5.465 [5.345; 5.606] | 1 431 | not rejected |
+| account M1 | Median K_sm/K_pm2 | 5.294 [4.942; 5.472] | 120 | not rejected |
+| account M2 | Median K_sm/K_pm2 | 1.076 [1.049; 1.111] | 328 | rejected |
+| account M3 | Median K_sm/K_pm2 | 4.357 [4.193; 4.559] | 303 | not rejected |
+| account M4 | Median K_sm/K_pm2 | 8.722 [7.524; 9.296] | 203 | not rejected |
+| account M5 | Median K_sm/K_pm2 | 5.444 [5.216; 5.671] | 374 | not rejected |
+| account M6 | Median K_sm/K_pm2 | 4.239 [3.987; 4.439] | 119 | not rejected |
+| account M7 | Median K_sm/K_pm2 | 6.311 [4.925; 12.243] | 10 | not rejected |
+| account M8 | Median K_sm/K_pm2 | 5.257 [5.134; 5.361] | 239 | not rejected |
+| account M10 | Median K_sm/K_pm2 | 5.663 [5.329; 5.924] | 247 | not rejected |
+| regime R1 | Median K_sm/K_pm2 | 4.440 [4.272; 4.592] | 990 | not rejected |
+| regime R2 | Median K_sm/K_pm2 | 4.675 [4.496; 4.788] | 590 | not rejected |
+| regime R3 | Median K_sm/K_pm2 | 5.720 [5.447; 5.940] | 279 | not rejected |
+| regime R4 | Median K_sm/K_pm2 | 6.001 [5.756; 6.620] | 84 | not rejected |
+| manager of the account PM | Median K_sm/K_pm2 | 5.457 [5.291; 5.719] | 452 | not rejected |
+| manager of the account PM2 | Median K_sm/K_pm2 | 5.161 [5.068; 5.262] | 1 163 | not rejected |
+| manager of the account SM | Median K_sm/K_pm2 | 1.076 [1.049; 1.111] | 328 | rejected |
+| days with at most 63 options without SM account | Median K_sm/K_pm2 | 3.780 [3.635; 3.980] | 184 | not rejected |
 
-### (f) Zeitnormierung
+### (f) Time normalisation
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| bis zum Verfall, annualisiert | ρ (Edge je Kapital und Jahr) | 0,806 [0,761; 0,813] | 173 | abgelehnt |
-| empirische Haltedauer | ρ (Edge je Kapital und Jahr) | 0,833 [0,795; 0,841] | 173 | abgelehnt |
-| Haltedauer ohne Transfers | ρ (Edge je Kapital und Jahr) | 0,822 [0,780; 0,831] | 167 | abgelehnt |
+| to expiry, annualised | ρ (edge per capital and year) | 0.806 [0.761; 0.813] | 173 | rejected |
+| empirical holding time | ρ (edge per capital and year) | 0.833 [0.795; 0.841] | 173 | rejected |
+| holding time without transfers | ρ (edge per capital and year) | 0.822 [0.780; 0.831] | 167 | rejected |
 
-### (g) Werte je Basiswert
+### (g) Values per underlying
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| BTC, PM2-Fenster | ρ | 0,892 [0,871; 0,915] | 60 | abgelehnt |
-| BTC, SM, ganzer Zeitraum | ρ | 0,911 [0,882; 0,926] | 63 | abgelehnt |
-| ETH, PM2-Fenster | ρ | 0,922 [0,886; 0,925] | 68 | abgelehnt |
-| ETH, SM, ganzer Zeitraum | ρ | 0,890 [0,857; 0,903] | 69 | abgelehnt |
-| HYPE, PM2-Fenster | ρ | 0,888 [0,818; 0,911] | 45 | abgelehnt |
-| HYPE, SM, ganzer Zeitraum | ρ | 0,887 [0,817; 0,910] | 45 | abgelehnt |
+| BTC, PM2 window | ρ | 0.892 [0.871; 0.915] | 60 | rejected |
+| BTC, SM, whole period | ρ | 0.911 [0.882; 0.926] | 63 | rejected |
+| ETH, PM2 window | ρ | 0.922 [0.886; 0.925] | 68 | rejected |
+| ETH, SM, whole period | ρ | 0.890 [0.857; 0.903] | 69 | rejected |
+| HYPE, PM2 window | ρ | 0.888 [0.818; 0.911] | 45 | rejected |
+| HYPE, SM, whole period | ρ | 0.887 [0.817; 0.910] | 45 | rejected |
 
-### (h) Vorzeichenstruktur von H1 (Review-Runde 1; Gruppen nach dem Vorzeichen des Edge wählen ihre Zellen in jeder Replikation neu, Audit A04)
+### (h) Sign structure of H1 (review round 1; groups by the sign of the edge choose their cells anew in every replication, audit A04)
 
-| Variante | Grösse | Wert [90-%-Intervall] | n | Urteil nach Regel |
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
 |---|---|---|---:|---|
-| nur Zellen mit Edge > 0 | ρ | 0,634 [0,572; 0,702] | 99 | abgelehnt |
-| nur Zellen mit Edge ≤ 0 | ρ | 0,636 [0,460; 0,684] | 74 | abgelehnt |
-| nur Maker-Verkäufe | ρ | 0,990 [0,985; 0,992] | 86 | abgelehnt |
-| nur Maker-Käufe | ρ | 0,721 [0,689; 0,784] | 87 | abgelehnt |
-| Maker-Verkäufe mit Edge > 0 | ρ | 0,940 [0,924; 0,968] | 38 | abgelehnt |
-| Maker-Käufe mit Edge > 0 | ρ | 0,243 [0,207; 0,446] | 61 | nicht abgelehnt |
+| only cells with edge > 0 | ρ | 0.634 [0.572; 0.702] | 99 | rejected |
+| only cells with edge ≤ 0 | ρ | 0.636 [0.460; 0.684] | 74 | rejected |
+| only maker sells | ρ | 0.990 [0.985; 0.992] | 86 | rejected |
+| only maker buys | ρ | 0.721 [0.689; 0.784] | 87 | rejected |
+| maker sells with edge > 0 | ρ | 0.940 [0.924; 0.968] | 38 | rejected |
+| maker buys with edge > 0 | ρ | 0.243 [0.207; 0.446] | 61 | not rejected |
 
-### (h) H4-Varianten
+### (h) H4 variants
 
-| Variante | β | 90-%-Intervall | p | n | Placebo-P95 | Anteil Placebo-β ≥ β | Urteil nach Regel |
+| Variant | β | 90 % interval | p | n | Placebo P95 | Share placebo β ≥ β | Verdict by rule |
 |---|---:|---|---:|---:|---:|---:|---|
-| nur BTC (5 Ereignisse) | −3,42 | [−10,51; 3,57] | 0,7497 | 24 598 | – | – | – |
-| nur ETH (5 Ereignisse) | −1,90 | [−8,36; 4,68] | 0,6690 | 53 378 | – | – | – |
-| nur HYPE (3 Ereignisse) | −10,12 | [−85,84; 64,68] | 0,5778 | 13 470 | – | – | – |
-| ohne Zellen mit \|d\| > 1 | −4,60 | [−26,04; 16,59] | 0,6224 | 91 446 | 23,41 | 65 % | abgelehnt |
-| Placebo-Abstand zu allen Zeitlinien | −4,60 | [−26,04; 16,59] | 0,6224 | 91 446 | 21,57 | 88 % | abgelehnt |
-| Placebos nur Ereignisse mit Zellen, Fenster getrennt | −4,60 | [−26,04; 16,59] | 0,6224 | 91 446 | 26,02 | 48 % | abgelehnt |
-| Dosis als Median der log-Verhältnisse | −4,52 | [−26,50; 17,29] | 0,6161 | 91 446 | – | – | – |
-| Dosis ohne Fills mit \|log-Verhältnis\| > 1 | −4,08 | [−25,66; 17,26] | 0,6070 | 91 446 | – | – | – |
+| only BTC (5 events) | −3.42 | [−10.51; 3.57] | 0.7497 | 24 598 | n/a | n/a | n/a |
+| only ETH (5 events) | −1.90 | [−8.36; 4.68] | 0.6690 | 53 378 | n/a | n/a | n/a |
+| only HYPE (3 events) | −10.12 | [−85.84; 64.68] | 0.5778 | 13 470 | n/a | n/a | n/a |
+| without cells with \|d\| > 1 | −4.60 | [−26.04; 16.59] | 0.6224 | 91 446 | 23.41 | 65 % | rejected |
+| placebo distance to all timelines | −4.60 | [−26.04; 16.59] | 0.6224 | 91 446 | 21.57 | 88 % | rejected |
+| placebos only for events with cells, windows separate | −4.60 | [−26.04; 16.59] | 0.6224 | 91 446 | 26.02 | 48 % | rejected |
+| dose as the median of the log ratios | −4.52 | [−26.50; 17.29] | 0.6161 | 91 446 | n/a | n/a | n/a |
+| dose without fills with \|log ratio\| > 1 | −4.08 | [−25.66; 17.26] | 0.6070 | 91 446 | n/a | n/a | n/a |
 
-- Zellen mit \|d\| > 1: HYPE-pm2-20260820 HYPE|buy|00-10|2-7d (d = −1,648). Im echten Panel fallen 0 Zeilen weg; die Variante wirkt sonst nur in den Placebo-Panels.
-- Abstand zu allen Zeitlinien: Placebo-Termine halten 28 Tage Abstand zu jeder Parameteränderung des Basiswerts unter SM, Legacy-PM, PM2-Standard-Lib und den Konto-Libs.
-- Placebos nur für Ereignisse mit Zellen im echten Panel, Placebo-Fenster eines Basiswerts ohne Überlappung (Audit A29): 8 bis 10 Ereignisse je Replikation (Median 9); sd(t) der Placebos 1,77.
+- Cells with \|d\| > 1: HYPE-pm2-20260820 HYPE|buy|00-10|2-7d (d = −1.648). In the real panel 0 rows drop out; otherwise the variant acts only in the placebo panels.
+- Distance to all timelines: placebo dates keep 28 days away from every parameter change of the underlying under SM, legacy PM, the PM2 standard lib and the account libs.
+- Placebos only for events with cells in the real panel, placebo windows of an underlying without overlap (audit A29): 8 to 10 events per replication (median 9); sd(t) of the placebos 1.77.
 
-## Referenzbuch-Effekte der Ereignisse
+## Reference book effects of the events
 
-Referenzbuch: Short-Straddle ATM (Strike = Forward) des Verfalls nahe 30 Tagen, 1 Kontrakt je Bein, täglich 08:00 UTC; K_vorher rechnet dasselbe Buch im selben Marktzustand mit den Parametern von 24 h früher (reiner Parametereffekt, `results/p2/reference_book.csv`). Zeile je Ereignis aus `results/p2/events.csv`; der Referenzbuch-Tag ist der erste Tag, dessen Parameterstand aus dem Ereignis stammt. K in bp des Forwards.
+Reference book: short straddle ATM (strike = forward) of the expiry near 30 days, 1 contract per leg, daily at 08:00 UTC; K before computes the same book in the same market state with the parameters of 24 h earlier (pure parameter effect, `results/p2/reference_book.csv`). One row per event from `results/p2/events.csv`; the reference book day is the first day whose parameter state stems from the event. K in bp of the forward.
 
-| Ereignis | Zeitpunkt | Geänderte Strukturen | max. \|Dosis\| | behalten | Panel-Zellen | Referenzbuch-Tag | K vorher | K nachher | Änderung |
+| Event | Time | Changed structures | max. \|dose\| | kept | Panel cells | Reference book day | K before | K after | Change |
 |---|---|---|---:|---|---:|---|---:|---:|---:|
-| BTC-pm-20240612 | 12.06.2024 00:01 UTC | Basis | 0,06 % | nein | 0 | 12.06.2024 | 2 331 | 2 331 | 0,00 % |
-| ETH-pm-20240612 | 12.06.2024 00:01 UTC | Basis | 0,06 % | nein | 0 | 12.06.2024 | 2 412 | 2 412 | 0,00 % |
-| BTC-pm-20250222 | 22.02.2025 19:52 UTC | Basis, Kontingenzen, Vol-Schock, Szenarien | 28,26 % | ja | 25 | 23.02.2025 | 2 303 | 1 913 | −16,94 % |
-| ETH-pm-20250222 | 22.02.2025 19:52 UTC | Basis, Kontingenzen, Vol-Schock, Szenarien | 27,83 % | ja | 50 | 23.02.2025 | 2 458 | 2 035 | −17,21 % |
-| BTC-pm2-20251010 | 10.10.2025 22:55 UTC | Kontingenzen | 0,00 % | nein | 0 | 11.10.2025 | 1 435 | 1 435 | 0,00 % |
-| ETH-pm2-20251010 | 10.10.2025 22:55 UTC | Kontingenzen | 0,00 % | nein | 0 | 11.10.2025 | 1 419 | 1 419 | 0,00 % |
-| BTC-pm2-20260108 | 08.01.2026 22:50 UTC | Margin | 3,60 % | ja | 25 | 09.01.2026 | 1 440 | 1 463 | +1,61 % |
-| ETH-pm2-20260108 | 08.01.2026 22:50 UTC | Margin | 5,35 % | ja | 37 | 09.01.2026 | 1 431 | 1 454 | +1,62 % |
-| HYPE-pm2-20260108 | 08.01.2026 22:50 UTC | Margin | 2,09 % | ja | 0 | 09.01.2026 | 4 102 | 4 165 | +1,55 % |
-| BTC-pm2-20260123 | 23.01.2026 04:24 UTC | Szenarien | 27,33 % | ja | 27 | 23.01.2026 | 1 458 | 1 313 | −9,96 % |
-| ETH-pm2-20260123 | 23.01.2026 04:24 UTC | Szenarien | 27,14 % | ja | 40 | 23.01.2026 | 1 445 | 1 377 | −4,76 % |
-| HYPE-pm2-20260508 | 08.05.2026 12:24 UTC | Basis, Kontingenzen | 11,66 % | ja | 29 | 09.05.2026 | 4 193 | 3 893 | −7,16 % |
-| BTC-pm2-20260524 | 24.05.2026 04:05 UTC | Basis, Kontingenzen, Vol-Schock, Szenarien | 8,22 % | ja | 38 | 24.05.2026 | 1 319 | 1 219 | −7,54 % |
-| ETH-pm2-20260524 | 24.05.2026 04:05 UTC | Kontingenzen, Vol-Schock | 5,45 % | ja | 54 | 24.05.2026 | 1 340 | 1 296 | −3,30 % |
-| HYPE-pm2-20260524 | 24.05.2026 04:05 UTC | Basis, Margin, Kontingenzen, Vol-Schock, Szenarien | 44,21 % | ja | 35 | 24.05.2026 | 3 836 | 2 638 | −31,22 % |
-| BTC-pm2-20260820 | 20.08.2026 22:09 UTC | Basis, Kontingenzen, Vol-Schock, Szenarien | 67,47 % | ja | 43 | 21.08.2026 | 1 213 | 935 | −22,93 % |
-| ETH-pm2-20260820 | 20.08.2026 22:09 UTC | Basis, Kontingenzen, Vol-Schock, Szenarien | 51,51 % | ja | 52 | 21.08.2026 | 1 307 | 1 089 | −16,71 % |
-| HYPE-pm2-20260820 | 20.08.2026 22:09 UTC | Margin, Kontingenzen, Vol-Schock, Szenarien | 164,82 % | ja | 20 | 21.08.2026 | 2 514 | 2 051 | −18,39 % |
+| BTC-pm-20240612 | 2024-06-12 00:01 UTC | basis | 0.06 % | no | 0 | 2024-06-12 | 2 331 | 2 331 | 0.00 % |
+| ETH-pm-20240612 | 2024-06-12 00:01 UTC | basis | 0.06 % | no | 0 | 2024-06-12 | 2 412 | 2 412 | 0.00 % |
+| BTC-pm-20250222 | 2025-02-22 19:52 UTC | basis, contingencies, vol shock, scenarios | 28.26 % | yes | 25 | 2025-02-23 | 2 303 | 1 913 | −16.94 % |
+| ETH-pm-20250222 | 2025-02-22 19:52 UTC | basis, contingencies, vol shock, scenarios | 27.83 % | yes | 50 | 2025-02-23 | 2 458 | 2 035 | −17.21 % |
+| BTC-pm2-20251010 | 2025-10-10 22:55 UTC | contingencies | 0.00 % | no | 0 | 2025-10-11 | 1 435 | 1 435 | 0.00 % |
+| ETH-pm2-20251010 | 2025-10-10 22:55 UTC | contingencies | 0.00 % | no | 0 | 2025-10-11 | 1 419 | 1 419 | 0.00 % |
+| BTC-pm2-20260108 | 2026-01-08 22:50 UTC | margin | 3.60 % | yes | 25 | 2026-01-09 | 1 440 | 1 463 | +1.61 % |
+| ETH-pm2-20260108 | 2026-01-08 22:50 UTC | margin | 5.35 % | yes | 37 | 2026-01-09 | 1 431 | 1 454 | +1.62 % |
+| HYPE-pm2-20260108 | 2026-01-08 22:50 UTC | margin | 2.09 % | yes | 0 | 2026-01-09 | 4 102 | 4 165 | +1.55 % |
+| BTC-pm2-20260123 | 2026-01-23 04:24 UTC | scenarios | 27.33 % | yes | 27 | 2026-01-23 | 1 458 | 1 313 | −9.96 % |
+| ETH-pm2-20260123 | 2026-01-23 04:24 UTC | scenarios | 27.14 % | yes | 40 | 2026-01-23 | 1 445 | 1 377 | −4.76 % |
+| HYPE-pm2-20260508 | 2026-05-08 12:24 UTC | basis, contingencies | 11.66 % | yes | 29 | 2026-05-09 | 4 193 | 3 893 | −7.16 % |
+| BTC-pm2-20260524 | 2026-05-24 04:05 UTC | basis, contingencies, vol shock, scenarios | 8.22 % | yes | 38 | 2026-05-24 | 1 319 | 1 219 | −7.54 % |
+| ETH-pm2-20260524 | 2026-05-24 04:05 UTC | contingencies, vol shock | 5.45 % | yes | 54 | 2026-05-24 | 1 340 | 1 296 | −3.30 % |
+| HYPE-pm2-20260524 | 2026-05-24 04:05 UTC | basis, margin, contingencies, vol shock, scenarios | 44.21 % | yes | 35 | 2026-05-24 | 3 836 | 2 638 | −31.22 % |
+| BTC-pm2-20260820 | 2026-08-20 22:09 UTC | basis, contingencies, vol shock, scenarios | 67.47 % | yes | 43 | 2026-08-21 | 1 213 | 935 | −22.93 % |
+| ETH-pm2-20260820 | 2026-08-20 22:09 UTC | basis, contingencies, vol shock, scenarios | 51.51 % | yes | 52 | 2026-08-21 | 1 307 | 1 089 | −16.71 % |
+| HYPE-pm2-20260820 | 2026-08-20 22:09 UTC | margin, contingencies, vol shock, scenarios | 164.82 % | yes | 20 | 2026-08-21 | 2 514 | 2 051 | −18.39 % |
 
-Parametereffekte im Referenzbuch ohne Ereigniszeile (ausserhalb des Manager-Fensters oder nicht in der Ereignisliste):
+Parameter effects in the reference book without an event row (outside the manager window or not in the event list):
 
-- PM2 BTC 13.06.2025: −0,35 %, Parameterstand vom 12.06.2025 22:20 UTC.
-- PM2 ETH 13.06.2025: −0,69 %, Parameterstand vom 12.06.2025 22:20 UTC.
+- PM2 BTC 2025-06-13: −0.35 %, parameter state of 2025-06-12 22:20 UTC.
+- PM2 ETH 2025-06-13: −0.69 %, parameter state of 2025-06-12 22:20 UTC.
 
-Niveau des Referenzbuchs (K in bp des Forwards über die Tage im Manager-Fenster):
+Level of the reference book (K in bp of the forward over the days in the manager window):
 
-| Basiswert | Manager | Tage | Minimum | Median | Maximum |
+| Underlying | Manager | Days | Minimum | Median | Maximum |
 |---|---|---:|---:|---:|---:|
 | BTC | SM | 981 | 2 724 | 2 945 | 3 000 |
-| BTC | Legacy-PM | 981 | 1 888 | 1 950 | 2 700 |
+| BTC | legacy PM | 981 | 1 888 | 1 950 | 2 700 |
 | BTC | PM2 | 462 | 933 | 1 369 | 1 464 |
 | ETH | SM | 981 | 2 726 | 2 956 | 3 000 |
-| ETH | Legacy-PM | 981 | 1 909 | 2 101 | 2 727 |
+| ETH | legacy PM | 981 | 1 909 | 2 101 | 2 727 |
 | ETH | PM2 | 462 | 1 078 | 1 422 | 1 589 |
 | HYPE | SM | 311 | 5 750 | 5 990 | 6 000 |
 | HYPE | PM2 | 311 | 1 997 | 4 062 | 4 375 |
 
-## Manager-Anteile am Options-OI
+## Manager shares of the options OI
 
-Anteil von `OptionAsset.totalPosition` je Manager an der Summe über die Manager, jeweils am Monatsersten (`results/p2/manager_oi_share.csv`).
+Share of `OptionAsset.totalPosition` per manager in the sum over the managers, each on the first day of the month (`results/p2/manager_oi_share.csv`).
 
-- BTC: Daten ab 01.2024; PM2 erstmals 07.2025 (17,2 %); höchstens 95,3 % (07.2026); Legacy-PM unter 1 % ab 02.2026; zuletzt (09.2026) SM 9,0 %, Legacy-PM 0,0 %, PM2 91,0 %.
-- ETH: Daten ab 02.2024; PM2 erstmals 07.2025 (12,0 %); höchstens 80,6 % (08.2026); Legacy-PM unter 1 % ab 02.2026; zuletzt (09.2026) SM 28,1 %, Legacy-PM 0,0 %, PM2 71,9 %.
-- HYPE: Daten ab 12.2025; PM2 erstmals 12.2025 (51,4 %); höchstens 93,0 % (04.2026); zuletzt (09.2026) SM 12,1 %, PM2 87,9 %.
+- BTC: data from 2024-01; PM2 first in 2025-07 (17.2 %); at most 95.3 % (2026-07); legacy PM below 1 % from 2026-02; last (2026-09) SM 9.0 %, legacy PM 0.0 %, PM2 91.0 %.
+- ETH: data from 2024-02; PM2 first in 2025-07 (12.0 %); at most 80.6 % (2026-08); legacy PM below 1 % from 2026-02; last (2026-09) SM 28.1 %, legacy PM 0.0 %, PM2 71.9 %.
+- HYPE: data from 2025-12; PM2 first in 2025-12 (51.4 %); at most 93.0 % (2026-04); last (2026-09) SM 12.1 %, PM2 87.9 %.
 
-| Monat | BTC SM | BTC Legacy-PM | BTC PM2 | ETH SM | ETH Legacy-PM | ETH PM2 | HYPE SM | HYPE PM2 |
+| Month | BTC SM | BTC legacy PM | BTC PM2 | ETH SM | ETH legacy PM | ETH PM2 | HYPE SM | HYPE PM2 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 2024-01 | 78,1 % | 21,9 % | 0,0 % | – | – | – | – | – |
-| 2024-02 | 46,0 % | 54,0 % | 0,0 % | 47,4 % | 52,6 % | 0,0 % | – | – |
-| 2024-03 | 31,9 % | 68,1 % | 0,0 % | 33,5 % | 66,5 % | 0,0 % | – | – |
-| 2024-04 | 26,0 % | 74,0 % | 0,0 % | 29,0 % | 71,0 % | 0,0 % | – | – |
-| 2024-05 | 34,8 % | 65,2 % | 0,0 % | 30,0 % | 70,0 % | 0,0 % | – | – |
-| 2024-06 | 13,3 % | 86,7 % | 0,0 % | 32,8 % | 67,2 % | 0,0 % | – | – |
-| 2024-07 | 20,5 % | 79,5 % | 0,0 % | 42,3 % | 57,7 % | 0,0 % | – | – |
-| 2024-08 | 31,0 % | 69,0 % | 0,0 % | 38,9 % | 61,1 % | 0,0 % | – | – |
-| 2024-09 | 36,7 % | 63,3 % | 0,0 % | 42,9 % | 57,1 % | 0,0 % | – | – |
-| 2024-10 | 47,0 % | 53,0 % | 0,0 % | 40,2 % | 59,8 % | 0,0 % | – | – |
-| 2024-11 | 48,7 % | 51,3 % | 0,0 % | 36,1 % | 63,9 % | 0,0 % | – | – |
-| 2024-12 | 46,5 % | 53,5 % | 0,0 % | 46,7 % | 53,3 % | 0,0 % | – | – |
-| 2025-01 | 47,1 % | 52,9 % | 0,0 % | 48,6 % | 51,4 % | 0,0 % | – | – |
-| 2025-02 | 44,1 % | 55,9 % | 0,0 % | 45,5 % | 54,5 % | 0,0 % | – | – |
-| 2025-03 | 46,1 % | 53,9 % | 0,0 % | 43,8 % | 56,2 % | 0,0 % | – | – |
-| 2025-04 | 47,9 % | 52,1 % | 0,0 % | 51,0 % | 49,0 % | 0,0 % | – | – |
-| 2025-05 | 46,7 % | 53,3 % | 0,0 % | 49,6 % | 50,4 % | 0,0 % | – | – |
-| 2025-06 | 45,5 % | 54,5 % | 0,0 % | 48,7 % | 51,3 % | 0,0 % | – | – |
-| 2025-07 | 42,2 % | 40,6 % | 17,2 % | 50,6 % | 37,4 % | 12,0 % | – | – |
-| 2025-08 | 45,6 % | 33,7 % | 20,7 % | 47,0 % | 38,9 % | 14,1 % | – | – |
-| 2025-09 | 41,4 % | 39,8 % | 18,8 % | 42,8 % | 44,1 % | 13,1 % | – | – |
-| 2025-10 | 37,5 % | 32,0 % | 30,5 % | 41,2 % | 37,5 % | 21,3 % | – | – |
-| 2025-11 | 38,5 % | 17,1 % | 44,3 % | 37,9 % | 12,1 % | 50,0 % | – | – |
-| 2025-12 | 37,8 % | 22,7 % | 39,5 % | 40,0 % | 13,1 % | 46,8 % | 48,6 % | 51,4 % |
-| 2026-01 | 38,4 % | 4,1 % | 57,5 % | 27,8 % | 8,8 % | 63,4 % | 28,7 % | 71,3 % |
-| 2026-02 | 28,7 % | 0,0 % | 71,3 % | 38,4 % | 0,2 % | 61,4 % | 46,1 % | 53,9 % |
-| 2026-03 | 14,0 % | 0,0 % | 86,0 % | 29,6 % | 0,0 % | 70,4 % | 26,2 % | 73,8 % |
-| 2026-04 | 6,1 % | 0,0 % | 93,9 % | 28,1 % | 0,0 % | 71,9 % | 7,0 % | 93,0 % |
-| 2026-05 | 7,4 % | 0,0 % | 92,6 % | 30,8 % | 0,0 % | 69,2 % | 13,9 % | 86,1 % |
-| 2026-06 | 16,4 % | 0,0 % | 83,6 % | 39,4 % | 0,0 % | 60,6 % | 16,4 % | 83,6 % |
-| 2026-07 | 4,7 % | 0,0 % | 95,3 % | 30,1 % | 0,0 % | 69,9 % | 15,9 % | 84,1 % |
-| 2026-08 | 5,1 % | 0,0 % | 94,9 % | 19,4 % | 0,0 % | 80,6 % | 12,8 % | 87,2 % |
-| 2026-09 | 9,0 % | 0,0 % | 91,0 % | 28,1 % | 0,0 % | 71,9 % | 12,1 % | 87,9 % |
+| 2024-01 | 78.1 % | 21.9 % | 0.0 % | n/a | n/a | n/a | n/a | n/a |
+| 2024-02 | 46.0 % | 54.0 % | 0.0 % | 47.4 % | 52.6 % | 0.0 % | n/a | n/a |
+| 2024-03 | 31.9 % | 68.1 % | 0.0 % | 33.5 % | 66.5 % | 0.0 % | n/a | n/a |
+| 2024-04 | 26.0 % | 74.0 % | 0.0 % | 29.0 % | 71.0 % | 0.0 % | n/a | n/a |
+| 2024-05 | 34.8 % | 65.2 % | 0.0 % | 30.0 % | 70.0 % | 0.0 % | n/a | n/a |
+| 2024-06 | 13.3 % | 86.7 % | 0.0 % | 32.8 % | 67.2 % | 0.0 % | n/a | n/a |
+| 2024-07 | 20.5 % | 79.5 % | 0.0 % | 42.3 % | 57.7 % | 0.0 % | n/a | n/a |
+| 2024-08 | 31.0 % | 69.0 % | 0.0 % | 38.9 % | 61.1 % | 0.0 % | n/a | n/a |
+| 2024-09 | 36.7 % | 63.3 % | 0.0 % | 42.9 % | 57.1 % | 0.0 % | n/a | n/a |
+| 2024-10 | 47.0 % | 53.0 % | 0.0 % | 40.2 % | 59.8 % | 0.0 % | n/a | n/a |
+| 2024-11 | 48.7 % | 51.3 % | 0.0 % | 36.1 % | 63.9 % | 0.0 % | n/a | n/a |
+| 2024-12 | 46.5 % | 53.5 % | 0.0 % | 46.7 % | 53.3 % | 0.0 % | n/a | n/a |
+| 2025-01 | 47.1 % | 52.9 % | 0.0 % | 48.6 % | 51.4 % | 0.0 % | n/a | n/a |
+| 2025-02 | 44.1 % | 55.9 % | 0.0 % | 45.5 % | 54.5 % | 0.0 % | n/a | n/a |
+| 2025-03 | 46.1 % | 53.9 % | 0.0 % | 43.8 % | 56.2 % | 0.0 % | n/a | n/a |
+| 2025-04 | 47.9 % | 52.1 % | 0.0 % | 51.0 % | 49.0 % | 0.0 % | n/a | n/a |
+| 2025-05 | 46.7 % | 53.3 % | 0.0 % | 49.6 % | 50.4 % | 0.0 % | n/a | n/a |
+| 2025-06 | 45.5 % | 54.5 % | 0.0 % | 48.7 % | 51.3 % | 0.0 % | n/a | n/a |
+| 2025-07 | 42.2 % | 40.6 % | 17.2 % | 50.6 % | 37.4 % | 12.0 % | n/a | n/a |
+| 2025-08 | 45.6 % | 33.7 % | 20.7 % | 47.0 % | 38.9 % | 14.1 % | n/a | n/a |
+| 2025-09 | 41.4 % | 39.8 % | 18.8 % | 42.8 % | 44.1 % | 13.1 % | n/a | n/a |
+| 2025-10 | 37.5 % | 32.0 % | 30.5 % | 41.2 % | 37.5 % | 21.3 % | n/a | n/a |
+| 2025-11 | 38.5 % | 17.1 % | 44.3 % | 37.9 % | 12.1 % | 50.0 % | n/a | n/a |
+| 2025-12 | 37.8 % | 22.7 % | 39.5 % | 40.0 % | 13.1 % | 46.8 % | 48.6 % | 51.4 % |
+| 2026-01 | 38.4 % | 4.1 % | 57.5 % | 27.8 % | 8.8 % | 63.4 % | 28.7 % | 71.3 % |
+| 2026-02 | 28.7 % | 0.0 % | 71.3 % | 38.4 % | 0.2 % | 61.4 % | 46.1 % | 53.9 % |
+| 2026-03 | 14.0 % | 0.0 % | 86.0 % | 29.6 % | 0.0 % | 70.4 % | 26.2 % | 73.8 % |
+| 2026-04 | 6.1 % | 0.0 % | 93.9 % | 28.1 % | 0.0 % | 71.9 % | 7.0 % | 93.0 % |
+| 2026-05 | 7.4 % | 0.0 % | 92.6 % | 30.8 % | 0.0 % | 69.2 % | 13.9 % | 86.1 % |
+| 2026-06 | 16.4 % | 0.0 % | 83.6 % | 39.4 % | 0.0 % | 60.6 % | 16.4 % | 83.6 % |
+| 2026-07 | 4.7 % | 0.0 % | 95.3 % | 30.1 % | 0.0 % | 69.9 % | 15.9 % | 84.1 % |
+| 2026-08 | 5.1 % | 0.0 % | 94.9 % | 19.4 % | 0.0 % | 80.6 % | 12.8 % | 87.2 % |
+| 2026-09 | 9.0 % | 0.0 % | 91.0 % | 28.1 % | 0.0 % | 71.9 % | 12.1 % | 87.9 % |
 
-## Review-Runde 1 (explorativ oder beschreibend)
+## Review round 1 (exploratory or descriptive)
 
-- H1, nur Vorzeichen: Mischt man die Ränge innerhalb der 99 Zellen mit Edge > 0 und der 74 übrigen (4 000 Ziehungen), ist ρ im Mittel 0,734 (5. bis 95. Perzentil 0,700 bis 0,770).
-- H1 innerhalb von Gruppen: Edge > 0 0,634 (n = 99), Edge ≤ 0 0,636 (n = 74), Verkäufe 0,990, Käufe 0,721, Käufe mit Edge > 0 0,243 (n = 61).
-- Beste Zellen: von den zehn besten je Kapital 1 unter den zehn besten je Nominal, von den besten 20 5; gleiches Vorzeichen in 173 Zellen.
-- H2: Population vor der Ziehung 100 995 Fills; die präregistrierte Ziehung ergibt genau die Fills von marginal.parquet: ja.
-- H3-Konten nach Manager: PM 4, PM2 4, SM 1.
-- H3: 8 von 9 Kontomedianen über der Schwelle 2; höchstens 63 Optionen ohne SM-Konto 3,780 [3,635; 3,980] (n = 184).
-- H3: 127 Maker-Tage mit mehr Beinen als das grösste validierte Buch (245 Beine).
-- Fills ausserhalb jedes Manager-Fensters (ohne Kapital): 6.
-- API gegen Chain-Semantik (195 Einzelkontrakte am 25.09.2026): PM2 Median |rel| 0,08 %, p95 0,50 %, Maximum 2,41 % (Laufzeit >90d); SM Median 0,00 %, Maximum 0,30 %.
-- H4 Niveau: Halbspread im Panel im Mittel 7,93 bp des Index (Median 3,34); Kapital zehn Prozent billiger (Dosis −0,105): Änderung des Halbspreads +0,48 bp, Intervall −1,75 bis +2,74 bp.
-- H4 nur Verkaufszellen: β −3,81, p 0,5766; OI-gewichtete Dosis (Anteil 54,5 % bis 94,9 %): β −5,13, p 0,5926.
+- H1, sign only: shuffling the ranks within the 99 cells with edge > 0 and within the 74 others (4 000 draws) gives ρ 0.734 on average (5th to 95th percentile 0.700 to 0.770).
+- H1 within groups: edge > 0 0.634 (n = 99), edge ≤ 0 0.636 (n = 74), sells 0.990, buys 0.721, buys with edge > 0 0.243 (n = 61).
+- Best cells: the ten best per capital and the ten best per notional share 1 cells, the best 20 share 5; same sign in 173 cells.
+- H2: population before the draw 100 995 fills; the preregistered draw gives exactly the fills of marginal.parquet: yes.
+- H3 accounts by manager: PM 4, PM2 4, SM 1.
+- H3: 8 of 9 account medians above the threshold 2; at most 63 options without SM account 3.780 [3.635; 3.980] (n = 184).
+- H3: 127 maker days with more legs than the largest validated book (245 legs).
+- Fills outside every manager window (without capital): 6.
+- API against chain semantics (195 single contracts on 2026-09-25): PM2 median |rel| 0.08 %, p95 0.50 %, maximum 2.41 % (tenor >90d); SM median 0.00 %, maximum 0.30 %.
+- H4 level: half spread in the panel 7.93 bp of the index on average (median 3.34); capital ten per cent cheaper (dose −0.105): change of the half spread +0.48 bp, interval −1.75 to +2.74 bp.
+- H4 only sell cells: β −3.81, p 0.5766; OI-weighted dose (share 54.5 % to 94.9 %): β −5.13, p 0.5926.
 
-## Audit (explorativ)
+## Audit (exploratory)
 
-Explorativ oder beschreibend (docs/paper2/AUDIT.md); kein registriertes Urteil ändert sich.
+Exploratory or descriptive (docs/paper2/AUDIT.md); no registered verdict changes.
 
-- H1 in Vorzeichengruppen (A04, Auswahl je Replikation neu: jede Replikation wählt die Zellen nach ihrem eigenen Edge): Edge > 0 0,634 [0,572; 0,702], Edge ≤ 0 0,636 [0,460; 0,684], Verkäufe mit Edge > 0 0,940 [0,924; 0,968], Käufe mit Edge > 0 0,243 [0,207; 0,446]; im Mittel fallen je Replikation 9,2 % (Edge > 0) und 19,2 % (Edge ≤ 0) der Zellen aus ihrer Gruppe. Gruppen nach Seite bleiben fest.
-- H1-Intervall (A28): 15,2 % der 9 999 Ziehungen liegen auf oder über dem Schätzer 0,9029 (Mittel 0,8946, Median 0,8950); das Perzentilintervall [0,881; 0,907] ist nicht zentriert. Gespiegelt [0,898; 0,925], bias-korrigiert [0,898; 0,920].
-- H4, Placebo-t (A05): sd(t) 1,82 (MAD-sd 2,13), 5./95. Perzentil −2,62/2,83; Anteil t > 1,645 21 %, |t| > 1,645 43 %; sd der Placebo-β 28,7 bei Median-SE 8,8.
-- H4, an den Placebo-t kalibrierte Spanne für β: [−41,6; 29,7] (SE mal sd(t): [−43,7; 34,5]); p gegen die Placebo-t 0,62. Kapital zehn Prozent billiger: −3,13 bis +4,39 bp (SE mal sd(t): −3,64 bis +4,61 bp); grösste Verengung in der Spanne 39 % des mittleren Halbspreads 7,93 bp (beschreibendes Intervall: 22 %; SE mal sd(t): 46 %).
-- H4, Bau der Placebo-Panels (A29): je 14 Ereignisse mit Zellen je Replikation, im echten Panel 13 von 14 (ohne Zellen: HYPE-pm2-20260108); Zeilen im Median 97 997 gegen 91 446 (1,08 je Fill), Tages-Cluster im Median 189 gegen 141; Paare überlappender Fenster eines Basiswerts je Replikation im Mittel 11,6 gegen 3 im echten Panel, doppelt gezogene Tage im Mittel 0,82.
-- H4, Dosis (A30): 4 von 475 Zell-Ereignis-Paaren enthalten Fills mit |log-Verhältnis| > 1 (6 Fills), bei 6 weicht der Median um mehr als 0,05 vom Mittel ab. β mit Median-Dosis −4,52 (p 0,6161), ohne diese Fills −4,08 (p 0,6070); registriert −4,60.
+- H1 in sign groups (A04, selection anew in each replication: every replication chooses the cells by its own edge): edge > 0 0.634 [0.572; 0.702], edge ≤ 0 0.636 [0.460; 0.684], sells with edge > 0 0.940 [0.924; 0.968], buys with edge > 0 0.243 [0.207; 0.446]; on average 9.2 % (edge > 0) and 19.2 % (edge ≤ 0) of the cells leave their group per replication. Groups by side stay fixed.
+- H1 interval (A28): 15.2 % of the 9 999 draws lie on or above the estimate 0.9029 (mean 0.8946, median 0.8950); the percentile interval [0.881; 0.907] is not centred. Reflected [0.898; 0.925], bias-corrected [0.898; 0.920].
+- H4, placebo t (A05): sd(t) 1.82 (MAD sd 2.13), 5th/95th percentile −2.62/2.83; share t > 1.645 21 %, |t| > 1.645 43 %; sd of the placebo β 28.7 at a median SE of 8.8.
+- H4, range for β calibrated to the placebo t: [−41.6; 29.7] (SE times sd(t): [−43.7; 34.5]); p against the placebo t 0.62. Capital ten per cent cheaper: −3.13 to +4.39 bp (SE times sd(t): −3.64 to +4.61 bp); largest narrowing in the range 39 % of the mean half spread 7.93 bp (descriptive interval: 22 %; SE times sd(t): 46 %).
+- H4, construction of the placebo panels (A29): always 14 events with cells per replication, in the real panel 13 of 14 (without cells: HYPE-pm2-20260108); rows at the median 97 997 against 91 446 (1.08 per fill), day clusters at the median 189 against 141; pairs of overlapping windows of one underlying per replication on average 11.6 against 3 in the real panel, days drawn twice on average 0.82.
+- H4, dose (A30): 4 of 475 cell-event pairs contain fills with |log ratio| > 1 (6 fills), in 6 pairs the median departs from the mean by more than 0.05. β with the median dose −4.52 (p 0.6161), without these fills −4.08 (p 0.6070); registered −4.60.
 
-## Konsistenzprüfungen
+## Consistency checks
 
-15 von 15 Prüfungen erfüllt. Die Prüfungen rechnen die Urteile aus den Zahlen und Regeln nach und gleichen die Dateien untereinander ab.
+15 of 15 checks met. The checks recompute the verdicts from the numbers and rules and reconcile the files with one another.
 
-- Stichtag einheitlich: erfüllt (letzter Tag von H1, H3 und Referenzbuch gleich dem Tag des letzten Fills (17.09.2026), H2 endet am 17.09.2026).
-- B, Seed und Niveau in allen Dateien gleich: erfüllt (B = 9 999, Seed 20260924, Niveau 90 %).
-- Fills je Basiswert ergeben die Stichprobe: erfüllt (154 676 + 405 250 + 44 014 = 603 940).
-- PM2-Fenster: Kapitaldatei und H1 zählen gleich: erfüllt (336 087 gegen 336 087).
-- Validierung: alle Zellen unter der Schwelle: erfüllt (32 von 32 Zellen).
-- H1: ρ aus h1_cells.csv gleich h1.json: erfüllt (0,902944 gegen 0,902944).
-- H1: besetzte Zellen und Fills gleich h1.json: erfüllt (173 Zellen, 331 813 Fills).
-- H1: Urteil folgt aus der Regel (obere Grenze ≥ Schwelle): erfüllt (obere Grenze 0,907, Schwelle 0,5).
-- H2: Urteil folgt aus der Regel (obere Grenze ≥ Schwelle): erfüllt (obere Grenze 0,0386, Schwelle 0,5).
-- H2: gespeicherte ratio gleich Neuberechnung: erfüllt (grösste Abweichung 0).
-- H3: Urteil folgt aus der Regel (untere Grenze ≤ Schwelle): erfüllt (untere Grenze 4,662, Schwelle 2,0).
-- H4: Kriterien und Urteil folgen aus β, p und Placebo-P95: erfüllt (β −4,60, p 0,6224, P95 23,41).
-- H4: Herausmitteln gleich direkter Lösung, Panel reproduziert: erfüllt (Abweichung 1,1·10⁻¹³, Panel neu gebaut identisch: ja).
-- H4: behaltene Ereignisse in events.csv gleich h4.json: erfüllt (14 gegen 14).
-- Sensitivitäten: Grundvariante gleich dem Test: erfüllt (3 von 3 gleich).
+- Cut-off day consistent: met (last day of H1, H3 and the reference book equal to the day of the last fill (2026-09-17), H2 ends on 2026-09-17).
+- B, seed and level equal in all files: met (B = 9 999, seed 20260924, level 90 %).
+- Fills per underlying add up to the sample: met (154 676 + 405 250 + 44 014 = 603 940).
+- PM2 window: capital file and H1 count the same: met (336 087 against 336 087).
+- Validation: all cells below the threshold: met (32 of 32 cells).
+- H1: ρ from h1_cells.csv equal to h1.json: met (0.902944 against 0.902944).
+- H1: populated cells and fills equal to h1.json: met (173 cells, 331 813 fills).
+- H1: verdict follows from the rule (upper bound ≥ threshold): met (upper bound 0.907, threshold 0.5).
+- H2: verdict follows from the rule (upper bound ≥ threshold): met (upper bound 0.0386, threshold 0.5).
+- H2: stored ratio equal to recomputation: met (largest deviation 0).
+- H3: verdict follows from the rule (lower bound ≤ threshold): met (lower bound 4.662, threshold 2.0).
+- H4: criteria and verdict follow from β, p and the placebo P95: met (β −4.60, p 0.6224, P95 23.41).
+- H4: demeaning equal to the direct solution, panel reproduced: met (deviation 1.1·10⁻¹³, panel rebuilt identical: yes).
+- H4: kept events in events.csv equal to h4.json: met (14 against 14).
+- Sensitivities: base variant equal to the test: met (3 of 3 equal).
 
-## Einschränkungen dieser Zahlen
+## Limitations of these numbers
 
-- Pilotstand: Die Stichprobe endet am 17.09.2026 11:51:53 UTC, vor dem präregistrierten Ende (30.09.2026 08:00 UTC). Die Zahlen des Manuskripts entstehen mit dem Enddatenlauf.
-- H3: An 73,6 % der Maker-Tage hält das Buch mehr Optionen, als ein SM-Konto auf v2 halten kann; K_SM ist dort kontrafaktisch.
-- H1: 20 Fills mit K_PM2 ≤ 0 (weit vom Mark bepreiste RFQ-Beine) bleiben in den Summen.
-- H2 beruht auf 4 Konten unter PM2; die Verteilung je Konto steht unter (d).
-- H4: Das Intervall für β ist beschreibend und auf die Ereignistermine bedingt; das Urteil folgt aus dem einseitigen p und dem Placebo-P95. 141 Tages-Cluster, 13 Ereignisse mit Zellen. An Placebo-Terminen streut t mit sd 1,82 statt 1; die an den Placebo-t kalibrierte Spanne steht unter Audit.
-- Kapital je Fill ist das Kapital eines leeren Buchs mit genau diesem Kontrakt (Einzelkontrakt); Nicht-USDC-Collateral bleibt ausserhalb von K.
+- Pilot state: the sample ends at 2026-09-17 11:51:53 UTC, before the preregistered end (2026-09-30 08:00 UTC). The numbers of the manuscript come from the final data run.
+- H3: on 73.6 % of the maker days the book holds more options than an SM account on v2 can hold; K_SM is counterfactual there.
+- H1: 20 fills with K_PM2 ≤ 0 (RFQ legs priced far from the mark) stay in the sums.
+- H2 rests on 4 accounts under PM2; the distribution per account is under (d).
+- H4: the interval for β is descriptive and conditional on the event dates; the verdict follows from the one-sided p and the placebo P95. 141 day clusters, 13 events with cells. At placebo dates t scatters with sd 1.82 instead of 1; the range calibrated to the placebo t is under Audit.
+- Capital per fill is the capital of an empty book holding exactly this contract (single contract); non-USDC collateral stays outside K.

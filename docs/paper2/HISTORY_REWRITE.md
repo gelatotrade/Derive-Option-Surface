@@ -7,6 +7,9 @@ Date: 27 September 2026. Branch `paper2-capital`, local and not pushed. It repla
 
 Raw account ids and unsalted hashes are deliberately not reproduced here (Addendum 1.4).
 
+After this record was committed, the Paper 2 documents were given English file names. This file uses the new
+names, and gives the old name first where it describes the content of old commits.
+
 ## Why
 
 1. **Account identifiers and personal data are removed before publication** (audit A01, pre-registration
@@ -51,8 +54,9 @@ Raw account ids and unsalted hashes are deliberately not reproduced here (Addend
      (`data/p2/params/*_pm2_overrides_raw.json`) became a synthetic five-digit placeholder, one per account.
      This also applies where the id was written as a hex literal or as a 32-byte log topic. The affected files
      are `tests/fixtures/p2/params_logs.json`, `tests/test_p2_params.py` and `tests/test_p2_history_scrub.py`.
-   - **The checked override account in `docs/paper2/get_margin_semantik.md`.** From the first commit on, its raw
-     id became its p2ids label. The file carried that label from Stage B on in any case.
+   - **The checked override account in `docs/paper2/get_margin_semantik.md` (now `get_margin_semantics.md`).**
+     From the first commit on, its raw id became its p2ids label. The file carried that label from Stage B on in
+     any case.
 
    The scrubbed `results/p2/params/*_pm2_overrides.json` of Stage A to Addendum 4 are byte-identical to the
    labelled files of Stage B.
@@ -85,7 +89,7 @@ For every commit, the author date equals the committer date, and both equal the 
 | Addendum 4 | `c4fcb59d61b73549aa90cacbd3b997816f36d823` | `e492ba123c4c81ddc478c0c6ef2246867deeeaae` | 2026-09-25 01:29:58 +0200 | `96986c732c85408daa4e704c519601bb531fdc4b` | `eb5e269571df785c0bc65e0b9ebb230dab9380edb95a951b63656eae07bb05f9` |
 
 `PRAEREGISTRIERUNG.md` is not changed after Addendum 4. The tip carries the Addendum 4 version, and the blob
-named in `docs/paper2/PREREGISTRATION_EN.md` is unchanged.
+named in `docs/paper2/PREREGISTRATION.md` (formerly `PREREGISTRATION_EN.md`) is unchanged.
 
 ## All rewritten commits
 
@@ -113,7 +117,8 @@ named in `docs/paper2/PREREGISTRATION_EN.md` is unchanged.
 | `469cc8e` | `fe331b0` | 2026-09-25 07:41:34 +0200 | docs(p2): morning report and handover addendum |
 
 Some commits differ from the original in their own diff, not only in their base:
-- `b2dd70e`: `HANDOVER.md` instead of `UEBERGABE.md`, and the label in `get_margin_semantik.md`;
+- `b2dd70e`: `HANDOVER.md` instead of `UEBERGABE.md`, and the label in `get_margin_semantik.md` (now
+  `get_margin_semantics.md`);
 - `78566f1`, `58551d6`, `f7ba923` and `ae90485`: the scrub;
 - `f94bc53`: the scrub, and the Paper 1 files dropped;
 - `fe331b0`: `HANDOVER.md`.
@@ -157,23 +162,29 @@ The other commits have the same diff as their originals.
   - `paper2/main.tex` names `1d13227`, `eb534fe`, `9465210`, `bfc34c8` and `c4fcb59`, and also `103c676` of
     Paper 1, which is `81d89dc` on `main`;
   - `derive_surface/social_p2.py` and the social cards name `1d13227` in the footer;
-  - so do `docs/paper2/MANUSKRIPT.md`, `ZAHLENPRUEFUNG.md`, `ABBILDUNGSWAHL.md`, `VALIDIERUNG.md`,
-    `PREREGISTRATION_EN.md` and `tests/test_p2_number_check.py`.
+  - so do `docs/paper2/MANUSCRIPT.md`, `NUMBER_CHECK.md`, `FIGURE_SELECTION.md`, `VALIDATION.md`,
+    `PREREGISTRATION.md` and `tests/test_p2_number_check.py`.
 
   In a clone that holds only this branch, the old commits do not exist. There `scripts/p2_build.py` fails with
   nine numbers without source, all of them commit references.
 
   Still to do:
   1. Write a dated Addendum 5 to `PRAEREGISTRIERUNG.md` with the mapping above and its translation in
-     `PREREGISTRATION_EN.md`, including the new blob hash.
+     `PREREGISTRATION.md`, including the new blob hash.
   2. Then put the new hashes into `main.tex`, the social cards and the files listed above.
-  3. Regenerate `ZAHLENPRUEFUNG.md`.
+  3. Regenerate `NUMBER_CHECK.md`.
 
-  `AUDIT.md`, `HISTORIE_BEREINIGEN.md` and `BERICHT_2026-09-25.md` are dated reports about the old history and
-  stay as they are.
+  Status later on 27 September 2026, with the English file names: `paper2/main.tex`, `derive_surface/social_p2.py`
+  with the social cards, `NUMBER_CHECK.md` and `tests/test_p2_number_check.py` cite the new hashes, and every
+  commit that `main.tex` cites is an ancestor of this branch. In a clone that holds only this branch,
+  `scripts/p2_build.py` now reports "build clean". Addendum 5 is not written yet, and `MANUSCRIPT.md`,
+  `FIGURE_SELECTION.md`, `VALIDATION.md` and the master plan still name old hashes.
+
+  `AUDIT.md`, `HISTORY_CLEANUP.md` and `REPORT_2026-09-25.md` are dated reports about the old history. They keep
+  their content and are now in English, under English file names.
 - **Missing fixtures in rewritten commits.** The rewritten intermediate commits lack the six account fixtures.
   Their tests that need them do not run in those commits.
-- **Limits of the pseudonyms.** The limits in `HISTORIE_BEREINIGEN.md`, section 6, still hold:
+- **Limits of the pseudonyms.** The limits in `HISTORY_CLEANUP.md`, section 6, still hold:
   - the ranks M1 to M10 can be recomputed from the public tape;
   - the X labels of override accounts can be matched through the public `LibOverrideUpdated` events.
     `tests/fixtures/p2/params_logs.json` keeps the transaction hash of the event whose account topic was

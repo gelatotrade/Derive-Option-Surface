@@ -9,7 +9,7 @@ behind a clean-looking console.  This builds ``paper2/main.tex`` with the full l
 * a required part missing from the PDF (sections, back matter, references, JEL codes, the abstract);
 * a placeholder ``\\PH{...}`` left in the text, or a dash (em or en dash, ``--``, a spaced hyphen) in the prose;
 * a citation key that is not in ``paper2/refs.bib`` or not among the checked sources of
-  ``docs/paper2/LITERATUR.md``;
+  ``docs/paper2/LITERATURE.md``;
 * a figure slot missing, a figure file missing, or a figure never referenced in the text;
 * a caption that differs from the ``CAPTION`` of ``derive_surface/figs_p2/<slot>.py`` where that module has one
   (a ``\\PH{key}`` in the module caption stands for any number in the manuscript; deliberate departures are
@@ -42,7 +42,7 @@ import p2_wordcount as wc  # noqa: E402
 
 PAPER = Path("paper2")
 BIB = PAPER / "refs.bib"
-LITERATUR = Path("docs/paper2/LITERATUR.md")
+LITERATURE = Path("docs/paper2/LITERATURE.md")
 FIGS = Path("derive_surface/figs_p2")
 RESULTS = Path("results/p2")
 SLOTS = ["t1", "t2", "f1", "f2", "f3", "f4", "f5", "f6", "a1"]
@@ -147,12 +147,12 @@ def cited(tex: str) -> List[str]:
     return keys
 
 
-def citation_problems(tex: str, bib: str, literatur: str) -> Dict[str, List[str]]:
+def citation_problems(tex: str, bib: str, literature: str) -> Dict[str, List[str]]:
     known = set(bib_keys(bib))
     keys = sorted(set(cited(tex)))
     return {"citations not in refs.bib": [k for k in keys if k not in known],
-            "citations not in LITERATUR.md": [k for k in keys if not re.search(r"\b" + re.escape(k) + r"\b",
-                                                                                literatur)]}
+            "citations not in LITERATURE.md": [k for k in keys if not re.search(r"\b" + re.escape(k) + r"\b",
+                                                                                 literature)]}
 
 
 def figure_problems(tex: str, paper: Path, slots: Sequence[str] = SLOTS) -> Dict[str, List[str]]:
@@ -227,8 +227,8 @@ CAPTION_EXCEPTIONS: List[Tuple[str, str, str, str]] = [
     ("f2", r"The map per notional is Figure~\PH{p1-map-fig} of the companion paper.",
      r"The map per notional is not drawn; its ranks enter panel b.",
      "Paper 1 draws its map per notional (its Figure 5) with the net edge per contract over the notional of the "
-     "whole fill; the finding of 25.09.2026 (docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md) revises it, so the "
-     "manuscript does not point to it."),
+     "whole fill; the finding of 25 September 2026 (docs/paper1/FINDING_2026-09-25_FEE_UNITS.md) revises it, so "
+     "the manuscript does not point to it."),
 ]
 
 
@@ -269,7 +269,7 @@ class Report:
         return [k for k, v in self.problems.items() if v]
 
 
-def check_sources(tex: str, paper: Path = PAPER, bib: str = "", literatur: str = "", figs: Path = FIGS,
+def check_sources(tex: str, paper: Path = PAPER, bib: str = "", literature: str = "", figs: Path = FIGS,
                   results: Path = RESULTS, numbers: bool = True, allow_caption_drift: bool = False,
                   resolve_commit: Optional[Callable[[str], bool]] = None,
                   budget: Optional[Dict[str, int]] = None, slots: Sequence[str] = SLOTS) -> Report:
@@ -277,7 +277,7 @@ def check_sources(tex: str, paper: Path = PAPER, bib: str = "", literatur: str =
     rep = Report()
     rep.problems["placeholders"] = placeholders(tex)
     rep.problems["dashes in prose"] = dashes(tex)
-    rep.problems.update(citation_problems(tex, bib, literatur))
+    rep.problems.update(citation_problems(tex, bib, literature))
     rep.problems.update(figure_problems(tex, paper, slots))
     drift = caption_drift(tex, figs)
     rep.problems["caption differs from figs_p2 CAPTION"] = [] if allow_caption_drift else drift
@@ -300,13 +300,13 @@ def check_sources(tex: str, paper: Path = PAPER, bib: str = "", literatur: str =
 def build(paper: Path = PAPER, runner: Callable = subprocess.run, numbers: bool = True,
           allow_caption_drift: bool = False, read_pdf: Callable[[Path], Tuple[int, str]] = pdf_text,
           resolve_commit: Optional[Callable[[str], bool]] = None, results: Path = RESULTS,
-          literatur_path: Path = LITERATUR, figs: Path = FIGS, budget: Optional[Dict[str, int]] = None,
+          literature_path: Path = LITERATURE, figs: Path = FIGS, budget: Optional[Dict[str, int]] = None,
           slots: Sequence[str] = SLOTS, must: Sequence[str] = MUST_CONTAIN) -> Report:
     """Source checks, then tectonic, then the log and the PDF; every argument can be replaced in a test."""
     tex = (paper / "main.tex").read_text()
     bib = (paper / "refs.bib").read_text() if (paper / "refs.bib").exists() else ""
-    literatur = literatur_path.read_text() if literatur_path.exists() else ""
-    rep = check_sources(tex, paper, bib, literatur, figs, results, numbers, allow_caption_drift, resolve_commit,
+    literature = literature_path.read_text() if literature_path.exists() else ""
+    rep = check_sources(tex, paper, bib, literature, figs, results, numbers, allow_caption_drift, resolve_commit,
                         budget, slots)
     compiled = compile_pdf(paper, runner)
     logp = log_problems(compiled.log, compiled.console)

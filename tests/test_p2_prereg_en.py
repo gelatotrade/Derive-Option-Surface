@@ -11,7 +11,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 DE = REPO / "docs" / "paper2" / "PRAEREGISTRIERUNG.md"
-EN = REPO / "docs" / "paper2" / "PREREGISTRATION_EN.md"
+EN = REPO / "docs" / "paper2" / "PREREGISTRATION.md"
 
 
 def _git_blob(data: bytes) -> str:
@@ -34,7 +34,7 @@ def test_translation_names_the_translated_version_of_the_original():
     m = re.search(r"git blob[\s>]+`([0-9a-f]{40})`", EN.read_text())  # may wrap inside the quote block
     assert m, "the translation must name the git blob of the German original it translates"
     assert m.group(1) == _git_blob(DE.read_bytes()), (
-        "docs/paper2/PRAEREGISTRIERUNG.md changed: extend docs/paper2/PREREGISTRATION_EN.md and update the blob")
+        "docs/paper2/PRAEREGISTRIERUNG.md changed: extend docs/paper2/PREREGISTRATION.md and update the blob")
 
 
 def test_translation_is_dated_later_and_names_the_original_as_binding():
@@ -50,6 +50,7 @@ def test_every_section_addendum_and_item_is_translated():
     en = _sections(EN.read_text())
     assert len(en) == len(de) == 11  # seven sections, four addenda
     assert [n for _, n in en] == [n for _, n in de]
+    # the headings of the binding German original, matched verbatim ("Nachtrag 1 (25.09.2026, ...")
     de_add = [re.match(r"Nachtrag (\d+) \((\d+)\.(\d+)\.(\d{4})", h).groups() for h, _ in de if h.startswith("Nachtrag")]
     en_add = [re.match(r"Addendum (\d+) \((\d+) September (\d{4})", h).groups() for h, _ in en
               if h.startswith("Addendum")]

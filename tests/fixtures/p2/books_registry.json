@@ -1,5 +1,5 @@
 {
- "source": "asset registry of books_chain_snapshot.json (chain 957 and public/get_all_currencies at the block): protocol addresses, managers and the ABI regression reference only; the account's multicall response, its instruments and its hash stay in data/p2/fixtures_private (Nachtrag 1.4)",
+ "source": "asset registry of books_chain_snapshot.json (chain 957 and public/get_all_currencies at the block): protocol addresses, managers and the ABI regression reference only; the account's multicall response, its instruments and its hash stay in data/p2/fixtures_private (Addendum 1.4)",
  "block": 32262793,
  "block_utc": "2025-12-01T00:00:01",
  "day": "2025-12-01",

@@ -1,4 +1,4 @@
-"""A1: does the replica match the chain? (ABBILDUNGSWAHL section 7, A1)."""
+"""A1: does the replica match the chain? (FIGURE_SELECTION section 7, A1)."""
 from __future__ import annotations
 
 import json

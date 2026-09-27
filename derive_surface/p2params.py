@@ -83,7 +83,7 @@ PM2_ADDR = {
              "lib": "0x12e0d427152f9fb46e6f60f708c909a6f978d71f", "deploy_block": 30_294_479},
 }
 MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11"
-MULTICALL3_BLOCK = 1_935_198  # first block with Multicall3 code on chain 957 (bisected 24.09.2026)
+MULTICALL3_BLOCK = 1_935_198  # first block with Multicall3 code on chain 957 (bisected 2026-09-24)
 MULTICALL_CHUNK = 250
 
 # ---- selectors: keccak256(signature)[:4], checked in tests/test_p2_params.py -----------------------------------------
@@ -1168,10 +1168,10 @@ def describe_change(prev: Optional[dict], cur: dict, max_items: int = 6) -> str:
             parts.append(f"{k.split('.')[-1]} {_fmt(a.get(k))}→{_fmt(b.get(k))}")
     ncol = sum(1 for k in set(a) | set(b) if k.startswith("CollateralParameters.") and a.get(k) != b.get(k))
     if ncol:
-        parts.append(f"Collateral ({ncol} Werte)")
+        parts.append(f"Collateral ({ncol} values)")
     if len(parts) > max_items:
         parts = parts[:max_items] + [f"… (+{len(parts) - max_items})"]
-    return "; ".join(parts) if parts else "keine"
+    return "; ".join(parts) if parts else "none"
 
 
 def _grid(sc: Sequence[dict]) -> Tuple[Optional[float], int]:
@@ -1185,22 +1185,22 @@ def _describe_scenarios(sa: Sequence[dict], sb: Sequence[dict]) -> str:
     (wa, ta), (wb, tb) = _grid(sa), _grid(sb)
     out = []
     if wa != wb:
-        out.append(f"Gitter ±{_fmt(wa)} %→±{_fmt(wb)} %" if wa is not None else f"Gitter ±{_fmt(wb)} %")
+        out.append(f"grid ±{_fmt(wa)} %→±{_fmt(wb)} %" if wa is not None else f"grid ±{_fmt(wb)} %")
     if ta != tb:
-        out.append(f"Tails {ta}→{tb}")
+        out.append(f"tails {ta}→{tb}")
     elif ta and [s for s in sa if s.get("dampeningFactor", 1.0) != 1.0] != \
             [s for s in sb if s.get("dampeningFactor", 1.0) != 1.0]:
-        out.append("Tail-Dämpfung geändert")
+        out.append("tail dampening changed")
     if len(sa) != len(sb):
-        out.append(f"{len(sa)}→{len(sb)} Szenarien")
+        out.append(f"{len(sa)}→{len(sb)} scenarios")
     if not out:
-        out.append("Szenarien umgestellt")
+        out.append("scenarios rearranged")
     return "scenarios: " + ", ".join(out)
 
 
 def _fmt(v) -> str:
     if v is None:
-        return "–"
+        return "n/a"
     if isinstance(v, bool):
         return str(v)
     if isinstance(v, float):
@@ -1211,8 +1211,8 @@ def _fmt(v) -> str:
 def _table(tl: Timeline, path: Path, title: str, max_items: int = 14) -> List[str]:
     """Markdown table of one timeline; entries that only change CollateralParameters are counted, not listed."""
     shown = f"`{path.relative_to(REPO)}`" if path.is_absolute() and REPO in path.parents else f"`{path.name}`"
-    lines = [f"\n**{title}** ({len(tl.entries)} Einträge, {shown})\n",
-             "| ab (UTC) | Block | Quelle | Änderung |", "|---|---|---|---|"]
+    lines = [f"\n**{title}** ({len(tl.entries)} entries, {shown})\n",
+             "| from (UTC) | Block | Source | Change |", "|---|---|---|---|"]
     prev, col_only = None, 0
     for e in tl.entries:
         if prev is not None and e.get("changed") == ["CollateralParameters"]:
@@ -1226,7 +1226,7 @@ def _table(tl: Timeline, path: Path, title: str, max_items: int = 14) -> List[st
                      f"{describe_change(prev, e['params'], max_items)} |")
         prev = e["params"]
     if col_only:
-        lines.append(f"\nDazu {col_only} Einträge, die nur `CollateralParameters` ändern (nicht USDC, ausserhalb von K).")
+        lines.append(f"\nPlus {col_only} entries that only change `CollateralParameters` (not USDC, outside K).")
     return lines
 
 
@@ -1248,10 +1248,10 @@ def report_markdown(root: Path = PARAMS_DIR) -> str:
             path = Timeline.path(ccy, "pm2", lib=lib, root=root)
             tl = Timeline(ccy, "pm2", lib=lib, root=root)
             rows = [r for r in ov if r["lib"] == lib]
-            lines += _table(tl, path, f"{ccy} PM2 Override-Lib {lib}")
+            lines += _table(tl, path, f"{ccy} PM2 override lib {lib}")
             days = sorted({_utc(r["from_ts"])[:10] for r in rows})
-            lines.append(f"\nZuweisungen: {len(rows)} Ereignisse für {len({r['account'] for r in rows})} Konten "
-                         f"an {len(days)} Tagen ({days[0]} bis {days[-1]}); Aufhebungen: "
+            lines.append(f"\nAssignments: {len(rows)} events for {len({r['account'] for r in rows})} accounts "
+                         f"on {len(days)} days ({days[0]} to {days[-1]}); revocations: "
                          f"{sum(1 for r in ov if r['lib'] is None)}.")
     return "\n".join(lines)
 

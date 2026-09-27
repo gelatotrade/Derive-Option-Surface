@@ -1,7 +1,7 @@
 """Print width of the Paper 2 figures: the canvas is the width at which ``paper2/main.tex`` sets it.
 
 cas-dc sets ``figure*`` at the text width, 494.50888 pt, and ``figure`` at the column width, 238.25444 pt (TeX points,
-72.27 to the inch): 6.8425 and 3.2967 in. The slots are laid out on canvases of 7.0 and 3.4 in (ABBILDUNGSWAHL 6.1);
+72.27 to the inch): 6.8425 and 3.2967 in. The slots are laid out on canvases of 7.0 and 3.4 in (FIGURE_SELECTION 6.1);
 set with ``width=\\linewidth`` they shrank by 2.3 and 3.0 per cent, and every text of 7 pt printed at 6.8 pt (audit
 A48). :func:`to_print` sets the canvas to 6.84 or 3.29 in just before a figure is saved, a hair under the set width
 so that the scale in the paper is at least one: every position, which the slots give as a fraction of the canvas,

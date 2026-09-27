@@ -2,7 +2,7 @@
 
 Every margin engine (``margin_sm``, ``margin_pm``, ``margin_pm2``) takes a :class:`Book` and a
 :class:`MarketState` and returns the net margin ``net = cash + V - R`` in USD, exactly like
-``public/get_margin`` and the v2-core managers (see ``docs/paper2/get_margin_semantik.md``).
+``public/get_margin`` and the v2-core managers (see ``docs/paper2/get_margin_semantics.md``).
 The comparable capital of a book traded at prices ``p`` is ``K_p = sum(p q) - net(q; cash = 0)``.
 """
 from __future__ import annotations

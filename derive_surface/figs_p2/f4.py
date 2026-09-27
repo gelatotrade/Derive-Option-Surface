@@ -41,7 +41,7 @@ MANAGER_ROWS = [("account_manager=PM", "legacy PM accounts"), ("account_manager=
 CAPTION = (
     r"\textbf{What netting is worth (H3).} Panel a is $K_{\mathrm{SM}}/K_{\mathrm{PM2}}$ for the opening books of "
     r"\PH{h3-days} maker-days against the number of option legs, as the median per bin with the interquartile "
-    r"band. Beyond 63 options, the most the endpoint accepted for a standard margin account in probes of September "
+    r"band. Beyond 63 options, the most the endpoint accepted for a standard-margin account in probes of September "
     r"2026, $K_{\mathrm{SM}}$ is counterfactual; this is the case on \PH{h3-over63} maker-days. The dashed line is "
     r"the registered threshold of two. Panel b is the registered median with its 90 per cent interval, the "
     r"sensitivities including the legacy manager on BTC and ETH legs, and, on grey, exploratory rows: SM against PM2 "

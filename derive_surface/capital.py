@@ -1,6 +1,6 @@
 """Capital per fill for Paper 2 (task B2): the one-contract capital of every fill under SM, legacy PM and PM2.
 
-Preregistration (``docs/paper2/PRAEREGISTRIERUNG.md``, Semantik und Kapital, with Nachtrag 1):
+Preregistration (``docs/paper2/PRAEREGISTRIERUNG.md``, section Semantics and capital, with Addendum 1):
 
 * ``K_p(q) = p q - net_IM(q; cash = 0)`` for the book that holds only the filled contract, ``q = maker_side``
   (+1 maker buy, -1 maker sell), ``p`` = fill price, per contract; MM (``K_*_mm``) is the sensitivity.
@@ -9,10 +9,10 @@ Preregistration (``docs/paper2/PRAEREGISTRIERUNG.md``, Semantik und Kapital, wit
   ``eth_call`` at that block sees; 2 s blocks, so at most 1 s before the taker second), parameters of the standard lib
   in force at that block (``Timeline.at``). No exclusion for feed age; the ages are carried along.
 * Rates: PM2 reads the PM2 rate feed (``rate``, ``rate_conf``), the legacy PM its own static feed (``rate_pm`` = 0 at
-  confidence 1 over the whole history), SM does not discount (Nachtrag 1, item 2). The stable-coin feed is not loaded;
+  confidence 1 over the whole history), SM does not discount (Addendum 1, item 2). The stable-coin feed is not loaded;
   ``stable`` = 1.
-* Manager windows: SM over the whole sample (HYPE from 11.11.2025 00:00 UTC), legacy PM for BTC and ETH over the whole
-  sample and never for HYPE, PM2 for BTC and ETH from 12.06.2025 23:00 UTC and for HYPE from 11.11.2025 00:00 UTC.
+* Manager windows: SM over the whole sample (HYPE from 2025-11-11 00:00 UTC), legacy PM for BTC and ETH over the whole
+  sample and never for HYPE, PM2 for BTC and ETH from 2025-06-12 23:00 UTC and for HYPE from 2025-11-11 00:00 UTC.
   Outside its window a manager's columns are NaN; they are also NaN where a required feed (spot, forward, vol at the
   strike) has no value, which is where the chain call would revert.
 
@@ -49,9 +49,9 @@ CHECK_PATH = Path("results/p2/capital_check.json")
 MANAGERS = ("sm", "pm", "pm2")
 ENGINES = {"sm": margin_sm.single, "pm": margin_pm.single, "pm2": margin_pm2.single}
 
-SAMPLE_START = 1_704_931_200      # 11.01.2024 00:00 UTC, first taker second of the Paper 1 sample
-PM2_START_BTC_ETH = 1_749_769_200  # 12.06.2025 23:00 UTC
-HYPE_START = 1_762_819_200         # 11.11.2025 00:00 UTC
+SAMPLE_START = 1_704_931_200      # 2024-01-11 00:00 UTC, first taker second of the Paper 1 sample
+PM2_START_BTC_ETH = 1_749_769_200  # 2025-06-12 23:00 UTC
+HYPE_START = 1_762_819_200         # 2025-11-11 00:00 UTC
 # first taker second of each manager window; a missing currency means the manager is never available
 WINDOW_START: Dict[str, Dict[str, int]] = {
     "sm": {"BTC": SAMPLE_START, "ETH": SAMPLE_START, "HYPE": HYPE_START},

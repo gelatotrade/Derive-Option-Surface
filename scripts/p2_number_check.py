@@ -3,7 +3,7 @@
 
 Rule of the manuscript: every number, date and clock time in the checked text is bound, occurrence by occurrence,
 to exactly one source by a declaration in the same unit: a value in a file under ``results/p2`` (including
-``results/p2/semantik``), a named constant of the pre-registration (``CONSTANTS`` below, with the place where it is
+``results/p2/semantics``), a named constant of the pre-registration (``CONSTANTS`` below, with the place where it is
 registered), the date of a commit, a count over the verdicts, or, for a small count that the sentence itself makes
 evident, a text label.  Nothing is searched.  A number without a declaration, a declaration without its number and
 a value that no longer prints as the text says are all errors, and each fails ``p2_build.py``.
@@ -56,11 +56,12 @@ scientific notation (``8.7\\times10^{-10}``) works on the mantissa.  A scale, a 
 comes from the operations: "fell by 22.9 per cent" is ``~neg~pct`` of a negative change, so a rise no longer
 matches.  A printed number may carry a relation in the declaration (``>0.5``, ``<=2``): then every value must satisfy
 it.  Dates ("17 September 2026", "September 2026", "17 September") and clock times ("08:00") match the one date or
-time in the value: an ISO or compact date in a string, a German day and month, or a Unix time.  Spelled numbers
+time in the value: an ISO or compact date in a string, a day and month in the dotted form (17.09. or 17.09.2026),
+or a Unix time.  Spelled numbers
 from "two" upwards count as numbers ("one" is too ambiguous and is skipped).
 
     python3 scripts/p2_number_check.py [--tex paper2/main.tex] [--results results/p2]
-                                       [--report docs/paper2/ZAHLENPRUEFUNG.md] [--no-report] [--template]
+                                       [--report docs/paper2/NUMBER_CHECK.md] [--no-report] [--template]
 
 ``--template`` prints, unit by unit, every number in the order of the text with its present binding and, where it
 has none, candidate sources to check by hand.  Exit status 1 if any error is found.
@@ -83,85 +84,98 @@ from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
 REPO = Path(__file__).resolve().parents[1]
 TEX = Path("paper2/main.tex")
 RESULTS = Path("results/p2")
-REPORT = Path("docs/paper2/ZAHLENPRUEFUNG.md")
+REPORT = Path("docs/paper2/NUMBER_CHECK.md")
 PREREG = "docs/paper2/PRAEREGISTRIERUNG.md"
 PREREG_P1 = "docs/paper1/PRAEREGISTRIERUNG.md"
 
 # ---------------------------------------------------------------------------------------------------------------
-# Constants of the pre-registration (commit 1d13227) and its dated addenda: name -> (value, meaning, file, section).
-# A value that means two things has two names.  Dates and clock times are ISO strings.
+# Constants of the pre-registration (commit cc0a29f, 1d13227 before the history rewrite) and its dated addenda:
+# name -> (value, meaning, file, section).
+# A value that means two things has two names.  Dates and clock times are ISO strings.  The section is named as in
+# the English translations (docs/paper2/PREREGISTRATION.md, docs/paper1/PREREGISTRATION.md); SECTION_ORIGINAL gives
+# the heading of the same section in the binding German original, verbatim.
 # ---------------------------------------------------------------------------------------------------------------
 CONSTANTS: Dict[str, Tuple[object, str, str, str]] = {
-    "prereg_day": ("2026-09-24", "Präregistrierung festgelegt am 24.09.2026", PREREG, "Kopf"),
-    "sample_start": ("2024-01-11 00:00", "Stichprobenbeginn 11.01.2024 00:00 UTC", PREREG, "Stichprobe"),
-    "sample_end": ("2026-09-30 08:00", "präregistriertes Stichprobenende 30.09.2026 08:00 UTC", PREREG,
-                   "Stichprobe"),
-    "pilot_cut": ("2026-09-17 12:00", "Pilotschnitt 17.09.2026 12:00 UTC", PREREG, "Stichprobe"),
-    "pm2_window_btc_eth": ("2025-06-12 23:00", "PM2-Fenster BTC und ETH ab 12.06.2025 23:00 UTC", PREREG,
-                           "Stichprobe"),
-    "window_hype": ("2025-11-11 00:00", "SM und PM2 für HYPE ab 11.11.2025 00:00 UTC", PREREG, "Stichprobe"),
-    "managers": (3, "drei Manager: SM, Legacy-PM, PM2", PREREG, "Stichprobe"),
-    "cash_zero": (0, "cash = 0 in K_p(q) = Σ p·q − net_IM(q; cash = 0)", PREREG, "Semantik und Kapital"),
-    "q_buy": (1, "q = +1 bei Maker-Kauf", PREREG, "Semantik und Kapital"),
-    "q_sell": (-1, "q = −1 bei Maker-Verkauf", PREREG, "Semantik und Kapital"),
-    "markout_minutes": (30, "Netto-Edge nach 30 Minuten", PREREG, "Semantik und Kapital"),
-    "cell_min_fills": (200, "Zelle besetzt ab 200 Fills", PREREG, "Semantik und Kapital"),
-    "bp_factor": (10_000, "10⁴ in den Zellgrössen (Basispunkte)", PREREG, "Semantik und Kapital"),
-    "dominant_makers": (10, "die zehn dominanten Maker-Subaccounts", PREREG, "Maker-Bücher"),
-    "hypotheses": (4, "vier Hypothesen H1 bis H4", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "h1_threshold": (0.5, "H1 abgelehnt, wenn die obere Grenze ≥ 0,5 ist", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "h2_threshold": (0.5, "H2: Median von ΔK / K_PM2,Einzel kleiner als 0,5", PREREG,
-                     "Hypothesen und Ablehnungsregeln"),
-    "h3_threshold": (2, "H3: Median von K_SM / K_PM2 grösser als 2", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "interval_pct": (90, "90-%-Intervall", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "h2_sample": (20_000, "einfache Zufallsstichprobe von 20 000 Fills (H2)", PREREG,
-                  "Hypothesen und Ablehnungsregeln"),
-    "seed": (20_260_924, "Seed 20260924", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "legacy_event_2024": ("2024-06-12", "Legacy-PM-Ereignis 12.06.2024", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "legacy_event_2025": ("2025-02-22", "Legacy-PM-Ereignis 22.02.2025", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "dose_filter_pct": (1, "Ereignisse mit grösster absoluter Dosis unter 1 % fallen weg", PREREG,
-                        "Hypothesen und Ablehnungsregeln"),
-    "dose_window_days": (14, "Dosisfenster [e − 14 Tage, e)", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "regression_window_days": (14, "Regressionsfenster [e − 14 Tage, e + 14 Tage]", PREREG,
-                               "Hypothesen und Ablehnungsregeln"),
-    "h4_min_fills_side": (20, "Zellen brauchen mindestens 20 Fills vor und 20 nach dem Ereignis", PREREG,
-                          "Hypothesen und Ablehnungsregeln"),
-    "h4_alpha": (0.05, "einseitiges p ≤ 0,05", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "placebo_dates": (100, "100 Placebo-Termine", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "placebo_percentile": (95, "β über dem 95. Perzentil der Placebo-β", PREREG, "Hypothesen und Ablehnungsregeln"),
-    "placebo_gap_days": (28, "Placebo-Termine mindestens 28 Tage von jedem Ereignis", PREREG,
-                         "Hypothesen und Ablehnungsregeln"),
-    "bootstrap_draws": (9_999, "B = 9 999 Bootstrap-Ziehungen", PREREG, "Inferenz"),
-    "api_discount_pct": (2, "API-Semantik mit 2 % (explorativ)", PREREG, "Inferenz"),
-    "validation_min_blocks": (48, "mindestens 48 Zufallsblöcke je Basiswert und Manager", PREREG,
-                              "Validierung vor der Messung"),
-    "validation_min_maker_days": (20, "Maker-Bücher an mindestens 20 Maker-Tagen", PREREG,
-                                  "Validierung vor der Messung"),
-    "validation_median_pct": (0.1, "Median der absoluten relativen Abweichung unter 0,1 %", PREREG,
-                              "Validierung vor der Messung"),
-    "validation_percentile": (95, "95. Perzentil der absoluten relativen Abweichung", PREREG,
-                              "Validierung vor der Messung"),
-    "validation_p95_pct": (1, "95. Perzentil unter 1 %", PREREG, "Validierung vor der Messung"),
-    "addenda_day": ("2026-09-25", "Nachträge 1 bis 4, datiert 25.09.2026", PREREG, "Nachtrag 1"),
-    "interval_lower_percentile": (5, "Intervall vom 5. Perzentil der Replikationen", PREREG, "Nachtrag 3"),
-    "interval_upper_percentile": (95, "bis zum 95. Perzentil der Replikationen", PREREG, "Nachtrag 3"),
-    "addenda": (4, "vier datierte Nachträge", PREREG, "Nachtrag 4"),
-    "sm_max_options": (63, "63 Optionen, die ein SM-Konto auf v2 halten kann", PREREG, "Nachtrag 4"),
-    "delta_edge_10": (10, "|Δ|-Bucketgrenze 10 %", PREREG_P1, "Zellen und Klassen"),
-    "delta_edge_25": (25, "|Δ|-Bucketgrenze 25 %", PREREG_P1, "Zellen und Klassen"),
-    "delta_edge_40": (40, "|Δ|-Bucketgrenze 40 %", PREREG_P1, "Zellen und Klassen"),
-    "delta_edge_60": (60, "|Δ|-Bucketgrenze 60 %", PREREG_P1, "Zellen und Klassen"),
-    "delta_edge_60_delta": (0.6, "|Δ|-Bucketgrenze 60 % als Delta 0,6", PREREG_P1, "Zellen und Klassen"),
-    "delta_edge_75": (75, "|Δ|-Bucketgrenze 75 %", PREREG_P1, "Zellen und Klassen"),
-    "delta_edge_90": (90, "|Δ|-Bucketgrenze 90 %", PREREG_P1, "Zellen und Klassen"),
-    "tenor_edge_2d": (2, "Laufzeit-Bucketgrenze 2 Tage", PREREG_P1, "Zellen und Klassen"),
-    "tenor_edge_7d": (7, "Laufzeit-Bucketgrenze 7 Tage", PREREG_P1, "Zellen und Klassen"),
-    "tenor_edge_30d": (30, "Laufzeit-Bucketgrenze 30 Tage", PREREG_P1, "Zellen und Klassen"),
-    "tenor_edge_90d": (90, "Laufzeit-Bucketgrenze 90 Tage", PREREG_P1, "Zellen und Klassen"),
+    "prereg_day": ("2026-09-24", "pre-registration fixed on 24 September 2026", PREREG, "Header"),
+    "sample_start": ("2024-01-11 00:00", "start of the sample 11 January 2024 00:00 UTC", PREREG, "Sample"),
+    "sample_end": ("2026-09-30 08:00", "preregistered end of the sample 30 September 2026 08:00 UTC", PREREG,
+                   "Sample"),
+    "pilot_cut": ("2026-09-17 12:00", "pilot cut 17 September 2026 12:00 UTC", PREREG, "Sample"),
+    "pm2_window_btc_eth": ("2025-06-12 23:00", "PM2 window for BTC and ETH from 12 June 2025 23:00 UTC", PREREG,
+                           "Sample"),
+    "window_hype": ("2025-11-11 00:00", "SM and PM2 for HYPE from 11 November 2025 00:00 UTC", PREREG, "Sample"),
+    "managers": (3, "three managers: SM, legacy PM, PM2", PREREG, "Sample"),
+    "cash_zero": (0, "cash = 0 in K_p(q) = Σ p·q − net_IM(q; cash = 0)", PREREG,
+                  "Semantics and capital"),
+    "q_buy": (1, "q = +1 for a maker buy", PREREG, "Semantics and capital"),
+    "q_sell": (-1, "q = −1 for a maker sell", PREREG, "Semantics and capital"),
+    "markout_minutes": (30, "net edge after 30 minutes", PREREG, "Semantics and capital"),
+    "cell_min_fills": (200, "cell populated from 200 fills", PREREG, "Semantics and capital"),
+    "bp_factor": (10_000, "10⁴ in the cell quantities (basis points)", PREREG, "Semantics and capital"),
+    "dominant_makers": (10, "the ten dominant maker subaccounts", PREREG, "Maker books"),
+    "hypotheses": (4, "four hypotheses H1 to H4", PREREG, "Hypotheses and rejection rules"),
+    "h1_threshold": (0.5, "H1 rejected if the upper bound is ≥ 0.5", PREREG, "Hypotheses and rejection rules"),
+    "h2_threshold": (0.5, "H2: median of ΔK / K_PM2,Einzel smaller than 0.5", PREREG,
+                     "Hypotheses and rejection rules"),
+    "h3_threshold": (2, "H3: median of K_SM / K_PM2 greater than 2", PREREG, "Hypotheses and rejection rules"),
+    "interval_pct": (90, "90 % interval", PREREG, "Hypotheses and rejection rules"),
+    "h2_sample": (20_000, "simple random sample of 20 000 fills (H2)", PREREG,
+                  "Hypotheses and rejection rules"),
+    "seed": (20_260_924, "seed 20260924", PREREG, "Hypotheses and rejection rules"),
+    "legacy_event_2024": ("2024-06-12", "legacy PM event 12 June 2024", PREREG, "Hypotheses and rejection rules"),
+    "legacy_event_2025": ("2025-02-22", "legacy PM event 22 February 2025", PREREG, "Hypotheses and rejection rules"),
+    "dose_filter_pct": (1, "events whose largest absolute dose is below 1 % are dropped", PREREG,
+                        "Hypotheses and rejection rules"),
+    "dose_window_days": (14, "dose window [e − 14 days, e)", PREREG, "Hypotheses and rejection rules"),
+    "regression_window_days": (14, "regression window [e − 14 days, e + 14 days]", PREREG,
+                               "Hypotheses and rejection rules"),
+    "h4_min_fills_side": (20, "cells need at least 20 fills before and 20 after the event", PREREG,
+                          "Hypotheses and rejection rules"),
+    "h4_alpha": (0.05, "one-sided p ≤ 0.05", PREREG, "Hypotheses and rejection rules"),
+    "placebo_dates": (100, "100 placebo dates", PREREG, "Hypotheses and rejection rules"),
+    "placebo_percentile": (95, "β above the 95th percentile of the placebo β", PREREG,
+                           "Hypotheses and rejection rules"),
+    "placebo_gap_days": (28, "placebo dates at least 28 days from every event", PREREG,
+                         "Hypotheses and rejection rules"),
+    "bootstrap_draws": (9_999, "B = 9 999 bootstrap draws", PREREG, "Inference"),
+    "api_discount_pct": (2, "API semantics with 2 % (exploratory)", PREREG, "Inference"),
+    "validation_min_blocks": (48, "at least 48 random blocks per underlying and manager", PREREG,
+                              "Validation before measurement"),
+    "validation_min_maker_days": (20, "maker books on at least 20 maker days", PREREG,
+                                  "Validation before measurement"),
+    "validation_median_pct": (0.1, "median of the absolute relative deviation below 0.1 %", PREREG,
+                              "Validation before measurement"),
+    "validation_percentile": (95, "95th percentile of the absolute relative deviation", PREREG,
+                              "Validation before measurement"),
+    "validation_p95_pct": (1, "95th percentile below 1 %", PREREG, "Validation before measurement"),
+    "addenda_day": ("2026-09-25", "Addenda 1 to 4, dated 25 September 2026", PREREG, "Addendum 1"),
+    "interval_lower_percentile": (5, "interval from the 5th percentile of the replications", PREREG, "Addendum 3"),
+    "interval_upper_percentile": (95, "to the 95th percentile of the replications", PREREG, "Addendum 3"),
+    "addenda": (4, "four dated addenda", PREREG, "Addendum 4"),
+    "sm_max_options": (63, "63 options that an SM account on v2 can hold", PREREG, "Addendum 4"),
+    "delta_edge_10": (10, "|Δ| bucket edge 10 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_25": (25, "|Δ| bucket edge 25 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_40": (40, "|Δ| bucket edge 40 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_60": (60, "|Δ| bucket edge 60 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_60_delta": (0.6, "|Δ| bucket edge 60 % as delta 0.6", PREREG_P1, "Cells and classes"),
+    "delta_edge_75": (75, "|Δ| bucket edge 75 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_90": (90, "|Δ| bucket edge 90 %", PREREG_P1, "Cells and classes"),
+    "tenor_edge_2d": (2, "tenor bucket edge 2 days", PREREG_P1, "Cells and classes"),
+    "tenor_edge_7d": (7, "tenor bucket edge 7 days", PREREG_P1, "Cells and classes"),
+    "tenor_edge_30d": (30, "tenor bucket edge 30 days", PREREG_P1, "Cells and classes"),
+    "tenor_edge_90d": (90, "tenor bucket edge 90 days", PREREG_P1, "Cells and classes"),
 }
+# The heading of each section in the binding German original, quoted verbatim ("Header" is the text before the
+# first section and has no heading).
+SECTION_ORIGINAL: Dict[str, str] = {
+    "Sample": "Stichprobe", "Semantics and capital": "Semantik und Kapital", "Maker books": "Maker-Bücher",
+    "Hypotheses and rejection rules": "Hypothesen und Ablehnungsregeln", "Inference": "Inferenz",
+    "Validation before measurement": "Validierung vor der Messung", "Addendum 1": "Nachtrag 1",
+    "Addendum 3": "Nachtrag 3", "Addendum 4": "Nachtrag 4", "Cells and classes": "Zellen und Klassen"}
 # Arithmetic identities used to read a result; they are not results.
 IDENTITIES: Dict[str, Tuple[float, str]] = {
-    "ln_0_9": (math.log(0.9), "ln 0,9: Dosis, wenn Kapital zehn Prozent billiger wird (Lesehilfe zu β, Abbildung F6)"),
+    "ln_0_9": (math.log(0.9), "ln 0.9: the dose when capital becomes ten per cent cheaper (reading aid for β, "
+                              "Figure F6)"),
 }
 
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
@@ -313,12 +327,12 @@ def parse_spec(raw: str) -> Tuple[Optional[Spec], str]:
     head, *ops = raw.split("~")
     file, sep, key = head.partition(":")
     if not sep or not file or not key:
-        return None, "Quelle ohne Datei:Schlüssel"
+        return None, "source without file:key"
     unknown = [o for o in ops if o not in ELEMENTWISE and o not in AGGREGATES and o not in ("all", "distinct")]
     if unknown:
-        return None, "unbekannte Operation ~" + ", ~".join(unknown)
+        return None, "unknown operation ~" + ", ~".join(unknown)
     if ops.count("all") > 1 or ("all" in ops and ops[-1] != "all"):
-        return None, "~all steht einmal und am Ende"
+        return None, "~all stands once and at the end"
     return Spec(raw, file, key, ops), ""
 
 
@@ -379,41 +393,41 @@ class Sources:
         f, key = spec.file, spec.key
         if f == "derived":
             d = self.derived()
-            return ([d[key]], "") if key in d else ([], "derived:{} unbekannt".format(key))
+            return ([d[key]], "") if key in d else ([], "derived:{} unknown".format(key))
         if f == "const":
             if key not in CONSTANTS:
-                return [], "Konstante {} nicht in der Liste".format(key)
+                return [], "constant {} not in the list".format(key)
             return [CONSTANTS[key][0]], ""
         if f == "ident":
-            return ([IDENTITIES[key][0]], "") if key in IDENTITIES else ([], "Identität {} unbekannt".format(key))
+            return ([IDENTITIES[key][0]], "") if key in IDENTITIES else ([], "identity {} unknown".format(key))
         if f == "git":
             stamp = self.git_date(key)
-            return ([stamp], "") if stamp else ([], "Commit {} unbekannt".format(key))
+            return ([stamp], "") if stamp else ([], "commit {} unknown".format(key))
         if f == "text":
-            return [], "text: bindet keinen Wert"
+            return [], "text: binds no value"
         path = self.results / f
         if not path.is_file():
-            return [], "Datei {} fehlt".format(f)
+            return [], "file {} missing".format(f)
         if f.endswith(".csv"):
             return self._select_csv(f, key)
         if not f.endswith((".json", ".jsonl")):
-            return [], "nur JSON- und CSV-Dateien"
+            return [], "only JSON and CSV files"
         flat = self.flat(f)
         if "," in key:
             missing = [k for k in key.split(",") if k not in flat]
             if missing:
-                return [], "Schlüssel fehlt: " + ", ".join(missing)
+                return [], "key missing: " + ", ".join(missing)
             return [flat[k] for k in key.split(",")], ""
         if any(c in key for c in "*?["):
             hits = [v for k, v in flat.items() if fnmatch.fnmatchcase(k, key)]
-            return (hits, "") if hits else ([], "Muster {} trifft keinen Schlüssel".format(key))
-        return ([flat[key]], "") if key in flat else ([], "Schlüssel {} fehlt".format(key))
+            return (hits, "") if hits else ([], "pattern {} matches no key".format(key))
+        return ([flat[key]], "") if key in flat else ([], "key {} missing".format(key))
 
     def _select_csv(self, f: str, key: str) -> Tuple[List[object], str]:
         header, rows = self.table(f)
         col, at, filt = key.partition("@")
         if col not in header:
-            return [], "Spalte {} fehlt in {}".format(col, f)
+            return [], "column {} missing in {}".format(col, f)
         terms = [FILTER_TERM.match(t) for t in filt.split(",")] if at else []
         if at and all(m and m.group(1) in header for m in terms):
             conds = [(header.index(m.group(1)), m.group(2), m.group(3)) for m in terms]
@@ -425,7 +439,7 @@ class Sources:
         i = header.index(col)
         values = [r[i] for r in chosen if i < len(r) and r[i] != ""]
         if not values:
-            return [], "Filter {} trifft keine Zeile mit Wert".format(filt or "(keiner)")
+            return [], "filter {} matches no row with a value".format(filt or "(none)")
         return [(_number(v) if _number(v) is not None else v) for v in values], ""
 
     def resolve(self, raw: str) -> Tuple[List[object], bool, str]:
@@ -451,7 +465,7 @@ class Sources:
                 continue
             nums = [_number(v) for v in values]
             if any(n is None for n in nums):
-                return [], False, "~{} auf einen Wert, der keine Zahl ist".format(op)
+                return [], False, "~{} on a value that is not a number".format(op)
             if op in ELEMENTWISE:
                 values = [ELEMENTWISE[op](n) for n in nums]
             else:
@@ -459,8 +473,8 @@ class Sources:
         if not every:
             distinct = {(_number(v) if _number(v) is not None else v) for v in values}
             if len(distinct) != 1:
-                return [], False, "Auswahl nicht eindeutig ({} verschiedene Werte); Filter, Aggregat oder ~all " \
-                                  "ergänzen".format(len(distinct))
+                return [], False, "selection not unique ({} distinct values); add a filter, an aggregate or " \
+                                  "~all".format(len(distinct))
             values = values[:1]
         return values, every, ""
 
@@ -721,11 +735,11 @@ def _fits_moment(tok: Token, value) -> Tuple[bool, str]:
     dates, times = moments(value)
     if tok.kind == "time":
         if len(times) != 1:
-            return False, "Wert enthält {} Uhrzeiten".format(len(times))
+            return False, "value holds {} clock times".format(len(times))
         return tok.iso in times, next(iter(times))
     found = _at_granularity(dates, tok.kind)
     if len(found) != 1:
-        return False, "Wert enthält {} Daten".format(len(found))
+        return False, "value holds {} dates".format(len(found))
     return tok.iso in found, next(iter(found))
 
 
@@ -737,10 +751,10 @@ def evaluate(printed: Token, spec: str, sources: Sources) -> Tuple[bool, str, st
         label = spec.partition(":")[2]
         whole = printed.kind == "number" and printed.decimals == 0 and printed.exponent == 0 and not printed.rel
         if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", label) or "~" in spec:
-            return False, "mismatch", "text: braucht eine Bezeichnung aus Buchstaben, Ziffern und _"
+            return False, "mismatch", "text: needs a label of letters, digits and _"
         if not whole or printed.value < 0:
-            return False, "mismatch", "text: nur für ganze, nicht negative Zahlen"
-        return True, how, "Zählwort aus dem Satz"
+            return False, "mismatch", "text: only for whole, non-negative numbers"
+        return True, how, "count word from the sentence"
     if file == "const" and "~" not in spec and spec.split(":", 1)[1] in CONSTANTS:
         value, what, path, section = CONSTANTS[spec.split(":", 1)[1]]
         if printed.kind == "number" and not isinstance(value, str) and not printed.rel:
@@ -754,14 +768,14 @@ def evaluate(printed: Token, spec: str, sources: Sources) -> Tuple[bool, str, st
         if printed.kind == "number":
             v = _number(value)
             if v is None:
-                return False, "mismatch", "Wert {!r} ist keine Zahl".format(value)
+                return False, "mismatch", "value {!r} is not a number".format(value)
             if not _fits_number(printed, v):
-                return False, "mismatch", "Wert {:.6g} passt nicht zu {}{}".format(v, printed.rel, printed.raw)
+                return False, "mismatch", "value {:.6g} does not match {}{}".format(v, printed.rel, printed.raw)
             shown.append("{:.6g}".format(v))
         else:
             ok, got = _fits_moment(printed, value)
             if not ok:
-                return False, "mismatch", "Datum oder Uhrzeit {} passt nicht zu {}".format(got, printed.raw)
+                return False, "mismatch", "date or clock time {} does not match {}".format(got, printed.raw)
             shown.append(got)
     if file == "const":
         key = spec.split(":", 1)[1].split("~")[0]
@@ -769,7 +783,7 @@ def evaluate(printed: Token, spec: str, sources: Sources) -> Tuple[bool, str, st
     if file == "ident":
         key = spec.split(":", 1)[1].split("~")[0]
         return True, how, "{:.6g}: {}".format(IDENTITIES[key][0], IDENTITIES[key][1])
-    detail = ("alle: " if every else "= ") + ", ".join(shown[:4]) + (" …" if len(shown) > 4 else "")
+    detail = ("all: " if every else "= ") + ", ".join(shown[:4]) + (" …" if len(shown) > 4 else "")
     return True, how, detail
 
 
@@ -808,7 +822,7 @@ def check_unit(unit: Unit, sources: Sources, resolve_commit: Callable[[str], boo
     for j, tok in enumerate(printed):
         ctx = _context(plain, tok)
         if j not in pairs:
-            out.append(Verdict(unit.where, tok, False, "none", "", "nicht erklärt", 0, ctx))
+            out.append(Verdict(unit.where, tok, False, "none", "", "not declared", 0, ctx))
             continue
         decl, p = flat[pairs[j]]
         ok, how, detail = evaluate(p, decl.spec, sources)
@@ -817,16 +831,16 @@ def check_unit(unit: Unit, sources: Sources, resolve_commit: Callable[[str], boo
     for i, (decl, p) in enumerate(flat):
         if i not in used:
             out.append(Verdict(unit.where, p, False, "decl", decl.spec,
-                               "Erklärung bindet kein Vorkommen: Zahl nicht (mehr) im Text oder nicht in der "
-                               "Reihenfolge des Texts", decl.line))
+                               "declaration binds no occurrence: number not (or no longer) in the text or not in "
+                               "the order of the text", decl.line))
     for d in unit.decls:
         if not d.tokens:
             out.append(Verdict(unit.where, Token("number", d.printed), False, "decl", d.spec,
-                               "Erklärung ohne gedruckte Zahl", d.line))
+                               "declaration without a printed number", d.line))
     for tok in commits:
         ok = resolve_commit(tok.raw)
-        out.append(Verdict(unit.where, tok, ok, "commit" if ok else "none", "git: Commit vorhanden" if ok else "",
-                           "" if ok else "Commit unbekannt"))
+        out.append(Verdict(unit.where, tok, ok, "commit" if ok else "none", "git: commit present" if ok else "",
+                           "" if ok else "commit unknown"))
     return out
 
 
@@ -842,8 +856,8 @@ def check(tex: str, results: Path = RESULTS, resolve_commit: Optional[Callable[[
         out += check_unit(u, sources, resolve_commit)
     for d in stray:
         for p in d.tokens or [Token("number", d.printed)]:
-            out.append(Verdict("Vorspann", p, False, "decl", d.spec,
-                               "Erklärung ausserhalb einer geprüften Einheit (Abstract, Abschnitt, Abbildung)",
+            out.append(Verdict("front matter", p, False, "decl", d.spec,
+                               "declaration outside a checked unit (abstract, section, figure)",
                                d.line))
     return out
 
@@ -904,41 +918,41 @@ def template(tex: str, results: Path = RESULTS, resolve_commit: Optional[Callabl
             old.setdefault(p.key(), [])
             if d.spec not in old[p.key()]:
                 old[p.key()].append(d.spec)
-    lines = ["Vorlage der Erklärungen: je Einheit jede Zahl in der Reihenfolge des Texts. Zeilen mit ??? sind "
-             "offen; die Vorschläge sind Wertgleichheiten und müssen inhaltlich geprüft werden.", ""]
+    lines = ["Template of the declarations: per unit every number in the order of the text. Lines with ??? are "
+             "open; the suggestions are equalities of value and must be checked for meaning.", ""]
     for u in us:
         vs = [v for v in check_unit(u, sources, resolve_commit) if v.token.kind != "commit"]
         if not vs:
             continue
         open_n = sum(1 for v in vs if not v.ok)
-        lines.append("## {}  ({} Zahlen, {} offen)".format(u.where, sum(1 for v in vs if v.how != "decl"), open_n))
+        lines.append("## {}  ({} numbers, {} open)".format(u.where, sum(1 for v in vs if v.how != "decl"), open_n))
         for v in vs:
             printed = (v.token.rel or "") + v.token.raw
             if v.how == "decl":
-                lines.append("%   entfernen: % src {} {}   [{}]".format(v.source, printed, v.detail))
+                lines.append("%   remove: % src {} {}   [{}]".format(v.source, printed, v.detail))
             elif v.ok:
                 lines.append("% src {} {}".format(v.source, printed))
             else:
                 hint = [s for s in old.get(v.token.key(), []) if s != v.source]
                 cands = candidates(v.token, sources)
-                note = "bisher: {}; ".format(", ".join(hint)) if hint else ""
-                note += ("Kandidaten: " + ", ".join(cands)) if cands else "keine Kandidaten"
+                note = "so far: {}; ".format(", ".join(hint)) if hint else ""
+                note += ("candidates: " + ", ".join(cands)) if cands else "no candidates"
                 if v.how == "mismatch":
                     note = "{}: {}; {}".format(v.source, v.detail, note)
                 lines.append("% src ??? {}   | {} | {}".format(printed, v.context, note))
         lines.append("")
     if stray:
-        lines.append("## Erklärungen ausserhalb jeder Einheit (entfernen oder in ihre Einheit verschieben)")
-        lines += ["%   Zeile {}: % src {} {}".format(d.line, d.spec, d.printed) for d in stray]
+        lines.append("## Declarations outside every unit (remove or move into their unit)")
+        lines += ["%   line {}: % src {} {}".format(d.line, d.spec, d.printed) for d in stray]
     return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------------------------------------------
-HOW = {"result": "Ergebnis", "constant": "Konstante", "identity": "Identität", "git": "Commit-Datum",
-       "text": "Textzahl", "commit": "Commit", "none": "**NICHT ERKLÄRT**", "mismatch": "**QUELLE PASST NICHT**",
-       "decl": "**ERKLÄRUNG OHNE VORKOMMEN**"}
+HOW = {"result": "Result", "constant": "Constant", "identity": "Identity", "git": "Commit date",
+       "text": "Text count", "commit": "Commit", "none": "**NOT DECLARED**", "mismatch": "**SOURCE DOES NOT MATCH**",
+       "decl": "**DECLARATION WITHOUT OCCURRENCE**"}
 ORDER = ["result", "constant", "identity", "git", "text", "commit", "none", "mismatch", "decl"]
 
 
@@ -954,28 +968,28 @@ def render(verdicts: Sequence[Verdict], tex_path: str, results_path: str,
     for v in verdicts:
         counts[v.how] = counts.get(v.how, 0) + 1
     lines = [
-        "# Zahlenprüfung Paper 2",
+        "# Number check Paper 2",
         "",
-        "Erzeugt {} mit `scripts/p2_number_check.py` aus `{}` gegen `{}` und die Konstantenliste der "
-        "Präregistrierung. Regeln im Kopf des Skripts.".format(now.strftime("%Y-%m-%d %H:%M UTC"), tex_path,
-                                                              results_path),
+        "Generated {} with `scripts/p2_number_check.py` from `{}` against `{}` and the list of constants of the "
+        "pre-registration. Rules in the header of the script.".format(now.strftime("%Y-%m-%d %H:%M UTC"), tex_path,
+                                                                     results_path),
         "",
-        "Geprüft sind Abstract, Fliesstext aller Abschnitte und Unterabschnitte samt Zwischentiteln und alle "
-        "Bildunterschriften; nicht geprüft Titel, Schlüsselwörter, Verweise, Zitate, URLs, abgesetzte Formeln und "
-        "Literatur. Jede Zahl, jedes Datum und jede Uhrzeit ist per `% src quelle gedruckt` in ihrer Einheit an "
-        "genau eine Quelle gebunden, in der Reihenfolge des Texts; gesucht wird nichts. „Textzahl“: ein Zählwort, "
-        "das der Satz selbst belegt (`text:`), ohne Datenquelle.",
+        "Checked are the abstract, the prose of all sections and subsections including their titles, and all "
+        "figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas "
+        "and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to "
+        "exactly one source, in the order of the text; nothing is searched. \"Text count\": a count word that the "
+        "sentence itself makes evident (`text:`), without a data source.",
         "",
-        "## Ergebnis",
+        "## Result",
         "",
-        "- Zahlen, Daten und Commits im Text: {}".format(sum(1 for v in verdicts if v.how != "decl")),
+        "- Numbers, dates and commits in the text: {}".format(sum(1 for v in verdicts if v.how != "decl")),
     ]
     for how in ORDER:
         if counts.get(how):
             lines.append("- {}: {}".format(HOW[how].strip("*"), counts[how]))
-    lines += ["", "**Fehler: {}**".format(len(errors)) + ("" if errors else " (keine)"), ""]
+    lines += ["", "**Errors: {}**".format(len(errors)) + ("" if errors else " (none)"), ""]
     if errors:
-        lines += ["| Stelle | Text | Art | Zeile | Hinweis |", "|---|---|---|---|---|"]
+        lines += ["| Place | Text | Kind | Line | Note |", "|---|---|---|---|---|"]
         lines += ["| {} | `{}` | {} | {} | {} |".format(_md(v.unit), _md(v.token.rel + v.token.raw), HOW[v.how],
                                                        v.line or "", _md(" ".join(s for s in [v.source, v.detail,
                                                                                           v.context] if s)))
@@ -983,22 +997,25 @@ def render(verdicts: Sequence[Verdict], tex_path: str, results_path: str,
         lines.append("")
     texts = [v for v in verdicts if v.how == "text"]
     if texts:
-        lines += ["Textzahlen (ohne Datenquelle, zur Durchsicht):", ""]
+        lines += ["Text counts (without a data source, for review):", ""]
         lines += ["- {}: `{}` ({}) … {} …".format(_md(v.unit), v.token.raw, v.source, _md(v.context)) for v in texts]
         lines.append("")
-    lines += ["## Alle Zahlen", "", "| Stelle | Text | Beleg | Quelle | Wert |", "|---|---|---|---|---|"]
+    lines += ["## All numbers", "", "| Place | Text | Evidence | Source | Value |", "|---|---|---|---|---|"]
     for v in verdicts:
         lines.append("| {} | `{}` | {} | {} | {} |".format(_md(v.unit), _md((v.token.rel + v.token.raw).strip()),
                                                          HOW[v.how], _md(v.source), _md(v.detail)))
-    lines += ["", "## Konstanten der Präregistrierung", "",
-              "Quelle: `{}` (Commit `1d13227`) mit den Nachträgen 1 bis 4 vom 25.09.2026; die Bucketgrenzen aus "
-              "`{}`. Im Manuskript als `const:name`.".format(PREREG, PREREG_P1), "",
-              "| Name | Wert | Bedeutung | Abschnitt |", "|---|---|---|---|"]
+    lines += ["", "## Constants of the pre-registration", "",
+              "Source: `{}` (commit `cc0a29f`) with Addenda 1 to 4 of 25 September 2026; the bucket edges from "
+              "`{}`. In the manuscript as `const:name`. Sections are named as in the English translations, with the "
+              "heading of the binding German original in quotation marks.".format(PREREG, PREREG_P1), "",
+              "| Name | Value | Meaning | Section |", "|---|---|---|---|"]
     for name, (v, w, path, s) in CONSTANTS.items():
         shown = v if isinstance(v, str) else ("{:,}".format(int(v)).replace(",", " ") if float(v).is_integer()
                                               else v)
-        lines.append("| `{}` | {} | {} | {}{} |".format(name, shown, _md(w), s, "" if path == PREREG else " (Paper 1)"))
-    lines += ["", "Rechenidentitäten (keine Ergebnisse, nur Lesehilfen; im Manuskript als `ident:name`):", ""]
+        section = s + (' ("{}")'.format(SECTION_ORIGINAL[s]) if s in SECTION_ORIGINAL else "")
+        lines.append("| `{}` | {} | {} | {}{} |".format(name, shown, _md(w), section,
+                                                       "" if path == PREREG else " (Paper 1)"))
+    lines += ["", "Arithmetic identities (no results, only reading aids; in the manuscript as `ident:name`):", ""]
     lines += ["- `{}` = {:.4f}: {}".format(k, v, w) for k, (v, w) in IDENTITIES.items()]
     return "\n".join(lines) + "\n"
 
@@ -1026,7 +1043,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     print("errors           {}".format(len(errors)))
     for v in errors:
         print("  {:<34} {!r:<22} {:<9} {}{}".format(v.unit[:34], v.token.rel + v.token.raw, v.how,
-                                                    "Z. {} ".format(v.line) if v.line else "",
+                                                    "line {} ".format(v.line) if v.line else "",
                                                     " ".join(s for s in [v.source, v.detail] if s)))
     if not args.no_report:
         print("report           {}".format(args.report))

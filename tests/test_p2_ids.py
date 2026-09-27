@@ -178,7 +178,7 @@ def test_cli_salt_and_label(tmp_path, monkeypatch, capsys):
 
 
 # --------------------------------------------------------------------------------------------
-# Guards: no unsalted account hashes and no raw top-maker ids in tracked text (Nachtrag 1.4)
+# Guards: no unsalted account hashes and no raw top-maker ids in tracked text (Addendum 1.4)
 # --------------------------------------------------------------------------------------------
 
 TEXT_SUFFIXES = {".json", ".jsonl", ".csv", ".md", ".txt", ".tex", ".bib", ".tsv", ".py"}
@@ -219,7 +219,7 @@ def test_guard_scans_tests_and_python_sources():
 
 
 def test_no_raw_top_maker_ids_in_tests():
-    """The rank key raw id -> M1..M10 stays in data/p2 (Nachtrag 1.4); tests use synthetic ids. Checks the ids with
+    """The rank key raw id -> M1..M10 stays in data/p2 (Addendum 1.4); tests use synthetic ids. Checks the ids with
     at least five digits (shorter ones collide with strikes and counts); needs the private list, else skipped."""
     if not p2ids.TOP_MAKERS.exists():
         pytest.skip(f"private list of top makers missing: {p2ids.TOP_MAKERS}")

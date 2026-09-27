@@ -1,4 +1,4 @@
-"""Shared helpers of the Paper 2 figures T2 and A1 (ABBILDUNGSWAHL section 6).
+"""Shared helpers of the Paper 2 figures T2 and A1 (FIGURE_SELECTION section 6).
 
 Canvas = print size (no ``bbox tight``, no padding), no text under ``FS_MIN``, manager colours, line styles and
 markers from section 6.2 (read from ``figstyle`` once it carries them), axes placed in inches from the top left corner,

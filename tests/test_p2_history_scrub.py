@@ -1,4 +1,4 @@
-"""Tests for scripts/p2_history_scrub.py (audit A01, docs/paper2/HISTORIE_BEREINIGEN.md).
+"""Tests for scripts/p2_history_scrub.py (audit A01, docs/paper2/HISTORY_CLEANUP.md).
 
 All ids, hashes and the salt below are synthetic; the "real" top list of these tests is made up.
 """
@@ -64,7 +64,7 @@ def test_only_the_paper2_roots_and_text_files_are_touched():
     for path in ("results/p1/x.csv", "docs/paper1/x.md", "paper/main.tex", "derive_surface/x.py",
                  "results/p2/fig.png"):
         assert s.scrub(path, text) == (text, {"hashes": 0, "raw_ids": 0})
-    for path in ("results/p2/a.csv", "docs/paper2/DATENSTAND.md", "paper2/main.tex", "tests/test_x.py"):
+    for path in ("results/p2/a.csv", "docs/paper2/DATA_STATUS.md", "paper2/main.tex", "tests/test_x.py"):
         assert s.scrub(path, text)[0] == "hash M1\n"
 
 
@@ -138,12 +138,12 @@ def test_filter_branch_rewrites_only_the_new_branch(tmp_path):
         _git(repo, "commit", "-q", "-m", msg, env=env)
         return _git(repo, "rev-parse", "HEAD").strip()
 
-    prereg = commit({"docs/paper2/PRAEREGISTRIERUNG.md": "Praeregistrierung\n"}, "prereg")
+    prereg = commit({"docs/paper2/PRAEREGISTRIERUNG.md": "pre-registration\n"}, "prereg")
     leak = commit({"tests/test_p2_ids.py": OLD_IDS_TEST,
                    "tests/fixtures/p2/pm_chain_accounts.json": json.dumps({"account_hash": _sha10(REAL[1])}),
                    "results/p2/params/ETH_pm2_overrides.json": f'[{{"account": "{_sha10(REAL[3])}"}}]\n'},
                   "stage a")
-    addendum = commit({"docs/paper2/PRAEREGISTRIERUNG.md": "Praeregistrierung\nNachtrag 1\n"}, "nachtrag 1")
+    addendum = commit({"docs/paper2/PRAEREGISTRIERUNG.md": "pre-registration\naddendum 1\n"}, "addendum 1")
     fixed = commit({"tests/test_p2_ids.py": "TOP = [104, 101]\n",
                     "results/p2/params/ETH_pm2_overrides.json": '[{"account": "M4"}]\n'},
                    "fix", remove=["tests/fixtures/p2/pm_chain_accounts.json"])

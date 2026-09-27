@@ -71,11 +71,13 @@ def missing_disclosures(tex: str) -> list:
         ("A02 commit times are local", back, r"local times of the author's machine"),
         ("A02 no public timestamp before the results", back, r"no public timestamp precedes the results"),
         ("A64 German original binding", back, r"German original is binding"),
-        ("A64 translation named", back, r"PREREGISTRATION_EN\.md"),
+        ("A64 translation named", back, r"docs/paper2/PREREGISTRATION\.md"),
         ("A37 addendum 4 after doses and panel", back, r"Addendum 4 was written after .*doses and the H4 panel"),
         ("A40 validation fixtures read maker margins", back, r"validation fixtures .* maker accounts"),
-        ("A18 both unit errors of the companion paper", data, r"both unit errors"),
-        ("A18 version of the companion paper", data, r"version of 19 September 2026"),
+        ("A18 correction of the companion paper", data, r"companion paper was corrected on 25 September 2026"),
+        ("A18 same unit as the companion paper", data, r"uses the same unit per contract"),
+        ("A01 history rewrite disclosed", back, r"history was rewritten to remove account identifiers"),
+        ("A01 map of old and new hashes", back, r"HISTORY_REWRITE\.md\} maps the old commit hashes"),
         ("A09 wallets of the subaccounts", data, r"share a wallet"),
         ("A05 power of H4", flat, r"The test has little power"),
         ("A05 placebo-calibrated range", flat, r"Calibrated on those placebo statistics"),
@@ -132,11 +134,12 @@ def test_pdf_metadata_overwritten(tex):
 
 
 def test_checks_catch_the_version_before_the_audit():
-    """The checks are not vacuous: the manuscript as audited (commit 3ec74f4) fails each of them."""
+    """The checks are not vacuous: the manuscript as audited (commit 1894bad, 3ec74f4 before the history rewrite,
+    same blob) fails each of them."""
     import subprocess
-    old = subprocess.run(["git", "show", "3ec74f4:paper2/main.tex"], cwd=REPO, capture_output=True, text=True)
+    old = subprocess.run(["git", "show", "1894bad:paper2/main.tex"], cwd=REPO, capture_output=True, text=True)
     if old.returncode != 0:
-        pytest.skip("commit 3ec74f4 not available")
+        pytest.skip("commit 1894bad not available")
     assert len(retracted_found(old.stdout)) == len(RETRACTED)
     assert len(missing_disclosures(old.stdout)) >= 10
     assert float_order_problems(old.stdout)

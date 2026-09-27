@@ -16,7 +16,7 @@ from derive_surface.p2feeds import FeedExpiryState, FeedHistory
 from derive_surface.p2types import Book, MarketState, OptionLeg
 
 # b1_chain_cases.json holds real maker books (M-labels and their positions on a day), so fixture and generator live
-# in data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01); without them these tests are skipped.
+# in data/p2/fixtures_private (not tracked, Addendum 1.4, audit A01); without them these tests are skipped.
 PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
 
 

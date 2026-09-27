@@ -2,7 +2,7 @@
 verdict forest.
 
 Both figures stand side by side at the top of a page, so they have the same canvas, the same header block, the
-same axes boxes and the same forest grammatics (ABBILDUNGSWAHL.md, 6.5): the bold verdict line is rebuilt from the
+same axes boxes and the same forest grammatics (FIGURE_SELECTION.md, 6.5): the bold verdict line is rebuilt from the
 registered rule and bounds and must agree with ``rejected`` in the result file, otherwise the build stops.
 
 Layout from the top: three header lines (verdict, then the sample in two lines), a zone of two text lines above

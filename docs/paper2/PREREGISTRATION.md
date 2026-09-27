@@ -6,12 +6,17 @@
 > `96986c732c85408daa4e704c519601bb531fdc4b` (`git hash-object docs/paper2/PRAEREGISTRIERUNG.md`). **The German
 > original is binding**; where the two texts differ, the German text applies. The registration itself is commit
 > `1d13227`; the commits of the four addenda are named in the section "Data, code and pre-registration" of
-> `paper2/main.tex`.
+> `paper2/main.tex`. Since the history rewrite of 27 September 2026 these commits carry new hashes (the
+> registration is `cc0a29f`); `docs/paper2/HISTORY_REWRITE.md` maps old to new and shows that
+> `PRAEREGISTRIERUNG.md` is byte-identical in every pair, so the blob above is unchanged. Until 27 September 2026
+> this translation was `docs/paper2/PREREGISTRATION_EN.md`.
 >
 > Conventions: "Nachtrag" is rendered as "Addendum", as in the paper. Numbers use a decimal point instead of the
-> German decimal comma and dates are written out; file paths, code names, symbols and formulas are unchanged. Two
-> symbols keep their German subscripts: `Einzel` (single contract) in K_PM2,Einzel and K_Einzel, and `nach` / `vor`
-> (after / before the event) in K_nach and K_vor.
+> German decimal comma and dates are written out; code names, symbols and formulas are unchanged. File paths are
+> those of the original, except that files renamed on 27 September 2026 appear under their new names
+> (`get_margin_semantics.md`, `VALIDATION.md`); the German original keeps the old ones. Two symbols keep their
+> German subscripts: `Einzel` (single contract) in K_PM2,Einzel and K_Einzel, and `nach` / `vor` (after / before
+> the event) in K_nach and K_vor.
 
 Fixed on 24 September 2026, before any capital figure of the paper was computed. The git commit of this file is
 the timestamp. Later changes only as a dated addendum at the end, never by overwriting.
@@ -97,7 +102,7 @@ the timestamp. Later changes only as a dated addendum at the end, never by overw
   missed, the cause is recorded as a dated addendum before the inference.
 
 ## State of the data before this commit
-- Computed so far, exploratively: the semantics probes (`docs/paper2/get_margin_semantik.md`, netting factors of
+- Computed so far, exploratively: the semantics probes (`docs/paper2/get_margin_semantics.md`, netting factors of
   synthetic books from 2× to 11×, which entered the threshold of H3) and a feasibility probe under SM for BTC
   (`data/p2/kontext/oberflaeche/proto_fill_capital.py`: pooled edge per SM capital 41 bp for maker sells, 74 bp for
   maker buys).
@@ -153,7 +158,7 @@ the timestamp. Later changes only as a dated addendum at the end, never by overw
 
 ## Addendum 4 (25 September 2026, after the validation, before the first test statistic)
 
-The validation against `eth_call` is passed (`docs/paper2/VALIDIERUNG.md`: under IM median |rel| 8.7e−10, p95
+The validation against `eth_call` is passed (`docs/paper2/VALIDATION.md`: under IM median |rel| 8.7e−10, p95
 1.4e−8 for single contracts; books with 2 to 245 legs median 2.2e−9). Open readings are fixed here before any test
 statistic is computed:
 

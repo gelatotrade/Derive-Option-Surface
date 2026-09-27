@@ -59,7 +59,7 @@ ENGINES = {"sm": margin_sm, "pm": margin_pm, "pm2": margin_pm2}
 SIDES = {"short": -1.0, "sell": -1.0, "long": 1.0, "buy": 1.0}
 REF_HOUR = 8            # daily construction time of the reference book (UTC)
 REF_TARGET_DAYS = 30.0  # the reference straddle uses the expiry closest to 30 days
-END_DAY = "2026-09-17"  # pilot cut 17.09.2026 12:00 UTC (the 08:00 book of that day is inside)
+END_DAY = "2026-09-17"  # pilot cut 2026-09-17 12:00 UTC (the 08:00 book of that day is inside)
 REF_START = {"BTC": "2024-01-11", "ETH": "2024-01-11", "HYPE": "2025-11-11"}
 SURFACE_DIR = Path("data/p2/surface")
 PARTS_DIR = SURFACE_DIR / "refbook"
@@ -74,7 +74,7 @@ def _ts(s: str) -> int:
 
 
 # Manager windows of the preregistration (start, inclusive); SM and legacy PM over the whole sample (HYPE SM from
-# 11.11.2025), PM2 for BTC/ETH from 12.06.2025 23:00 UTC and for HYPE from 11.11.2025; no legacy PM for HYPE.
+# 2025-11-11), PM2 for BTC/ETH from 2025-06-12 23:00 UTC and for HYPE from 2025-11-11; no legacy PM for HYPE.
 WINDOW_START: Dict[tuple, Optional[int]] = {
     ("BTC", "sm"): _ts("2024-01-11"), ("ETH", "sm"): _ts("2024-01-11"), ("HYPE", "sm"): _ts("2025-11-11"),
     ("BTC", "pm"): _ts("2024-01-11"), ("ETH", "pm"): _ts("2024-01-11"), ("HYPE", "pm"): None,

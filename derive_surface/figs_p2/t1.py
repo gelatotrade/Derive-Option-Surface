@@ -1,4 +1,5 @@
-"""T1 · The engine's view of the surface (Paper 2, ``docs/paper2/ABBILDUNGSWAHL.md`` section 7, slot T1).
+"""T1 · The engine's view of the surface (Paper 2, ``docs/paper2/FIGURE_SELECTION.md`` section 7,
+slot T1).
 
 Panels a and b: the BTC implied-vol surface of the chain at 17 Sep 2026 08:00 UTC in 3D (height = implied vol), coloured
 with the capital that one short contract binds under PM2 and under SM (``cividis`` on one fixed scale, % of forward),
@@ -78,8 +79,9 @@ CAPTION = (
     "standard margin (panel b) as colour on a common scale in per cent of the forward. Height is volatility, colour is "
     "capital, and black lines join points of equal capital. Panels c and d name the rule that sets the capital at each "
     "point: the worst scenario of the PM2 grid, and the branch of the standard margin formula. Their grid lines are "
-    "the delta and tenor bucket edges of Figures~\\ref{fig:f1} and~\\ref{fig:f2}; the surface holds out-of-the-money "
-    "options only, so buckets above an absolute delta of 0.6 have no counterpart here. Standard margin is set in per "
+    "the delta and tenor bucket edges of Figures~\\ref{fig:f1} and~\\ref{fig:f2}, and the ticks on their right "
+    "edge mark the listed expiries; the surface holds out-of-the-money options only, so buckets above an absolute "
+    "delta of 0.6 have no counterpart here. Standard margin is set in per "
     "cent of spot and shown in per cent of the forward. Capital follows the contracts on chain; the venue's off-chain "
     "engine discounts PM2 at a flat two per cent."
 )
@@ -128,7 +130,7 @@ def _k(mgr, how):
     return _src_grid(lambda g: getattr(g.loc[g["manager"] == mgr, "K_pct"], how)())
 
 
-# Pruefzahlen of the build instruction (section 7, T1): the value printed in the figure table against the source file in
+# Check numbers of the build instruction (section 7, T1): the value printed in the figure table against the source file in
 # results/p2 (the engine grid and its metadata), never against the figure table itself. ``figure`` = (file, key,
 # manager); ``source`` = (file, recomputation); ``expected`` = the number of the build instruction; ``tol`` absolute.
 CHECKS: List[dict] = [

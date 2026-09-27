@@ -106,28 +106,32 @@ Clarify the semantics of `get_margin` before anything else happens. Specifically
 how does one read from it a requirement that is comparable across portfolios. Only once this question
 is answered is an experimental design for the sampling worthwhile.
 
-## Nachtrag 24.09.2026, nachmittags: Semantik geklärt
+## Addendum of 24 September 2026, afternoon: semantics clarified
 
-Der erste Schritt ist erledigt, das Ergebnis steht in `docs/paper2/get_margin_semantik.md`. Mehrere Aussagen
-oben sind damit überholt; Abschnitt 9 der Notiz listet sie. Die wichtigsten:
+The first step is done; the result is in `docs/paper2/get_margin_semantics.md`. Several statements above are
+therefore out of date; section 9 of the note lists them. The most important:
 
-- `get_margin` liefert Netto-Margin, `net = C + V − R`. „Kapital minus post_initial_margin“ ist R − V und
-  keine Anforderung. Vergleichbar ist das Kapitalmass K_p(q) = Σ p·q − net_IM(q; C = 0).
-- Der Widerspruch 11 gegen 1,2 kommt von zwei verschiedenen Büchern und von dieser Lesart. Parameter haben
-  sich nicht geändert. Auf R lag der Faktor am 17.09. bei 10,8 (gemischtes Buch nahe am Geld).
-- Produktiv ist v2 (`api.lyra.finance`). PM2 diskontiert dort pauschal mit 2 %, on-chain mit dem Rate-Feed.
-  `api.derive.xyz/v3` ist ein Schattenbetrieb.
-- SM ist nicht konvex. PM2 ist in natürlichen Büchern konvex, in konstruierten nicht. Eine absolute
-  Grössen-Bruchstelle gibt es nicht, R ist homogen vom Grad 1.
-- Rohdaten liegen unter `data/p2/semantik_20260924/` (nicht im Git), kleine Tabellen unter `results/p2/semantik/`.
+- `get_margin` returns net margin, `net = C + V − R`. "Capital minus `post_initial_margin`" is R − V and not a
+  requirement. The comparable quantity is the capital measure K_p(q) = Σ p·q − net_IM(q; C = 0).
+- The contradiction 11 versus 1.2 comes from two different books and from this reading. Parameters did not
+  change. On R the factor on 17 September was 10.8 (mixed book near the money).
+- Production is v2 (`api.lyra.finance`). There PM2 discounts at a flat 2 %, on-chain with the rate feed.
+  `api.derive.xyz/v3` is a shadow operation.
+- SM is not convex. PM2 is convex in natural books, not in constructed ones. There is no absolute breaking point in
+  size; R is homogeneous of degree 1.
+- Raw data are under `data/p2/semantik_20260924/` (not in git), small tables under `results/p2/semantics/`.
 
-Nächster Schritt: die Entscheidungen aus Abschnitt 10 der Notiz treffen, dann brainstorming, Spezifikation
-und Präregistrierung.
+Next step: make the decisions from section 10 of the note, then brainstorming, specification and pre-registration.
 
-## Nachtrag 25.09.2026, morgens: Paper 2 geschrieben und auditiert
+## Addendum of 25 September 2026, morning: Paper 2 written and audited
 
-Stand und offene Entscheidungen stehen in `docs/paper2/BERICHT_2026-09-25.md`. Kurz: Manuskript
-`paper2/main.tex` (12 Seiten, Bau über `python3 scripts/p2_build.py`), Branch `paper2-kapital` (lokal, nicht
-gepusht), Präregistrierung `1d13227` mit vier Nachträgen, Audit `docs/paper2/AUDIT.md`. Vor jedem Push zuerst
-`docs/paper2/HISTORIE_BEREINIGEN.md` lesen. Paper 1 hat einen Einheitenfehler bei Gebühr und Rabatt
-(`docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md`), der vor dem Enddatenlauf korrigiert werden muss.
+Status and open decisions are in `docs/paper2/REPORT_2026-09-25.md`. In short: manuscript `paper2/main.tex`
+(12 pages, built with `python3 scripts/p2_build.py`), branch `paper2-kapital` (local, not pushed), pre-registration
+`1d13227` with four addenda, audit `docs/paper2/AUDIT.md`. Before any push, read `docs/paper2/HISTORY_CLEANUP.md`
+first. Paper 1 has a unit error in fee and rebate (`docs/paper1/FINDING_2026-09-25_FEE_UNITS.md`), which must be
+corrected before the final data run.
+
+> Translated on 27 September 2026. Both points of this addendum are settled since: Paper 1 was corrected in its
+> revision of 25 September 2026 (`docs/paper1/REVISION_2026-09-25.md`), and the history was cleaned on
+> 27 September 2026. The branch is now `paper2-capital` and the pre-registration commit `cc0a29f`
+> (`docs/paper2/HISTORY_REWRITE.md`).

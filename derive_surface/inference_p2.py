@@ -28,9 +28,9 @@ interval. Rejected if the lower bound is at most 2.
 Every verdict is a JSON object ``{stat, lo, hi, rejected, rule, n, ...}``. Accounts appear only as ``p2ids`` labels
 (the input tables carry them in ``label``); raw subaccount ids never reach ``results/``.
 
-Review round 1 (exploratory, docs/paper2/MANUSKRIPT.md): ``h1_sign`` in ``sensitivity.json`` (the rho that the sign
+Review round 1 (exploratory, docs/paper2/MANUSCRIPT.md): ``h1_sign`` in ``sensitivity.json`` (the rho that the sign
 pattern alone gives when ranks are shuffled within each sign group, rho within sign groups and sides, overlap of the
-best cells), H2 and H3 per parameter regime (``regime=R1`` to ``R4``, section 6.6 of ABBILDUNGSWAHL), H3 per manager
+best cells), H2 and H3 per parameter regime (``regime=R1`` to ``R4``, section 6.6 of FIGURE_SELECTION), H3 per manager
 of the account (``account_manager=SM/PM/PM2``) and on small books without the SM account, and the size of the H2
 population before the draw. None of it changes a registered number.
 
@@ -77,8 +77,8 @@ H2_MAX_MEDIAN = 0.5
 H3_MIN_MEDIAN = 2.0
 SM_MAX_OPTIONS = 63            # options an SM account on v2 can hold (addendum 4, item 2)
 SIGN_DRAWS = 4_000             # shuffles of the ranks within the sign groups (h1_sign.sign_floor)
-# Parameter regimes of the figures (ABBILDUNGSWAHL section 6.6): the PM2 events of 23.01.2026 04:24:05,
-# 24.05.2026 04:05:07 and 20.08.2026 22:09:25 UTC; an object at the event second belongs to the later regime. Fills
+# Parameter regimes of the figures (FIGURE_SELECTION section 6.6): the PM2 events of 2026-01-23 04:24:05,
+# 2026-05-24 04:05:07 and 2026-08-20 22:09:25 UTC; an object at the event second belongs to the later regime. Fills
 # are placed by their time, maker days by the book time 00:00 UTC. Same bounds as figs_p2.f1.REGIME_BOUNDS (tested).
 REGIME_BOUNDS = (1769142245, 1779595507, 1787263765)
 REGIMES = ("R1", "R2", "R3", "R4")
@@ -187,7 +187,7 @@ def edge_frame(markouts: pd.DataFrame, funding: pd.DataFrame, capital: pd.DataFr
     fee_net = a["fee_maker"].to_numpy(float) - a["rebate_maker"].to_numpy(float)   # sums per fill
     hedge = a["hedge"].to_numpy(float)                                               # per contract
     edge = mo * amount - fee_net - hedge * amount
-    # Paper 1's form, fee and rebate undivided. The revised inference_p1.analysis_frame (revision of 25.09.2026)
+    # Paper 1's form, fee and rebate undivided. The revised inference_p1.analysis_frame (revision of 2026-09-25)
     # divides them by the amount, so the form of the pre-registered sensitivity is computed here, in the same
     # order of operations as the former analysis_frame.
     ne_p1 = (a["y_usd"] - a["fee_maker"].to_numpy() + a["rebate_maker"].to_numpy()

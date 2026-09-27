@@ -3,9 +3,9 @@
 Every command hands the remaining arguments unchanged to ``main(argv)`` of its module, for example
 ``python3 -m derive_surface p2 params load --max-seconds 520`` runs ``derive_surface.p2params.main(["load", ...])``
 and ``python3 -m derive_surface p2 feeds --help`` shows the options of the feed module. The exit code is the return
-value of that ``main`` (``None`` counts as 0). A command whose code lives outside the package (``p2 zahlenblatt`` runs
-``scripts/p2_zahlenblatt.py``) is imported from its file as a module of its own name and its ``main`` is called the
-same way.
+value of that ``main`` (``None`` counts as 0). A command whose code lives outside the package (``p2 numbers`` runs
+``scripts/p2_numbers.py``) is imported from its file as a module of its own name and its ``main`` is called the same
+way.
 
 Runs that load a FeedHistory with SVI or more than 2 GB go through the machine-wide lock:
 ``python3 scripts/p2_heavy.py --wait-max 500 -- python3 -m derive_surface p2 <command> ...``.
@@ -20,7 +20,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Sequence
 
-PLAN = "docs/superpowers/plans/2026-09-24-p2-gesamtplan.md"
+PLAN = "docs/superpowers/plans/2026-09-24-p2-master-plan.md"
 REPO = Path(__file__).resolve().parents[1]
 
 
@@ -41,8 +41,8 @@ COMMANDS = OrderedDict([
     ("surface", Command("p2surface", "B5", "chain surface, capital surface, reference book, animation")),
     ("infer", Command("inference_p2", "C1", "H1 to H3 and sensitivities")),
     ("infer-h4", Command("inference_p2_h4", "C1", "H4: regression, wild cluster bootstrap, placebo")),
-    ("zahlenblatt", Command("p2_zahlenblatt", "C1", "number sheet docs/paper2/ZAHLENBLATT.md and summary.json",
-                            script="scripts/p2_zahlenblatt.py")),
+    ("numbers", Command("p2_numbers", "C1", "number sheet docs/paper2/NUMBERS.md and summary.json",
+                        script="scripts/p2_numbers.py")),
     ("api", Command("p2api", "C5b", "explorative API snapshot: get_margin against the replica at the head block")),
     ("figures", Command("figures_p2", "D1", "figures of paper 2")),
     ("ids", Command("p2ids", "B0", "account labels: salt, label")),

@@ -105,7 +105,7 @@ MANAGER.update({("pm2", ccy): PM2_ADDR[ccy]["manager"] for ccy in PM2_ADDR})
 
 SLOT_BALANCE_AND_ORDER = 14
 SLOT_HELD_ASSETS = 15
-SYNTHETIC_ACCOUNT = 2 ** 64 + SEED   # far above SubAccounts.lastAccountId (72 019 on 17.09.2026)
+SYNTHETIC_ACCOUNT = 2 ** 64 + SEED   # far above SubAccounts.lastAccountId (72 019 on 2026-09-17)
 INT240_MIN, INT240_MAX = -(1 << 239), (1 << 239) - 1
 
 # ---------------------------------------------------------------- keccak256 (Ethereum's pre-standard Keccak)

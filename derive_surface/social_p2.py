@@ -1,4 +1,5 @@
-"""Social cards of Paper 2 at 1600 x 900, drawn to be read on a phone (``docs/paper2/ABBILDUNGSWAHL.md``, section 9).
+"""Social cards of Paper 2 at 1600 x 900, drawn to be read on a phone
+(``docs/paper2/FIGURE_SELECTION.md``, section 9).
 
 Pattern ``figures_social.py`` (fixed size, no tight bounding box, one idea per card). Every number is read from
 ``results/p2``, never typed, and each number of a title stands in the drawing as well. Type at least 28 px, colour
@@ -14,7 +15,7 @@ only for the managers and always together with a line style or hatch, simple per
 
 Departures from section 9, and why: the first card says "margin managers", not "margin engines", because the paper
 keeps "engine" for the two implementations (off-chain and on chain) of the managers; the footer names the commit of
-the pre-registration (``1d13227``), not that of Addendum 4; H4 shows no interval, since its interval is descriptive
+the pre-registration (``cc0a29f``), not that of Addendum 4; H4 shows no interval, since its interval is descriptive
 and too narrow for the spread between placebo dates (audit A05); the statement of H2 names the whole fill, which is
 what the registered statistic covers.
 
@@ -49,7 +50,7 @@ INK = "#111111"
 MUTED = "#555555"
 HATCH_GREY = "#999999"
 MANAGER = {"pm2": ("#0072B2", "-", "PM2"), "pm": ("#009E73", ":", "legacy PM"), "sm": ("#D55E00", "--", "SM")}
-FOOTER = "Derive, chain 957 · replica of the deployed margin contracts · pre-registration 1d13227"
+FOOTER = "Derive, chain 957 · replica of the deployed margin contracts · pre-registration cc0a29f"
 RESULTS = Path("results/p2")
 OUT = Path("paper2/social")
 MINUS = "−"

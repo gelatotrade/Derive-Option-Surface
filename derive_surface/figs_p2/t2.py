@@ -1,7 +1,7 @@
-"""T2 · What ``get_margin`` returns, and how PM2 prices a book (ABBILDUNGSWAHL.md section 7, T2), 7.0 x 2.6 in.
+"""T2 · What ``get_margin`` returns, and how PM2 prices a book (FIGURE_SELECTION.md section 7, T2), 7.0 x 2.6 in.
 
-* a, b: the four historical probe books of ``results/p2/semantik/faktoren.csv`` (``messung`` starts with
-  "historisch", no "H0_", ``fall`` A or B). a splits ``C - net`` of the mixed book of 24 Sep 2026 into the requirement
+* a, b: the four historical probe books of ``results/p2/semantics/faktoren.csv`` (the file keeps the column names
+  of the probes: ``messung`` starts with "historisch", no "H0_", ``fall`` A or B). a splits ``C - net`` of the mixed book of 24 Sep 2026 into the requirement
   ``R`` and the value term ``-V`` of each manager; b sets the SM/PM2 ratio read on ``C - net`` against the ratio on
   ``R`` for all four books.
 * c: the scenario profit and loss of the BTC reference straddle of 17 Sep 2026, 08:00 UTC (the row of
@@ -41,7 +41,7 @@ from . import _kit_t2a1 as kit  # noqa: E402
 
 SLOT = "t2"
 WIDTH, HEIGHT = 7.0, 2.6
-FAKTOREN = Path("semantik") / "faktoren.csv"
+FAKTOREN = Path("semantics") / "faktoren.csv"
 REFBOOK = Path("reference_book.csv")
 REF_CCY, REF_DAY, REF_TS = "BTC", "2026-09-17", 1_789_632_000   # 17 Sep 2026 08:00 UTC
 REPRO_REL = 1e-9

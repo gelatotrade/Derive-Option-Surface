@@ -1,4 +1,4 @@
-"""Offline tests for scripts/p2_zahlenblatt.py on a synthetic results directory with known answers."""
+"""Offline tests for scripts/p2_numbers.py on a synthetic results directory with known answers."""
 from __future__ import annotations
 
 import copy
@@ -13,7 +13,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-import p2_zahlenblatt as zb  # noqa: E402
+import p2_numbers as nb  # noqa: E402
 
 NOW = dt.datetime(2026, 9, 25, 12, 0, tzinfo=dt.timezone.utc)
 B, SEED = 99, 7
@@ -169,7 +169,7 @@ def results(tmp_path) -> Path:
 
 
 def run(path: Path):
-    return zb.build(path, now=NOW, prereg_end_ts=PREREG_END)
+    return nb.build(path, now=NOW, prereg_end_ts=PREREG_END)
 
 
 # --------------------------------------------------------------------------------------------------------------
@@ -221,9 +221,9 @@ def test_cutoff_is_not_hard_coded(tmp_path):
     inp["h2.json"]["last_day"] = "2026-09-29"
     rb = inp["reference_book.csv"]
     rb.loc[rb.index[-1], "day"] = "2026-09-30"
-    md, s = zb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
+    md, s = nb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
     assert s["cutoff_day"] == "2026-09-30" and s["sample_is_pilot"] is False
-    assert "30.09.2026" in md and "17.09.2026" not in md
+    assert "2026-09-30" in md and "2026-09-17" not in md
     assert s["checks_failed"] == 0
 
 
@@ -246,7 +246,7 @@ def test_reference_book_effects_are_matched_to_events(results):
     assert s["event_btc_pm2_20260108_kept"] is True and s["event_btc_pm2_20260123_kept"] is False
     assert s["events_total"] == 2 and s["events_kept"] == 1 and s["events_dropped"] == 1
     assert s["refbook_changes_without_event"] == 1
-    assert "−20,00 %" in md and "+12,50 %" in md
+    assert "−20.00 %" in md and "+12.50 %" in md
     # reference book level in bp of the forward (K / forward * 1e4): PM2 100, 80, 80, 90, 90 -> median 90 bp
     assert s["refbook_btc_pm2_bp_median"] == pytest.approx(90.0)
     assert s["refbook_hype_pm_bp_median"] is None
@@ -280,21 +280,21 @@ def test_keys_are_stable_across_data(tmp_path):
     b["sensitivity.json"]["d_h2"]["by_label"] = {"M5": _verdict(0.05, 0.04, 0.07, False, 90, "H2")}
     b["h1.json"]["cells_by_ccy"] = {"ETH": 3}
     b["h2.json"]["fills_by_ccy"] = {"BTC": 199}
-    _, sa = zb.build(write_results(tmp_path / "a", a), now=NOW, prereg_end_ts=PREREG_END)
-    _, sb = zb.build(write_results(tmp_path / "b", b), now=NOW, prereg_end_ts=PREREG_END)
+    _, sa = nb.build(write_results(tmp_path / "a", a), now=NOW, prereg_end_ts=PREREG_END)
+    _, sb = nb.build(write_results(tmp_path / "b", b), now=NOW, prereg_end_ts=PREREG_END)
     core = lambda s: {k for k in s if not k.startswith("event_")}  # noqa: E731
     assert core(sa) == core(sb)
 
 
 def test_markdown_verdicts_numbers_and_sections(results):
     md, _ = run(results)
-    for head in ("## Stichprobe", "## Validierung", "## H1", "## H2", "## H3", "## H4", "## Explorative",
-                 "## Referenzbuch", "## Manager-Anteile", "## Konsistenzprüfungen"):
+    for head in ("## Sample", "## Validation", "## H1", "## H2", "## H3", "## H4", "## Exploratory",
+                 "## Reference book", "## Manager shares", "## Consistency checks"):
         assert head in md, head
-    assert "**abgelehnt**" in md and "nicht abgelehnt" in md
-    assert "0,500 [0,200; 0,800]" in md          # H1 with interval
-    assert "0,0345 [0,0307; 0,0386]" in md       # H2
-    assert "17.09.2026 11:51:53 UTC" in md       # last fill from the data
+    assert "**rejected**" in md and "not rejected" in md
+    assert "0.500 [0.200; 0.800]" in md          # H1 with interval
+    assert "0.0345 [0.0307; 0.0386]" in md       # H2
+    assert "2026-09-17 11:51:53 UTC" in md       # last fill from the data
     assert "1\u202f500" in md                   # thousands separator as in the Paper 1 sheet
 
 
@@ -323,7 +323,7 @@ def test_markdown_tables_have_consistent_columns(results):
 def test_verdicts_are_recomputed_from_the_rules(tmp_path):
     inp = base_inputs()
     inp["h2.json"]["rejected"] = True  # hi 0.0386 < 0.5: the rule says not rejected
-    _, s = zb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
+    _, s = nb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
     assert s["checks_failed"] >= 1 and s["checks_ok"] is False
 
 
@@ -331,13 +331,13 @@ def test_h4_verdict_is_recomputed_from_beta_p_and_placebo(tmp_path):
     # criteria flags consistent with beta, p and P95, but the verdict contradicts the rule
     inp = base_inputs()
     inp["h4.json"]["rejected"] = False
-    _, s = zb.build(write_results(tmp_path / "a", inp), now=NOW, prereg_end_ts=PREREG_END)
+    _, s = nb.build(write_results(tmp_path / "a", inp), now=NOW, prereg_end_ts=PREREG_END)
     assert s["checks_failed"] == 1
     # a positive, significant beta above the placebo P95 must not be rejected
     inp = base_inputs()
     inp["h4.json"].update(stat=30.0, p=0.01, rejected=False,
                           criteria={"beta_positive": True, "p_le_alpha": True, "beta_gt_placebo_p95": True})
-    _, s = zb.build(write_results(tmp_path / "b", inp), now=NOW, prereg_end_ts=PREREG_END)
+    _, s = nb.build(write_results(tmp_path / "b", inp), now=NOW, prereg_end_ts=PREREG_END)
     assert s["checks_failed"] == 0 and s["h4_rejected"] is False
 
 
@@ -346,26 +346,26 @@ def test_consistency_checks_pass_on_consistent_data_and_flag_seed(results, tmp_p
     assert s["checks_failed"] == 0 and s["checks_ok"] is True
     inp = base_inputs()
     inp["h3.json"]["seed"] = SEED + 1
-    md, s2 = zb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
-    assert s2["checks_failed"] >= 1 and "**verletzt**" in md
+    md, s2 = nb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
+    assert s2["checks_failed"] >= 1 and "**violated**" in md
 
 
 def test_missing_input_raises(tmp_path):
     inp = base_inputs()
     del inp["h3.json"]
     with pytest.raises(FileNotFoundError, match="h3.json"):
-        zb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
+        nb.build(write_results(tmp_path / "r", inp), now=NOW, prereg_end_ts=PREREG_END)
 
 
 def test_main_writes_markdown_and_sorted_summary(results, tmp_path):
-    out, summ = tmp_path / "Z.md", tmp_path / "summary.json"
-    assert zb.main(["--results", str(results), "--out", str(out), "--summary", str(summ), "--quiet"]) == 0
+    out, summ = tmp_path / "NUMBERS.md", tmp_path / "summary.json"
+    assert nb.main(["--results", str(results), "--out", str(out), "--summary", str(summ), "--quiet"]) == 0
     text = summ.read_text()
     s = json.loads(text)
     assert list(s) == sorted(s)
-    assert out.read_text().startswith("# Zahlenblatt Paper 2")
+    assert out.read_text().startswith("# Numbers for Paper 2")
     # deterministic summary: a second run gives the same bytes
-    zb.main(["--results", str(results), "--out", str(out), "--summary", str(summ), "--quiet"])
+    nb.main(["--results", str(results), "--out", str(out), "--summary", str(summ), "--quiet"])
     assert summ.read_text() == text
 
 
@@ -421,7 +421,7 @@ def _audit_inputs() -> dict:
 
 
 def test_audit_numbers_pass_through_and_keys_exist_without_them(tmp_path):
-    md, s = zb.build(write_results(tmp_path / "a", _audit_inputs()), now=NOW, prereg_end_ts=PREREG_END)
+    md, s = nb.build(write_results(tmp_path / "a", _audit_inputs()), now=NOW, prereg_end_ts=PREREG_END)
     assert s["h1_interval_share_ge_stat"] == 0.152 and s["h1_interval_bc_lo"] == 0.45
     assert s["h1_sign_within_pos_switch_share_mean"] == 0.21 and s["h1_sign_within_nonpos_per_replicate"] is True
     assert s["sens_h1_sign_within_pos_lo"] == 0.572 and s["sens_h1_sign_within_nonpos_hi"] == 0.684
@@ -432,9 +432,9 @@ def test_audit_numbers_pass_through_and_keys_exist_without_them(tmp_path):
     assert s["sens_h4_matched_placebo_p95"] == 30.1 and s["sens_h4_matched_rejected"] is True
     assert s["sens_h4_dose_median_beta"] == -5.1 and s["sens_h4_dose_trimmed_p"] == 0.63
     assert s["sens_h4_dose_pairs_with_large_log_ratio"] == 1
-    assert "## Audit (explorativ)" in md
-    assert "Auswahl je Replikation neu" in md and "1,82" in md and "−41,6" in md
-    assert "Placebos nur Ereignisse mit Zellen" in md and "Dosis als Median" in md
+    assert "## Audit (exploratory)" in md
+    assert "selection anew in each replication" in md and "1.82" in md and "−41.6" in md
+    assert "placebos only for events with cells" in md and "dose as the median" in md
     assert s["checks_failed"] == 0
     rows = list(_table_rows(md))
     assert not [line for header, n, line in rows if n != header]

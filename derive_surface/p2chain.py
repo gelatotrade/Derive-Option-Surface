@@ -13,7 +13,7 @@ from .chainfeeds import ChainClient, get_logs_adaptive
 RPC_URL = "https://rpc.lyra.finance"
 ANCHOR_BLOCK = 2_454_793          # 2024-01-11 00:00:01 UTC
 ANCHOR_TS = 1_704_931_201
-BLOCK_SECONDS = 2                 # exactly 2 s per block since genesis (checked on 24.09.2026)
+BLOCK_SECONDS = 2                 # exactly 2 s per block since genesis (checked on 2026-09-24)
 
 
 def block_at_ts(ts: int) -> int:

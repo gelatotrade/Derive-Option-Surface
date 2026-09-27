@@ -1,7 +1,7 @@
 """Parameter events, capital doses and the H4 panel for Paper 2 (preregistration H4, docs/paper2/PRAEREGISTRIERUNG.md).
 
 * **Events:** every capital-relevant on-chain parameter change of PM2 (standard lib) per currency inside its PM2
-  window, plus the legacy-PM changes of BTC and ETH inside the sample (12.06.2024 and 22.02.2025). Changes of
+  window, plus the legacy-PM changes of BTC and ETH inside the sample (2024-06-12 and 2025-02-22). Changes of
   ``CollateralParameters`` and ``maxExpiries`` do not change the capital of a single contract and are left out.
   Changes of one currency on the same UTC day are merged into one event; its time ``event_ts`` is the first change.
 * **Dose:** ``d_{c,e}`` = mean over the fills of cell ``c`` with taker time in ``[e - 14 d, e)`` of
@@ -55,7 +55,7 @@ EXCLUDED_KEYS = ("CollateralParameters", "maxExpiries")
 CCYS = ("BTC", "ETH", "HYPE")
 SAMPLE_START_TS = 1_704_931_200                     # 2024-01-11 00:00 UTC
 SAMPLE_END_TS = 1_790_755_200                       # 2026-09-30 08:00 UTC
-PM2_START_TS = {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_819_200}  # 12.06.2025 23:00, 11.11.2025
+PM2_START_TS = {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_819_200}  # 2025-06-12 23:00, 2025-11-11
 EVENT_MANAGERS = {"BTC": ("pm", "pm2"), "ETH": ("pm", "pm2"), "HYPE": ("pm2",)}
 
 CHANGE_COLUMNS = ["ccy", "manager", "ts", "kinds"]

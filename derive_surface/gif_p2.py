@@ -1,4 +1,4 @@
-"""GIF of the BTC PM2 capital surface over the PM2 window (``docs/paper2/ABBILDUNGSWAHL.md``, section 8).
+"""GIF of the BTC PM2 capital surface over the PM2 window (``docs/paper2/FIGURE_SELECTION.md``, section 8).
 
 One frame per week (Wednesday 08:00 UTC, plus the first PM2 day and the T1 block 17 Sep 2026 08:00 UTC as the last
 frame) or per day; for every kept BTC PM2 event three extra day frames: the last 08:00 block before the event, the

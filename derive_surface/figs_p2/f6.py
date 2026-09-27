@@ -1,4 +1,4 @@
-"""F6 of Paper 2: the price of capital, H4 (ABBILDUNGSWAHL section 7, F6; 7.0 x 4.2 in).
+"""F6 of Paper 2: the price of capital, H4 (FIGURE_SELECTION section 7, F6; 7.0 x 4.2 in).
 
 a  dose strip: one row per event in the H4 panel, one symbol per cell and event pair at 100 x dose (log-%), sells
    above and buys below the line, median as a bar, the band |dose| < 1 log-% with its share of pairs.

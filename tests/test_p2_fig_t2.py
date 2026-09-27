@@ -1,4 +1,4 @@
-"""T2: what get_margin returns, and how PM2 prices a book (ABBILDUNGSWAHL section 7, T2)."""
+"""T2: what get_margin returns, and how PM2 prices a book (FIGURE_SELECTION section 7, T2)."""
 from __future__ import annotations
 
 import json
@@ -66,9 +66,9 @@ def real_params():
 @pytest.fixture
 def res(tmp_path, real_params):
     rd = tmp_path / "results"
-    (rd / "semantik").mkdir(parents=True)
+    (rd / "semantics").mkdir(parents=True)
     (rd / "params").mkdir()
-    _faktoren().to_csv(rd / "semantik" / "faktoren.csv", index=False)
+    _faktoren().to_csv(rd / "semantics" / "faktoren.csv", index=False)
     for m, entry in real_params.items():
         (rd / "params" / f"BTC_{m}.json").write_text(json.dumps([entry]))
     row = _reference_row(real_params["pm2"]["params"], real_params["sm"]["params"])
@@ -85,7 +85,7 @@ def test_probe_rows_are_the_four_historical_books_in_drawing_order():
 
 def test_probe_rows_refuse_anything_but_four_rows():
     f = _faktoren()
-    extra = f.iloc[[4]].assign(messung="historisch 24.09. 09:24:59Z Blk 45110142 (zweite Liste)")
+    extra = f.iloc[[4]].assign(messung="historisch 24.09. 09:24:59Z Blk 45110142 (second list)")
     with pytest.raises(ValueError, match="four"):
         t2.probe_rows(pd.concat([f, extra]))
 
@@ -160,12 +160,12 @@ def test_caption_has_no_dashes():
     assert "—" not in t2.CAPTION and "–" not in t2.CAPTION
 
 
-@pytest.mark.skipif(not (REAL / "semantik" / "faktoren.csv").exists() or not (REAL / "reference_book.csv").exists(),
+@pytest.mark.skipif(not (REAL / "semantics" / "faktoren.csv").exists() or not (REAL / "reference_book.csv").exists(),
                     reason="real results not present")
 def test_real_data_meets_the_build_instruction(tmp_path):
     rd = tmp_path / "results"
-    (rd / "semantik").mkdir(parents=True)
-    shutil.copy(REAL / "semantik" / "faktoren.csv", rd / "semantik" / "faktoren.csv")
+    (rd / "semantics").mkdir(parents=True)
+    shutil.copy(REAL / "semantics" / "faktoren.csv", rd / "semantics" / "faktoren.csv")
     shutil.copy(REAL / "reference_book.csv", rd / "reference_book.csv")
     shutil.copytree(REAL / "params", rd / "params")
     t2.build(out_dir=tmp_path / "figures", results_dir=rd)

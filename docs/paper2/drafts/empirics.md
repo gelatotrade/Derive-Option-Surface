@@ -1,390 +1,390 @@
-# Abbildungsentwurf Paper 2, Linse Empirie
+# Figure draft for Paper 2, empirics lens
 
-Stand 25.09.2026. Entwurf für die Jury nach dem Muster von Paper 1 (`docs/paper1/ABBILDUNGSWAHL.md`). Die Linse:
-Ein Referee soll jedes der vier präregistrierten Urteile an der Abbildung selbst nachprüfen können. Dazu gehören
-Schätzer, 90-%-Intervall, registrierte Schwelle, Ablehnungsbereich, Stichprobengrösse und Clusterzahl, und zwar in
-der Abbildung selbst, nicht erst in der Bildunterschrift.
+Status 2026-09-25. Draft for the jury, following the pattern of Paper 1 (`docs/paper1/FIGURE_SELECTION.md`). The lens:
+a referee should be able to check each of the four pre-registered verdicts on the figure itself. That takes
+estimator, 90 % interval, registered threshold, rejection region, sample size and number of clusters, and it takes them in
+the figure itself, not only in the caption.
 
-Prototypen liegen unter `data/p2/fig_proto/empirie/`. Das Skript ist `proto_empirie.py`, Aufruf:
+The prototypes are under `data/p2/fig_proto/empirie/`. The script is `proto_empirie.py`, called as
 `python3 data/p2/fig_proto/empirie/proto_empirie.py [T2 F1 F5 A1 F2 F3 F4 F6]`.
 
-| Slot | Prototyp | Daten |
+| Slot | Prototype | Data |
 |---|---|---|
-| T2 | `t2_empirie.png`, `fig_t2.csv` | echt (`results/p2/semantik/faktoren.csv`) |
-| F1 | `f1_empirie.png`, `fig_f1.csv` | echt (`capital.parquet` × Buckets aus `markouts.parquet`) |
-| F5 | `f5_empirie.png`, `fig_f5_events.csv` | echt (`reference_book.csv`, `manager_oi_share.csv`, `events.csv`, `params/*.json`) |
-| A1 | `a1_empirie.png`, `fig_a1.csv` | echt (`validation.csv`) |
-| F2 | `f2_empirie_SYNTHETIC.png` | echte Zellmenge, **synthetische** Edges und Bootstrap |
-| F3 | `f3_empirie_SYNTHETIC.png` | **synthetisch** |
-| F4 | `f4_empirie_SYNTHETIC.png` | **synthetisch**, nur die Strukturzahlen 1 943 und 1 431 stammen aus Nachtrag 4 |
-| F6 | `f6_empirie_SYNTHETIC.png` | **synthetisch**, nur die Ereignisliste stammt aus `events.csv` |
-| T1 | keiner (vorhandene Probe `data/p2/surface/probe_BTC_2026-09-17_pm2_sm.png`) | – |
+| T2 | `t2_empirie.png`, `fig_t2.csv` | real (`results/p2/semantics/faktoren.csv`) |
+| F1 | `f1_empirie.png`, `fig_f1.csv` | real (`capital.parquet` × buckets from `markouts.parquet`) |
+| F5 | `f5_empirie.png`, `fig_f5_events.csv` | real (`reference_book.csv`, `manager_oi_share.csv`, `events.csv`, `params/*.json`) |
+| A1 | `a1_empirie.png`, `fig_a1.csv` | real (`validation.csv`) |
+| F2 | `f2_empirie_SYNTHETIC.png` | real set of cells, **synthetic** edges and bootstrap |
+| F3 | `f3_empirie_SYNTHETIC.png` | **synthetic** |
+| F4 | `f4_empirie_SYNTHETIC.png` | **synthetic**, only the structural numbers 1,943 and 1,431 come from Addendum 4 |
+| F6 | `f6_empirie_SYNTHETIC.png` | **synthetic**, only the list of events comes from `events.csv` |
+| T1 | none (existing probe `data/p2/surface/probe_BTC_2026-09-17_pm2_sm.png`) | – |
 
-Die synthetischen Bilder tragen ein rotes Wasserzeichen „PROTOTYP synthetic placeholder data“. Ihre Zahlen sind
-erfunden und sagen nichts über H1 bis H4. Die Prototypen berechnen keine Teststatistik. Die Mediane, Intervalle und
-ρ darin sind Platzhalter.
+The synthetic images carry a red watermark “PROTOTYP synthetic placeholder data”. Their numbers are
+invented and say nothing about H1 to H4. The prototypes compute no test statistic. The medians, intervals and
+ρ in them are placeholders.
 
 ---
 
-## 0 · Was für alle Abbildungen gilt
+## 0 · What applies to all figures
 
-**Die Urteilsleiste.** Dieselbe Bildsprache in F2, F3, F4 und F6, damit ein Referee vier Urteile auf dieselbe Weise
-liest:
+**The verdict bar.** The same visual language in F2, F3, F4 and F6, so that a referee reads four verdicts in the same
+way:
 
-- Schätzer als offener Kreis, 90-%-Intervall als dicker schwarzer Balken, registrierte Schwelle gestrichelt.
-- Der Ablehnungsbereich ist schraffiert: bei H1 und H2 rechts der Schwelle (abgelehnt, wenn die obere Grenze
-  hineinreicht), bei H3 links davon (abgelehnt, wenn die untere Grenze hineinreicht).
-- Darüber fett eine Zeile: „registered: 0.18 [0.11, 0.27] → not rejected“. Die Zeile wendet die registrierte Regel
-  auf die Zahlen aus `h*.json` an und prüft, ob sie zum Feld `rejected` passt. Weichen beide voneinander ab,
-  bricht der Bau ab.
-- Direkt daneben stehen n und die Zahl der Cluster (UTC-Tage), bei H2 und H3 auch die Zahl der Konten. Das ist das
-  Gegenstück zu „Klassen tragen ihre Clusterzahl G“ aus Paper 1.
-- Die Schraffur liegt nur hinter der registrierten Zeile. Eine explorative Zeile, die in den Bereich fällt, ist
-  keine Ablehnung.
+- Estimator as an open circle, 90 % interval as a thick black bar, registered threshold dashed.
+- The rejection region is hatched: for H1 and H2 to the right of the threshold (rejected if the upper bound
+  reaches into it), for H3 to the left of it (rejected if the lower bound reaches into it).
+- Above it, a line in bold: “registered: 0.18 [0.11, 0.27] → not rejected”. The line applies the registered rule
+  to the numbers from `h*.json` and checks whether it matches the field `rejected`. If the two differ,
+  the build aborts.
+- Right next to it stand n and the number of clusters (UTC days), for H2 and H3 also the number of accounts. This is the
+  counterpart of “classes carry their cluster count G” from Paper 1.
+- The hatching lies only behind the registered row. An exploratory row that falls into the region is
+  not a rejection.
 
-**Registriert, Sensitivität, explorativ.** In jedem Forest-Panel steht die registrierte Zeile oben, fett und mit
-gefülltem Kreis. Darunter folgen die Sensitivitäten, die die Nachträge benennen (offene Raute). Explorative
-Aufteilungen stehen zuletzt, grau hinterlegt. Die Präregistrierung erklärt alles ausser den vier Tests für explorativ
-(Abschnitt „Inferenz“). Die Hinterlegung macht das sichtbar.
+**Registered, sensitivity, exploratory.** In every forest panel the registered row stands at the top, in bold and with a
+filled circle. Below it follow the sensitivities named in the addenda (open diamond). Exploratory
+splits come last, on a grey background. The pre-registration declares everything except the four tests exploratory
+(section “Inference”). The background makes that visible.
 
-**Regeln aus Paper 1, übernommen:** CAS-Breiten 3,4 und 7,0 Zoll, keine Schrift unter 7 pt (Tick-Labels 7 pt, im
-Prototyp überall eingehalten), Farbe immer doppelt codiert (Manager: PM2 blau, durchgezogen, Kreis; SM orange,
-gestrichelt, Quadrat; Legacy PM grün, gepunktet, Dreieck; Basiswert: Farbe plus Markerform). Eine Zahl je Zelle,
-Zellen unter 200 Fills als leeres Kreuz. Keine zweite y-Achse, keine Haarlinienbüschel. Nur T1 ist 3D. Die
-Manager-Palette `#0072B2/#D55E00/#009E73` hat den Palettenvalidator bestanden (Deutan-ΔE der schlechtesten
-Nachbarn 11,0). Graustufen wurden am Prototyp F5 geprüft: Nach der Korrektur sind SM hell mit Punkten, Legacy PM
-mittel mit Schraffur und PM2 dunkel, mit einer schwarzen Grenzlinie dazwischen.
+**Rules taken over from Paper 1:** CAS widths 3.4 and 7.0 inches, no font below 7 pt (tick labels 7 pt, kept
+everywhere in the prototypes), colour always double-coded (managers: PM2 blue, solid, circle; SM orange,
+dashed, square; legacy PM green, dotted, triangle; underlying: colour plus marker shape). One number per cell,
+cells under 200 fills as an empty cross. No second y axis, no bundles of hairlines. Only T1 is 3D. The
+manager palette `#0072B2/#D55E00/#009E73` passed the palette validator (deutan ΔE of the worst
+neighbours 11.0). Greyscale was checked on the F5 prototype: after the correction SM is light with dots, legacy PM
+medium with hatching and PM2 dark, with a black boundary line in between.
 
-**Datenvertrag mit `inference_p2.py`.** Die Abbildungen rechnen keine Teststatistik nach. Während dieser Entwurf
-entstand, hat die parallele Inferenz ihre Dateien unter `results/p2/` geschrieben. Die Tabelle ordnet sie den Slots
-zu. Gelesen wurden dafür nur Spaltennamen und Schlüssel, keine Werte.
+**Data contract with `inference_p2.py`.** The figures recompute no test statistic. While this draft
+was being written, the parallel inference wrote its files under `results/p2/`. The table assigns them to the
+slots. Only column names and keys were read for this, no values.
 
-| Slot | liest (vorhanden) | fehlt noch |
+| Slot | reads (available) | still missing |
 |---|---|---|
-| F1 | `fig_edge_maps.csv` mit `map ∈ {sm_pm2win, pm_pm2win, pm2}`: Zellgrösse = `sum_K / sum_index` (Verhältnis der Summen wie im Prototyp), `fills`, `occupied`. Alternativ `fig_capital_by_manager.csv` (`window = pm2`, Median und p25/p75 von K/Index je Zelle) | Entscheidung: Verhältnis der Summen (passt zu e^K und zum H1-Nenner) oder Median (robust gegen einzelne Fills). Der Prototyp nimmt die Summen. Beide Zahlen in einer Abbildung wären eine zweite Einheit und sind deshalb ausgeschlossen |
-| F2 | `h1.json` (`stat, lo, hi, rejected, threshold, n, n_days, b, cells_present_min, cells_present_median, cells_by_ccy`), `h1_cells.csv` bzw. `fig_edge_maps.csv` `map = pm2` (`A_bp, B_bp, rank_A, rank_B, rank_shift`, dazu Rang-Intervalle `rank_*_lo/hi`) | die Verteilung der 9 999 ρ-Replikationen (Histogramm reicht). Ohne sie zeigt F2b nur Leiste und Intervall. Die Rang-Intervalle erlauben in F2a Fehlerkreuze für die zehn grössten Verschiebungen |
-| F3 | `h2.json` (`stat, lo, hi, rejected, threshold, n, n_days, n_sample, n_excluded, share_nonpositive, accounts, fills_by_ccy`), `fig_h2_dist.csv` (`kind = hist/quantile/share_le_0/n` je `variant`), `sens_h2.csv` (Forest-Zeilen: `ratio_unit, ratio_tape, ratio_mm`, je Konto, je Basiswert) | nichts. Die Überlaufzahlen sollten als eigene `kind` in `fig_h2_dist.csv` stehen, falls die Histogrammgrenzen das Fenster [−2, 3] nicht abdecken |
-| F4 | `h3.json` (`stat, lo, hi, rejected, threshold, n, n_days, n_excluded, n_not_applicable, share_days_over_63_options`), `fig_h3_series.csv` (je Maker-Tag `ratio_sm_pm2`, `over_63_options`: das Histogramm ist deskriptives Binning in der Abbildungsschicht), `sens_h3.csv` (`sm_pm2_le63`, `sm_pm2_gt63`, `sm_pm2_mm`, `pm_pm2_be`, je Konto) | nichts |
-| F5 | `events.csv`, `fig_h4_events.csv` (`n_cells, n_pre, n_post, median_dose` je Ereignis), `params/*.json`, `reference_book.csv`, `manager_oi_share.csv` | nichts |
-| F6 | `h4.json` (`stat, lo, hi, p, p_sided, clusters, fills, events_kept, cell_events, criteria.{beta_positive, p_le_alpha, beta_gt_placebo_p95}, placebo.{p95, share_ge_beta}`), `h4_placebo.csv` (`rep, beta`), `sensitivity_h4.json` (`by_ccy.*`, `no_outlier_cells.*`), `fig_h4_events.csv` (Dosis-Terzile `t1..t3` mit `y_pre, y_post` je Ereignis) | **die residualisierten FWL-Bins** (`x_mean, y_mean, n_fills` in 20 Bins). Ohne sie wird F6a zur Terzil-Darstellung aus `fig_h4_events.csv`: Veränderung des Halbspreads (post − pre) je Dosis-Terzil und Ereignis. Das ist ehrlich, aber roh und ohne Fixeffekte, und die Achse muss das sagen. Ein β je Ereignis gibt es nicht. F6b zeigt deshalb β je Basiswert und ohne Ausreisserzellen aus `sensitivity_h4.json`, grau hinterlegt als explorativ |
-| A1 | `validation.csv`, `validation_summary.json` | optional das Feed-Alter der Testpopulation (aus `capital.parquet`, deskriptiv) |
+| F1 | `fig_edge_maps.csv` with `map ∈ {sm_pm2win, pm_pm2win, pm2}`: cell size = `sum_K / sum_index` (ratio of sums as in the prototype), `fills`, `occupied`. Alternatively `fig_capital_by_manager.csv` (`window = pm2`, median and p25/p75 of K/index per cell) | Decision: ratio of sums (matches e^K and the H1 denominator) or median (robust against single fills). The prototype takes the sums. Both numbers in one figure would be a second unit and are therefore ruled out |
+| F2 | `h1.json` (`stat, lo, hi, rejected, threshold, n, n_days, b, cells_present_min, cells_present_median, cells_by_ccy`), `h1_cells.csv` or `fig_edge_maps.csv` `map = pm2` (`A_bp, B_bp, rank_A, rank_B, rank_shift`, plus rank intervals `rank_*_lo/hi`) | the distribution of the 9,999 ρ replications (a histogram is enough). Without it F2b shows only the bar and the interval. The rank intervals allow error crosses in F2a for the ten largest shifts |
+| F3 | `h2.json` (`stat, lo, hi, rejected, threshold, n, n_days, n_sample, n_excluded, share_nonpositive, accounts, fills_by_ccy`), `fig_h2_dist.csv` (`kind = hist/quantile/share_le_0/n` per `variant`), `sens_h2.csv` (forest rows: `ratio_unit, ratio_tape, ratio_mm`, per account, per underlying) | nothing. The overflow counts should be a `kind` of their own in `fig_h2_dist.csv` if the histogram limits do not cover the window [−2, 3] |
+| F4 | `h3.json` (`stat, lo, hi, rejected, threshold, n, n_days, n_excluded, n_not_applicable, share_days_over_63_options`), `fig_h3_series.csv` (per maker-day `ratio_sm_pm2`, `over_63_options`: the histogram is descriptive binning in the figure layer), `sens_h3.csv` (`sm_pm2_le63`, `sm_pm2_gt63`, `sm_pm2_mm`, `pm_pm2_be`, per account) | nothing |
+| F5 | `events.csv`, `fig_h4_events.csv` (`n_cells, n_pre, n_post, median_dose` per event), `params/*.json`, `reference_book.csv`, `manager_oi_share.csv` | nothing |
+| F6 | `h4.json` (`stat, lo, hi, p, p_sided, clusters, fills, events_kept, cell_events, criteria.{beta_positive, p_le_alpha, beta_gt_placebo_p95}, placebo.{p95, share_ge_beta}`), `h4_placebo.csv` (`rep, beta`), `sensitivity_h4.json` (`by_ccy.*`, `no_outlier_cells.*`), `fig_h4_events.csv` (dose terciles `t1..t3` with `y_pre, y_post` per event) | **the residualised FWL bins** (`x_mean, y_mean, n_fills` in 20 bins). Without them F6a becomes the tercile display from `fig_h4_events.csv`: change in the half spread (post − pre) per dose tercile and event. That is honest, but raw and without fixed effects, and the axis must say so. There is no β per event. F6b therefore shows β per underlying and without outlier cells from `sensitivity_h4.json`, on grey as exploratory |
+| A1 | `validation.csv`, `validation_summary.json` | optionally the feed age of the test population (from `capital.parquet`, descriptive) |
 
-Die Kennzahlen der Urteilsleisten (`stat, lo, hi, threshold, rejected, n, n_days`) haben in `h1.json` bis
-`h4.json` dieselben Namen. `figures_p2.py` kann also eine einzige Funktion `ruler(ax, h)` für alle vier Tests
-verwenden. Sie prüft `rejected` gegen die Regel in `rule`, damit Bild und Zahlenblatt nicht auseinanderlaufen.
+The key figures of the verdict bars (`stat, lo, hi, threshold, rejected, n, n_days`) have the same names in `h1.json` to
+`h4.json`. `figures_p2.py` can therefore use a single function `ruler(ax, h)` for all four tests.
+It checks `rejected` against the rule in `rule`, so that figure and numbers sheet do not drift apart.
 
-**Prüfskript** (`scripts/p2_figure_check.py`, Muster Paper 1): Es vergleicht jede im Bild gedruckte Kennzahl mit
-`h*.json`. Es zählt, ob in F1 genau so viele Kreuze stehen, wie die Zelltabelle Zellen unter 200 Fills hat
-(einschliesslich Kombinationen ohne einen Fill). Ausserdem prüft es, ob F5 genau die Ereignisse mit `kept` gefüllt
-zeigt, die `events.csv` führt, und ob die Urteilszeile mit `rejected` übereinstimmt.
+**Check script** (`scripts/p2_figure_check.py`, pattern of Paper 1): it compares every key figure printed in the figure with
+`h*.json`. It counts whether F1 shows exactly as many crosses as the cell table has cells under 200 fills
+(including combinations without a single fill). It also checks whether F5 shows filled exactly the events with `kept`
+that `events.csv` lists, and whether the verdict line agrees with `rejected`.
 
 ---
 
-## T1 · Die Engine-Sicht der Oberfläche
+## T1 · The engine's view of the surface
 
-- **Zweck.** Die Abbildung zeigt, dass das Kapital eine Eigenschaft der Oberfläche ist, die die Engine selbst
-  sieht, gerechnet am selben Block mit denselben Feeds.
-- **Datenquelle.** `p2surface.capital_grid` für BTC am Block von `results/p2/surface_t1.json` (Probe:
-  17.09.2026 08:00 UTC, 15 Verfälle), Seite short, Manager PM2 und SM. Das Gitter kommt als `fig_t1.csv` dazu
-  (`manager, delta, tenor_days, iv, K, K_per_forward_bp`, wie `probe_BTC_2026-09-17_grid.csv`).
-- **Kodierung.** Zwei 3D-Panels nebeneinander. Die Höhe ist die IV in Prozent, die Farbe das Kapital in bp des
-  Forwards auf **einer** gemeinsamen Skala mit `cividis` (in Graustufen monoton), dazu ein Farbbalken. Die
-  Empirie-Zusätze:
-  1. Iso-Kapital-Konturen auf den Boden projiziert, beschriftet mit 7 pt. Damit trägt die Grösse auch ohne Farbe.
-  2. Auf dem Boden die Bucketgrenzen von Paper 1: Call-Delta 0,10/0,25/0,40/0,60/0,75/0,90 (die |Δ|-Buckets liegen
-     auf der Call-Delta-Achse symmetrisch) und Laufzeit 2/7/30/90 Tage. So führt T1 direkt zu F1 und F2.
-  3. Gitterpunkte ausserhalb der quotierten Strikes (Flügel jenseits von `WING_PAD`) werden grau
-     (`NA_COLOR`) statt extrapoliert.
-  4. Im Kopf Block, UTC-Zeit, Zahl der Verfälle und je Panel min/Median/max von K. Probe: PM2 342/1 045/1 370 bp,
-     SM 1 237/1 298/1 501 bp.
-- **Grösse.** 7,0 × 3,0 Zoll. Die einzige 3D-Abbildung.
-- **Kernaussage in 5 s.** Unter SM ist die Fläche fast einfarbig: Ein Short kostet überall rund 13 % des Forwards.
-  Unter PM2 hängt der Preis von Delta und Laufzeit ab.
-- **Fallen.** Die Höhe ist Vol und nicht Kapital, das muss die z-Achsenbeschriftung ausdrücklich sagen. Die
-  Rückseite der Fläche ist verdeckt, deshalb die Bodenkonturen. Die fast einfarbige SM-Fläche wirkt leicht wie
-  „keine Information“, ist aber der Befund. Die Abbildung zeigt nur Shorts. Bei Maker-Käufen ist K im Wesentlichen
-  die Prämie (unter SM gibt es keine Gutschrift für Longs), das gehört in die Caption. Ein einzelner Block ist
-  eine Momentaufnahme, die Zeit trägt F5.
+- **Purpose.** The figure shows that capital is a property of the surface that the engine itself
+  sees, computed at the same block with the same feeds.
+- **Data source.** `p2surface.capital_grid` for BTC at the block of `results/p2/surface_t1.json` (probe:
+  2026-09-17 08:00 UTC, 15 expiries), short side, managers PM2 and SM. The grid comes along as `fig_t1.csv`
+  (`manager, delta, tenor_days, iv, K, K_per_forward_bp`, like `probe_BTC_2026-09-17_grid.csv`).
+- **Coding.** Two 3D panels side by side. Height is IV in per cent, colour is capital in bp of the
+  forward on **one** common scale with `cividis` (monotone in greyscale), plus a colour bar. The
+  additions of the empirics lens:
+  1. Iso-capital contours projected onto the floor, labelled in 7 pt. The quantity then carries without colour too.
+  2. On the floor the bucket edges of Paper 1: call delta 0.10/0.25/0.40/0.60/0.75/0.90 (the |Δ| buckets lie
+     symmetrically on the call-delta axis) and tenor 2/7/30/90 days. This way T1 leads straight to F1 and F2.
+  3. Grid points outside the quoted strikes (wings beyond `WING_PAD`) turn grey
+     (`NA_COLOR`) instead of being extrapolated.
+  4. In the header: block, UTC time, number of expiries and, per panel, min/median/max of K. Probe: PM2 342/1,045/1,370 bp,
+     SM 1,237/1,298/1,501 bp.
+- **Size.** 7.0 × 3.0 inches. The only 3D figure.
+- **Core message in 5 s.** Under SM the surface is almost a single colour: a short costs about 13 % of the forward everywhere.
+  Under PM2 the price depends on delta and tenor.
+- **Pitfalls.** Height is vol and not capital; the z axis label must say so explicitly. The
+  back of the surface is hidden, hence the floor contours. The almost single-coloured SM surface easily looks like
+  “no information”, but it is the finding. The figure shows only shorts. For maker buys K is essentially
+  the premium (under SM there is no credit for longs); that belongs in the caption. A single block is
+  a snapshot; time is carried by F5.
 
-## T2 · Was `get_margin` liefert
+## T2 · What `get_margin` returns
 
-- **Zweck.** Die Abbildung zeigt, warum `C − net` keine Anforderung ist und dass der Widerspruch 11 gegen 1,2 aus
-  Buch und Bewertung entsteht.
-- **Datenquelle.** `results/p2/semantik/faktoren.csv`, Zeilen `historisch 17.09.` (`b17_exakt`) und `historisch
-  24.09. … (H1_…)` (`b24`), Fälle A und B. Spalten `SM_Cnet, PM2_Cnet, SM_R_engine, PM2_R_engine, V_und_SM,
-  V_PM2, F_Cnet, F_R_engine`. Die H0-Variante bleibt draussen (wie `MANUSKRIPT.md` 3a).
-- **Kodierung.** Panel a ist ein Dotplot auf logarithmischer USDC-Achse, je Buch und Manager eine Zeile. Der
-  gefüllte Marker steht für R, der offene für `C − net = R − V`, die graue Verbindung ist V. Manager nach Farbe
-  und Form. Panel b zeigt die Quotienten SM/PM2 je Buch, gefüllt auf R und offen auf `C − net`, dazu die
-  H3-Schwelle 2 gestrichelt. Die vier Zahlenpaare der Caption stehen direkt an den Punkten.
-- **Grösse.** 7,0 × 2,6 Zoll.
-- **Kernaussage in 5 s.** Beim Buch vom 24.09. (Fall B) liegt `C − net` unter PM2 sechsmal höher als R, weil
-  V = −496 859 USDC hineinrutscht. Auf R liegen alle vier Bücher über 2, auf `C − net` zwei darunter.
-- **Fallen.** Die Probebücher sind konstruiert und keine Maker-Bücher; sie dürfen nicht als Vorschau auf H3
-  gelesen werden. Die Caption muss sagen, dass die Schwelle 2 aus diesen Büchern abgeleitet wurde
-  (Präregistrierung, „Datenstand vor diesem Commit“). Eine Log-Achse ist nötig, weil R zwischen 17 k und 644 k
-  liegt. Der Prototyp nennt das in der Achsenbeschriftung.
+- **Purpose.** The figure shows why `C − net` is not a requirement, and that the contradiction 11 against 1.2 arises from
+  book and valuation.
+- **Data source.** `results/p2/semantics/faktoren.csv`, rows `historisch 17.09.` (`b17_exakt`) and `historisch
+  24.09. … (H1_…)` (`b24`), cases A and B. Columns `SM_Cnet, PM2_Cnet, SM_R_engine, PM2_R_engine, V_und_SM,
+  V_PM2, F_Cnet, F_R_engine`. The H0 variant stays out (as in `MANUSCRIPT.md` 3a).
+- **Coding.** Panel a is a dot plot on a logarithmic USDC axis, one row per book and manager. The
+  filled marker stands for R, the open one for `C − net = R − V`, and the grey connection is V. Managers by colour
+  and shape. Panel b shows the ratios SM/PM2 per book, filled on R and open on `C − net`, plus the
+  H3 threshold 2 dashed. The four number pairs of the caption stand directly at the points.
+- **Size.** 7.0 × 2.6 inches.
+- **Core message in 5 s.** For the book of 24 Sep (case B), `C − net` under PM2 is six times higher than R, because
+  V = −496,859 USDC slips into it. On R all four books lie above 2, on `C − net` two lie below.
+- **Pitfalls.** The probe books are constructed and are not maker books; they must not be read as a preview of
+  H3. The caption must say that the threshold 2 was derived from these books
+  (pre-registration, “data status before this commit”). A log axis is needed, because R lies between 17 k and
+  644 k. The prototype says so in the axis label.
 
-## F1 · Kapital je Kontrakt nach Manager
+## F1 · Capital per contract by manager
 
-- **Zweck.** Die Abbildung zeigt, was ein einzelner Kontrakt je Manager über |Δ| × Laufzeit kostet, und macht die
-  Textaussage „SM/PM2 läuft von … bis …“ für alle drei Basiswerte prüfbar.
-- **Datenquelle.** `data/p2/derived/capital.parquet` (`K_sm, K_pm, K_pm2, amount, index_price, maker_side, ts`),
-  verbunden über `trade_id` mit `delta_bucket, tenor_bucket` aus `data/p1/derived/markouts.parquet`. Filter: das
-  PM2-Fenster je Basiswert, damit alle Manager dieselben Fills sehen. Zellgrösse ist das Verhältnis der Summen
-  100·Σ K·a / Σ Index·a in Prozent des Index, wie der Edge im Papier. Besetzt ab 200 Fills. Im Finale liest die
-  Abbildung `results/p2/fig_edge_maps.csv` (`sum_K / sum_index` der Karten `sm_pm2win`, `pm_pm2win`, `pm2`), sofern
-  `sum_K` wie hier mengengewichtet ist. Das Prüfskript vergleicht mit der Prototyp-Rechnung. Der Prototyp schreibt `fig_f1.csv` (210 Zeilen, alle
-  Basiswerte, beide Seiten).
-- **Kodierung.** Panels a und b sind Heatmaps für BTC: Maker-Käufe oben, Maker-Verkäufe unten, Spalten SM, Legacy PM
-  und PM2. In jeder Zelle steht eine Zahl mit zwei signifikanten Stellen. Die Schattierung ist logarithmisch und
-  gilt gemeinsam für eine Zeile, sodass Manager innerhalb einer Seite vergleichbar sind. Zellen unter 200 Fills
-  zeigen ×. Die Zahl der Fills steht in der y-Beschriftung. Panel c ist ein Streifen aller 173 besetzten Zellen
-  aller Basiswerte: x ist der Quotient auf logarithmischer Achse, gefüllt SM/PM2, offen Legacy PM/PM2, Dreieck
-  nach oben für Kauf und nach unten für Verkauf, Farbe nach Basiswert. Minimum und Maximum stehen im Kopf.
-- **Grösse.** 7,0 × 3,9 Zoll.
-- **Kernaussage in 5 s** (Pilotdaten, deskriptiv, kein Test). Für einen **einzelnen** Kontrakt ist PM2 nicht
-  billiger als SM. SM/PM2 liegt über 173 besetzte Zellen zwischen 0,75 und 4,67 und in 86 Zellen unter 1. Der
-  Legacy PM ist bei Verkäufen am teuersten (Legacy PM/PM2 0,95 bis 1,74). Der Netting-Vorteil von PM2 kann also
-  erst im Buch entstehen, und genau das prüfen F3 und F4.
-- **Fallen.**
-  - Bei Käufen ist K fast die Prämie. Die obere Zeile ist deshalb eine Prämienkarte und keine Margin-Karte.
-    Das muss in den Achsentitel, nicht nur in die Caption.
-  - ETH und HYPE stehen nur im Streifen und in der CSV. Wer HYPE-Karten erwartet (25 von 70 HYPE-Zellen unter
-    200 Fills), findet sie dort.
-  - Die Caption im Gerüst sagt „each panel is shaded on its own scale“. Für einen Manager-Vergleich ist das
-    falsch, die Skala muss je Zeile gemeinsam gelten.
-  - Das Maximum 4,67 kommt aus einer einzelnen ETH-Kaufzelle. Der Text sollte neben min/max auch den Median der
-    Zellquotienten nennen.
+- **Purpose.** The figure shows what a single contract costs per manager over |Δ| × tenor, and makes the
+  statement in the text “SM/PM2 runs from … to …” checkable for all three underlyings.
+- **Data source.** `data/p2/derived/capital.parquet` (`K_sm, K_pm, K_pm2, amount, index_price, maker_side, ts`),
+  joined on `trade_id` with `delta_bucket, tenor_bucket` from `data/p1/derived/markouts.parquet`. Filter: the
+  PM2 window per underlying, so that all managers see the same fills. The cell size is the ratio of sums
+  100·Σ K·a / Σ index·a in per cent of the index, like the edge in the paper. Occupied from 200 fills. In the final version the
+  figure reads `results/p2/fig_edge_maps.csv` (`sum_K / sum_index` of the maps `sm_pm2win`, `pm_pm2win`, `pm2`), provided
+  `sum_K` is quantity-weighted as here. The check script compares with the prototype computation. The prototype writes `fig_f1.csv` (210 rows, all
+  underlyings, both sides).
+- **Coding.** Panels a and b are heatmaps for BTC: maker buys on top, maker sells below, columns SM, legacy PM
+  and PM2. Each cell holds one number with two significant digits. The shading is logarithmic and
+  shared within a row, so that managers are comparable within one side. Cells under 200 fills
+  show ×. The number of fills is in the y label. Panel c is a strip of all 173 occupied cells
+  of all underlyings: x is the ratio on a logarithmic axis, filled SM/PM2, open legacy PM/PM2, triangle
+  pointing up for buy and down for sell, colour by underlying. Minimum and maximum stand in the header.
+- **Size.** 7.0 × 3.9 inches.
+- **Core message in 5 s** (pilot data, descriptive, no test). For a **single** contract PM2 is not
+  cheaper than SM. Across 173 occupied cells SM/PM2 lies between 0.75 and 4.67, and below 1 in 86 cells. The
+  legacy PM is the dearest for sells (legacy PM/PM2 0.95 to 1.74). The netting advantage of PM2 can therefore
+  arise only in the book, and that is exactly what F3 and F4 test.
+- **Pitfalls.**
+  - For buys K is almost the premium. The upper row is therefore a premium map and not a margin map.
+    That must go into the axis title, not only into the caption.
+  - ETH and HYPE appear only in the strip and in the CSV. Whoever expects HYPE maps (25 of 70 HYPE cells under
+    200 fills) finds them there.
+  - The caption in the skeleton says “each panel is shaded on its own scale”. For a comparison of managers that is
+    wrong; the scale must be shared within each row.
+  - The maximum of 4.67 comes from a single ETH buy cell. Besides min/max the text should also give the median of the
+    cell ratios.
 
-## F2 · Die Karte in zwei Nennern (H1)
+## F2 · The map in two denominators (H1)
 
-- **Zweck.** Die Abbildung zeigt die Grösse, die H1 testet (Spearman-ρ der Zellränge), mit ihrem 90-%-Intervall
-  gegen die Schwelle 0,5, und wo die Umordnung stattfindet.
-- **Datenquelle.** `results/p2/h1.json` und `h1_cells.csv` (Zellwerte beider Nenner `A_bp`, `B_bp`, Ränge mit
-  Intervallen), dazu die noch fehlende Bootstrap-Verteilung von ρ (siehe Datenvertrag). Zellmenge: alle besetzten Zellen im PM2-Fenster (Prototyp-Zählung 173). Ränge und
-  mittlere Rangverschiebung sind deskriptive Umformungen der Tabelle. Die Abbildung darf sie aus `h1_cells.csv`
-  bilden, ρ und das Intervall aber nicht.
-- **Kodierung.**
-  - Panel a: Rang-Rang-Streudiagramm, eine Marke je Zelle. Die x-Achse ist der Rang je Nominal, die y-Achse der
-    Rang je PM2-Kapital, dazu die Diagonale. Basiswert nach Form und Farbe, Seite nach Füllung (voll = Verkauf).
-  - Panel b: die Urteilsleiste für ρ über dem grauen Histogramm der 9 999 Replikationen, mit Schwelle 0,5 und
-    schraffiertem Ablehnungsbereich. Die Achsenzeile nennt die Zahl der Zellen und die Cluster.
-  - Panels c und d: mittlere Rangverschiebung (Rang PM2 − Rang Nominal) nach Laufzeit bzw. |Δ|, getrennt nach
-    Seite. Das ist die Grundlage für den Satz `h1-reading` („läuft die Umordnung entlang Laufzeit, Delta oder
-    Seite?“).
-- **Grösse.** 7,0 × 3,2 Zoll.
-- **Kernaussage in 5 s.** Liegen die Punkte auf der Diagonalen, ordnet der Nenner nichts um. Die Leiste zeigt
-  fett, ob die obere Grenze 0,5 erreicht (H1 abgelehnt) und in welcher Dimension sich die Karte verschiebt.
-- **Fallen.**
-  - Die Caption im Gerüst beschreibt „lines connect the rank of each cell“. Das wären 173 Haarlinien, die
-    Paper 1 ausdrücklich verboten hat. Das Rang-Rang-Streudiagramm zeigt dieselbe Information als Objekt.
-  - ρ vermischt drei Basiswerte. Ein Teil der Umordnung kann ein Niveauunterschied zwischen den Basiswerten sein
-    und keiner innerhalb eines Basiswerts. Die Formen müssen das erkennbar lassen. Gut wäre eine explorative
-    Zeile „ρ innerhalb der Basiswerte“ in `h1.json`.
-  - Im Bootstrap fallen Zellen weg, wenn eine Replikation keinen Fill hat. Die Zahl der Zellen je Replikation
-    schwankt, und die Spanne (`n_cells_min_rep` bis `n_cells_max_rep`) gehört in die Achsenzeile.
-  - 20 Fills mit K_PM2 ≤ 0 bleiben in den Summen (Nachtrag 4). Eine Zelle mit kleinem Summenkapital kann
-    extrem werden. Der Rang schützt ρ davor, eine Karte in bp dagegen nicht. Deshalb zeigt F2 keine bp-Heatmap,
-    die Werte stehen in `h1_cells.csv`.
+- **Purpose.** The figure shows the quantity that H1 tests (Spearman ρ of the cell ranks) with its 90 % interval
+  against the threshold 0.5, and where the reordering takes place.
+- **Data source.** `results/p2/h1.json` and `h1_cells.csv` (cell values under both denominators `A_bp`, `B_bp`, ranks with
+  intervals), plus the still missing bootstrap distribution of ρ (see data contract). Set of cells: all occupied cells in the PM2 window (prototype count 173). Ranks and
+  mean rank shift are descriptive transformations of the table. The figure may form them from
+  `h1_cells.csv`, but not ρ and its interval.
+- **Coding.**
+  - Panel a: rank-rank scatter, one mark per cell. The x axis is the rank per notional, the y axis the
+    rank per PM2 capital, plus the diagonal. Underlying by shape and colour, side by fill (solid = sell).
+  - Panel b: the verdict bar for ρ above the grey histogram of the 9,999 replications, with threshold 0.5 and a
+    hatched rejection region. The axis line gives the number of cells and the clusters.
+  - Panels c and d: mean rank shift (rank PM2 − rank notional) by tenor and by |Δ|, split by
+    side. This is the basis for the sentence `h1-reading` (“does the reordering run along tenor, delta or
+    side?”).
+- **Size.** 7.0 × 3.2 inches.
+- **Core message in 5 s.** If the points lie on the diagonal, the denominator reorders nothing. The bar shows
+  in bold whether the upper bound reaches 0.5 (H1 rejected) and in which dimension the map shifts.
+- **Pitfalls.**
+  - The caption in the skeleton describes “lines connect the rank of each cell”. That would be 173 hairlines, which
+    Paper 1 explicitly ruled out. The rank-rank scatter shows the same information as an object.
+  - ρ mixes three underlyings. Part of the reordering can be a difference in level between the underlyings
+    rather than one within an underlying. The shapes must keep that recognisable. An exploratory
+    row “ρ within the underlyings” in `h1.json` would be good.
+  - In the bootstrap, cells drop out when a replication has no fill. The number of cells per replication
+    varies, and the range (`n_cells_min_rep` to `n_cells_max_rep`) belongs in the axis line.
+  - 20 fills with K_PM2 ≤ 0 stay in the sums (Addendum 4). A cell with a small total capital can become
+    extreme. The rank protects ρ from this, a map in bp does not. That is why F2 shows no bp heatmap;
+    the values are in `h1_cells.csv`.
 
-## F3 · Der nächste Kontrakt im Buch eines dominanten Makers (H2)
+## F3 · The next contract in the book of a dominant maker (H2)
 
-- **Zweck.** Die Abbildung zeigt die Verteilung von ratio = (ΔK/Menge)/K_PM2,Einzel und das registrierte Urteil
-  mit seinen Sensitivitäten.
-- **Datenquelle.** `results/p2/h2.json`, `fig_h2_dist.csv`, `sens_h2.csv`. Die Zeilen kommen aus
-  `data/p2/derived/marginal.parquet` (Spalten `ratio`, `ratio_unit`, `ratio_mm`, `ratio_tape`, `label`,
-  `manager`, `day`). Struktur laut Datei: 20 000 Fills aus vier Konten (M3, M5, M8, M10) an 372 UTC-Tagen, 13 595
-  unter PM2:ETH und 6 405 unter PM2:HYPE.
-- **Kodierung.** Einspaltig mit zwei Panels.
-  - Panel a: Histogramm im Fenster [−2, 3]. Der Teil ≤ 0 (gibt Kapital frei) ist grau schraffiert, der Teil > 0
-    blau. Die Schwelle 0,5 ist gestrichelt, die Marke 1 („so teuer wie allein“) gepunktet, der Median als Dreieck
-    am oberen Rand. Die Überläufe stehen als Zahl an den Rändern („89 beyond 3 →“), der Anteil ≤ 0 oben links.
-  - Panel b: Forest mit der Urteilsleiste. Oben die registrierte Zeile (IM, ganzer Fill), darunter die
-    Sensitivitäten aus Nachtrag 4 (nächster einzelner Kontrakt, MM, Tape-Buch) und explorativ PM2:ETH gegen
-    PM2:HYPE. Der Kopf nennt Konten, Tage und Ausschlüsse (1 Fill mit K_Einzel ≤ 0).
-- **Grösse.** 3,4 × 3,7 Zoll. Das Gerüst plant 3,4 × 2,4, aber ohne das Forest-Panel ist die Robustheit des
-  Urteils nicht zu sehen. Alternative: F3 und F4 als ein `figure*` mit 7,0 × 2,8 Zoll, vier Panels nebeneinander,
-  mit identischer Urteilsgrammatik (die Slotzahl bleibt 9, wenn F4 dafür in denselben Float geht).
-- **Kernaussage in 5 s.** Welcher Anteil der Fills Kapital freigibt, wo der Median gegen 0,5 steht und ob
-  irgendeine Sensitivität das Urteil kippt.
-- **Fallen.**
-  - Die H2-Population enthält **kein BTC**: Die vier PM2-Konten laufen unter PM2:ETH und PM2:HYPE. Das gehört in
-    den Abbildungskopf, sonst liest man H2 als Aussage über alle drei Basiswerte.
-  - Die Stichprobe von 20 000 ist eine Zufallsauswahl (Seed 20260924). `sampled` aus `h2.json` gehört in die
-    Kopfzeile.
-  - K_Einzel kann bei weit aus dem Geld liegenden Kontrakten winzig sein, dann explodiert ratio. Das Fenster
-    [−2, 3] darf nichts verschlucken, deshalb die Überlaufzahlen.
-  - Vier Konten sind wenig. Ein Konto kann den Median tragen. Die Aufteilung nach Konto gehört mindestens in
-    die CSV und steht im Forest, falls sie mehr als eine Zeile hergibt, ohne einzelne Konten erkennbar zu machen.
+- **Purpose.** The figure shows the distribution of ratio = (ΔK/quantity)/K_PM2,single and the registered verdict
+  with its sensitivities.
+- **Data source.** `results/p2/h2.json`, `fig_h2_dist.csv`, `sens_h2.csv`. The rows come from
+  `data/p2/derived/marginal.parquet` (columns `ratio`, `ratio_unit`, `ratio_mm`, `ratio_tape`, `label`,
+  `manager`, `day`). Structure according to the file: 20,000 fills from four accounts (M3, M5, M8, M10) on 372 UTC days, 13,595
+  under PM2:ETH and 6,405 under PM2:HYPE.
+- **Coding.** Single column with two panels.
+  - Panel a: histogram in the window [−2, 3]. The part ≤ 0 (releases capital) is hatched grey, the part > 0
+    blue. The threshold 0.5 is dashed, the mark 1 (“as expensive as alone”) dotted, the median a triangle
+    at the top edge. The overflows stand as numbers at the edges (“89 beyond 3 →”), the share ≤ 0 at top left.
+  - Panel b: forest with the verdict bar. At the top the registered row (IM, whole fill), below it the
+    sensitivities from Addendum 4 (next single contract, MM, tape book) and, exploratory, PM2:ETH against
+    PM2:HYPE. The header gives accounts, days and exclusions (1 fill with K_single ≤ 0).
+- **Size.** 3.4 × 3.7 inches. The skeleton plans 3.4 × 2.4, but without the forest panel the robustness of the
+  verdict cannot be seen. Alternative: F3 and F4 as one `figure*` of 7.0 × 2.8 inches, four panels side by side,
+  with an identical verdict grammar (the slot count stays at 9 if F4 goes into the same float for it).
+- **Core message in 5 s.** What share of the fills releases capital, where the median stands against 0.5, and whether
+  any sensitivity flips the verdict.
+- **Pitfalls.**
+  - The H2 population contains **no BTC**: the four PM2 accounts run under PM2:ETH and PM2:HYPE. That belongs in
+    the figure header, otherwise one reads H2 as a statement about all three underlyings.
+  - The sample of 20,000 is a random draw (seed 20260924). `sampled` from `h2.json` belongs in the
+    header.
+  - K_single can be tiny for contracts far out of the money, and then ratio explodes. The window
+    [−2, 3] must not swallow anything, hence the overflow counts.
+  - Four accounts are few. A single account can carry the median. The split by account belongs at least in
+    the CSV, and it goes into the forest if it yields more than one row without making single accounts recognisable.
 
-## F4 · Was Netting wert ist (H3)
+## F4 · What netting is worth (H3)
 
-- **Zweck.** Die Abbildung zeigt K_SM/K_PM2 über Maker-Tage auf logarithmischer Achse, mit dem registrierten
-  Urteil (untere Grenze gegen 2) und der Warnung aus Nachtrag 4, dass K_SM an den meisten Tagen kontrafaktisch
-  ist.
-- **Datenquelle.** `results/p2/h3.json`, `fig_h3_series.csv`, `sens_h3.csv`. Die Zeilen kommen aus
+- **Purpose.** The figure shows K_SM/K_PM2 over maker-days on a logarithmic axis, with the registered
+  verdict (lower bound against 2) and the warning from Addendum 4 that K_SM is counterfactual on most
+  days.
+- **Data source.** `results/p2/h3.json`, `fig_h3_series.csv`, `sens_h3.csv`. The rows come from
   `data/p2/derived/maker_days.parquet` (`K_sm`, `K_pm2`, `K_pm`, `K_*_mm`, `n_legs`, `manager`, `status`, `label`).
-  Struktur: 1 943 Maker-Tage, davon 1 431 mit mehr als 63 Optionen (Nachtrag 4). Konten unter SM, PM:BTC, PM:ETH,
-  PM2:ETH und PM2:HYPE.
-- **Kodierung.**
-  - Panel a: Histogramm auf logarithmischer x-Achse (Ticks 0,5 bis 64, gleiche Breite je Verdopplung), gestapelt
-    nach ≤ 63 Optionen (blau) und > 63 Optionen („SM counterfactual“, grau schraffiert). Schwelle 2 gestrichelt,
-    1 gepunktet, Median als Dreieck.
-  - Panel b: Forest mit der Urteilsleiste, Ablehnungsbereich links von 2. Zeilen: registriert, nur Tage mit
-    ≤ 63 Optionen, MM, dazu explorativ Legacy PM/PM2 (BTC- und ETH-Beine) sowie Aufteilungen nach dem Manager
-    des Kontos.
-- **Grösse.** 3,4 × 3,7 Zoll (oder zusammen mit F3, siehe dort).
-- **Kernaussage in 5 s.** Wie viel Kapital PM2 gegenüber SM auf echten Büchern spart und ob das Urteil trägt, wenn
-  man nur die Tage nimmt, an denen ein SM-Konto das Buch überhaupt halten dürfte.
-- **Fallen.**
-  - An 74 % der Tage wäre das Buch unter SM gar nicht zulässig. Ohne die Stapelung liest der Referee einen
-    Netting-Faktor, der zum Teil eine Kontogrenze ist.
-  - Ein Quotient braucht eine Log-Achse, sonst wirkt 0,5 näher an 1 als 2.
-  - Maker-Tage desselben Kontos hängen zusammen. Die Cluster sind laut Präregistrierung UTC-Tage und nicht
-    Konten. Das gehört in die Kopfzeile, damit niemand Konten-Cluster unterstellt.
-  - In der Legacy-PM-Zeile fehlen HYPE-Beine. Ihr n ist deshalb kleiner, und das muss in der Zeile stehen.
+  Structure: 1,943 maker-days, 1,431 of them with more than 63 options (Addendum 4). Accounts under SM, PM:BTC, PM:ETH,
+  PM2:ETH and PM2:HYPE.
+- **Coding.**
+  - Panel a: histogram on a logarithmic x axis (ticks 0.5 to 64, equal width per doubling), stacked
+    by ≤ 63 options (blue) and > 63 options (“SM counterfactual”, hatched grey). Threshold 2 dashed,
+    1 dotted, median as a triangle.
+  - Panel b: forest with the verdict bar, rejection region to the left of 2. Rows: registered, only days with
+    ≤ 63 options, MM, plus, exploratory, legacy PM/PM2 (BTC and ETH legs) and splits by the manager
+    of the account.
+- **Size.** 3.4 × 3.7 inches (or together with F3, see there).
+- **Core message in 5 s.** How much capital PM2 saves against SM on real books, and whether the verdict holds when
+  one takes only the days on which an SM account would be allowed to hold the book at all.
+- **Pitfalls.**
+  - On 74 % of the days the book would not be admissible under SM at all. Without the stacking the referee reads a
+    netting factor that is partly an account limit.
+  - A ratio needs a log axis, otherwise 0.5 looks closer to 1 than 2 does.
+  - Maker-days of the same account are correlated. According to the pre-registration the clusters are UTC days and not
+    accounts. That belongs in the header, so that nobody assumes account clusters.
+  - The legacy PM row lacks HYPE legs. Its n is therefore smaller, and that must be stated in the row.
 
-## F5 · Die Engine über die Zeit
+## F5 · The engine over time
 
-- **Zweck.** Die Abbildung macht die H4-Ereignisauswahl nachprüfbar: welche Parameteränderungen es gab, welche die
-  Regeln behalten (Zusammenfassung je Tag, Dosisfilter 1 %, 20 Fills je Seite), wie gross sie für ein festes Buch
-  sind und ob der geänderte Manager damals überhaupt Open Interest trug.
-- **Datenquelle.** `results/p2/events.csv` (`kept, max_abs_dose, panel_cells, panel_fills_pre/post`),
-  `results/p2/params/{CCY}_{pm,pm2}.json` (jede Zeile der Zeitlinie, also die Abstandsregel der Placebos),
-  `results/p2/reference_book.csv` (`K_sm, K_pm, K_pm2, forward`; `K_*_prev` für den reinen Parametersprung),
+- **Purpose.** The figure makes the H4 event selection checkable: which parameter changes there were, which ones the
+  rules keep (combination per day, dose filter 1 %, 20 fills per side), how large they are for a fixed book
+  and whether the changed manager carried any open interest at the time.
+- **Data source.** `results/p2/events.csv` (`kept, max_abs_dose, panel_cells, panel_fills_pre/post`),
+  `results/p2/params/{CCY}_{pm,pm2}.json` (every row of the timeline, hence the spacing rule of the placebos),
+  `results/p2/reference_book.csv` (`K_sm, K_pm, K_pm2, forward`; `K_*_prev` for the pure parameter jump),
   `results/p2/manager_oi_share.csv`.
-- **Kodierung.**
-  - Panel a: Ereignisspuren, je eine Zeile für BTC Legacy PM, BTC PM2, ETH Legacy PM, ETH PM2 und HYPE PM2.
-    ● bedeutet „geht ins H4-Panel“, ◇ „behalten, aber keine Zelle mit 20 Fills je Seite“ (HYPE 08.01.2026),
-    ○ „weggefallen, max |Dosis| unter 0,01“. Die Beschriftung ist max |Dosis|. Kleine graue Striche markieren jede
-    Zeile der Zeitlinie, auch Collateral-Änderungen, weil diese für den Placebo-Abstand zählen.
-  - Panel b: je Basiswert K des Referenzbuchs (Short-Straddle am Geld, 30 Tage, 08:00 UTC) in Prozent des Forwards
-    je Manager (Linienart plus Farbe). Darunter ein schmaler Streifen mit dem OI-Anteil je Manager. Die ±14-Tage-
-    Fenster der H4-Ereignisse sind grau hinterlegt, Überlappungen erscheinen dunkler.
-  - Eine gemeinsame Kalenderachse von 2024-01 bis 2026-09.
-- **Grösse.** 7,0 × 4,6 Zoll (Paper 1 F6 hatte 4,2).
-- **Kernaussage in 5 s** (Pilotdaten). 14 von 18 Ereignissen bleiben, 13 gehen ins Panel. Fast jede behaltene
-  Änderung verbilligt das Kapital. Am Referenzbuch senken 11 von 14 das Kapital, die drei Ausnahmen sind die
-  Änderungen vom 08.01.2026 (+1,5 bis +1,6 %). Der grösste Sprung ist PM2 BTC am 20.08.2026 mit −23 %, HYPE am
-  24.05.2026 mit −31 %. Die Dosis variiert also fast nur in eine Richtung.
-- **Fallen.**
-  - **Die Fenster überlappen**: 08.01. und 23.01.2026 (BTC, ETH, 15 Tage Abstand) sowie 08.05. und 24.05.2026
-    (HYPE, 16 Tage). Das Nach-Fenster des ersten Ereignisses ist das Vor-Fenster des zweiten, dieselben Fills
-    gehen in zwei (Zelle, Ereignis)-Gruppen ein. Die Präregistrierung verbietet das nicht, aber das Bild muss es
-    zeigen, und der Text sollte es nennen.
-  - Das Referenzbuch ist nicht die Dosis. Die Dosis ist zellspezifisch, das Buch veranschaulicht nur.
-  - Die Linie des Legacy PM läuft bis 09/2026 weiter, obwohl sein OI-Anteil ab 03/2026 bei null liegt. Im Finale
-    sollte die Linie dünn werden, wo der Manager weniger als 5 % des OI trägt.
-  - Die Beschriftungen im HYPE-Streifen liegen im Prototyp zu dicht an den ETH-Strichen. Im Finale braucht die
-    Spur mehr Zeilenabstand.
+- **Coding.**
+  - Panel a: event tracks, one row each for BTC legacy PM, BTC PM2, ETH legacy PM, ETH PM2 and HYPE PM2.
+    ● means “enters the H4 panel”, ◇ “kept, but no cell with 20 fills per side” (HYPE 2026-01-08),
+    ○ “dropped, max |dose| below 0.01”. The label is max |dose|. Small grey ticks mark every
+    row of the timeline, collateral changes included, because these count for the placebo spacing.
+  - Panel b: per underlying the K of the reference book (short straddle at the money, 30 days, 08:00 UTC) in per cent of the forward
+    per manager (line style plus colour). Below it a narrow strip with the OI share per manager. The ±14-day
+    windows of the H4 events are shaded grey, and overlaps appear darker.
+  - One shared calendar axis from 2024-01 to 2026-09.
+- **Size.** 7.0 × 4.6 inches (Paper 1 F6 had 4.2).
+- **Core message in 5 s** (pilot data). 14 of 18 events are kept, 13 enter the panel. Almost every kept
+  change makes capital cheaper. On the reference book 11 of 14 lower the capital; the three exceptions are the
+  changes of 2026-01-08 (+1.5 to +1.6 %). The largest jump is PM2 BTC on 2026-08-20 with −23 %, HYPE on
+  2026-05-24 with −31 %. The dose therefore varies almost only in one direction.
+- **Pitfalls.**
+  - **The windows overlap**: 2026-01-08 and 2026-01-23 (BTC, ETH, 15 days apart) as well as 2026-05-08 and 2026-05-24
+    (HYPE, 16 days). The post window of the first event is the pre window of the second, and the same fills
+    enter two (cell, event) groups. The pre-registration does not forbid this, but the figure must
+    show it, and the text should mention it.
+  - The reference book is not the dose. The dose is cell-specific; the book only illustrates.
+  - The line of the legacy PM runs on until 09/2026, although its OI share is zero from 03/2026. In the final version
+    the line should become thin where the manager carries less than 5 % of the OI.
+  - In the prototype the labels in the HYPE strip sit too close to the ETH ticks. In the final version the
+    track needs more line spacing.
 
-## F6 · Der Preis des Kapitals (H4)
+## F6 · The price of capital (H4)
 
-- **Zweck.** Die Abbildung zeigt β so, dass man seine Steigung sehen kann, und beide registrierten Kriterien
-  (Wild-p und Placebo-P95) nebeneinander.
-- **Datenquelle.** `results/p2/h4.json`, `h4_placebo.csv`, `sensitivity_h4.json`, `fig_h4_events.csv`, dazu die
-  noch fehlenden FWL-Bins (siehe Datenvertrag).
-  Das Panel ist `data/p2/derived/h4_panel.parquet` (91 446 Fills, `dose, post, y_hs_bp, cell, event_id, day`), die
-  Dosen stammen aus `results/p2/h4_doses.csv`.
-- **Kodierung.**
-  - Panel a: Partialregressionsbild (Frisch-Waugh-Lovell). Die x-Achse zeigt post × Dosis, die y-Achse den
-    Halbspread in bp des Index, beide nach α_{Zelle,Ereignis} und γ_{Tag,Basiswert} residualisiert, in 20 gleich
-    besetzten Bins. Die Markerfläche ist proportional zur Zahl der Fills. Die Gerade hat genau die Steigung β. So
-    sieht ein Referee, ob ein einzelner Bin β trägt. Achsenzusatz: „< 0: capital got cheaper“.
-  - Panel b (explorativ, grau hinterlegt): β je Basiswert und β ohne Ausreisserzellen aus `sensitivity_h4.json`,
-    jeweils mit 90-%-Intervall und Clusterzahl, die registrierte Schätzung als senkrechte Linie. Der Prototyp
-    zeigt β je Ereignis. Das schätzt die Inferenz nicht, es wäre ein Zusatzwunsch.
-  - Panel c: Histogramm der 100 Placebo-β, P95 gestrichelt, β als dicke Linie. Darüber die Prüfliste in fett:
-    „one-sided wild p = … ≤ 0.05: met / not met“, „β > placebo P95: met / not met“, „H4 rejected / not rejected“.
-- **Grösse.** 7,0 × 3,0 Zoll.
-- **Kernaussage in 5 s.** Ob der Halbspread mit der Kapitaländerung sinkt, und ob beide Kriterien erfüllt sind.
-  H4 braucht beide, und die Prüfliste zeigt, an welchem es gegebenenfalls scheitert.
-- **Fallen.**
-  - Vorzeichen: Die Dosis ist log(K_nach/K_vor), negativ heisst billiger. H4 sagt β > 0 voraus (billigeres Kapital
-    führt zu kleinerem Halbspread). Ohne Achsenhinweis liest man es verkehrt herum.
-  - Ein roher Binscatter von y gegen die Dosis ohne die Fixeffekte hat nicht die Steigung β. Nur die
-    residualisierten Bins aus der Inferenz sind zulässig. Der Terzil-Ersatz aus `fig_h4_events.csv` darf keine
-    Gerade mit Steigung β tragen (siehe Datenvertrag).
-  - Wegen F5 laufen fast alle Dosen in eine Richtung (Lockerungen). β wird auf der Seite x < 0 identifiziert, die
-    Bins zeigen das ehrlich, der Text sollte es sagen.
-  - Die Placebos leihen sich die Dosisvektoren echter Ereignisse. Eine Verteilung, die nicht um null liegt, ist
-    ein Hinweis auf Saisonalität und kein Fehler der Abbildung.
-  - Nach Paper-1-Regel steht neben der Placebo-Position auch der p-Wert. Beide gehören in Panel c, nicht in die
-    Caption.
+- **Purpose.** The figure shows β in such a way that one can see its slope, and both registered criteria
+  (wild p and placebo P95) side by side.
+- **Data source.** `results/p2/h4.json`, `h4_placebo.csv`, `sensitivity_h4.json`, `fig_h4_events.csv`, plus the
+  still missing FWL bins (see data contract).
+  The panel is `data/p2/derived/h4_panel.parquet` (91,446 fills, `dose, post, y_hs_bp, cell, event_id, day`), and the
+  doses come from `results/p2/h4_doses.csv`.
+- **Coding.**
+  - Panel a: partial regression plot (Frisch-Waugh-Lovell). The x axis shows post × dose, the y axis the
+    half spread in bp of the index, both residualised on α_{cell,event} and γ_{day,underlying}, in 20 equally
+    populated bins. The marker area is proportional to the number of fills. The line has exactly the slope β. This way
+    a referee sees whether a single bin carries β. Axis addition: “< 0: capital got cheaper”.
+  - Panel b (exploratory, on grey): β per underlying and β without outlier cells from `sensitivity_h4.json`,
+    each with 90 % interval and cluster count, the registered estimate as a vertical line. The prototype
+    shows β per event. The inference does not estimate that; it would be an additional request.
+  - Panel c: histogram of the 100 placebo β, P95 dashed, β as a thick line. Above it the checklist in bold:
+    “one-sided wild p = … ≤ 0.05: met / not met”, “β > placebo P95: met / not met”, “H4 rejected / not rejected”.
+- **Size.** 7.0 × 3.0 inches.
+- **Core message in 5 s.** Whether the half spread falls with the change in capital, and whether both criteria are met.
+  H4 needs both, and the checklist shows on which one it fails, if it does.
+- **Pitfalls.**
+  - Sign: the dose is log(K_after/K_before), negative means cheaper. H4 predicts β > 0 (cheaper capital
+    leads to a smaller half spread). Without a hint on the axis one reads it the wrong way round.
+  - A raw binscatter of y against the dose without the fixed effects does not have the slope β. Only the
+    residualised bins from the inference are admissible. The tercile fallback from `fig_h4_events.csv` must not carry a
+    line with slope β (see data contract).
+  - Because of F5, almost all doses run in one direction (loosenings). β is identified on the side x < 0; the
+    bins show that honestly, and the text should say it.
+  - The placebos borrow the dose vectors of real events. A distribution that is not centred on zero is
+    a hint of seasonality and not an error of the figure.
+  - Under the Paper 1 rule, the p-value stands next to the placebo position. Both belong in panel c, not in the
+    caption.
 
-## A1 · Stimmt der Nachbau mit der Chain überein?
+## A1 · Does the replica agree with the chain?
 
-- **Zweck.** Die Abbildung zeigt die präregistrierte Validierung je Basiswert und Manager gegen die Schwellen
-  (Median < 0,1 %, p95 < 1 %) mit allen Fallzahlen.
-- **Datenquelle.** `results/p2/validation.csv` (`kind, ccy, manager, is_initial, rel_err, n_legs, book, status`),
-  Kennzahlen je Zelle aus `results/p2/validation_summary.json`. 2 Fälle mit `status = revert` bleiben draussen und
-  werden gezählt.
-- **Kodierung.**
-  - Panel a: Einzelkontrakte, je Basiswert und Manager eine Zeile. Oben IM (kräftig), unten MM (blass). Balken
-    p25 bis p75, Whisker min bis max, schwarzer Strich für den Median, Raute für p95 (gefüllt IM, offen MM). Die
-    x-Achse ist log |rel| von 1e−13 bis 1e−1. Exakte Nullen liegen in einem grauen Streifen „exact“ am linken Rand
-    (359 der Einzelfälle sind bitgleich). Die Schwellen sind gestrichelt, n steht rechts.
-  - Panel b: Bücher. Die x-Achse zeigt die Beine (log), die y-Achse |rel| (log), Form und Farbe je Manager, IM
-    gefüllt, MM offen. In der Achsenbeschriftung: 20 Maker-Tage, Bücher je Basiswert BTC 7, ETH 18, HYPE 1.
-- **Grösse.** 7,0 × 2,8 Zoll.
-- **Kernaussage in 5 s** (echt). Die Mediane je Zelle liegen höchstens bei 9e−9, die grösste Einzelabweichung
-  bei 1,9e−7 (MM), also mindestens vier Dekaden unter den Schwellen. Der Fehler wächst nicht mit der Buchgrösse (2 bis 245 Beine).
-- **Fallen.**
-  - Die Validierungsblöcke verlangen frische Feeds (Vol-Push höchstens 20 min, Forward höchstens 1 h alt,
-    `VALIDIERUNG.md`), die Testpopulation nicht. A1 belegt die Engine, nicht die Feed-Zuordnung bei alten Feeds.
-    Vorschlag: ein Panel c mit der Verteilung des Feed-Alters (`vol_age` in `capital.parquet`) der
-    Testpopulation neben der Validierungsauswahl, oder ein Satz in der Caption.
-  - Für HYPE steht die Bücherzeile auf **einem** Buch. Das n muss im Bild stehen (steht in der Achsenbeschriftung).
-  - Eine Log-Achse über zwölf Dekaden lässt 1e−8 und 1e−2 optisch nah wirken. Die Schwellen brauchen eine
-    Beschriftung direkt an der Linie.
-
----
-
-## README und X
-
-### GIF: die Kapitalfläche über die Zeit
-
-- **Inhalt.** BTC, Seite short, PM2. Die Kapitalfläche als **2D-Heatmap** über Call-Delta × Laufzeit (log), nicht
-  in 3D: Auf X wird das GIF auf rund 600 px verkleinert, und eine 3D-Fläche mit Verdeckung ist dort nicht lesbar.
-  Die 3D-Fassung (wie `data/p2/surface/BTC_capital_short_2026-08-14_2026-08-27.gif`) bleibt für die README.
-- **Zeit.** Tägliche Frames um 08:00 UTC vom 13.06.2025 bis 17.09.2026, jeder dritte Tag (rund 155 Frames), 12 fps.
-  An jedem H4-Ereignis hält die Animation eine Sekunde an, mit Einblendung „Parameter change 20 Aug 2026: grid ±17 %
-  → ±14 % · reference book −23 %“ aus `events.csv` und `reference_book.csv`.
-- **Unterer Streifen.** Die Zeitreihe des Referenzbuchs (PM2 durchgezogen, SM gestrichelt) mit Cursor und
-  Ereignismarken im Stil von F5 (● im Panel, ◇, ○). Das ist `p2surface._draw_series`.
-- **Ehrlichkeit.** Eine feste Farbskala über alle Frames (`p2surface.fit_limits`). Jeder Frame zeigt Datum und
-  Block. Verfälle ohne frischen Feed erscheinen grau (`NA_COLOR`) und werden nicht interpoliert. Eine Plakette
-  „stale feed“ erscheint, wenn ein Feed älter als ein Tag ist. Die Werte aller Frames stehen in
-  `results/p2/gif_frames.csv` (Datum, Block, Zahl der Verfälle, K min/Median/max).
-- **Format.** 1200 × 675 px, unter 8 MB (X erlaubt 15 MB, GitHub rendert grosse GIFs langsam), dazu ein
-  statischer Endframe als PNG für Leser ohne Animation.
-
-### Social-Karten (1600 × 900 px)
-
-Gemeinsame Regeln: eine Botschaft je Karte, eine grosse Zahl mit Intervall und n, Schrift mindestens 28 px (auf
-600 px Breite noch 10 px), Quelle und Präregistrierungs-Commit in der Fusszeile, Farbe doppelt codiert wie im
-Papier. Zahlen nur aus `results/p2/`. Solange die Tests laufen, tragen die Karten zu H1 bis H4 Platzhalter.
-
-1. **„One contract, three price tags“** (aus F1, echte Daten). Die BTC-Short-Heatmap unter PM2, daneben der
-   Quotientenstreifen. Grosse Zahl: die Spanne SM/PM2 über die besetzten Zellen. Unterzeile: „for a single
-   contract PM2 is not cheaper than SM, netting is where it pays“. Die Unterzeile gilt nur, wenn F3 und F4 das
-   tragen, sonst entfällt sie.
-2. **„What the next contract costs“** (H2 und H3). Zwei Urteilsleisten übereinander, der Median von ΔK/K_Einzel und
-   der Median von K_SM/K_PM2, jeweils mit Intervall, Schwelle und „pre-registered · rejected/not rejected“.
-3. **„The engine got cheaper, did spreads follow?“** (F5 und F6). Links die Referenzbuch-Linie BTC PM2 mit den
-   Sprüngen (−23 % am 20.08.2026), rechts β mit der Placebo-Verteilung und der Prüfliste. Diese Karte kommt erst,
-   wenn H4 ausgewertet ist.
+- **Purpose.** The figure shows the pre-registered validation per underlying and manager against the thresholds
+  (median < 0.1 %, p95 < 1 %) with all case counts.
+- **Data source.** `results/p2/validation.csv` (`kind, ccy, manager, is_initial, rel_err, n_legs, book, status`),
+  key figures per cell from `results/p2/validation_summary.json`. 2 cases with `status = revert` stay out and
+  are counted.
+- **Coding.**
+  - Panel a: single contracts, one row per underlying and manager. IM on top (strong), MM below (pale). Bar
+    p25 to p75, whiskers min to max, black bar for the median, diamond for p95 (filled IM, open MM). The
+    x axis is log |rel| from 1e−13 to 1e−1. Exact zeros lie in a grey strip “exact” at the left edge
+    (359 of the single cases are bit-identical). The thresholds are dashed, n stands on the right.
+  - Panel b: books. The x axis shows the legs (log), the y axis |rel| (log), shape and colour per manager, IM
+    filled, MM open. In the axis label: 20 maker-days, books per underlying BTC 7, ETH 18, HYPE 1.
+- **Size.** 7.0 × 2.8 inches.
+- **Core message in 5 s** (real). The medians per cell are at most 9e−9, the largest single deviation
+  1.9e−7 (MM), so at least four decades below the thresholds. The error does not grow with the size of the book (2 to 245 legs).
+- **Pitfalls.**
+  - The validation blocks require fresh feeds (vol push at most 20 min, forward at most 1 h old,
+    `VALIDATION.md`), the test population does not. A1 vouches for the engine, not for the feed assignment with old feeds.
+    Proposal: a panel c with the distribution of feed age (`vol_age` in `capital.parquet`) of the
+    test population next to the validation selection, or a sentence in the caption.
+  - For HYPE the books row rests on **one** book. The n must be in the figure (it is in the axis label).
+  - A log axis over twelve decades makes 1e−8 and 1e−2 look close. The thresholds need a
+    label directly at the line.
 
 ---
 
-## Offene Fragen an die Jury und an die Inferenz
+## README and X
 
-1. Soll F2 die Rang-Rang-Darstellung bekommen (Empirie) statt der Verbindungslinien aus dem Gerüst? Ich empfehle
-   ja, wegen der Haarlinien-Regel aus Paper 1.
-2. F3 und F4 als ein gemeinsamer `figure*` (7,0 × 2,8) oder zwei einspaltige (3,4 × 3,7)? Der gemeinsame Float
-   macht die Urteilsgrammatik vergleichbar und spart eine Fliesstelle.
-3. Kann `inference_p2.py` noch die FWL-Bins für F6a und die Replikationsverteilung von ρ für F2b schreiben? Ohne
-   sie fällt F6a auf die rohen Dosis-Terzile zurück, F2b auf die blosse Leiste, und die Abbildungsschicht darf
-   beides nicht nachrechnen.
-4. Die überlappenden H4-Fenster (Januar, Mai) müssen im Text erwähnt werden. Die Abbildung zeigt sie bereits.
+### GIF: the capital surface over time
+
+- **Content.** BTC, short side, PM2. The capital surface as a **2D heatmap** over call delta × tenor (log), not
+  in 3D: on X the GIF is shrunk to about 600 px, and a 3D surface with occlusion is not readable there.
+  The 3D version (like `data/p2/surface/BTC_capital_short_2026-08-14_2026-08-27.gif`) stays for the README.
+- **Time.** Daily frames at 08:00 UTC from 2025-06-13 to 2026-09-17, every third day (about 155 frames), 12 fps.
+  At every H4 event the animation pauses for one second, with the overlay “Parameter change 20 Aug 2026: grid ±17 %
+  → ±14 % · reference book −23 %” from `events.csv` and `reference_book.csv`.
+- **Lower strip.** The time series of the reference book (PM2 solid, SM dashed) with a cursor and
+  event marks in the style of F5 (● in the panel, ◇, ○). That is `p2surface._draw_series`.
+- **Honesty.** One fixed colour scale over all frames (`p2surface.fit_limits`). Every frame shows date and
+  block. Expiries without a fresh feed appear grey (`NA_COLOR`) and are not interpolated. A badge
+  “stale feed” appears when a feed is older than one day. The values of all frames are in
+  `results/p2/gif_frames.csv` (date, block, number of expiries, K min/median/max).
+- **Format.** 1200 × 675 px, under 8 MB (X allows 15 MB, GitHub renders large GIFs slowly), plus a
+  static end frame as PNG for readers without animation.
+
+### Social cards (1600 × 900 px)
+
+Shared rules: one message per card, one large number with interval and n, font at least 28 px (still 10 px at
+600 px width), source and pre-registration commit in the footer, colour double-coded as in the
+paper. Numbers only from `results/p2/`. While the tests are running, the cards on H1 to H4 carry placeholders.
+
+1. **“One contract, three price tags”** (from F1, real data). The BTC short heatmap under PM2, next to it the
+   ratio strip. Large number: the range of SM/PM2 over the occupied cells. Subline: “for a single
+   contract PM2 is not cheaper than SM, netting is where it pays”. The subline holds only if F3 and F4
+   carry it; otherwise it is dropped.
+2. **“What the next contract costs”** (H2 and H3). Two verdict bars one above the other, the median of ΔK/K_single and
+   the median of K_SM/K_PM2, each with interval, threshold and “pre-registered · rejected/not rejected”.
+3. **“The engine got cheaper, did spreads follow?”** (F5 and F6). On the left the reference book line BTC PM2 with the
+   jumps (−23 % on 2026-08-20), on the right β with the placebo distribution and the checklist. This card comes only
+   once H4 has been evaluated.
+
+---
+
+## Open questions to the jury and to the inference
+
+1. Should F2 get the rank-rank display (empirics) instead of the connecting lines from the skeleton? I recommend
+   yes, because of the hairline rule from Paper 1.
+2. F3 and F4 as one shared `figure*` (7.0 × 2.8) or two single-column ones (3.4 × 3.7)? The shared float
+   makes the verdict grammar comparable and saves a float position.
+3. Can `inference_p2.py` still write the FWL bins for F6a and the replication distribution of ρ for F2b? Without
+   them F6a falls back on the raw dose terciles and F2b on the bare bar, and the figure layer must not recompute
+   either.
+4. The overlapping H4 windows (January, May) must be mentioned in the text. The figure already shows them.

@@ -31,7 +31,7 @@ def _v2core(rel: str) -> dict:
 
 
 # Chain fixtures of real accounts (whole balances at a block) identify the account, so they live in
-# data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01); without them these tests are skipped.
+# data/p2/fixtures_private (not tracked, Addendum 1.4, audit A01); without them these tests are skipped.
 PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
 
 

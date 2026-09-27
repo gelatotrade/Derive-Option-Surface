@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Scrub account identifiers from the Paper 2 history on a NEW branch (audit A01, Nachtrag 1.4).
+"""Scrub account identifiers from the Paper 2 history on a NEW branch (audit A01, Addendum 1.4).
 
-Guide with the full command sequence: docs/paper2/HISTORIE_BEREINIGEN.md. Short form:
+Guide with the full command sequence: docs/paper2/HISTORY_CLEANUP.md. Short form:
 
     git branch paper2-kapital-bereinigt paper2-kapital
     FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch \\

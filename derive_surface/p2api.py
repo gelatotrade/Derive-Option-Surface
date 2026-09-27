@@ -1,8 +1,8 @@
 """Explorative API snapshot (Paper 2, task C5b): ``public/get_margin`` against the replica at the head block.
 
-Preregistration (``docs/paper2/PRAEREGISTRIERUNG.md``, Inferenz): "API-Semantik mit 2 %" is exploratory. The v2 API
+Preregistration (``docs/paper2/PRAEREGISTRIERUNG.md``, section Inference): "API semantics with 2 %" is exploratory. The v2 API
 (``api.lyra.finance``) computes margin off chain with a flat PM2 discount of 2 % and ticker prices; its history cannot
-be rebuilt (``docs/paper2/get_margin_semantik.md``), so it is measured once, today, next to the chain semantics.
+be rebuilt (``docs/paper2/get_margin_semantics.md``), so it is measured once, today, next to the chain semantics.
 
 Cells: currency x maker side (buy, sell) x the 7 |delta| buckets x 5 tenor buckets of Paper 1 (``markouts``). Each
 cell gets one listed, active instrument:
@@ -36,7 +36,7 @@ No accounts: every book is simulated. At most 2 requests per second over API and
 its raw answer (including the instrument lists and tickers) goes to ``data/p2/logs/C5b.jsonl``.
 
     python3 -m derive_surface p2 api run [--ccy BTC ETH HYPE]
-    python3 -m derive_surface p2 api report     # re-render docs/paper2/stand/C5b.md from the CSV and the meta file
+    python3 -m derive_surface p2 api report     # re-render docs/paper2/status/C5b.md from the CSV and the meta file
 """
 from __future__ import annotations
 
@@ -65,13 +65,13 @@ REPO = Path(__file__).resolve().parents[1]
 LOG_PATH = REPO / "data" / "p2" / "logs" / "C5b.jsonl"
 CSV_PATH = REPO / "results" / "p2" / "api_snapshot.csv"
 META_PATH = REPO / "data" / "p2" / "api_snapshot" / "meta.json"
-DOC_PATH = REPO / "docs" / "paper2" / "stand" / "C5b.md"
+DOC_PATH = REPO / "docs" / "paper2" / "status" / "C5b.md"
 MARKOUTS = REPO / "data" / "p1" / "derived" / "markouts.parquet"
 
 API_URL = "https://api.lyra.finance"
 USER_AGENT = "derive-option-surface/p2-C5b (research, public endpoints only)"
 RATE = 2.0                 # requests per second over API and chain together
-API_RATE = 0.02            # flat PM2 discount rate of the v2 API (get_margin_semantik.md, section 3)
+API_RATE = 0.02            # flat PM2 discount rate of the v2 API (get_margin_semantics.md, section 3)
 CCYS = ("BTC", "ETH", "HYPE")
 SIDES = (("buy", 1.0), ("sell", -1.0))
 MANAGERS = ("sm", "pm2")
@@ -460,7 +460,7 @@ def _capital(mgr: str, arrays: Mapping, params: Mapping, mark: float) -> Tuple[f
 def replica_capital(ch: Mapping, expiry: int, strike: float, is_call: bool, mark: float,
                     params: Mapping[str, Mapping]) -> Dict[str, Tuple[float, float]]:
     """(K(+1), K(-1)) of the replica per manager on the chain feeds ``ch`` (:func:`decode_chain`); NaN where a feed
-    the manager needs reverted. SM does not discount; PM2 uses the PM2 rate feed (Nachtrag 1, item 2)."""
+    the manager needs reverted. SM does not discount; PM2 uses the PM2 rate feed (Addendum 1, item 2)."""
     need = ("block_ts", "spot", "spot_conf", "forward", "fwd_fixed", "fwd_conf", "sigma", "vol_conf", "stable")
     out = {m: (NAN, NAN) for m in MANAGERS}
     if any(ch.get(k) is None for k in need) or not math.isfinite(float(mark)):
@@ -638,10 +638,11 @@ def to_frame(rows: Sequence[dict]) -> pd.DataFrame:
     return df
 
 
-# ================================================================================================ German text
+# ================================================================================================ document text
 
-NNBSP = " "
+THOUSANDS = ","
 MINUS = "−"
+MISSING = "n/a"
 SUPERSCRIPT = str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹")
 
 
@@ -652,35 +653,35 @@ def _finite(x) -> bool:
         return False
 
 
-def de_num(x, digits: int = 2, sign: bool = False) -> str:
-    """Decimal comma, narrow no-break space for thousands, typographic minus (as ``scripts/p2_zahlenblatt.py``)."""
+def fmt_num(x, digits: int = 2, sign: bool = False) -> str:
+    """Decimal point, comma for thousands, typographic minus."""
     if not _finite(x):
-        return "–"
+        return MISSING
     v = round(float(x), digits)
-    body = f"{abs(v):,.{digits}f}".replace(",", NNBSP).replace(".", ",")
+    body = f"{abs(v):,.{digits}f}".replace(",", THOUSANDS)
     if v < 0:
         return MINUS + body
     return ("+" + body) if (sign and v > 0) else body
 
 
-def de_pct(x, digits: int = 2, sign: bool = True) -> str:
-    return "–" if not _finite(x) else de_num(100.0 * float(x), digits, sign) + " %"
+def fmt_pct(x, digits: int = 2, sign: bool = True) -> str:
+    return MISSING if not _finite(x) else fmt_num(100.0 * float(x), digits, sign) + " %"
 
 
-def de_sci(x, n: int = 2) -> str:
+def fmt_sci(x, n: int = 2) -> str:
     """n significant digits; very small or large numbers as m·10ⁿ."""
     if not _finite(x):
-        return "–"
+        return MISSING
     v = float(x)
     if v == 0:
         return "0"
     ex = int(math.floor(math.log10(abs(v))))
     if -3 <= ex <= 5:
-        return de_num(v, max(0, n - 1 - ex))
+        return fmt_num(v, max(0, n - 1 - ex))
     m = v / 10 ** ex
     if round(abs(m), n - 1) >= 10:
         m, ex = m / 10, ex + 1
-    return de_num(m, n - 1) + "·10" + str(ex).translate(SUPERSCRIPT)
+    return fmt_num(m, n - 1) + "·10" + str(ex).translate(SUPERSCRIPT)
 
 
 def _q(s: pd.Series, p: float) -> float:
@@ -692,20 +693,31 @@ def _med(s: pd.Series) -> float:
     return _q(s, 0.5)
 
 
-SIDE_DE = {"buy": "Kauf", "sell": "Verkauf"}
-MGR_DE = {"sm": "SM", "pm2": "PM2"}
+SIDE_NAME = {"buy": "buy", "sell": "sell"}
+MGR_NAME = {"sm": "SM", "pm2": "PM2"}
 N_TOP = 8
-STATUS_DE = {"ok": "gemessen", "no_expiry": "kein gelisteter Verfall im Laufzeit-Bucket",
-             "no_strike": "kein Strike des Typs im |Δ|-Bucket", "api_error": "Fehler der API",
-             "chain_error": "eth_call fehlgeschlagen", "chain_revert": "Feed der Chain revertiert",
-             "nan": "Wert nicht endlich"}
+STATUS_TEXT = {"ok": "measured", "no_expiry": "no listed expiry in the tenor bucket",
+               "no_strike": "no strike of the type in the |Δ| bucket", "api_error": "error of the API",
+               "chain_error": "eth_call failed", "chain_revert": "chain feed reverted",
+               "nan": "value not finite"}
+
+
+def _utc(iso: Optional[str]) -> Optional[dt.datetime]:
+    if not iso:
+        return None
+    return dt.datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(dt.timezone.utc)
+
+
+def _utc_day(iso: Optional[str]) -> str:
+    """'25 September 2026'."""
+    t = _utc(iso)
+    return MISSING if t is None else f"{t.day} {t.strftime('%B %Y')}"
 
 
 def _utc_text(iso: Optional[str]) -> str:
-    if not iso:
-        return "–"
-    t = dt.datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(dt.timezone.utc)
-    return t.strftime("%d.%m.%Y %H:%M:%S")
+    """'25 September 2026 00:44:17'."""
+    t = _utc(iso)
+    return MISSING if t is None else f"{t.day} {t.strftime('%B %Y %H:%M:%S')}"
 
 
 def _table(header: Sequence[str], rows: Sequence[Sequence[str]], align: Sequence[str]) -> List[str]:
@@ -716,84 +728,88 @@ def _table(header: Sequence[str], rows: Sequence[Sequence[str]], align: Sequence
 
 
 def render_doc(df: pd.DataFrame, meta: Mapping) -> str:
-    """The section ``docs/paper2/stand/C5b.md`` (German), only from the CSV and the meta file."""
+    """The section ``docs/paper2/status/C5b.md``, only from the CSV and the meta file."""
     ok = df[df["status"] == "ok"]
     n_cells, n_ok = len(df), len(ok)
     blocks = pd.to_numeric(df["block"], errors="coerce").dropna()
-    day = _utc_text(meta.get("start_utc"))[:10]
+    day = _utc_day(meta.get("start_utc"))
     L: List[str] = []
-    L.append("## C5b API-Momentaufnahme: `public/get_margin` gegen den Nachbau am aktuellen Block")
+    L.append("## C5b API snapshot: `public/get_margin` against the replica at the current block")
     L.append("")
-    L.append(f"Stand {day}. **Explorativ:** Die Präregistrierung führt „API-Semantik mit 2 %“ unter den explorativen "
-             "Grössen. Die v2-API rechnet off-chain mit Ticker-Preisen und einem pauschalen PM2-Diskont von 2 % "
-             "(`docs/paper2/get_margin_semantik.md`, Abschnitt 3); ihr Verlauf ist nicht rekonstruierbar, gemessen "
-             "wird deshalb nur heute. Keine Konten: Alle Bücher sind simuliert (API: `simulated_positions`; Chain: "
-             "zwei synthetische Konten per State-Override). Keine Inferenz, kein Eingang in H1 bis H4. Tests: "
-             "`tests/test_p2_api.py` (offline, API und Chain als Attrappen, Nachbau auf `results/p2/params`).")
+    L.append(f"Status as of {day}. **Exploratory:** the pre-registration lists \"API semantics with 2 %\" among the "
+             "exploratory quantities. The v2 API computes off-chain with ticker prices and a flat PM2 discount of 2 % "
+             "(`docs/paper2/get_margin_semantics.md`, section 3); its history cannot be reconstructed, so only today "
+             "is measured. No accounts: all books are simulated (API: `simulated_positions`; chain: two synthetic "
+             "accounts via state override). No inference, no input to H1 to H4. Tests: `tests/test_p2_api.py` "
+             "(offline, API and chain as mocks, replica on `results/p2/params`).")
     L.append("")
-    L.append("### Lauf")
+    L.append("### Run")
     L.append("")
     req = meta.get("requests", {})
-    L.append(f"- Zeit: {_utc_text(meta.get('start_utc'))} bis {_utc_text(meta.get('end_utc'))} UTC; Blöcke "
-             f"{de_num(blocks.min(), 0) if len(blocks) else '–'} bis {de_num(blocks.max(), 0) if len(blocks) else '–'}.")
-    L.append(f"- Anfragen: {de_num(req.get('api'), 0)} an `{meta.get('api_host', API_URL)}` und "
-             f"{de_num(req.get('rpc'), 0)} `eth_call` an `{meta.get('rpc_url', RPC_URL)}`, zusammen höchstens "
-             f"{de_num(meta.get('rate_per_s', RATE), 0)} je Sekunde (gemessen im Log: höchstens "
-             f"{de_num(meta.get('max_requests_in_1s'), 0)} Starts in einem Fenster von 1 s), "
-             f"User-Agent `{meta.get('user_agent', USER_AGENT)}`. "
-             f"Log mit allen Antworten, auch Instrumentlisten und Tickern: `{meta.get('log', 'data/p2/logs/C5b.jsonl')}`.")
+    L.append(f"- Time: {_utc_text(meta.get('start_utc'))} to {_utc_text(meta.get('end_utc'))} UTC; blocks "
+             f"{fmt_num(blocks.min(), 0) if len(blocks) else MISSING} to "
+             f"{fmt_num(blocks.max(), 0) if len(blocks) else MISSING}.")
+    L.append(f"- Requests: {fmt_num(req.get('api'), 0)} to `{meta.get('api_host', API_URL)}` and "
+             f"{fmt_num(req.get('rpc'), 0)} `eth_call` to `{meta.get('rpc_url', RPC_URL)}`, together at most "
+             f"{fmt_num(meta.get('rate_per_s', RATE), 0)} per second (measured in the log: at most "
+             f"{fmt_num(meta.get('max_requests_in_1s'), 0)} starts in a window of 1 s), "
+             f"user agent `{meta.get('user_agent', USER_AGENT)}`. "
+             f"Log with all responses, instrument lists and tickers included: "
+             f"`{meta.get('log', 'data/p2/logs/C5b.jsonl')}`.")
     params = meta.get("params", {})
     if params:
-        parts = [f"{c} SM ab {v.get('sm', '–')}, PM2 ab {v.get('pm2', '–')}" for c, v in params.items()]
-        L.append("- Parameter (Standard-Lib, `results/p2/params`, gültiger Eintrag): " + "; ".join(parts) + " UTC.")
-    L.append(f"- Typwahl aus: {meta.get('types_source', '–')}.")
-    L.append(f"- Ergebnis: `results/p2/api_snapshot.csv` ({n_cells} Zeilen, eine je Zelle), Metadaten "
+        parts = [f"{c} SM from {v.get('sm', MISSING)}, PM2 from {v.get('pm2', MISSING)}" for c, v in params.items()]
+        L.append("- Parameters (standard lib, `results/p2/params`, valid entry): " + "; ".join(parts) + " UTC.")
+    L.append(f"- Type choice from: {meta.get('types_source', MISSING)}.")
+    L.append(f"- Result: `results/p2/api_snapshot.csv` ({n_cells} rows, one per cell), metadata "
              f"`{meta.get('meta', 'data/p2/api_snapshot/meta.json')}`.")
     L.append("")
-    L.append("### Festlegungen")
+    L.append("### Decisions")
     L.append("")
-    L.append("1. **Zellen:** Basiswert × Maker-Seite (Kauf, Verkauf) × 7 |Δ|-Buckets × 5 Laufzeit-Buckets der "
-             "Paper-1-Karte, also 70 Zellen je Basiswert.")
-    L.append("2. **Verfall:** unter den gelisteten, aktiven Verfällen mit mindestens 30 min Restlaufzeit der mit "
-             "Restlaufzeit im Bucket, die der Bucket-Mitte am nächsten liegt (1; 4,5; 18,5; 60 Tage; für > 90 Tage "
-             "die Mitte zwischen 90 Tagen und dem längsten gelisteten Verfall). Gleichstand: der frühere.")
-    L.append("3. **Typ:** Call oder Put, je nachdem, welcher Typ unter den Paper-1-Fills derselben Zelle im "
-             "PM2-Fenster häufiger ist (Gleichstand oder keine Fills: Call). Die Präregistrierung legt keinen Typ "
-             "fest; so ist das Instrument für die Zelle der Karte repräsentativ.")
-    L.append("4. **Strike:** das aktive Instrument dieses Typs und Verfalls mit Ticker, dessen |Δ| (Ticker-Delta, "
-             "Forward-Delta wie in Paper 1) der Bucket-Mitte am nächsten liegt (5; 17,5; 32,5; 50; 67,5; 82,5; "
-             "95 %) und im Bucket liegt. Gleichstand: der kleinere Strike.")
-    L.append("5. **Preis:** p = Ticker-Mark aus `get_tickers` des Verfalls, gelesen direkt vor den Messungen "
-             "seiner Instrumente.")
-    L.append("6. **K_api** = p·q − net_IM(q; C = 0) aus `get_margin` mit `market` = Basiswert unter SM und unter PM2, "
-             "je Instrument und Manager eine Anfrage: `simulated_positions` q = +1, `simulated_position_changes` −2, "
-             "kein Collateral. `pre` ist net(+1), `post` net(−1), beide zum selben Preisstand.")
-    L.append("7. **K_chain** = p·q − net_IM(q; C = 0) aus dem Nachbau (`margin_sm`, `margin_pm2`, Weg von B2) mit den "
-             "On-Chain-Feeds am aktuellen Block: ein `eth_call` über Multicall3 liefert Block, Blockzeit, "
-             "`getSpot`, `getForwardPricePortions`, `getVol` am Strike, den PM2-Zins und den Stable-Feed. PM2 mit "
-             "dem Zins-Feed, SM ohne Diskont. Derselbe Preis p wie bei K_api; Laufzeit ab der Blockzeit.")
-    L.append("8. **Gegenprobe K_oracle:** Dieselbe Multicall ruft `getMargin(konto, true)` von StandardManager und "
-             "PMRM_2 für zwei synthetische Konten mit +1 und −1 Kontrakt auf (State-Override von `SubAccounts` wie "
-             "in B1).")
-    L.append("9. **Nachbau in API-Semantik K_rep_api:** Nachbau mit Index als Spot, Ticker-Forward, Mark-IV, "
-             "PM2-Zins 2 % und Konfidenzen 1, Laufzeit ab der Zeit der API-Anfrage.")
-    L.append("10. **Abweichung:** rel = K_api / K_chain − 1 (Vorzeichen: positiv heisst, die API bindet mehr "
-             "Kapital). Der Preis p kürzt sich in K_api − K_chain heraus; er wirkt nur über den Nenner.")
+    L.append("1. **Cells:** underlying × maker side (buy, sell) × 7 |Δ| buckets × 5 tenor buckets of "
+             "the Paper 1 map, that is 70 cells per underlying.")
+    L.append("2. **Expiry:** among the listed, active expiries with at least 30 min to expiry, the one whose time to "
+             "expiry lies in the bucket and is closest to the bucket midpoint (1, 4.5, 18.5, 60 days; for > 90 days "
+             "the midpoint between 90 days and the longest listed expiry). Tie: the earlier one.")
+    L.append("3. **Type:** call or put, whichever type is more frequent among the Paper 1 fills of the same cell in "
+             "the PM2 window (tie or no fills: call). The pre-registration fixes no type; this way the instrument is "
+             "representative of the cell of the map.")
+    L.append("4. **Strike:** the active instrument of this type and expiry with a ticker whose |Δ| (ticker delta, "
+             "forward delta as in Paper 1) is closest to the bucket midpoint (5, 17.5, 32.5, 50, 67.5, 82.5, 95 %) "
+             "and lies in the bucket. Tie: the smaller strike.")
+    L.append("5. **Price:** p = ticker mark from `get_tickers` of the expiry, read directly before the measurements "
+             "of its instruments.")
+    L.append("6. **K_api** = p·q − net_IM(q; C = 0) from `get_margin` with `market` = underlying under SM and "
+             "under PM2, one request per instrument and manager: `simulated_positions` q = +1, "
+             "`simulated_position_changes` −2, no collateral. `pre` is net(+1), `post` net(−1), both at the "
+             "same prices.")
+    L.append("7. **K_chain** = p·q − net_IM(q; C = 0) from the replica (`margin_sm`, `margin_pm2`, path of "
+             "B2) with the on-chain feeds at the current block: one `eth_call` via Multicall3 returns block, block "
+             "time, `getSpot`, `getForwardPricePortions`, `getVol` at the strike, the PM2 rate and the stable feed. "
+             "PM2 with the rate feed, SM without discounting. The same price p as for K_api; time to expiry from the "
+             "block time.")
+    L.append("8. **Cross-check K_oracle:** the same multicall calls `getMargin(account, true)` of StandardManager and "
+             "PMRM_2 for two synthetic accounts with +1 and −1 contract (state override of `SubAccounts` as in "
+             "B1).")
+    L.append("9. **Replica in API semantics K_rep_api:** replica with the index as spot, ticker forward, mark IV, "
+             "PM2 rate 2 % and confidences 1, time to expiry from the time of the API request.")
+    L.append("10. **Deviation:** rel = K_api / K_chain − 1 (sign: positive means the API binds more capital). "
+             "The price p cancels out of K_api − K_chain; it acts only through the denominator.")
     L.append("")
-    L.append("### Abdeckung")
+    L.append("### Coverage")
     L.append("")
     counts = df["status"].value_counts()
-    L.append(f"- {n_ok} von {n_cells} Zellen gemessen, {ok['instrument'].nunique()} verschiedene Instrumente.")
+    L.append(f"- {n_ok} of {n_cells} cells measured, {ok['instrument'].nunique()} distinct instruments.")
     for st in ("no_expiry", "no_strike", "api_error", "chain_error", "chain_revert", "nan"):
         if counts.get(st, 0):
             n_st = int(counts[st])
-            L.append(f"- {STATUS_DE[st]}: {n_st} {'Zelle' if n_st == 1 else 'Zellen'}.")
+            L.append(f"- {STATUS_TEXT[st]}: {n_st} {'cell' if n_st == 1 else 'cells'}.")
     if len(ok):
         miss = df[df["status"] == "no_expiry"].groupby("ccy")["tenor_bucket"].unique()
         for ccy, tens in miss.items():
-            L.append(f"- {ccy} ohne Verfall in: {', '.join(sorted(set(tens), key=TENOR_LABELS.index))}.")
+            L.append(f"- {ccy} without an expiry in: {', '.join(sorted(set(tens), key=TENOR_LABELS.index))}.")
     L.append("")
-    L.append("### K_api gegen K_chain")
+    L.append("### K_api against K_chain")
     L.append("")
     rows = []
     for ccy in CCYS:
@@ -802,18 +818,18 @@ def render_doc(df: pd.DataFrame, meta: Mapping) -> str:
                 s = ok[(ok["ccy"] == ccy) & (ok["side"] == side)][f"rel_diff_{mgr}"]
                 if not len(s):
                     continue
-                rows.append([ccy, SIDE_DE[side], MGR_DE[mgr], str(len(s)), de_pct(_med(s), 3), de_pct(s.min(), 3),
-                             de_pct(s.max(), 3), de_pct(_med(s.abs()), 3, sign=False)])
-    L += _table(["Basiswert", "Seite", "Manager", "Zellen", "Median rel", "Minimum", "Maximum", "Median |rel|"],
+                rows.append([ccy, SIDE_NAME[side], MGR_NAME[mgr], str(len(s)), fmt_pct(_med(s), 3),
+                             fmt_pct(s.min(), 3), fmt_pct(s.max(), 3), fmt_pct(_med(s.abs()), 3, sign=False)])
+    L += _table(["Underlying", "Side", "Manager", "Cells", "Median rel", "Minimum", "Maximum", "Median |rel|"],
                 rows, ["l", "l", "l", "r", "r", "r", "r", "r"])
     L.append("")
     buy = ok[ok["side"] == "buy"]
     if len(buy):
         exact = ((buy["K_api_sm"] == buy["mark"]) & (buy["K_chain_sm"] == buy["mark"])).sum()
-        L.append(f"SM, Kauf: In {int(exact)} von {len(buy)} Zellen ist K_api = K_chain = p exakt; SM gibt einer "
-                 "Long-Option keine Gutschrift, das Kapital ist die Prämie.")
+        L.append(f"SM, buy: in {int(exact)} of {len(buy)} cells K_api = K_chain = p exactly; SM gives a long option "
+                 "no credit, and the capital is the premium.")
         L.append("")
-    L.append("Median von rel je Laufzeit-Bucket über alle Basiswerte und |Δ|-Buckets:")
+    L.append("Median of rel per tenor bucket over all underlyings and |Δ| buckets:")
     L.append("")
     rows = []
     for ten in TENOR_LABELS:
@@ -821,37 +837,38 @@ def render_doc(df: pd.DataFrame, meta: Mapping) -> str:
             s = ok[(ok["tenor_bucket"] == ten) & (ok["side"] == side)]
             if not len(s):
                 continue
-            rows.append([ten, SIDE_DE[side], str(len(s)), de_pct(_med(s["rel_diff_sm"]), 3),
-                         de_pct(_med(s["rel_diff_pm2"]), 3)])
-    L += _table(["Laufzeit", "Seite", "Zellen", "SM", "PM2"], rows, ["l", "l", "r", "r", "r"])
+            rows.append([ten, SIDE_NAME[side], str(len(s)), fmt_pct(_med(s["rel_diff_sm"]), 3),
+                         fmt_pct(_med(s["rel_diff_pm2"]), 3)])
+    L += _table(["Tenor", "Side", "Cells", "SM", "PM2"], rows, ["l", "l", "r", "r", "r"])
     L.append("")
     if len(ok):
         top = ok.assign(_a=ok[["rel_diff_sm", "rel_diff_pm2"]].abs().max(axis=1))
         top = top.sort_values(["_a", "ccy", "instrument", "side"], ascending=[False, True, True, True]).head(N_TOP)
-        L.append(f"Grösste Abweichungen ({len(top)} Zellen mit dem grössten |rel| über beide Manager):")
+        L.append(f"Largest deviations ({len(top)} cells with the largest |rel| over both managers):")
         L.append("")
         rows = []
         for r in top.itertuples():
             mgr = "sm" if abs(r.rel_diff_sm) >= abs(r.rel_diff_pm2) else "pm2"
-            rows.append([f"{r.ccy}, {SIDE_DE[r.side]}, {r.delta_bucket}, {r.tenor_bucket}", f"`{r.instrument}`",
-                         MGR_DE[mgr], de_num(r.mark, 2), de_num(getattr(r, f"K_api_{mgr}"), 2),
-                         de_num(getattr(r, f"K_chain_{mgr}"), 2), de_pct(getattr(r, f"rel_diff_{mgr}"), 3),
-                         de_pct(getattr(r, f"rel_rep_api_{mgr}"), 3)])
-        L += _table(["Zelle", "Instrument", "Manager", "p", "K_api", "K_chain", "rel", "K_api/K_rep_api − 1"], rows,
+            rows.append([f"{r.ccy}, {SIDE_NAME[r.side]}, {r.delta_bucket}, {r.tenor_bucket}", f"`{r.instrument}`",
+                         MGR_NAME[mgr], fmt_num(r.mark, 2), fmt_num(getattr(r, f"K_api_{mgr}"), 2),
+                         fmt_num(getattr(r, f"K_chain_{mgr}"), 2), fmt_pct(getattr(r, f"rel_diff_{mgr}"), 3),
+                         fmt_pct(getattr(r, f"rel_rep_api_{mgr}"), 3)])
+        L += _table(["Cell", "Instrument", "Manager", "p", "K_api", "K_chain", "rel", "K_api/K_rep_api − 1"], rows,
                     ["l", "l", "l", "r", "r", "r", "r", "r"])
         L.append("")
-    L.append("### Gegenproben")
+    L.append("### Cross-checks")
     L.append("")
     rows = []
     for mgr in MANAGERS:
         o = ok[f"rel_oracle_{mgr}"].abs()
         r = ok[f"rel_rep_api_{mgr}"]
-        rows.append([MGR_DE[mgr], str(int(o.notna().sum())), de_sci(_med(o)), de_sci(o.max()),
-                     de_pct(_med(r), 3), de_pct(_med(r.abs()), 3, sign=False), de_pct(r.abs().max(), 3, sign=False)])
-    L += _table(["Manager", "Zellen", "Median |K_chain/K_oracle − 1|", "Max", "Median K_api/K_rep_api − 1",
+        rows.append([MGR_NAME[mgr], str(int(o.notna().sum())), fmt_sci(_med(o)), fmt_sci(o.max()),
+                     fmt_pct(_med(r), 3), fmt_pct(_med(r.abs()), 3, sign=False), fmt_pct(r.abs().max(), 3, sign=False)])
+    L += _table(["Manager", "Cells", "Median |K_chain/K_oracle − 1|", "Max", "Median K_api/K_rep_api − 1",
                  "Median |…|", "Max |…|"], rows, ["l", "r", "r", "r", "r", "r", "r"])
     L.append("")
-    L.append("Feeds je Basiswert (Median über die gemessenen Instrumente): Ticker gegen Chain am selben Instrument.")
+    L.append("Feeds per underlying (median over the measured instruments): ticker against chain at the same "
+             "instrument.")
     L.append("")
     rows = []
     inst = ok.drop_duplicates(["ccy", "instrument"])
@@ -862,32 +879,33 @@ def render_doc(df: pd.DataFrame, meta: Mapping) -> str:
         spot = 1e4 * (s["index"] / s["spot_chain"] - 1)
         fwd = 1e4 * (s["forward_api"] / s["forward_chain"] - 1)
         vol = 100 * (s["iv_api"] - s["sigma_chain"])
-        rows.append([ccy, str(len(s)), de_num(_med(spot), 1, True), de_num(_med(fwd), 1, True),
-                     de_num(_med(vol), 2, True), de_pct(_med(s["rate_chain"]), 2, sign=False)])
-    L += _table(["Basiswert", "Instrumente", "Index/Spot − 1 (bp)", "Forward Ticker/Chain − 1 (bp)",
-                 "Mark-IV − Chain-Vol (Vol-Punkte)", "PM2-Zins-Feed"], rows, ["l", "r", "r", "r", "r", "r"])
+        rows.append([ccy, str(len(s)), fmt_num(_med(spot), 1, True), fmt_num(_med(fwd), 1, True),
+                     fmt_num(_med(vol), 2, True), fmt_pct(_med(s["rate_chain"]), 2, sign=False)])
+    L += _table(["Underlying", "Instruments", "Index/spot − 1 (bp)", "Forward ticker/chain − 1 (bp)",
+                 "Mark IV − chain vol (vol points)", "PM2 rate feed"], rows, ["l", "r", "r", "r", "r", "r"])
     L.append("")
-    L.append("### Einschränkungen")
+    L.append("### Limitations")
     L.append("")
-    L.append("- Eine Momentaufnahme eines Zeitpunkts mit einem Instrument je Zelle; keine Aussage über die "
-             "Stichprobe von Paper 2 und keine Inferenz.")
-    L.append("- K_api − K_chain mischt drei Ursachen: den pauschalen 2-%-Diskont der API gegen den Zins-Feed, "
-             "Ticker-Preise gegen die nachlaufenden On-Chain-Feeds und etwaige Unterschiede der Off-chain-Engine. "
-             "K_rep_api trennt den ersten und zweiten Teil vom dritten.")
-    L.append("- API und Chain werden je Instrument in drei Anfragen kurz nacheinander gelesen (Abstand ≥ 0,5 s); "
-             "Preisbewegungen dazwischen gehen in rel ein.")
-    L.append("- Die Parameter stammen aus `results/p2/params` (Stand des letzten Ladelaufs); K_oracle zeigt, ob sie "
-             "am aktuellen Block noch gelten.")
+    L.append("- A snapshot of one point in time with one instrument per cell; no statement about the sample of "
+             "Paper 2 and no inference.")
+    L.append("- K_api − K_chain mixes three causes: the API's flat 2 % discount against the rate feed, ticker "
+             "prices against the lagging on-chain feeds, and any differences of the off-chain engine. K_rep_api "
+             "separates the first and second part from the third.")
+    L.append("- API and chain are read per instrument in three requests shortly after one another (gap ≥ 0.5 s); "
+             "price moves in between enter rel.")
+    L.append("- The parameters come from `results/p2/params` (state of the last load run); K_oracle shows whether "
+             "they still apply at the current block.")
     L.append("")
-    L.append("### Schnittstellen")
+    L.append("### Interfaces")
     L.append("")
     L.append("- `derive_surface/p2api.py`: `run(ccys, ...)`, `snapshot_ccy`, `measure_instrument`, `chain_calls`, "
              "`decode_chain`, `replica_capital`, `replica_api_semantics`, `choose_expiry`, `choose_instrument`, "
-             "`cell_types`, `render_doc`; `ApiClient` und `SharedRpc` teilen sich einen `Throttle` (2 je Sekunde).")
-    L.append("- CLI: `python3 -m derive_surface p2 api run [--ccy BTC ETH HYPE]` und `p2 api report` (Dokument neu "
-             "aus CSV und Metadaten). Kein schwerer Lauf (liest nur 6 Spalten aus `markouts.parquet`).")
-    L.append("- `p2cli` neu: `p2 infer` (H1 bis H3 wie bisher), `p2 infer-h4` (`inference_p2_h4.main`), "
-             "`p2 zahlenblatt` (`scripts/p2_zahlenblatt.py`, als Modul importiert), `p2 api` (`p2api.main`).")
+             "`cell_types`, `render_doc`; `ApiClient` and `SharedRpc` share a `Throttle` (2 per second).")
+    L.append("- CLI: `python3 -m derive_surface p2 api run [--ccy BTC ETH HYPE]` and `p2 api report` (document "
+             "rebuilt from the CSV and the metadata). Not a heavy run (reads only 6 columns from "
+             "`markouts.parquet`).")
+    L.append("- New in `p2cli`: `p2 infer` (H1 to H3 as before), `p2 infer-h4` (`inference_p2_h4.main`), "
+             "`p2 numbers` (`scripts/p2_numbers.py`, imported as a module), `p2 api` (`p2api.main`).")
     return "\n".join(L) + "\n"
 
 
@@ -944,10 +962,10 @@ def run(ccys: Sequence[str] = CCYS, csv_path: Path = CSV_PATH, meta_path: Path =
     throttle = Throttle(RATE)
     api = api if api is not None else ApiClient(throttle=throttle, log_path=log_path)
     rpc = rpc if rpc is not None else SharedRpc(throttle, log_path=log_path)
-    types_source = "vorgegeben"
+    types_source = "given"
     if types is None:
         types = load_cell_types()
-        types_source = f"`{_rel(MARKOUTS)}` (Maker-Seite, |Δ|- und Laufzeit-Bucket, PM2-Fenster)"
+        types_source = f"`{_rel(MARKOUTS)}` (maker side, |Δ| and tenor bucket, PM2 window)"
     params_at = params_at or TimelineParams()
     start = float(clock())
     wall_start = _utc_now()

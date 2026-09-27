@@ -19,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import p2_number_check as nc  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
-KNOWN_COMMITS = {"1d13227", "c4fcb59"}
-GIT_DATES = {"1d13227": "2026-09-24 22:33:10 +0200", "c4fcb59": "2026-09-25 01:29:58 +0200"}
+KNOWN_COMMITS = {"cc0a29f", "e492ba1"}
+GIT_DATES = {"cc0a29f": "2026-09-24 22:33:10 +0200", "e492ba1": "2026-09-25 01:29:58 +0200"}
 
 
 def resolve(sha: str) -> bool:
@@ -53,7 +53,7 @@ SUMMARY = {
 @pytest.fixture()
 def results(tmp_path: Path) -> Path:
     r = tmp_path / "results"
-    (r / "semantik").mkdir(parents=True)
+    (r / "semantics").mkdir(parents=True)
     (r / "summary.json").write_text(json.dumps(SUMMARY))
     (r / "h1.json").write_text(json.dumps({"stat": 0.9029439, "rejected": True}))
     (r / "h2.json").write_text(json.dumps({"stat": 0.0345, "rejected": False}))
@@ -61,9 +61,9 @@ def results(tmp_path: Path) -> Path:
     (r / "h4.json").write_text(json.dumps({"stat": -4.6, "rejected": True, "placebo": {"admissible_days": {
         "ETH-pm2-20260108": {"days": 10, "first": "2025-07-16", "last": "2025-07-25"},
         "BTC-pm2-20260108": {"days": 54, "first": "2025-07-16", "last": "2026-03-21"}}}}))
-    (r / "semantik" / "box_diskont.json").write_text(json.dumps({"box_2026-09-24T11:27Z": [
+    (r / "semantics" / "box_diskont.json").write_text(json.dumps({"box_2026-09-24T11:27Z": [
         {"r_chain": 0.0364, "r_api": 0.02}, {"r_chain": 0.0382, "r_api": 0.02}, {"r_chain": 0.0371, "r_api": 0.02}]}))
-    (r / "semantik" / "faktoren.csv").write_text(
+    (r / "semantics" / "faktoren.csv").write_text(
         "messung,buch,fall,block,F_Cnet\n"
         "historisch 17.09. 10:45:13Z Blk 44810149,b17,A,44810149,2.33\n"
         "historisch 17.09. 10:45:13Z Blk 44810149,b17,B,44810149,11.86\n")
@@ -163,7 +163,7 @@ Value 0.903.
 def test_declaration_outside_every_unit_is_an_error(results):
     vs = check(results, "\\section{R}\nValue 0.903.\n% src summary.json:h1_stat 0.903\n",
                front="% src summary.json:h1_stat 0.903\n")
-    assert [(v.unit, v.how, v.ok) for v in vs] == [("R", "result", True), ("Vorspann", "decl", False)]
+    assert [(v.unit, v.how, v.ok) for v in vs] == [("R", "result", True), ("front matter", "decl", False)]
 
 
 def test_abstract_declarations_hold_for_the_abstract_only(results):
@@ -267,13 +267,13 @@ def test_count_and_distinct_count_rows(results):
 
 def test_glob_needs_one_value_or_an_aggregate(results):
     body = "\\section{E}\nThe feed ranged from 3.64 to 3.82 per cent; the endpoint uses 2.0000 per cent.\n"
-    good = body + ("% src semantik/box_diskont.json:box_*.r_chain~min~pct 3.64\n"
-                   "% src semantik/box_diskont.json:box_*.r_chain~max~pct 3.82\n"
-                   "% src semantik/box_diskont.json:box_*.r_api~pct 2.0000\n")
+    good = body + ("% src semantics/box_diskont.json:box_*.r_chain~min~pct 3.64\n"
+                   "% src semantics/box_diskont.json:box_*.r_chain~max~pct 3.82\n"
+                   "% src semantics/box_diskont.json:box_*.r_api~pct 2.0000\n")
     assert not bad(check(results, good))
-    glob_any = body + ("% src semantik/box_diskont.json:box_*.r_chain~pct 3.64\n"
-                       "% src semantik/box_diskont.json:box_*.r_chain~pct 3.82\n"
-                       "% src semantik/box_diskont.json:box_*.r_api~pct 2.0000\n")
+    glob_any = body + ("% src semantics/box_diskont.json:box_*.r_chain~pct 3.64\n"
+                       "% src semantics/box_diskont.json:box_*.r_chain~pct 3.82\n"
+                       "% src semantics/box_diskont.json:box_*.r_api~pct 2.0000\n")
     assert bad(check(results, glob_any)) == [("3.64", "mismatch"), ("3.82", "mismatch")]
 
 
@@ -348,7 +348,7 @@ def test_sign_and_magnitude_only_as_declared(results):
 def test_scientific_notation_and_long_integers(results):
     vs = check(results, "\\section{Data}\nThe median is $8.7\\times10^{-10}$ at block 44\\,810\\,149.\n"
                         "% src summary.json:validation_single_median_rel 8.7\\times10^{-10}\n"
-                        "% src semantik/faktoren.csv:block@fall=B 44\\,810\\,149\n")
+                        "% src semantics/faktoren.csv:block@fall=B 44\\,810\\,149\n")
     assert [v.ok for v in vs] == [True, True]
 
 
@@ -372,7 +372,7 @@ def test_partial_dates_clock_times_and_constants(results):
                         "% src summary.json:api_day September 2026\n"
                         "% src h4.json:placebo.admissible_days.ETH-pm2-20260108.first 16 July\n"
                         "% src h4.json:placebo.admissible_days.ETH-pm2-20260108.last 25 July 2025\n"
-                        "% src semantik/faktoren.csv:messung@fall=B 10:45\n"
+                        "% src semantics/faktoren.csv:messung@fall=B 10:45\n"
                         "% src const:sample_start 11 January 2024 00:00\n")
     assert [(v.token.raw, v.ok) for v in vs] == [("September 2026", True), ("16 July", True),
                                                 ("25 July 2025", True), ("10:45", True),
@@ -382,15 +382,15 @@ def test_partial_dates_clock_times_and_constants(results):
 
 
 def test_commit_dates_in_their_own_time_zone(results):
-    body = ("\\section{R}\nRegistered on 24 September 2026 at 22:33 in \\texttt{1d13227}, the addenda of "
-            "25 September 2026 in \\texttt{c4fcb59}, not in \\texttt{abcdef1}.\n"
-            "% src git:1d13227 24 September 2026 22:33\n% src git:c4fcb59 25 September 2026\n")
+    body = ("\\section{R}\nRegistered on 24 September 2026 at 22:33 in \\texttt{cc0a29f}, the addenda of "
+            "25 September 2026 in \\texttt{e492ba1}, not in \\texttt{abcdef1}.\n"
+            "% src git:cc0a29f 24 September 2026 22:33\n% src git:e492ba1 25 September 2026\n")
     vs = check(results, body)
     assert [(v.token.raw, v.how, v.ok) for v in vs] == [
         ("24 September 2026", "git", True), ("22:33", "git", True), ("25 September 2026", "git", True),
-        ("1d13227", "commit", True), ("c4fcb59", "commit", True), ("abcdef1", "none", False)]
-    utc = check(results, body, dates=lambda sha: {"1d13227": "2026-09-24 20:33:10 +0000",
-                                                  "c4fcb59": "2026-09-24 23:29:58 +0000"}[sha])
+        ("cc0a29f", "commit", True), ("e492ba1", "commit", True), ("abcdef1", "none", False)]
+    utc = check(results, body, dates=lambda sha: {"cc0a29f": "2026-09-24 20:33:10 +0000",
+                                                  "e492ba1": "2026-09-24 23:29:58 +0000"}[sha])
     assert bad(utc) == [("22:33", "mismatch"), ("25 September 2026", "mismatch"), ("abcdef1", "none")]
 
 
@@ -409,12 +409,15 @@ def _renderings(value) -> list:
 
 
 def _section(text: str, heading: str) -> str:
-    if heading == "Kopf":
+    """The section of the binding German original that carries the English section name ``heading``."""
+    if heading == "Header":
         return text[:text.index("\n## ")]
-    m = re.search(r"^## " + re.escape(heading) + r"\b.*?(?=^## |\Z)", text, re.S | re.M)
+    original = nc.SECTION_ORIGINAL[heading]
+    m = re.search(r"^## " + re.escape(original) + r"\b.*?(?=^## |\Z)", text, re.S | re.M)
     return m.group(0) if m else ""
 
 
+# How the binding German original words a constant where the value alone does not identify it; verbatim quotes.
 ALIASES = {"bp_factor": ["10⁴"], "q_sell": ["−1"], "q_buy": ["+1"], "managers": ["SM", "Legacy-PM", "PM2"],
            "hypotheses": ["H1", "H2", "H3", "H4"], "addenda": ["## Nachtrag 4"], "cash_zero": ["cash = 0"],
            "dominant_makers": ["zehn"], "seed": ["20260924"], "interval_lower_percentile": ["5. und"],
@@ -431,6 +434,9 @@ def test_every_constant_stands_in_its_section_of_the_pre_registration():
     for name, (value, meaning, path, heading) in nc.CONSTANTS.items():
         part = _section((REPO / path).read_text(), heading)
         assert part, (name, heading)
+        if heading != "Header":   # the section name is that of the English translation next to the original
+            translation = (REPO / path).with_name("PREREGISTRATION.md").read_text()
+            assert re.search(r"^## " + re.escape(heading) + r"\b", translation, re.M), (name, heading)
         if name in ALIASES:
             for piece in ALIASES[name]:
                 assert piece in part, (name, piece, heading)
@@ -444,7 +450,7 @@ def test_every_constant_stands_in_its_section_of_the_pre_registration():
 # ---------------------------------------------------------------------------------------------------------------
 def test_report_and_exit_status(results, tmp_path, monkeypatch):
     monkeypatch.setattr(nc, "default_commit_resolver", lambda repo=None: resolve)
-    report = tmp_path / "ZAHLENPRUEFUNG.md"
+    report = tmp_path / "NUMBER_CHECK.md"
     cases = {"good": ("The correlation is 0.903.", "% src summary.json:h1_stat 0.903", 0),
              "undeclared": ("The correlation is 0.777.", "", 1),
              "unused": ("The correlation is high.", "% src summary.json:h1_stat 0.903", 1),
@@ -454,8 +460,8 @@ def test_report_and_exit_status(results, tmp_path, monkeypatch):
         path.write_text(tex("\\section{R}\n" + sentence + "\n" + decl + "\n"))
         assert nc.main(["--tex", str(path), "--results", str(results), "--report", str(report)]) == status, name
         text = report.read_text()
-        assert ("**Fehler: 0** (keine)" in text) == (status == 0)
-        assert "## Konstanten der Präregistrierung" in text and "cell_min_fills" in text
+        assert ("**Errors: 0** (none)" in text) == (status == 0)
+        assert "## Constants of the pre-registration" in text and "cell_min_fills" in text
 
 
 def test_template_lists_every_number_in_order_with_suggestions(results):
@@ -491,12 +497,12 @@ The off-chain engine discounts PM2 at an undocumented flat rate, which a box spr
 The on-chain engine discounts with the rate feed, which ranged from 3.64 to 3.82
 per cent across the same expiries. In the probes that preceded this paper it gave a ratio of standard to PM2
 margin of 11.86 at block 44\,810\,149 on 17 September at 10:45.
-% src semantik/box_diskont.json:box_*.r_api~pct 2.0000
-% src semantik/box_diskont.json:box_*.r_chain~min~pct 3.64
-% src semantik/box_diskont.json:box_*.r_chain~max~pct 3.82
-% src semantik/faktoren.csv:F_Cnet@buch=b17,fall=B 11.86
-% src semantik/faktoren.csv:block@fall=B 44\,810\,149
-% src semantik/faktoren.csv:messung@fall=B 17 September 10:45
+% src semantics/box_diskont.json:box_*.r_api~pct 2.0000
+% src semantics/box_diskont.json:box_*.r_chain~min~pct 3.64
+% src semantics/box_diskont.json:box_*.r_chain~max~pct 3.82
+% src semantics/faktoren.csv:F_Cnet@buch=b17,fall=B 11.86
+% src semantics/faktoren.csv:block@fall=B 44\,810\,149
+% src semantics/faktoren.csv:messung@fall=B 17 September 10:45
 
 \section{Data and measurement}\label{sec:data}
 The fills are every BTC, ETH and HYPE option fill from 11 January 2024 to the pilot cut of 17 September 2026,
@@ -610,12 +616,12 @@ Under maintenance margin $\rho$ is 0.903.
 % src summary.json:sens_b_mm_h1_pm2_mm_stat 0.903
 
 \section*{Data, code and pre-registration}
-The four hypotheses were committed on 24 September 2026 at 22:33 UTC+2, in commit \texttt{1d13227}. Four
+The four hypotheses were committed on 24 September 2026 at 22:33 UTC+2, in commit \texttt{cc0a29f}. Four
 dated addenda of 25 September 2026 follow.
 % src const:hypotheses four
-% src git:1d13227 24 September 2026 22:33
+% src git:cc0a29f 24 September 2026 22:33
 % src const:addenda Four
-% src git:c4fcb59 25 September 2026
+% src git:e492ba1 25 September 2026
 
 \bibliographystyle{x}
 \bibliography{refs}

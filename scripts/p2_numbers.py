@@ -1,10 +1,10 @@
-"""Write docs/paper2/ZAHLENBLATT.md and results/p2/summary.json from results/p2.
+"""Write docs/paper2/NUMBERS.md and results/p2/summary.json from results/p2.
 
 The number sheet is the single source of numbers for the Paper 2 manuscript. Run from anywhere after
 `p2 infer` and the H4 run (`inference_p2_h4 run`):
 
-    python3 scripts/p2_zahlenblatt.py [--results results/p2] [--out docs/paper2/ZAHLENBLATT.md]
-                                      [--summary results/p2/summary.json] [--quiet]
+    python3 scripts/p2_numbers.py [--results results/p2] [--out docs/paper2/NUMBERS.md]
+                                  [--summary results/p2/summary.json] [--quiet]
 
 Nothing about the data is written into this script: the cut-off is the last fill of the sample (``h4.json``
 ``sample``), cross-checked against the last day of H1, H3 and the reference book; every number comes from the
@@ -27,7 +27,7 @@ import pandas as pd
 
 REPO = Path(__file__).resolve().parents[1]
 RESULTS = REPO / "results" / "p2"
-OUT = REPO / "docs" / "paper2" / "ZAHLENBLATT.md"
+OUT = REPO / "docs" / "paper2" / "NUMBERS.md"
 SUMMARY_NAME = "summary.json"
 SCHEMA = "p2-summary-1"
 
@@ -42,59 +42,60 @@ REQUIRED = ("h1.json", "h1_cells.csv", "h2.json", "h3.json", "h4.json", "sensiti
             "capital_check.json", "validation_summary.json", "validation.csv", "events.csv", "reference_book.csv",
             "manager_oi_share.csv")
 
-MANAGER_DE = {"sm": "SM", "pm": "Legacy-PM", "pm2": "PM2"}
-KIND_DE = {"single": "Einzelkontrakt", "book": "Buch"}
-STRUCT_DE = {"BasisContingencyParameters": "Basis", "OtherContingencyParameters": "Kontingenzen",
-             "VolShockParameters": "Vol-Schock", "MarginParameters": "Margin", "SkewShockParameters": "Skew",
-             "scenarios": "Szenarien", "CollateralParameters": "Collateral", "maxExpiries": "maxExpiries"}
-SECTION_DE = {"a_maps": "(a) Karten unter anderen Managern", "b_mm": "(b) MM statt IM",
-              "c_p1_net_edge": "(c) Netto-Edge in der Form von Paper 1 (Gebühr und Rabatt ungeteilt)",
-              "d_h2": "(d) H2-Varianten", "e_h3": "(e) H3-Varianten", "f_time": "(f) Zeitnormierung",
-              "g_by_ccy": "(g) Werte je Basiswert",
-              "h1_sign": "(h) Vorzeichenstruktur von H1 (Review-Runde 1; Gruppen nach dem Vorzeichen des Edge wählen "
-                         "ihre Zellen in jeder Replikation neu, Audit A04)"}
-VARIANT_DE = {
-    ("a_maps", "pm2"): "PM2, PM2-Fenster (gleich Test H1)",
-    ("a_maps", "sm_all"): "SM, ganzer Zeitraum",
-    ("a_maps", "pm_all"): "Legacy-PM, ganzer Zeitraum",
-    ("a_maps", "sm_pm2_window"): "SM auf den Fills des PM2-Fensters",
-    ("a_maps", "pm_pm2_window"): "Legacy-PM auf den Fills des PM2-Fensters",
-    ("b_mm", "h1_pm2_mm"): "H1 mit MM",
-    ("b_mm", "h1_sm_all_mm"): "Karte SM, ganzer Zeitraum, mit MM",
-    ("b_mm", "h2_ratio_mm"): "H2 mit MM",
-    ("b_mm", "h3_mm"): "H3 mit MM",
-    ("c_p1_net_edge", "h1_pm2"): "H1 mit Netto-Edge wie Paper 1",
-    ("d_h2", "ratio"): "ratio (gleich Test H2)",
-    ("d_h2", "ratio_unit"): "nächster einzelner Kontrakt (ratio_unit)",
-    ("d_h2", "ratio_tape"): "Buch aus dem Tape",
+MANAGER_NAME = {"sm": "SM", "pm": "legacy PM", "pm2": "PM2"}
+KIND_NAME = {"single": "single contract", "book": "book"}
+STRUCT_NAME = {"BasisContingencyParameters": "basis", "OtherContingencyParameters": "contingencies",
+               "VolShockParameters": "vol shock", "MarginParameters": "margin", "SkewShockParameters": "skew",
+               "scenarios": "scenarios", "CollateralParameters": "collateral", "maxExpiries": "maxExpiries"}
+SECTION_TITLE = {"a_maps": "(a) Maps under other managers", "b_mm": "(b) MM instead of IM",
+                 "c_p1_net_edge": "(c) Net edge in the form of Paper 1 (fee and rebate undivided)",
+                 "d_h2": "(d) H2 variants", "e_h3": "(e) H3 variants", "f_time": "(f) Time normalisation",
+                 "g_by_ccy": "(g) Values per underlying",
+                 "h1_sign": "(h) Sign structure of H1 (review round 1; groups by the sign of the edge choose their "
+                            "cells anew in every replication, audit A04)"}
+VARIANT_LABEL = {
+    ("a_maps", "pm2"): "PM2, PM2 window (equal to test H1)",
+    ("a_maps", "sm_all"): "SM, whole period",
+    ("a_maps", "pm_all"): "legacy PM, whole period",
+    ("a_maps", "sm_pm2_window"): "SM on the fills of the PM2 window",
+    ("a_maps", "pm_pm2_window"): "legacy PM on the fills of the PM2 window",
+    ("b_mm", "h1_pm2_mm"): "H1 with MM",
+    ("b_mm", "h1_sm_all_mm"): "map SM, whole period, with MM",
+    ("b_mm", "h2_ratio_mm"): "H2 with MM",
+    ("b_mm", "h3_mm"): "H3 with MM",
+    ("c_p1_net_edge", "h1_pm2"): "H1 with net edge as in Paper 1",
+    ("d_h2", "ratio"): "ratio (equal to test H2)",
+    ("d_h2", "ratio_unit"): "next single contract (ratio_unit)",
+    ("d_h2", "ratio_tape"): "book from the tape",
     ("d_h2", "ratio_mm"): "MM",
-    ("e_h3", "sm_pm2"): "K_SM/K_PM2 (gleich Test H3)",
-    ("e_h3", "sm_pm2_mm"): "K_SM/K_PM2 mit MM",
-    ("e_h3", "sm_pm_be"): "K_SM/K_PM, BTC- und ETH-Beine",
-    ("e_h3", "pm_pm2_be"): "K_PM/K_PM2, BTC- und ETH-Beine",
-    ("e_h3", "sm_pm2_be"): "K_SM/K_PM2, BTC- und ETH-Beine",
-    ("e_h3", "sm_pm2_le63"): "Tage mit höchstens 63 Optionen",
-    ("e_h3", "sm_pm2_gt63"): "Tage mit mehr als 63 Optionen",
-    ("f_time", "to_expiry"): "bis zum Verfall, annualisiert",
-    ("f_time", "holding"): "empirische Haltedauer",
-    ("f_time", "holding_excl_transfer"): "Haltedauer ohne Transfers",
-    ("e_h3", "sm_pm2_le63_no_sm"): "Tage mit höchstens 63 Optionen ohne SM-Konto",
-    ("h1_sign", "within_pos"): "nur Zellen mit Edge > 0",
-    ("h1_sign", "within_nonpos"): "nur Zellen mit Edge ≤ 0",
-    ("h1_sign", "within_sell"): "nur Maker-Verkäufe",
-    ("h1_sign", "within_buy"): "nur Maker-Käufe",
-    ("h1_sign", "within_pos_sell"): "Maker-Verkäufe mit Edge > 0",
-    ("h1_sign", "within_pos_buy"): "Maker-Käufe mit Edge > 0",
+    ("e_h3", "sm_pm2"): "K_SM/K_PM2 (equal to test H3)",
+    ("e_h3", "sm_pm2_mm"): "K_SM/K_PM2 with MM",
+    ("e_h3", "sm_pm_be"): "K_SM/K_PM, BTC and ETH legs",
+    ("e_h3", "pm_pm2_be"): "K_PM/K_PM2, BTC and ETH legs",
+    ("e_h3", "sm_pm2_be"): "K_SM/K_PM2, BTC and ETH legs",
+    ("e_h3", "sm_pm2_le63"): "days with at most 63 options",
+    ("e_h3", "sm_pm2_gt63"): "days with more than 63 options",
+    ("f_time", "to_expiry"): "to expiry, annualised",
+    ("f_time", "holding"): "empirical holding time",
+    ("f_time", "holding_excl_transfer"): "holding time without transfers",
+    ("e_h3", "sm_pm2_le63_no_sm"): "days with at most 63 options without SM account",
+    ("h1_sign", "within_pos"): "only cells with edge > 0",
+    ("h1_sign", "within_nonpos"): "only cells with edge ≤ 0",
+    ("h1_sign", "within_sell"): "only maker sells",
+    ("h1_sign", "within_buy"): "only maker buys",
+    ("h1_sign", "within_pos_sell"): "maker sells with edge > 0",
+    ("h1_sign", "within_pos_buy"): "maker buys with edge > 0",
 }
-GROUP_DE = {"by_label": "Konto", "by_ccy": "Basiswert", "by_regime": "Regime",
-            "by_account_manager": "Manager des Kontos"}
-STATUS_DE = {"no_options": "ohne Optionen", "no_snapshot": "ohne Snapshot"}
-REGIMES = ("R1", "R2", "R3", "R4")                   # parameter regimes of the figures (ABBILDUNGSWAHL 6.6)
+GROUP_NAME = {"by_label": "account", "by_ccy": "underlying", "by_regime": "regime",
+              "by_account_manager": "manager of the account"}
+STATUS_NAME = {"no_options": "without options", "no_snapshot": "without snapshot"}
+REGIMES = ("R1", "R2", "R3", "R4")                   # parameter regimes of the figures (FIGURE_SELECTION 6.6)
 GROUP_SLOTS = {"by_label": LABELS, "by_ccy": CCYS, "by_regime": REGIMES, "by_account_manager": ("SM", "PM", "PM2")}
 VERDICT_FIELDS = ("stat", "lo", "hi", "rejected", "n")
 
 NNBSP = " "   # narrow no-break space as thousands separator (as in the Paper 1 sheet)
 MINUS = "−"
+MISSING = "n/a"    # a value the data do not give (as in the Paper 1 sheet)
 SUPERSCRIPT = str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹")
 
 try:  # the preregistered end of the sample, only used to say whether these are pilot numbers
@@ -105,7 +106,7 @@ except Exception:  # pragma: no cover - the sheet still works without the packag
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# formatting (German)
+# formatting
 # ---------------------------------------------------------------------------------------------------------------
 
 def _missing(x) -> bool:
@@ -117,12 +118,12 @@ def _missing(x) -> bool:
         return False
 
 
-def de(x, digits: int = 2, sign: bool = False) -> str:
-    """Decimal comma, narrow no-break space for thousands, typographic minus."""
+def num(x, digits: int = 2, sign: bool = False) -> str:
+    """Decimal point, narrow no-break space for thousands, typographic minus."""
     if _missing(x):
-        return "–"
+        return MISSING
     v = round(float(x), digits)
-    body = f"{abs(v):,.{digits}f}".replace(",", NNBSP).replace(".", ",")
+    body = f"{abs(v):,.{digits}f}".replace(",", NNBSP)
     if v < 0:
         return MINUS + body
     return ("+" + body) if (sign and v > 0) else body
@@ -130,59 +131,59 @@ def de(x, digits: int = 2, sign: bool = False) -> str:
 
 def di(x) -> str:
     if _missing(x):
-        return "–"
-    return de(int(round(float(x))), 0)
+        return MISSING
+    return num(int(round(float(x))), 0)
 
 
 def sig(x, n: int = 2) -> str:
-    """n significant digits, e.g. 0.00032617 -> 0,00033."""
+    """n significant digits, e.g. 0.00032617 -> 0.00033."""
     if _missing(x):
-        return "–"
+        return MISSING
     if float(x) == 0:
         return "0"
     digits = max(0, n - 1 - int(math.floor(math.log10(abs(float(x))))))
-    return de(x, digits)
+    return num(x, digits)
 
 
 def sci(x, digits: int = 1) -> str:
-    """8.7e-10 -> 8,7·10⁻¹⁰."""
+    """8.7e-10 -> 8.7·10⁻¹⁰."""
     if _missing(x):
-        return "–"
+        return MISSING
     if float(x) == 0:
         return "0"
     mant, exp = f"{float(x):.{digits}e}".split("e")
-    mant = mant.replace("-", MINUS).replace(".", ",")
+    mant = mant.replace("-", MINUS)
     return f"{mant}·10{str(int(exp)).translate(SUPERSCRIPT)}"
 
 
 def pct(x, digits: int = 1, sign: bool = False) -> str:
     if _missing(x):
-        return "–"
-    return de(100 * float(x), digits, sign) + " %"
+        return MISSING
+    return num(100 * float(x), digits, sign) + " %"
 
 
-def day_de(x) -> str:
+def fmt_day(x) -> str:
     if x is None or (isinstance(x, float) and not math.isfinite(x)):
-        return "–"
-    return pd.Timestamp(str(x)).strftime("%d.%m.%Y")
+        return MISSING
+    return pd.Timestamp(str(x)).strftime("%Y-%m-%d")
 
 
-def ts_de(x, seconds: bool = True) -> str:
+def fmt_ts(x, seconds: bool = True) -> str:
     if x is None:
-        return "–"
+        return MISSING
     t = pd.Timestamp(x, unit="s", tz="UTC") if isinstance(x, (int, float, np.integer, np.floating)) else pd.Timestamp(x)
     if t.tzinfo is None:
         t = t.tz_localize("UTC")
-    return t.tz_convert("UTC").strftime("%d.%m.%Y %H:%M:%S" if seconds else "%d.%m.%Y %H:%M") + " UTC"
+    return t.tz_convert("UTC").strftime("%Y-%m-%d %H:%M:%S" if seconds else "%Y-%m-%d %H:%M") + " UTC"
 
 
-def month_de(m) -> str:
-    return "–" if m is None else f"{str(m)[5:7]}.{str(m)[:4]}"
+def fmt_month(m) -> str:
+    return MISSING if m is None else f"{str(m)[:4]}-{str(m)[5:7]}"
 
 
 def lvl(level) -> str:
-    """0.9 -> 90-% (as in "90-%-Intervall")."""
-    return "–" if _missing(level) else f"{de(100 * float(level), 0)}-%"
+    """0.9 -> 90 % (as in "90 % interval")."""
+    return MISSING if _missing(level) else f"{num(100 * float(level), 0)} %"
 
 
 def cell(name) -> str:
@@ -191,23 +192,23 @@ def cell(name) -> str:
 
 
 def ci(stat, lo, hi, digits: int) -> str:
-    return f"{de(stat, digits)} [{de(lo, digits)}; {de(hi, digits)}]"
+    return f"{num(stat, digits)} [{num(lo, digits)}; {num(hi, digits)}]"
 
 
 def verdict(rejected) -> str:
     if rejected is None:
-        return "beschreibend"
-    return "**abgelehnt**" if bool(rejected) else "nicht abgelehnt"
+        return "descriptive"
+    return "**rejected**" if bool(rejected) else "not rejected"
 
 
 def verdict_plain(rejected) -> str:
     if rejected is None:
-        return "beschreibend"
-    return "abgelehnt" if bool(rejected) else "nicht abgelehnt"
+        return "descriptive"
+    return "rejected" if bool(rejected) else "not rejected"
 
 
 def yes_no(x) -> str:
-    return "ja" if bool(x) else "nein"
+    return "yes" if bool(x) else "no"
 
 
 def label_key(label: str) -> Tuple[int, str]:
@@ -293,7 +294,7 @@ def cutoff(d: Dict[str, Any], s: Summary, checks: Checks, prereg_end_ts: Optiona
     h1, h2, h3, h4 = d["h1.json"], d["h2.json"], d["h3.json"], d["h4.json"]
     rb = d["reference_book.csv"]
     days = {"H1": h1.get("last_day"), "H3": h3.get("last_day"),
-            "Referenzbuch": str(rb["day"].max()) if len(rb) else None}
+            "reference book": str(rb["day"].max()) if len(rb) else None}
     sample = h4.get("sample") or [None, None]
     start = pd.Timestamp(sample[0]) if sample[0] else None
     end = pd.Timestamp(sample[1]) if sample[1] else None
@@ -314,12 +315,12 @@ def cutoff(d: Dict[str, Any], s: Summary, checks: Checks, prereg_end_ts: Optiona
     bad = {k: v for k, v in days.items() if v != cut_day}
     h2_last = h2.get("last_day")
     ok = not bad and (h2_last is None or str(h2_last) <= cut_day)
-    detail = (f"letzter Tag von H1, H3 und Referenzbuch gleich dem Tag des letzten Fills ({day_de(cut_day)}), "
-              f"H2 endet am {day_de(h2_last)}")
+    detail = (f"last day of H1, H3 and the reference book equal to the day of the last fill ({fmt_day(cut_day)}), "
+              f"H2 ends on {fmt_day(h2_last)}")
     if not ok:
-        detail = ("letzte Tage abweichend: " + ", ".join(f"{k} {day_de(v)}" for k, v in days.items())
-                  + f", H2 {day_de(h2_last)}, letzter Fill {day_de(cut_day)}")
-    checks.add("Stichtag einheitlich", ok, detail)
+        detail = ("last days differ: " + ", ".join(f"{k} {fmt_day(v)}" for k, v in days.items())
+                  + f", H2 {fmt_day(h2_last)}, last fill {fmt_day(cut_day)}")
+    checks.add("Cut-off day consistent", ok, detail)
     return {"start": start, "end": end, "day": cut_day, "is_pilot": is_pilot, "prereg_end_ts": prereg_end_ts}
 
 
@@ -336,33 +337,33 @@ def header(d: Dict[str, Any], s: Summary, cut: dict, results: Path, summary_path
     for name in ("h1.json", "h2.json", "h3.json", "h4.json", "sensitivity.json", "sensitivity_h4.json"):
         found[name] = (d[name].get("b"), d[name].get("seed"), d[name].get("level", level))
     same = len(set(found.values())) == 1
-    checks.add("B, Seed und Niveau in allen Dateien gleich", same,
-               f"B = {di(b)}, Seed {seed}, Niveau {pct(level, 0)}" if same else
-               "; ".join(f"{k}: B {v[0]}, Seed {v[1]}, Niveau {v[2]}" for k, v in found.items()))
+    checks.add("B, seed and level equal in all files", same,
+               f"B = {di(b)}, seed {seed}, level {pct(level, 0)}" if same else
+               "; ".join(f"{k}: B {v[0]}, seed {v[1]}, level {v[2]}" for k, v in found.items()))
     if cut["end"] is not None:
-        stand = f"Stichprobe vom {ts_de(cut['start'], seconds=False)} bis zum letzten Fill am {ts_de(cut['end'])}"
+        stand = f"Sample from {fmt_ts(cut['start'], seconds=False)} to the last fill at {fmt_ts(cut['end'])}"
     else:
-        stand = f"Stichprobe bis {day_de(cut['day'])} (letzter Tag der Ergebnisdateien)"
+        stand = f"Sample up to {fmt_day(cut['day'])} (last day of the result files)"
     if cut["is_pilot"] is True:
-        stand += (f". **Pilotstand:** Die Stichprobe endet vor dem präregistrierten Ende "
-                  f"({ts_de(cut['prereg_end_ts'], seconds=False)}); die Zahlen des Manuskripts entstehen mit dem "
-                  f"Enddatenlauf.")
+        stand += (f". **Pilot state:** the sample ends before the preregistered end "
+                  f"({fmt_ts(cut['prereg_end_ts'], seconds=False)}); the numbers of the manuscript come from the "
+                  f"final data run.")
     elif cut["is_pilot"] is False:
-        stand += f". Enddaten: Die Stichprobe reicht bis zum präregistrierten Ende ({ts_de(cut['prereg_end_ts'], seconds=False)})."
+        stand += f". Final data: the sample reaches the preregistered end ({fmt_ts(cut['prereg_end_ts'], seconds=False)})."
     else:
         stand += "."
     return [
-        "# Zahlenblatt Paper 2", "",
-        f"Erzeugt {now.astimezone(dt.timezone.utc):%Y-%m-%d %H:%M} UTC aus `{_display(results)}` mit "
-        f"`scripts/p2_zahlenblatt.py`. Alle Kopfzahlen maschinenlesbar in `{_display(summary_path)}` "
-        f"(flach, Schlüssel stabil).", "",
-        f"- **Datenstand:** {stand} Stichtag {day_de(cut['day'])}.",
-        f"- **Inferenz:** B = {di(b)}, Seed {seed}, {lvl(level)}-Perzentilintervalle aus einem Cluster-Bootstrap "
-        f"über UTC-Tage (H1 bis H3, Nachtrag 3). H4: Wild-Cluster-Bootstrap mit Rademacher-Gewichten und "
-        f"restringierten Residuen, Cluster UTC-Tag, einseitiges p für β > 0, 100 Placebo-Termine.",
-        "- **Messung:** Kapital unter IM (MM als Sensitivität), Netto-Edge je Kontrakt nach Nachtrag 2: "
-        "NE = MO_30min − (Gebühr − Rabatt)/Menge − Hedge; Edge eines Fills = NE·Menge. Konten nur als Labels "
-        "(M1 bis M10).", ""]
+        "# Numbers for Paper 2", "",
+        f"Generated {now.astimezone(dt.timezone.utc):%Y-%m-%d %H:%M} UTC from `{_display(results)}` with "
+        f"`scripts/p2_numbers.py`. All headline numbers machine-readable in `{_display(summary_path)}` "
+        f"(flat, stable keys).", "",
+        f"- **Data status:** {stand} Cut-off day {fmt_day(cut['day'])}.",
+        f"- **Inference:** B = {di(b)}, seed {seed}, {lvl(level)} percentile intervals from a cluster bootstrap "
+        f"over UTC days (H1 to H3, Addendum 3). H4: wild cluster bootstrap with Rademacher weights and "
+        f"restricted residuals, cluster UTC day, one-sided p for β > 0, 100 placebo dates.",
+        "- **Measurement:** capital under IM (MM as a sensitivity), net edge per contract after Addendum 2: "
+        "NE = MO_30min − (fee − rebate)/amount − hedge; edge of a fill = NE·amount. Accounts only as labels "
+        "(M1 to M10).", ""]
 
 
 def sample_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
@@ -384,39 +385,39 @@ def sample_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
         kle0[m] = sum(int(_get(cap, "managers", c, m, "sides", side, "k_le_0", default=0) or 0)
                       for c in CCYS for side in ("buy", "sell"))
         s.put(f"k_le_0_{m}", kle0[m])
-    checks.add("Fills je Basiswert ergeben die Stichprobe",
+    checks.add("Fills per underlying add up to the sample",
                total == sum(v for v in by_ccy.values() if v is not None),
                f"{' + '.join(di(by_ccy[c]) for c in CCYS)} = {di(total)}")
-    checks.add("PM2-Fenster: Kapitaldatei und H1 zählen gleich", win_total == h1.get("n_fills_window"),
-               f"{di(win_total)} gegen {di(h1.get('n_fills_window'))}")
+    checks.add("PM2 window: capital file and H1 count the same", win_total == h1.get("n_fills_window"),
+               f"{di(win_total)} against {di(h1.get('n_fills_window'))}")
 
     n_events, n_kept = len(ev), int(_bool_col(ev["kept"]).sum())
     with_cells = int((_bool_col(ev["kept"]) & (pd.to_numeric(ev.get("panel_cells", 0), errors="coerce") > 0)).sum())
     ccy_list = lambda m: ", ".join(f"{c} {di(m.get(c))}" for c in CCYS if m.get(c) is not None)  # noqa: E731
-    starts = ", ".join(f"{c} {ts_de(_get(h1, 'window_start_utc', c), seconds=False)}" for c in CCYS
+    starts = ", ".join(f"{c} {fmt_ts(_get(h1, 'window_start_utc', c), seconds=False)}" for c in CCYS
                        if _get(h1, "window_start_utc", c))
     status = {k: v for k, v in (h3.get("status_counts") or {}).items() if k != "ok"}
-    status_txt = ", ".join(f"{di(v)} {STATUS_DE.get(k, k)}" for k, v in sorted(status.items())) or "keine"
+    status_txt = ", ".join(f"{di(v)} {STATUS_NAME.get(k, k)}" for k, v in sorted(status.items())) or "none"
     return [
-        "## Stichprobe", "",
-        f"- Fills der Stichprobe von Paper 1: {di(total)} ({ccy_list(by_ccy)}).",
-        f"- PM2-Fenster ab {starts}: {di(win_total)} Fills ({ccy_list(win)}).",
-        f"- Fills mit Kapital je Kontrakt ≤ 0 unter IM: SM {di(kle0['sm'])}, Legacy-PM {di(kle0['pm'])}, "
-        f"PM2 {di(kle0['pm2'])} (nichts ausgeschlossen; Ausschlüsse nur nach den Regeln von H2 und H3).",
-        f"- H1: {di(h1.get('n'))} von {di(h1.get('n_cells_any'))} Zellen besetzt (mindestens "
-        f"{di(h1.get('min_fills'))} Fills; {ccy_list(h1.get('cells_by_ccy') or {})}), {di(h1.get('n_fills'))} Fills "
-        f"in besetzten Zellen, {di(h1.get('n_days'))} UTC-Tage vom {day_de(h1.get('first_day'))} bis "
-        f"{day_de(h1.get('last_day'))}.",
-        f"- H2: Stichprobe von {di(h2.get('n_sample'))} Fills der Konten "
+        "## Sample", "",
+        f"- Fills of the Paper 1 sample: {di(total)} ({ccy_list(by_ccy)}).",
+        f"- PM2 window from {starts}: {di(win_total)} fills ({ccy_list(win)}).",
+        f"- Fills with capital per contract ≤ 0 under IM: SM {di(kle0['sm'])}, legacy PM {di(kle0['pm'])}, "
+        f"PM2 {di(kle0['pm2'])} (nothing excluded; exclusions only under the rules of H2 and H3).",
+        f"- H1: {di(h1.get('n'))} of {di(h1.get('n_cells_any'))} cells populated (at least "
+        f"{di(h1.get('min_fills'))} fills; {ccy_list(h1.get('cells_by_ccy') or {})}), {di(h1.get('n_fills'))} fills "
+        f"in populated cells, {di(h1.get('n_days'))} UTC days from {fmt_day(h1.get('first_day'))} to "
+        f"{fmt_day(h1.get('last_day'))}.",
+        f"- H2: sample of {di(h2.get('n_sample'))} fills of the accounts "
         f"{', '.join(sorted(h2.get('accounts') or [], key=label_key))} ({ccy_list(h2.get('fills_by_ccy') or {})}), "
-        f"n = {di(h2.get('n'))} nach Ausschluss, {di(h2.get('n_days'))} UTC-Tage vom {day_de(h2.get('first_day'))} bis "
-        f"{day_de(h2.get('last_day'))}.",
-        f"- H3: {di(h3.get('n_rows'))} Maker-Tage im Fenster, davon {di(h3.get('n'))} gerechnet (nicht gerechnet: "
-        f"{status_txt}), {di(h3.get('n_days'))} UTC-Tage vom {day_de(h3.get('first_day'))} bis "
-        f"{day_de(h3.get('last_day'))}.",
-        f"- H4: {di(n_events)} Ereignisse, {di(n_kept)} behalten, davon {di(with_cells)} mit Panel-Zellen; Panel "
-        f"{di(h4.get('n'))} Zeilen aus {di(h4.get('fills'))} Fills, {di(h4.get('cell_events'))} "
-        f"Zell-Ereignis-Paare, {di(h4.get('clusters'))} Tages-Cluster.", ""]
+        f"n = {di(h2.get('n'))} after exclusion, {di(h2.get('n_days'))} UTC days from {fmt_day(h2.get('first_day'))} to "
+        f"{fmt_day(h2.get('last_day'))}.",
+        f"- H3: {di(h3.get('n_rows'))} maker days in the window, of which {di(h3.get('n'))} computed (not computed: "
+        f"{status_txt}), {di(h3.get('n_days'))} UTC days from {fmt_day(h3.get('first_day'))} to "
+        f"{fmt_day(h3.get('last_day'))}.",
+        f"- H4: {di(n_events)} events, {di(n_kept)} kept, of which {di(with_cells)} with panel cells; panel "
+        f"{di(h4.get('n'))} rows from {di(h4.get('fills'))} fills, {di(h4.get('cell_events'))} "
+        f"cell-event pairs, {di(h4.get('clusters'))} day clusters.", ""]
 
 
 def validation_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
@@ -459,36 +460,36 @@ def validation_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[st
     s.put("validation_per_scenario_equal", psc.get("all_equal"))
     s.put("validation_first_day", ts_day(ts.min()))
     s.put("validation_last_day", ts_day(ts.max()))
-    checks.add("Validierung: alle Zellen unter der Schwelle", passed, f"{n_pass} von {len(cells)} Zellen")
+    checks.add("Validation: all cells below the threshold", passed, f"{n_pass} of {len(cells)} cells")
     si, bi = stats[("single", "")], stats[("book", "")]
     sm, bm = stats[("single", "_mm")], stats[("book", "_mm")]
     lines = [
-        "## Validierung des Nachbaus gegen eth_call", "",
-        f"- Schwelle der Präregistrierung je Basiswert, Manager und Art: Median |rel| < {pct(thr.get('median'), 1)}, "
-        f"95. Perzentil < {pct(thr.get('p95'), 0)}. Ergebnis: {n_pass} von {len(cells)} Zellen (IM und MM) "
-        f"erfüllt, {'**bestanden**' if passed else '**nicht bestanden**'}.",
-        f"- {di(vs.get('n_cases'))} Fälle an Blöcken vom {day_de(ts_day(ts.min()))} bis {day_de(ts_day(ts.max()))}; "
-        f"{di(reverts)} Fall ohne Chain-Antwort (Revert), nicht vergleichbar.",
-        f"- Einzelkontrakte unter IM: n = {di(si['n'])}, Median |rel| {sci(si['median_rel'])}, p95 "
-        f"{sci(si['p95_rel'])}, Maximum {sci(si['max_rel'])}; grösste absolute Abweichung "
+        "## Validation of the replica against eth_call", "",
+        f"- Threshold of the preregistration per underlying, manager and kind: median |rel| < {pct(thr.get('median'), 1)}, "
+        f"95th percentile < {pct(thr.get('p95'), 0)}. Result: {n_pass} of {len(cells)} cells (IM and MM) "
+        f"met, {'**passed**' if passed else '**not passed**'}.",
+        f"- {di(vs.get('n_cases'))} cases at blocks from {fmt_day(ts_day(ts.min()))} to {fmt_day(ts_day(ts.max()))}; "
+        f"{di(reverts)} {'case' if reverts == 1 else 'cases'} without a chain answer (revert), not comparable.",
+        f"- Single contracts under IM: n = {di(si['n'])}, median |rel| {sci(si['median_rel'])}, p95 "
+        f"{sci(si['p95_rel'])}, maximum {sci(si['max_rel'])}; largest absolute deviation "
         f"{sig(si['max_abs_usd'])} USD.",
-        f"- Bücher unter IM: n = {di(bi['n'])} ({di(books['n_legs'].min() if len(books) else None)} bis "
-        f"{di(books['n_legs'].max() if len(books) else None)} Beine), Median |rel| {sci(bi['median_rel'])}, p95 "
-        f"{sci(bi['p95_rel'])}, Maximum {sci(bi['max_rel'])}; grösste absolute Abweichung "
+        f"- Books under IM: n = {di(bi['n'])} ({di(books['n_legs'].min() if len(books) else None)} to "
+        f"{di(books['n_legs'].max() if len(books) else None)} legs), median |rel| {sci(bi['median_rel'])}, p95 "
+        f"{sci(bi['p95_rel'])}, maximum {sci(bi['max_rel'])}; largest absolute deviation "
         f"{sig(bi['max_abs_usd'])} USD.",
-        f"- MM (Sensitivität): Einzelkontrakte Median {sci(sm['median_rel'])}, p95 {sci(sm['p95_rel'])}; Bücher "
-        f"Median {sci(bm['median_rel'])}, p95 {sci(bm['p95_rel'])}.",
-        f"- Szenario-Weg gegen direkten Aufruf: {di(psc.get('n'))} Bücher, bitgleich: {yes_no(psc.get('all_equal'))}.",
-        "", "| Art | Basiswert | Manager | n | fehlend | Median \\|rel\\| | p95 \\|rel\\| | Max \\|rel\\| | Schwelle |",
+        f"- MM (sensitivity): single contracts median {sci(sm['median_rel'])}, p95 {sci(sm['p95_rel'])}; books "
+        f"median {sci(bm['median_rel'])}, p95 {sci(bm['p95_rel'])}.",
+        f"- Scenario path against direct call: {di(psc.get('n'))} books, bit-identical: {yes_no(psc.get('all_equal'))}.",
+        "", "| Kind | Underlying | Manager | n | missing | Median \\|rel\\| | p95 \\|rel\\| | Max \\|rel\\| | Threshold |",
         "|---|---|---|---:|---:|---:|---:|---:|---|"]
     order = {"single": 0, "book": 1}
     for c in sorted((c for c in cells if c.get("is_initial")),
                     key=lambda c: (order.get(c.get("kind"), 9), c.get("ccy", ""), MANAGERS.index(c["manager"])
                                    if c.get("manager") in MANAGERS else 9)):
-        lines.append(f"| {KIND_DE.get(c.get('kind'), c.get('kind'))} | {c.get('ccy')} | "
-                     f"{MANAGER_DE.get(c.get('manager'), c.get('manager'))} | {di(c.get('n'))} | "
+        lines.append(f"| {KIND_NAME.get(c.get('kind'), c.get('kind'))} | {c.get('ccy')} | "
+                     f"{MANAGER_NAME.get(c.get('manager'), c.get('manager'))} | {di(c.get('n'))} | "
                      f"{di(c.get('n_missing'))} | {sci(c.get('median_rel'))} | {sci(c.get('p95_rel'))} | "
-                     f"{sci(c.get('max_rel'))} | {'erfüllt' if c.get('passes') else '**verfehlt**'} |")
+                     f"{sci(c.get('max_rel'))} | {'met' if c.get('passes') else '**missed**'} |")
     return lines + [""]
 
 
@@ -529,43 +530,43 @@ def h1_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
     s.put("h1_rank_shift_max_abs", float(shift.max()) if len(occ) else None)
     rho = float(occ["A_bp"].rank().corr(occ["B_bp"].rank())) if len(occ) > 2 else None
     s.put("h1_rho_from_cells", rho)
-    checks.add("H1: ρ aus h1_cells.csv gleich h1.json", rho is not None and abs(rho - h1["stat"]) < TOL,
-               f"{de(rho, 6)} gegen {de(h1['stat'], 6)}")
-    checks.add("H1: besetzte Zellen und Fills gleich h1.json",
+    checks.add("H1: ρ from h1_cells.csv equal to h1.json", rho is not None and abs(rho - h1["stat"]) < TOL,
+               f"{num(rho, 6)} against {num(h1['stat'], 6)}")
+    checks.add("H1: populated cells and fills equal to h1.json",
                len(occ) == h1.get("n") and int(occ["fills"].sum()) == h1.get("n_fills"),
-               f"{len(occ)} Zellen, {di(occ['fills'].sum())} Fills")
+               f"{len(occ)} cells, {di(occ['fills'].sum())} fills")
     thr = h1.get("threshold")
-    checks.add("H1: Urteil folgt aus der Regel (obere Grenze ≥ Schwelle)",
-               bool(h1["rejected"]) == bool(h1["hi"] >= thr), f"obere Grenze {de(h1['hi'], 3)}, Schwelle {de(thr, 1)}")
+    checks.add("H1: verdict follows from the rule (upper bound ≥ threshold)",
+               bool(h1["rejected"]) == bool(h1["hi"] >= thr), f"upper bound {num(h1['hi'], 3)}, threshold {num(thr, 1)}")
     lines = [
-        "## H1 Rangfolge (präregistriert)", "",
-        f"- Spearman-ρ zwischen Edge in bp des Nominals und Edge je PM2-Kapital über {di(h1.get('n'))} besetzte "
-        f"Zellen im PM2-Fenster: **{ci(h1['stat'], h1['lo'], h1['hi'], 3)}** ({lvl(h1.get('level'))}-Intervall).",
-        f"- Regel: abgelehnt, wenn die obere Grenze ≥ {de(thr, 1)} ist. Urteil: {verdict(h1['rejected'])}.",
-        f"- Gepoolt über die besetzten Zellen: Edge {de(a, 2)} bp des Nominals und {de(b, 1)} bp des PM2-Kapitals.",
-        f"- Rangverschiebung (Rang nach Kapital minus Rang nach Nominal, Rang 1 = höchster Edge): Median |Δ| "
-        f"{de(shift.median(), 1)}, grösste |Δ| {di(shift.max())}.",
-        f"- Bootstrap: jede Replikation enthält mindestens {di(h1.get('cells_present_min'))} der "
-        f"{di(h1.get('n'))} Zellen; {di(h1.get('n_nan_draws'))} Replikationen ohne ρ.",
-        f"- {di(h1.get('n_fills_k_le_0'))} Fills mit K_PM2 ≤ 0 bleiben in den Summen (Nachtrag 4); nicht endlich: "
+        "## H1 ranking (preregistered)", "",
+        f"- Spearman ρ between edge in bp of notional and edge per PM2 capital over {di(h1.get('n'))} populated "
+        f"cells in the PM2 window: **{ci(h1['stat'], h1['lo'], h1['hi'], 3)}** ({lvl(h1.get('level'))} interval).",
+        f"- Rule: rejected if the upper bound is ≥ {num(thr, 1)}. Verdict: {verdict(h1['rejected'])}.",
+        f"- Pooled over the populated cells: edge {num(a, 2)} bp of notional and {num(b, 1)} bp of PM2 capital.",
+        f"- Rank shift (rank by capital minus rank by notional, rank 1 = highest edge): median |Δ| "
+        f"{num(shift.median(), 1)}, largest |Δ| {di(shift.max())}.",
+        f"- Bootstrap: every replication contains at least {di(h1.get('cells_present_min'))} of the "
+        f"{di(h1.get('n'))} cells; {di(h1.get('n_nan_draws'))} replications without ρ.",
+        f"- {di(h1.get('n_fills_k_le_0'))} fills with K_PM2 ≤ 0 stay in the sums (Addendum 4); not finite: "
         f"{di(h1.get('n_fills_nonfinite'))}.", "",
-        "| Basiswert | Zellen | Fills | Edge bp Nominal | Edge bp PM2-Kapital | ρ je Basiswert (explorativ) |",
+        "| Underlying | Cells | Fills | Edge bp notional | Edge bp PM2 capital | ρ per underlying (exploratory) |",
         "|---|---:|---:|---:|---:|---|"]
     for c in CCYS:
         sub = occ[occ["ccy"] == c]
         if not len(sub):
             continue
         g = _get(sens, "g_by_ccy", f"pm2_{c}") or {}
-        lines.append(f"| {c} | {di(len(sub))} | {di(sub['fills'].sum())} | {de(per_ccy[c][0], 2)} | "
-                     f"{de(per_ccy[c][1], 1)} | {ci(g.get('stat'), g.get('lo'), g.get('hi'), 3) if g else '–'} |")
-    lines += ["", "Grösste Rangverschiebungen (negativ: die Zelle rückt unter Kapital nach vorn):", "",
-              "| Zelle | Fills | Edge bp Nominal | Rang | Edge bp Kapital | Rang | Verschiebung |",
+        lines.append(f"| {c} | {di(len(sub))} | {di(sub['fills'].sum())} | {num(per_ccy[c][0], 2)} | "
+                     f"{num(per_ccy[c][1], 1)} | {ci(g.get('stat'), g.get('lo'), g.get('hi'), 3) if g else MISSING} |")
+    lines += ["", "Largest rank shifts (negative: the cell moves up under capital):", "",
+              "| Cell | Fills | Edge bp notional | Rank | Edge bp capital | Rank | Shift |",
               "|---|---:|---:|---:|---:|---:|---:|"]
     ranked = occ.sort_values(["rank_shift", "cell"], kind="mergesort")
     pick = pd.concat([ranked.head(5), ranked.tail(5)]).drop_duplicates("cell")
     for r in pick.itertuples():
-        lines.append(f"| {cell(r.cell)} | {di(r.fills)} | {de(r.A_bp, 2)} | {di(r.rank_A)} | {de(r.B_bp, 1)} | "
-                     f"{di(r.rank_B)} | {de(r.rank_shift, 0, sign=True)} |")
+        lines.append(f"| {cell(r.cell)} | {di(r.fills)} | {num(r.A_bp, 2)} | {di(r.rank_A)} | {num(r.B_bp, 1)} | "
+                     f"{di(r.rank_B)} | {num(r.rank_shift, 0, sign=True)} |")
     return lines + [""]
 
 
@@ -581,24 +582,24 @@ def h2_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
     for c in CCYS:
         s.put(f"h2_fills_{c}", _get(h2, "fills_by_ccy", c))
     thr = h2.get("threshold")
-    checks.add("H2: Urteil folgt aus der Regel (obere Grenze ≥ Schwelle)",
-               bool(h2["rejected"]) == bool(h2["hi"] >= thr), f"obere Grenze {de(h2['hi'], 4)}, Schwelle {de(thr, 1)}")
+    checks.add("H2: verdict follows from the rule (upper bound ≥ threshold)",
+               bool(h2["rejected"]) == bool(h2["hi"] >= thr), f"upper bound {num(h2['hi'], 4)}, threshold {num(thr, 1)}")
     chk = h2.get("check_stored_ratio_max_abs")
     if chk is not None:
-        checks.add("H2: gespeicherte ratio gleich Neuberechnung", float(chk) == 0 and not h2.get(
-            "check_stored_ratio_nan_mismatch"), f"grösste Abweichung {sig(chk)}")
+        checks.add("H2: stored ratio equal to recomputation", float(chk) == 0 and not h2.get(
+            "check_stored_ratio_nan_mismatch"), f"largest deviation {sig(chk)}")
     fills = ", ".join(f"{c} {di(_get(h2, 'fills_by_ccy', c))}" for c in CCYS if _get(h2, "fills_by_ccy", c) is not None)
     return [
-        "## H2 Grenzkosten (präregistriert)", "",
-        f"- Median von ratio = (ΔK/Menge)/K_PM2,Einzel über {di(h2.get('n'))} Fills: "
-        f"**{ci(h2['stat'], h2['lo'], h2['hi'], 4)}** ({lvl(h2.get('level'))}-Intervall).",
-        f"- Regel: abgelehnt, wenn die obere Grenze ≥ {de(thr, 1)} ist. Urteil: {verdict(h2['rejected'])}.",
-        f"- Anteil ratio ≤ 0: {pct(h2.get('share_nonpositive'), 1)}. Ausgeschlossen mit K_PM2,Einzel ≤ 0: "
-        f"{di(h2.get('n_excluded'))} von {di(h2.get('n_sample'))} gezogenen Fills; nicht endlich "
-        f"{di(h2.get('n_nonfinite'))}, Status nicht ok {di(h2.get('n_not_ok'))}.",
-        f"- Konten (Buch zu Tagesbeginn unter PM2): {', '.join(accounts)}; Fills je Basiswert: {fills}; "
-        f"{di(h2.get('n_days'))} UTC-Tage.",
-        f"- Gegenprobe: gespeicherte Spalte ratio gegen Neuberechnung, grösste Abweichung {sig(chk)}.", ""]
+        "## H2 marginal cost (preregistered)", "",
+        f"- Median of ratio = (ΔK/amount)/K_PM2,Einzel over {di(h2.get('n'))} fills: "
+        f"**{ci(h2['stat'], h2['lo'], h2['hi'], 4)}** ({lvl(h2.get('level'))} interval).",
+        f"- Rule: rejected if the upper bound is ≥ {num(thr, 1)}. Verdict: {verdict(h2['rejected'])}.",
+        f"- Share ratio ≤ 0: {pct(h2.get('share_nonpositive'), 1)}. Excluded with K_PM2,Einzel ≤ 0: "
+        f"{di(h2.get('n_excluded'))} of {di(h2.get('n_sample'))} drawn fills; not finite "
+        f"{di(h2.get('n_nonfinite'))}, status not ok {di(h2.get('n_not_ok'))}.",
+        f"- Accounts (book at the start of the day under PM2): {', '.join(accounts)}; fills per underlying: {fills}; "
+        f"{di(h2.get('n_days'))} UTC days.",
+        f"- Cross-check: stored column ratio against recomputation, largest deviation {sig(chk)}.", ""]
 
 
 def h3_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
@@ -614,20 +615,20 @@ def h3_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
     for lab in LABELS:
         s.put(f"h3_days_{lab}", acc.get(lab))
     thr = h3.get("threshold")
-    checks.add("H3: Urteil folgt aus der Regel (untere Grenze ≤ Schwelle)",
-               bool(h3["rejected"]) == bool(h3["lo"] <= thr), f"untere Grenze {de(h3['lo'], 3)}, Schwelle {de(thr, 1)}")
-    notok = ", ".join(f"{di(v)} {STATUS_DE.get(k, k)}" for k, v in sorted(st.items()) if k != "ok") or "keine"
+    checks.add("H3: verdict follows from the rule (lower bound ≤ threshold)",
+               bool(h3["rejected"]) == bool(h3["lo"] <= thr), f"lower bound {num(h3['lo'], 3)}, threshold {num(thr, 1)}")
+    notok = ", ".join(f"{di(v)} {STATUS_NAME.get(k, k)}" for k, v in sorted(st.items()) if k != "ok") or "none"
     return [
-        "## H3 Netting-Wert (präregistriert)", "",
-        f"- Median von K_SM/K_PM2 über {di(h3.get('n'))} Maker-Tage: **{ci(h3['stat'], h3['lo'], h3['hi'], 3)}** "
-        f"({lvl(h3.get('level'))}-Intervall).",
-        f"- Regel: abgelehnt, wenn die untere Grenze ≤ {de(thr, 1)} ist. Urteil: {verdict(h3['rejected'])}.",
-        f"- {di(h3.get('n_rows'))} Maker-Tage im Fenster, nicht gerechnet: {notok}; ausgeschlossen mit K_PM2 ≤ 0: "
-        f"{di(h3.get('n_excluded'))}; {di(h3.get('n_days'))} UTC-Tage vom {day_de(h3.get('first_day'))} bis "
-        f"{day_de(h3.get('last_day'))}.",
-        f"- An {di(h3.get('days_over_63_options'))} Tagen ({pct(h3.get('share_days_over_63_options'), 1)}) hält das "
-        f"Buch mehr als 63 Optionen; K_SM ist dort kontrafaktisch (Nachtrag 4).",
-        f"- Maker-Tage je Konto: {', '.join(f'{k} {di(v)}' for k, v in sorted(acc.items(), key=lambda kv: label_key(kv[0])))}.",
+        "## H3 netting value (preregistered)", "",
+        f"- Median of K_SM/K_PM2 over {di(h3.get('n'))} maker days: **{ci(h3['stat'], h3['lo'], h3['hi'], 3)}** "
+        f"({lvl(h3.get('level'))} interval).",
+        f"- Rule: rejected if the lower bound is ≤ {num(thr, 1)}. Verdict: {verdict(h3['rejected'])}.",
+        f"- {di(h3.get('n_rows'))} maker days in the window, not computed: {notok}; excluded with K_PM2 ≤ 0: "
+        f"{di(h3.get('n_excluded'))}; {di(h3.get('n_days'))} UTC days from {fmt_day(h3.get('first_day'))} to "
+        f"{fmt_day(h3.get('last_day'))}.",
+        f"- On {di(h3.get('days_over_63_options'))} days ({pct(h3.get('share_days_over_63_options'), 1)}) the book "
+        f"holds more than 63 options; K_SM is counterfactual there (Addendum 4).",
+        f"- Maker days per account: {', '.join(f'{k} {di(v)}' for k, v in sorted(acc.items(), key=lambda kv: label_key(kv[0])))}.",
         ""]
 
 
@@ -648,63 +649,63 @@ def h4_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
     crit = {"beta_positive": beta > 0, "p_le_alpha": p is not None and p <= H4_ALPHA,
             "beta_gt_placebo_p95": p95 is not None and beta > p95}
     rule_rejected = not (crit["beta_positive"] and crit["p_le_alpha"]) or not crit["beta_gt_placebo_p95"]
-    checks.add("H4: Kriterien und Urteil folgen aus β, p und Placebo-P95",
+    checks.add("H4: criteria and verdict follow from β, p and the placebo P95",
                all(bool(cr.get(k)) == v for k, v in crit.items()) and bool(h4["rejected"]) == rule_rejected,
-               f"β {de(beta, 2)}, p {de(p, 4)}, P95 {de(p95, 2)}")
+               f"β {num(beta, 2)}, p {num(p, 4)}, P95 {num(p95, 2)}")
     diff = fe.get("abs_diff_beta_direct_solve")
-    checks.add("H4: Herausmitteln gleich direkter Lösung, Panel reproduziert",
+    checks.add("H4: demeaning equal to the direct solution, panel reproduced",
                diff is not None and diff < 1e-8 and bool(pc.get("equal")),
-               f"Abweichung {sci(diff)}, Panel neu gebaut identisch: {yes_no(pc.get('equal'))}")
+               f"deviation {sci(diff)}, panel rebuilt identical: {yes_no(pc.get('equal'))}")
     ev = d["events.csv"]
     n_kept = int(_bool_col(ev["kept"]).sum())
-    checks.add("H4: behaltene Ereignisse in events.csv gleich h4.json", n_kept == h4.get("events_kept"),
-               f"{n_kept} gegen {h4.get('events_kept')}")
+    checks.add("H4: kept events in events.csv equal to h4.json", n_kept == h4.get("events_kept"),
+               f"{n_kept} against {h4.get('events_kept')}")
     return [
-        "## H4 Preis des Kapitals (präregistriert)", "",
-        f"- β = **{de(beta, 2)}** bp des Index je Einheit log-Dosis; {lvl(h4.get('level'))}-Intervall "
-        f"[{de(h4.get('lo'), 2)}; {de(h4.get('hi'), 2)}] (Wild-Cluster-Bootstrap mit unrestringierten Residuen, "
-        f"beschreibend); Cluster-SE {de(h4.get('se'), 2)}, t {de(h4.get('t'), 3)}.",
-        f"- Einseitiges Wild-Cluster-Bootstrap-p für β > 0: {de(p, 4)} (B = {di(h4.get('b'))}).",
-        f"- Placebo: {di(pl.get('finite'))} von {di(pl.get('n'))} Replikationen endlich; 95. Perzentil "
-        f"{de(p95, 2)}, Median {de(pl.get('median'), 2)}, Mittel {de(pl.get('mean'), 2)}, Spanne "
-        f"{de(pl.get('min'), 2)} bis {de(pl.get('max'), 2)}; Anteil der Placebo-β ≥ β: {pct(pl.get('share_ge_beta'), 0)}.",
-        f"- Kriterien: β > 0 {yes_no(cr.get('beta_positive'))}; p ≤ {de(H4_ALPHA, 2)} {yes_no(cr.get('p_le_alpha'))}; "
-        f"β über dem Placebo-P95 {yes_no(cr.get('beta_gt_placebo_p95'))}.",
-        f"- Regel: abgelehnt, wenn β nicht positiv ist mit p ≤ {de(H4_ALPHA, 2)} oder nicht über dem 95. Perzentil "
-        f"der Placebo-β liegt. Urteil: {verdict(h4['rejected'])}.",
-        f"- Umfang: n = {di(h4.get('n'))} Zeilen, {di(h4.get('fills'))} Fills, {di(h4.get('events'))} Ereignisse mit "
-        f"Zellen ({di(h4.get('events_kept'))} behalten), {di(h4.get('cell_events'))} Zell-Ereignis-Paare, "
-        f"{di(h4.get('day_ccy'))} Tag-Basiswert-Gruppen, {di(h4.get('clusters'))} Tages-Cluster.",
-        f"- Kontrollen: Herausmitteln in {di(fe.get('iterations'))} Iterationen, Abweichung zur direkten Lösung "
-        f"{sci(diff)}; Panel neu gebaut identisch: {yes_no(pc.get('equal'))}.", ""]
+        "## H4 price of capital (preregistered)", "",
+        f"- β = **{num(beta, 2)}** bp of the index per unit of log dose; {lvl(h4.get('level'))} interval "
+        f"[{num(h4.get('lo'), 2)}; {num(h4.get('hi'), 2)}] (wild cluster bootstrap with unrestricted residuals, "
+        f"descriptive); cluster SE {num(h4.get('se'), 2)}, t {num(h4.get('t'), 3)}.",
+        f"- One-sided wild cluster bootstrap p for β > 0: {num(p, 4)} (B = {di(h4.get('b'))}).",
+        f"- Placebo: {di(pl.get('finite'))} of {di(pl.get('n'))} replications finite; 95th percentile "
+        f"{num(p95, 2)}, median {num(pl.get('median'), 2)}, mean {num(pl.get('mean'), 2)}, range "
+        f"{num(pl.get('min'), 2)} to {num(pl.get('max'), 2)}; share of placebo β ≥ β: {pct(pl.get('share_ge_beta'), 0)}.",
+        f"- Criteria: β > 0 {yes_no(cr.get('beta_positive'))}; p ≤ {num(H4_ALPHA, 2)} {yes_no(cr.get('p_le_alpha'))}; "
+        f"β above the placebo P95 {yes_no(cr.get('beta_gt_placebo_p95'))}.",
+        f"- Rule: rejected if β is not positive with p ≤ {num(H4_ALPHA, 2)} or does not lie above the 95th percentile "
+        f"of the placebo β. Verdict: {verdict(h4['rejected'])}.",
+        f"- Size: n = {di(h4.get('n'))} rows, {di(h4.get('fills'))} fills, {di(h4.get('events'))} events with "
+        f"cells ({di(h4.get('events_kept'))} kept), {di(h4.get('cell_events'))} cell-event pairs, "
+        f"{di(h4.get('day_ccy'))} day-underlying groups, {di(h4.get('clusters'))} day clusters.",
+        f"- Checks: demeaning in {di(fe.get('iterations'))} iterations, deviation from the direct solution "
+        f"{sci(diff)}; panel rebuilt identical: {yes_no(pc.get('equal'))}.", ""]
 
 
 def _variant_rows(sec_key: str, sec: dict) -> Iterable[Tuple[str, str, dict]]:
-    """(summary suffix, German label, verdict dict) for every variant of a sensitivity section."""
+    """(summary suffix, label, verdict dict) for every variant of a sensitivity section."""
     for key in sec:
         val = sec[key]
         if not isinstance(val, dict):
             continue
         if "stat" in val:
-            yield key, VARIANT_DE.get((sec_key, key), key), val
+            yield key, VARIANT_LABEL.get((sec_key, key), key), val
         elif key in GROUP_SLOTS or all(isinstance(v, dict) and "stat" in v for v in val.values()):
             for sub in sorted(val, key=label_key if key == "by_label" else str):
-                yield f"{key}_{sub}", f"{GROUP_DE.get(key, key)} {sub}", val[sub]
+                yield f"{key}_{sub}", f"{GROUP_NAME.get(key, key)} {sub}", val[sub]
 
 
 def _group_label(sec_key: str, key: str) -> str:
     if sec_key == "g_by_ccy" and "_" in key:
         mp, c = key.rsplit("_", 1)
-        where = {"pm2": "PM2-Fenster", "sm_all": "SM, ganzer Zeitraum", "pm_all": "Legacy-PM, ganzer Zeitraum"}
+        where = {"pm2": "PM2 window", "sm_all": "SM, whole period", "pm_all": "legacy PM, whole period"}
         return f"{c}, {where.get(mp, mp)}"
     return key
 
 
 def sensitivity_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
     sens, h1, h2, h3 = d["sensitivity.json"], d["h1.json"], d["h2.json"], d["h3.json"]
-    lines = ["## Explorative Sensitivitäten", "",
-             "Nicht präregistriert als Test. „Urteil nach Regel“ ist das Urteil, das die präregistrierte Regel der "
-             "jeweiligen Hypothese auf diese Variante gäbe.", ""]
+    lines = ["## Exploratory sensitivities", "",
+             "Not preregistered as a test. \"Verdict by rule\" is the verdict that the preregistered rule of the "
+             "respective hypothesis would give for this variant.", ""]
     digits = {"H1": 3, "H2": 4, "H3": 3}
     for sec_key in sorted(k for k, v in sens.items() if isinstance(v, dict)):
         sec = sens[sec_key]
@@ -718,8 +719,8 @@ def sensitivity_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[s
         rows = list(_variant_rows(sec_key, sec))
         if not rows:
             continue
-        lines += [f"### {SECTION_DE.get(sec_key, sec_key)}", "",
-                  f"| Variante | Grösse | Wert [{lvl(h1.get('level'))}-Intervall] | n | Urteil nach Regel |",
+        lines += [f"### {SECTION_TITLE.get(sec_key, sec_key)}", "",
+                  f"| Variant | Quantity | Value [{lvl(h1.get('level'))} interval] | n | Verdict by rule |",
                   "|---|---|---|---:|---|"]
         for suffix, label, v in rows:
             for f in VERDICT_FIELDS:
@@ -727,7 +728,7 @@ def sensitivity_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[s
             rule = str(v.get("rule", ""))
             dg = digits.get(rule, 3)
             if rule == "H1":
-                what = "ρ" + (" (Edge je Kapital und Jahr)" if v.get("unit") else "")
+                what = "ρ" + (" (edge per capital and year)" if v.get("unit") else "")
             elif v.get("numerator"):
                 what = f"Median {v.get('numerator')}/{v.get('denominator')}"
             else:
@@ -743,7 +744,7 @@ def sensitivity_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[s
         if v is not None:
             same.append(abs(float(v["stat"]) - float(ref["stat"])) < TOL)
     if same:
-        checks.add("Sensitivitäten: Grundvariante gleich dem Test", all(same), f"{sum(same)} von {len(same)} gleich")
+        checks.add("Sensitivities: base variant equal to the test", all(same), f"{sum(same)} of {len(same)} equal")
     lines += h4_sensitivity(d, s)
     return lines
 
@@ -785,52 +786,53 @@ def h4_sensitivity(d: Dict[str, Any], s: Summary) -> List[str]:
         v = dr0.get(name) or {}
         for k in ("beta", "se", "t", "p", "lo", "hi", "n", "rows_dropped", "cell_events"):
             s.put(f"sens_h4_dose_{name}_{k}", v.get(k))
-    lines = ["### (h) H4-Varianten", "",
-             f"| Variante | β | {lvl(h4.get('level'))}-Intervall | p | n | Placebo-P95 | Anteil Placebo-β ≥ β | "
-             "Urteil nach Regel |",
+    lines = ["### (h) H4 variants", "",
+             f"| Variant | β | {lvl(h4.get('level'))} interval | p | n | Placebo P95 | Share placebo β ≥ β | "
+             "Verdict by rule |",
              "|---|---:|---|---:|---:|---:|---:|---|"]
     for c in CCYS:
         v = by.get(c)
         if not v:
             continue
-        lines.append(f"| nur {c} ({di(v.get('events'))} Ereignisse) | {de(v.get('beta'), 2)} | "
-                     f"[{de(v.get('lo'), 2)}; {de(v.get('hi'), 2)}] | {de(v.get('p'), 4)} | {di(v.get('n'))} | – | – | – |")
+        lines.append(f"| only {c} ({di(v.get('events'))} events) | {num(v.get('beta'), 2)} | "
+                     f"[{num(v.get('lo'), 2)}; {num(v.get('hi'), 2)}] | {num(v.get('p'), 4)} | {di(v.get('n'))} | "
+                     f"{MISSING} | {MISSING} | {MISSING} |")
     if no:
-        lines.append(f"| ohne Zellen mit \\|d\\| > {de(no.get('max_abs_dose'), 0)} | {de(nh.get('beta'), 2)} | "
-                     f"[{de(nh.get('lo'), 2)}; {de(nh.get('hi'), 2)}] | {de(nh.get('p'), 4)} | {di(nh.get('n'))} | "
-                     f"{de(npl.get('p95'), 2)} | {pct(npl.get('share_ge_beta'), 0)} | {verdict_plain(no.get('rejected'))} |")
+        lines.append(f"| without cells with \\|d\\| > {num(no.get('max_abs_dose'), 0)} | {num(nh.get('beta'), 2)} | "
+                     f"[{num(nh.get('lo'), 2)}; {num(nh.get('hi'), 2)}] | {num(nh.get('p'), 4)} | {di(nh.get('n'))} | "
+                     f"{num(npl.get('p95'), 2)} | {pct(npl.get('share_ge_beta'), 0)} | {verdict_plain(no.get('rejected'))} |")
     if al:
-        lines.append(f"| Placebo-Abstand zu allen Zeitlinien | {de(h4.get('stat'), 2)} | [{de(h4.get('lo'), 2)}; "
-                     f"{de(h4.get('hi'), 2)}] | {de(h4.get('p'), 4)} | {di(h4.get('n'))} | {de(apl.get('p95'), 2)} | "
+        lines.append(f"| placebo distance to all timelines | {num(h4.get('stat'), 2)} | [{num(h4.get('lo'), 2)}; "
+                     f"{num(h4.get('hi'), 2)}] | {num(h4.get('p'), 4)} | {di(h4.get('n'))} | {num(apl.get('p95'), 2)} | "
                      f"{pct(apl.get('share_ge_beta'), 0)} | {verdict_plain(al.get('rejected'))} |")
     mt = sh.get("placebo_matched") or {}
     mpl = mt.get("placebo") or {}
     if mt:
-        lines.append(f"| Placebos nur Ereignisse mit Zellen, Fenster getrennt | {de(h4.get('stat'), 2)} | "
-                     f"[{de(h4.get('lo'), 2)}; {de(h4.get('hi'), 2)}] | {de(h4.get('p'), 4)} | {di(h4.get('n'))} | "
-                     f"{de(mpl.get('p95'), 2)} | {pct(mpl.get('share_ge_beta'), 0)} | "
+        lines.append(f"| placebos only for events with cells, windows separate | {num(h4.get('stat'), 2)} | "
+                     f"[{num(h4.get('lo'), 2)}; {num(h4.get('hi'), 2)}] | {num(h4.get('p'), 4)} | {di(h4.get('n'))} | "
+                     f"{num(mpl.get('p95'), 2)} | {pct(mpl.get('share_ge_beta'), 0)} | "
                      f"{verdict_plain(mt.get('rejected'))} |")
     dr = (sh.get("audit") or {}).get("dose_robust") or {}
-    for name, label in (("median", "Dosis als Median der log-Verhältnisse"),
-                        ("trimmed", f"Dosis ohne Fills mit \\|log-Verhältnis\\| > {de(dr.get('trim_abs_log_ratio'), 0)}")):
+    for name, label in (("median", "dose as the median of the log ratios"),
+                        ("trimmed", f"dose without fills with \\|log ratio\\| > {num(dr.get('trim_abs_log_ratio'), 0)}")):
         v = dr.get(name)
         if v:
-            lines.append(f"| {label} | {de(v.get('beta'), 2)} | [{de(v.get('lo'), 2)}; {de(v.get('hi'), 2)}] | "
-                         f"{de(v.get('p'), 4)} | {di(v.get('n'))} | – | – | – |")
+            lines.append(f"| {label} | {num(v.get('beta'), 2)} | [{num(v.get('lo'), 2)}; {num(v.get('hi'), 2)}] | "
+                         f"{num(v.get('p'), 4)} | {di(v.get('n'))} | {MISSING} | {MISSING} | {MISSING} |")
     lines.append("")
     above = no.get("dose_cells_above") or []
     if no:
-        cells = "; ".join(f"{a.get('event_id')} {a.get('cell')} (d = {de(a.get('dose'), 3)})" for a in above) or "keine"
-        lines += [f"- Zellen mit \\|d\\| > {de(no.get('max_abs_dose'), 0)}: {cells}. Im echten Panel fallen "
-                  f"{di(no.get('rows_dropped_real_panel'))} Zeilen weg; die Variante wirkt sonst nur in den Placebo-Panels."]
+        cells = "; ".join(f"{a.get('event_id')} {a.get('cell')} (d = {num(a.get('dose'), 3)})" for a in above) or "none"
+        lines += [f"- Cells with \\|d\\| > {num(no.get('max_abs_dose'), 0)}: {cells}. In the real panel "
+                  f"{di(no.get('rows_dropped_real_panel'))} rows drop out; otherwise the variant acts only in the placebo panels."]
     if al:
-        lines += ["- Abstand zu allen Zeitlinien: Placebo-Termine halten 28 Tage Abstand zu jeder Parameteränderung "
-                  "des Basiswerts unter SM, Legacy-PM, PM2-Standard-Lib und den Konto-Libs."]
+        lines += ["- Distance to all timelines: placebo dates keep 28 days away from every parameter change of the "
+                  "underlying under SM, legacy PM, the PM2 standard lib and the account libs."]
     if mt:
         ed = mt.get("events_drawn") or {}
-        lines += [f"- Placebos nur für Ereignisse mit Zellen im echten Panel, Placebo-Fenster eines Basiswerts ohne "
-                  f"Überlappung (Audit A29): {di(ed.get('min'))} bis {di(ed.get('max'))} Ereignisse je Replikation "
-                  f"(Median {de(ed.get('median'), 0)}); sd(t) der Placebos {de(mpl.get('t_sd'), 2)}."]
+        lines += [f"- Placebos only for events with cells in the real panel, placebo windows of an underlying without "
+                  f"overlap (audit A29): {di(ed.get('min'))} to {di(ed.get('max'))} events per replication "
+                  f"(median {num(ed.get('median'), 0)}); sd(t) of the placebos {num(mpl.get('t_sd'), 2)}."]
     return lines + [""]
 
 
@@ -855,14 +857,14 @@ def events_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
     for c in CCYS:
         s.put(f"events_kept_{c}", int((ev["kept"] & (ev["ccy"] == c)).sum()))
     matched = set()
-    lines = ["## Referenzbuch-Effekte der Ereignisse", "",
-             "Referenzbuch: Short-Straddle ATM (Strike = Forward) des Verfalls nahe 30 Tagen, 1 Kontrakt je Bein, "
-             "täglich 08:00 UTC; K_vorher rechnet dasselbe Buch im selben Marktzustand mit den Parametern von 24 h "
-             "früher (reiner Parametereffekt, `results/p2/reference_book.csv`). Zeile je Ereignis aus "
-             "`results/p2/events.csv`; der Referenzbuch-Tag ist der erste Tag, dessen Parameterstand aus dem "
-             "Ereignis stammt. K in bp des Forwards.", "",
-             "| Ereignis | Zeitpunkt | Geänderte Strukturen | max. \\|Dosis\\| | behalten | Panel-Zellen | "
-             "Referenzbuch-Tag | K vorher | K nachher | Änderung |",
+    lines = ["## Reference book effects of the events", "",
+             "Reference book: short straddle ATM (strike = forward) of the expiry near 30 days, 1 contract per leg, "
+             "daily at 08:00 UTC; K before computes the same book in the same market state with the parameters of "
+             "24 h earlier (pure parameter effect, `results/p2/reference_book.csv`). One row per event from "
+             "`results/p2/events.csv`; the reference book day is the first day whose parameter state stems from the "
+             "event. K in bp of the forward.", "",
+             "| Event | Time | Changed structures | max. \\|dose\\| | kept | Panel cells | "
+             "Reference book day | K before | K after | Change |",
              "|---|---|---|---:|---|---:|---|---:|---:|---:|"]
     for i, e in ev.iterrows():
         m = str(e["manager"])
@@ -889,10 +891,10 @@ def events_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
         s.put(f"event_{eid}_refbook_log_change", None if change is None else math.log1p(change))
         s.put(f"event_{eid}_refbook_k_before_bp", before)
         s.put(f"event_{eid}_refbook_k_after_bp", after)
-        kinds = ", ".join(STRUCT_DE.get(k, k) for k in str(e.get("kinds", "")).split("+") if k)
-        lines.append(f"| {eid} | {ts_de(int(e['event_ts']), seconds=False)} | {kinds} | {pct(e.get('max_abs_dose'), 2)} | "
-                     f"{yes_no(e['kept'])} | {di(panel_cells[i])} | {day_de(rday)} | {de(before, 0)} | "
-                     f"{de(after, 0)} | {pct(change, 2, sign=True)} |")
+        kinds = ", ".join(STRUCT_NAME.get(k, k) for k in str(e.get("kinds", "")).split("+") if k)
+        lines.append(f"| {eid} | {fmt_ts(int(e['event_ts']), seconds=False)} | {kinds} | {pct(e.get('max_abs_dose'), 2)} | "
+                     f"{yes_no(e['kept'])} | {di(panel_cells[i])} | {fmt_day(rday)} | {num(before, 0)} | "
+                     f"{num(after, 0)} | {pct(change, 2, sign=True)} |")
     lines.append("")
     # parameter effects on the reference book that no event row explains
     extra = []
@@ -908,15 +910,15 @@ def events_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
             extra.append((str(r["day"]), m, str(r["ccy"]), float(chg[idx]), r.get(f"{m}_param_ts")))
     s.put("refbook_changes_without_event", len(extra))
     if extra:
-        lines += ["Parametereffekte im Referenzbuch ohne Ereigniszeile (ausserhalb des Manager-Fensters oder nicht "
-                  "in der Ereignisliste):", ""]
+        lines += ["Parameter effects in the reference book without an event row (outside the manager window or not "
+                  "in the event list):", ""]
         for day, m, c, chg, pts in sorted(extra):
-            since = f", Parameterstand vom {ts_de(int(pts), seconds=False)}" if not _missing(pts) else ""
-            lines.append(f"- {MANAGER_DE[m]} {c} {day_de(day)}: {pct(chg, 2, sign=True)}{since}.")
+            since = f", parameter state of {fmt_ts(int(pts), seconds=False)}" if not _missing(pts) else ""
+            lines.append(f"- {MANAGER_NAME[m]} {c} {fmt_day(day)}: {pct(chg, 2, sign=True)}{since}.")
         lines.append("")
     # level of the reference book in bp of the forward
-    lines += ["Niveau des Referenzbuchs (K in bp des Forwards über die Tage im Manager-Fenster):", "",
-              "| Basiswert | Manager | Tage | Minimum | Median | Maximum |", "|---|---|---:|---:|---:|---:|"]
+    lines += ["Level of the reference book (K in bp of the forward over the days in the manager window):", "",
+              "| Underlying | Manager | Days | Minimum | Median | Maximum |", "|---|---|---:|---:|---:|---:|"]
     for c in CCYS:
         sub = rb[rb["ccy"] == c]
         for m in MANAGERS:
@@ -927,8 +929,8 @@ def events_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[str]:
             for k, v in vals.items():
                 s.put(f"refbook_{c}_{m}_{k}", v)
             if len(bp):
-                lines.append(f"| {c} | {MANAGER_DE[m]} | {di(len(bp))} | {de(bp.min(), 0)} | {de(bp.median(), 0)} | "
-                             f"{de(bp.max(), 0)} |")
+                lines.append(f"| {c} | {MANAGER_NAME[m]} | {di(len(bp))} | {num(bp.min(), 0)} | {num(bp.median(), 0)} | "
+                             f"{num(bp.max(), 0)} |")
     return lines + [""]
 
 
@@ -937,9 +939,9 @@ def oi_section(d: Dict[str, Any], s: Summary) -> List[str]:
     oi["month"] = oi["month"].astype(str)
     last_month = str(oi["month"].max()) if len(oi) else None
     s.put("oi_last_month", last_month)
-    lines = ["## Manager-Anteile am Options-OI", "",
-             "Anteil von `OptionAsset.totalPosition` je Manager an der Summe über die Manager, jeweils am Monatsersten "
-             "(`results/p2/manager_oi_share.csv`).", ""]
+    lines = ["## Manager shares of the options OI", "",
+             "Share of `OptionAsset.totalPosition` per manager in the sum over the managers, each on the first day of "
+             "the month (`results/p2/manager_oi_share.csv`).", ""]
     for c in CCYS:
         sub = oi[oi["ccy"] == c].sort_values("month")
         last = sub[sub["month"] == last_month].iloc[0] if len(sub) and (sub["month"] == last_month).any() else None
@@ -964,27 +966,27 @@ def oi_section(d: Dict[str, Any], s: Summary) -> List[str]:
         s.put(f"oi_{c}_first_month", str(sub["month"].iloc[0]) if len(sub) else None)
         if not len(sub):
             continue
-        parts = [f"Daten ab {month_de(sub['month'].iloc[0])}"]
+        parts = [f"data from {fmt_month(sub['month'].iloc[0])}"]
         if first:
-            parts.append(f"PM2 erstmals {month_de(first)} ({pct(pos['pm2'].iloc[0], 1)})")
+            parts.append(f"PM2 first in {fmt_month(first)} ({pct(pos['pm2'].iloc[0], 1)})")
         if mx is not None:
-            parts.append(f"höchstens {pct(mx['pm2'], 1)} ({month_de(mx['month'])})")
+            parts.append(f"at most {pct(mx['pm2'], 1)} ({fmt_month(mx['month'])})")
         if below:
-            parts.append(f"Legacy-PM unter 1 % ab {month_de(below)}")
+            parts.append(f"legacy PM below 1 % from {fmt_month(below)}")
         if last is not None:
-            parts.append(f"zuletzt ({month_de(last_month)}) SM {pct(last['sm'], 1)}"
-                         + (f", Legacy-PM {pct(last['pm'], 1)}" if not _missing(last.get("pm")) else "")
+            parts.append(f"last ({fmt_month(last_month)}) SM {pct(last['sm'], 1)}"
+                         + (f", legacy PM {pct(last['pm'], 1)}" if not _missing(last.get("pm")) else "")
                          + f", PM2 {pct(last['pm2'], 1)}")
         lines.append(f"- {c}: " + "; ".join(parts) + ".")
     present = [c for c in CCYS if (oi["ccy"] == c).any()]
     cols = [(c, m) for c in present for m in MANAGERS if not (m == "pm" and oi.loc[oi["ccy"] == c, "pm"].isna().all())]
-    lines += ["", "| Monat | " + " | ".join(f"{c} {MANAGER_DE[m]}" for c, m in cols) + " |",
+    lines += ["", "| Month | " + " | ".join(f"{c} {MANAGER_NAME[m]}" for c, m in cols) + " |",
               "|---|" + "---:|" * len(cols)]
     for month in sorted(oi["month"].unique()):
         row = []
         for c, m in cols:
             hit = oi[(oi["ccy"] == c) & (oi["month"] == month)]
-            row.append(pct(hit[m].iloc[0], 1) if len(hit) else "–")
+            row.append(pct(hit[m].iloc[0], 1) if len(hit) else MISSING)
         lines.append(f"| {month} | " + " | ".join(row) + " |")
     return lines + [""]
 
@@ -995,9 +997,9 @@ def _optional_csv(results: Path, name: str) -> Optional[pd.DataFrame]:
 
 
 def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path) -> List[str]:
-    """Numbers of review round 1 (docs/paper2/MANUSKRIPT.md): all exploratory or descriptive."""
+    """Numbers of review round 1 (docs/paper2/MANUSCRIPT.md): all exploratory or descriptive."""
     sens, h3, cap = d["sensitivity.json"], d["h3.json"], d["capital_check.json"]
-    lines = ["## Review-Runde 1 (explorativ oder beschreibend)", ""]
+    lines = ["## Review round 1 (exploratory or descriptive)", ""]
     # H1: sign structure
     sign = sens.get("h1_sign") or {}
     fl = sign.get("sign_floor") or {}
@@ -1010,20 +1012,20 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
     wp, wn = sign.get("within_pos") or {}, sign.get("within_nonpos") or {}
     ws, wb, wpb = sign.get("within_sell") or {}, sign.get("within_buy") or {}, sign.get("within_pos_buy") or {}
     lines += [
-        f"- H1, nur Vorzeichen: Mischt man die Ränge innerhalb der {di(fl.get('n_pos'))} Zellen mit Edge > 0 und der "
-        f"{di(fl.get('n_nonpos'))} übrigen ({di(fl.get('draws'))} Ziehungen), ist ρ im Mittel {de(fl.get('mean'), 3)} "
-        f"(5. bis 95. Perzentil {de(fl.get('p05'), 3)} bis {de(fl.get('p95'), 3)}).",
-        f"- H1 innerhalb von Gruppen: Edge > 0 {de(wp.get('stat'), 3)} (n = {di(wp.get('n'))}), Edge ≤ 0 "
-        f"{de(wn.get('stat'), 3)} (n = {di(wn.get('n'))}), Verkäufe {de(ws.get('stat'), 3)}, Käufe "
-        f"{de(wb.get('stat'), 3)}, Käufe mit Edge > 0 {de(wpb.get('stat'), 3)} (n = {di(wpb.get('n'))}).",
-        f"- Beste Zellen: von den zehn besten je Kapital {di(top.get('top10'))} unter den zehn besten je Nominal, von "
-        f"den besten 20 {di(top.get('top20'))}; gleiches Vorzeichen in {di(sign.get('sign_agree'))} Zellen."]
+        f"- H1, sign only: shuffling the ranks within the {di(fl.get('n_pos'))} cells with edge > 0 and within the "
+        f"{di(fl.get('n_nonpos'))} others ({di(fl.get('draws'))} draws) gives ρ {num(fl.get('mean'), 3)} on average "
+        f"(5th to 95th percentile {num(fl.get('p05'), 3)} to {num(fl.get('p95'), 3)}).",
+        f"- H1 within groups: edge > 0 {num(wp.get('stat'), 3)} (n = {di(wp.get('n'))}), edge ≤ 0 "
+        f"{num(wn.get('stat'), 3)} (n = {di(wn.get('n'))}), sells {num(ws.get('stat'), 3)}, buys "
+        f"{num(wb.get('stat'), 3)}, buys with edge > 0 {num(wpb.get('stat'), 3)} (n = {di(wpb.get('n'))}).",
+        f"- Best cells: the ten best per capital and the ten best per notional share {di(top.get('top10'))} cells, "
+        f"the best 20 share {di(top.get('top20'))}; same sign in {di(sign.get('sign_agree'))} cells."]
     # H2 population
     pop = (sens.get("d_h2") or {}).get("population") or {}
     s.put("h2_population", pop.get("n"))
     s.put("h2_population_sample_equal", pop.get("sample_equals_marginal"))
-    lines.append(f"- H2: Population vor der Ziehung {di(pop.get('n'))} Fills; die präregistrierte Ziehung ergibt "
-                 f"genau die Fills von marginal.parquet: {yes_no(pop.get('sample_equals_marginal'))}.")
+    lines.append(f"- H2: population before the draw {di(pop.get('n'))} fills; the preregistered draw gives "
+                 f"exactly the fills of marginal.parquet: {yes_no(pop.get('sample_equals_marginal'))}.")
     # H3: accounts above the threshold, days beyond the validated book size
     by_label = (sens.get("e_h3") or {}).get("by_label") or {}
     thr = h3.get("threshold")
@@ -1048,13 +1050,13 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
             fam_counts[fam] = fam_counts.get(fam, 0) + 1
     for fam in ("SM", "PM", "PM2"):
         s.put(f"h3_accounts_{fam}", fam_counts.get(fam) if series is not None else None)
-    lines.append("- H3-Konten nach Manager: " + ", ".join(f"{k} {v}" for k, v in sorted(fam_counts.items())) + ".")
+    lines.append("- H3 accounts by manager: " + ", ".join(f"{k} {v}" for k, v in sorted(fam_counts.items())) + ".")
     e = sens.get("e_h3") or {}
     ns = e.get("sm_pm2_le63_no_sm") or {}
     lines += [
-        f"- H3: {above} von {len(stats)} Kontomedianen über der Schwelle {de(thr, 0)}; höchstens 63 Optionen ohne "
-        f"SM-Konto {ci(ns.get('stat'), ns.get('lo'), ns.get('hi'), 3)} (n = {di(ns.get('n'))}).",
-        f"- H3: {di(over)} Maker-Tage mit mehr Beinen als das grösste validierte Buch ({di(legs_max)} Beine)."]
+        f"- H3: {above} of {len(stats)} account medians above the threshold {num(thr, 0)}; at most 63 options without "
+        f"SM account {ci(ns.get('stat'), ns.get('lo'), ns.get('hi'), 3)} (n = {di(ns.get('n'))}).",
+        f"- H3: {di(over)} maker days with more legs than the largest validated book ({di(legs_max)} legs)."]
     # fills outside every manager window
     outside = 0
     for c in CCYS:
@@ -1063,7 +1065,7 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
         in_c = max((v.get("n_in_window") or 0) for v in mg.values()) if mg else 0
         outside += int(n_c - in_c)
     s.put("fills_outside_every_window", outside)
-    lines.append(f"- Fills ausserhalb jedes Manager-Fensters (ohne Kapital): {di(outside)}.")
+    lines.append(f"- Fills outside every manager window (without capital): {di(outside)}.")
     # validation: blocks drawn per cell of single contracts
     cells = (d["validation_summary.json"].get("cells") or [])
     blocks = [int(c.get("n", 0)) + int(c.get("n_missing", 0)) for c in cells
@@ -1071,10 +1073,10 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
     s.put("validation_single_blocks_per_cell", max(blocks) if blocks else None)
     s.put("validation_single_blocks_per_cell_min", min(blocks) if blocks else None)
     # probes of the off-chain discount: expiries of the box-spread measurement quoted in Section 2
-    box_path = Path(results) / "semantik" / "box_diskont.json"
+    box_path = Path(results) / "semantics" / "box_diskont.json"
     box = json.loads(box_path.read_text()) if box_path.is_file() else {}
     first = next((v for k, v in sorted(box.items()) if k.startswith("box_") and isinstance(v, list)), None)
-    s.put("semantik_box_expiries", len(first) if first is not None else None)
+    s.put("semantics_box_expiries", len(first) if first is not None else None)
     # API snapshot (present-day sensitivity, off-chain against chain semantics)
     api = _optional_csv(results, "api_snapshot.csv")
     if api is not None and len(api):
@@ -1093,10 +1095,10 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
         med = r.groupby("tenor_bucket")["ar"].median()
         for b, key in ((">90d", "gt90d"), ("<=2d", "le2d")):
             s.put(f"api_pm2_median_abs_rel_{key}", float(med[b]) if b in med else None)
-        lines.append(f"- API gegen Chain-Semantik ({di(len(ok))} Einzelkontrakte am {day_de(s['api_day'])}): PM2 "
-                     f"Median |rel| {pct(s['api_pm2_median_abs_rel'], 2)}, p95 {pct(s['api_pm2_p95_abs_rel'], 2)}, "
-                     f"Maximum {pct(s['api_pm2_max_abs_rel'], 2)} (Laufzeit {s['api_pm2_max_tenor_bucket']}); SM "
-                     f"Median {pct(s['api_sm_median_abs_rel'], 2)}, Maximum {pct(s['api_sm_max_abs_rel'], 2)}.")
+        lines.append(f"- API against chain semantics ({di(len(ok))} single contracts on {fmt_day(s['api_day'])}): PM2 "
+                     f"median |rel| {pct(s['api_pm2_median_abs_rel'], 2)}, p95 {pct(s['api_pm2_p95_abs_rel'], 2)}, "
+                     f"maximum {pct(s['api_pm2_max_abs_rel'], 2)} (tenor {s['api_pm2_max_tenor_bucket']}); SM "
+                     f"median {pct(s['api_sm_median_abs_rel'], 2)}, maximum {pct(s['api_sm_max_abs_rel'], 2)}.")
     # H4 readings and side splits
     rv = (d["sensitivity_h4.json"].get("review") or {})
     rd = rv.get("readings") or {}
@@ -1112,13 +1114,13 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
     s.put("h4_review_oi_share_max", ow.get("share_max"))
     so = rv.get("sells_only") or {}
     lines += [
-        f"- H4 Niveau: Halbspread im Panel im Mittel {de(rd.get('y_mean'), 2)} bp des Index (Median "
-        f"{de(rd.get('y_median'), 2)}); Kapital zehn Prozent billiger (Dosis {de(rd.get('ten_pct_dose'), 3)}): "
-        f"Änderung des Halbspreads {de(rd.get('ten_pct_change_beta'), 2, sign=True)} bp, Intervall "
-        f"{de(rd.get('ten_pct_change_lo'), 2, sign=True)} bis {de(rd.get('ten_pct_change_hi'), 2, sign=True)} bp.",
-        f"- H4 nur Verkaufszellen: β {de(so.get('beta'), 2)}, p {de(so.get('p'), 4)}; OI-gewichtete Dosis "
-        f"(Anteil {pct(ow.get('share_min'), 1)} bis {pct(ow.get('share_max'), 1)}): β {de(ow.get('beta'), 2)}, "
-        f"p {de(ow.get('p'), 4)}.", ""]
+        f"- H4 level: half spread in the panel {num(rd.get('y_mean'), 2)} bp of the index on average (median "
+        f"{num(rd.get('y_median'), 2)}); capital ten per cent cheaper (dose {num(rd.get('ten_pct_dose'), 3)}): "
+        f"change of the half spread {num(rd.get('ten_pct_change_beta'), 2, sign=True)} bp, interval "
+        f"{num(rd.get('ten_pct_change_lo'), 2, sign=True)} to {num(rd.get('ten_pct_change_hi'), 2, sign=True)} bp.",
+        f"- H4 only sell cells: β {num(so.get('beta'), 2)}, p {num(so.get('p'), 4)}; OI-weighted dose "
+        f"(share {pct(ow.get('share_min'), 1)} to {pct(ow.get('share_max'), 1)}): β {num(ow.get('beta'), 2)}, "
+        f"p {num(ow.get('p'), 4)}.", ""]
     return lines
 
 
@@ -1135,9 +1137,9 @@ H4_COMP_KEYS = ("events_kept", "events_with_cells_real", "events_with_cells_plac
                 "same_day_draws_placebo_mean")
 
 
-def _span_de(lo, hi) -> str:
-    """'8 bis 10', or 'je 14' when both ends are equal."""
-    return f"je {di(lo)}" if not _missing(lo) and lo == hi else f"{di(lo)} bis {di(hi)}"
+def _span(lo, hi) -> str:
+    """'8 to 10', or 'always 14' when both ends are equal."""
+    return f"always {di(lo)}" if not _missing(lo) and lo == hi else f"{di(lo)} to {di(hi)}"
 
 
 def audit_section(d: Dict[str, Any], s: Summary) -> List[str]:
@@ -1162,61 +1164,61 @@ def audit_section(d: Dict[str, Any], s: Summary) -> List[str]:
     without = comp.get("events_without_cells_real")
     s.put("h4_comp_events_without_cells_real", "; ".join(map(str, without)) if without is not None else None)
     s.put("h4_comp_events_without_cells_real_n", len(without) if without is not None else None)
-    lines = ["## Audit (explorativ)", "",
-             "Explorativ oder beschreibend (docs/paper2/AUDIT.md); kein registriertes Urteil ändert sich.", ""]
+    lines = ["## Audit (exploratory)", "",
+             "Exploratory or descriptive (docs/paper2/AUDIT.md); no registered verdict changes.", ""]
     wp, wn = sign.get("within_pos") or {}, sign.get("within_nonpos") or {}
     wps, wpb = sign.get("within_pos_sell") or {}, sign.get("within_pos_buy") or {}
     if wp:
         lines.append(
-            f"- H1 in Vorzeichengruppen (A04, Auswahl je Replikation neu: jede Replikation wählt die Zellen nach ihrem "
-            f"eigenen Edge): Edge > 0 {ci(wp.get('stat'), wp.get('lo'), wp.get('hi'), 3)}, Edge ≤ 0 "
-            f"{ci(wn.get('stat'), wn.get('lo'), wn.get('hi'), 3)}, Verkäufe mit Edge > 0 "
-            f"{ci(wps.get('stat'), wps.get('lo'), wps.get('hi'), 3)}, Käufe mit Edge > 0 "
-            f"{ci(wpb.get('stat'), wpb.get('lo'), wpb.get('hi'), 3)}; im Mittel fallen je Replikation "
-            f"{pct(wp.get('switch_share_mean'), 1)} (Edge > 0) und {pct(wn.get('switch_share_mean'), 1)} (Edge ≤ 0) "
-            f"der Zellen aus ihrer Gruppe. Gruppen nach Seite bleiben fest.")
+            f"- H1 in sign groups (A04, selection anew in each replication: every replication chooses the cells by its "
+            f"own edge): edge > 0 {ci(wp.get('stat'), wp.get('lo'), wp.get('hi'), 3)}, edge ≤ 0 "
+            f"{ci(wn.get('stat'), wn.get('lo'), wn.get('hi'), 3)}, sells with edge > 0 "
+            f"{ci(wps.get('stat'), wps.get('lo'), wps.get('hi'), 3)}, buys with edge > 0 "
+            f"{ci(wpb.get('stat'), wpb.get('lo'), wpb.get('hi'), 3)}; on average "
+            f"{pct(wp.get('switch_share_mean'), 1)} (edge > 0) and {pct(wn.get('switch_share_mean'), 1)} (edge ≤ 0) "
+            f"of the cells leave their group per replication. Groups by side stay fixed.")
     if hi_:
         lines.append(
-            f"- H1-Intervall (A28): {pct(hi_.get('share_ge_stat'), 1)} der {di(h1.get('b'))} Ziehungen liegen auf oder "
-            f"über dem Schätzer {de(h1.get('stat'), 4)} (Mittel {de(hi_.get('mean_draw'), 4)}, Median "
-            f"{de(hi_.get('median_draw'), 4)}); das Perzentilintervall [{de(h1.get('lo'), 3)}; {de(h1.get('hi'), 3)}] "
-            f"ist nicht zentriert. Gespiegelt [{de(hi_.get('basic_lo'), 3)}; {de(hi_.get('basic_hi'), 3)}], "
-            f"bias-korrigiert [{de(hi_.get('bc_lo'), 3)}; {de(hi_.get('bc_hi'), 3)}].")
+            f"- H1 interval (A28): {pct(hi_.get('share_ge_stat'), 1)} of the {di(h1.get('b'))} draws lie on or "
+            f"above the estimate {num(h1.get('stat'), 4)} (mean {num(hi_.get('mean_draw'), 4)}, median "
+            f"{num(hi_.get('median_draw'), 4)}); the percentile interval [{num(h1.get('lo'), 3)}; {num(h1.get('hi'), 3)}] "
+            f"is not centred. Reflected [{num(hi_.get('basic_lo'), 3)}; {num(hi_.get('basic_hi'), 3)}], "
+            f"bias-corrected [{num(hi_.get('bc_lo'), 3)}; {num(hi_.get('bc_hi'), 3)}].")
     if cal:
         lines += [
-            f"- H4, Placebo-t (A05): sd(t) {de(cal.get('t_sd'), 2)} (MAD-sd {de(cal.get('t_mad_sd'), 2)}), 5./95. "
-            f"Perzentil {de(cal.get('t_p05'), 2)}/{de(cal.get('t_p95'), 2)}; Anteil t > {de(cal.get('crit'), 3)} "
-            f"{pct(cal.get('share_t_gt_crit'), 0)}, |t| > {de(cal.get('crit'), 3)} {pct(cal.get('share_abs_t_gt_crit'), 0)}; "
-            f"sd der Placebo-β {de(cal.get('beta_sd'), 1)} bei Median-SE {de(cal.get('se_median'), 1)}.",
-            f"- H4, an den Placebo-t kalibrierte Spanne für β: [{de(cal.get('lo'), 1)}; {de(cal.get('hi'), 1)}] "
-            f"(SE mal sd(t): [{de(cal.get('sd_scaled_lo'), 1)}; {de(cal.get('sd_scaled_hi'), 1)}]); p gegen die "
-            f"Placebo-t {de(cal.get('p_placebo_t'), 2)}. Kapital zehn Prozent billiger: "
-            f"{de(cal.get('ten_pct_change_lo'), 2, sign=True)} bis {de(cal.get('ten_pct_change_hi'), 2, sign=True)} bp "
-            f"(SE mal sd(t): {de(cal.get('ten_pct_change_sd_scaled_lo'), 2, sign=True)} bis "
-            f"{de(cal.get('ten_pct_change_sd_scaled_hi'), 2, sign=True)} bp); grösste Verengung in der Spanne "
-            f"{pct(cal.get('ten_pct_narrowing_share'), 0)} des mittleren Halbspreads {de(cal.get('y_mean'), 2)} bp "
-            f"(beschreibendes Intervall: {pct(cal.get('ten_pct_narrowing_share_descriptive'), 0)}; SE mal sd(t): "
+            f"- H4, placebo t (A05): sd(t) {num(cal.get('t_sd'), 2)} (MAD sd {num(cal.get('t_mad_sd'), 2)}), 5th/95th "
+            f"percentile {num(cal.get('t_p05'), 2)}/{num(cal.get('t_p95'), 2)}; share t > {num(cal.get('crit'), 3)} "
+            f"{pct(cal.get('share_t_gt_crit'), 0)}, |t| > {num(cal.get('crit'), 3)} {pct(cal.get('share_abs_t_gt_crit'), 0)}; "
+            f"sd of the placebo β {num(cal.get('beta_sd'), 1)} at a median SE of {num(cal.get('se_median'), 1)}.",
+            f"- H4, range for β calibrated to the placebo t: [{num(cal.get('lo'), 1)}; {num(cal.get('hi'), 1)}] "
+            f"(SE times sd(t): [{num(cal.get('sd_scaled_lo'), 1)}; {num(cal.get('sd_scaled_hi'), 1)}]); p against the "
+            f"placebo t {num(cal.get('p_placebo_t'), 2)}. Capital ten per cent cheaper: "
+            f"{num(cal.get('ten_pct_change_lo'), 2, sign=True)} to {num(cal.get('ten_pct_change_hi'), 2, sign=True)} bp "
+            f"(SE times sd(t): {num(cal.get('ten_pct_change_sd_scaled_lo'), 2, sign=True)} to "
+            f"{num(cal.get('ten_pct_change_sd_scaled_hi'), 2, sign=True)} bp); largest narrowing in the range "
+            f"{pct(cal.get('ten_pct_narrowing_share'), 0)} of the mean half spread {num(cal.get('y_mean'), 2)} bp "
+            f"(descriptive interval: {pct(cal.get('ten_pct_narrowing_share_descriptive'), 0)}; SE times sd(t): "
             f"{pct(cal.get('ten_pct_narrowing_share_sd_scaled'), 0)})."]
     if comp:
-        ev_span = _span_de(comp.get("events_with_cells_placebo_min"), comp.get("events_with_cells_placebo_max"))
+        ev_span = _span(comp.get("events_with_cells_placebo_min"), comp.get("events_with_cells_placebo_max"))
         lines.append(
-            f"- H4, Bau der Placebo-Panels (A29): {ev_span} Ereignisse mit Zellen je Replikation, im echten Panel "
-            f"{di(comp.get('events_with_cells_real'))} von {di(comp.get('events_kept'))} (ohne Zellen: "
-            f"{'; '.join(map(str, without or [])) or 'keines'}); Zeilen im Median {di(comp.get('rows_placebo_median'))} "
-            f"gegen {di(comp.get('rows_real'))} ({de(comp.get('rows_per_fill_real'), 2)} je Fill), Tages-Cluster im "
-            f"Median {di(comp.get('clusters_placebo_median'))} gegen {di(comp.get('clusters_real'))}; Paare "
-            f"überlappender Fenster eines Basiswerts je Replikation im Mittel "
-            f"{de(comp.get('overlap_pairs_placebo_mean'), 1)} gegen {di(comp.get('overlap_pairs_real'))} im echten "
-            f"Panel, doppelt gezogene Tage im Mittel {de(comp.get('same_day_draws_placebo_mean'), 2)}.")
+            f"- H4, construction of the placebo panels (A29): {ev_span} events with cells per replication, in the "
+            f"real panel {di(comp.get('events_with_cells_real'))} of {di(comp.get('events_kept'))} (without cells: "
+            f"{'; '.join(map(str, without or [])) or 'none'}); rows at the median {di(comp.get('rows_placebo_median'))} "
+            f"against {di(comp.get('rows_real'))} ({num(comp.get('rows_per_fill_real'), 2)} per fill), day clusters at "
+            f"the median {di(comp.get('clusters_placebo_median'))} against {di(comp.get('clusters_real'))}; pairs of "
+            f"overlapping windows of one underlying per replication on average "
+            f"{num(comp.get('overlap_pairs_placebo_mean'), 1)} against {di(comp.get('overlap_pairs_real'))} in the real "
+            f"panel, days drawn twice on average {num(comp.get('same_day_draws_placebo_mean'), 2)}.")
     if dr:
         dm, dt_ = dr.get("median") or {}, dr.get("trimmed") or {}
         lines.append(
-            f"- H4, Dosis (A30): {di(dr.get('pairs_with_large_log_ratio'))} von {di(dr.get('pairs'))} "
-            f"Zell-Ereignis-Paaren enthalten Fills mit |log-Verhältnis| > {de(dr.get('trim_abs_log_ratio'), 0)} "
-            f"({di(dr.get('fills_with_large_log_ratio'))} Fills), bei {di(dr.get('pairs_median_differs'))} weicht der "
-            f"Median um mehr als {de(dr.get('median_diff', 0.05), 2)} vom Mittel ab. β mit Median-Dosis "
-            f"{de(dm.get('beta'), 2)} (p {de(dm.get('p'), 4)}), ohne diese Fills {de(dt_.get('beta'), 2)} "
-            f"(p {de(dt_.get('p'), 4)}); registriert {de(h4.get('stat'), 2)}.")
+            f"- H4, dose (A30): {di(dr.get('pairs_with_large_log_ratio'))} of {di(dr.get('pairs'))} "
+            f"cell-event pairs contain fills with |log ratio| > {num(dr.get('trim_abs_log_ratio'), 0)} "
+            f"({di(dr.get('fills_with_large_log_ratio'))} fills), in {di(dr.get('pairs_median_differs'))} pairs the "
+            f"median departs from the mean by more than {num(dr.get('median_diff', 0.05), 2)}. β with the median dose "
+            f"{num(dm.get('beta'), 2)} (p {num(dm.get('p'), 4)}), without these fills {num(dt_.get('beta'), 2)} "
+            f"(p {num(dt_.get('p'), 4)}); registered {num(h4.get('stat'), 2)}.")
     return lines + [""]
 
 
@@ -1225,34 +1227,34 @@ def checks_section(checks: Checks, s: Summary) -> List[str]:
     s.put("checks_n", len(checks))
     s.put("checks_failed", failed)
     s.put("checks_ok", failed == 0)
-    lines = ["## Konsistenzprüfungen", "",
-             f"{len(checks) - failed} von {len(checks)} Prüfungen erfüllt. Die Prüfungen rechnen die Urteile aus den "
-             f"Zahlen und Regeln nach und gleichen die Dateien untereinander ab.", ""]
+    lines = ["## Consistency checks", "",
+             f"{len(checks) - failed} of {len(checks)} checks met. The checks recompute the verdicts from the numbers "
+             f"and rules and reconcile the files with one another.", ""]
     for name, ok, detail in checks:
-        lines.append(f"- {name}: {'erfüllt' if ok else '**verletzt**'} ({detail}).")
+        lines.append(f"- {name}: {'met' if ok else '**violated**'} ({detail}).")
     return lines + [""]
 
 
 def limits_section(d: Dict[str, Any], cut: dict) -> List[str]:
     h1, h2, h3, h4 = d["h1.json"], d["h2.json"], d["h3.json"], d["h4.json"]
     cal = (d["sensitivity_h4.json"].get("audit") or {}).get("placebo_calibration") or {}
-    lines = ["## Einschränkungen dieser Zahlen", ""]
+    lines = ["## Limitations of these numbers", ""]
     if cut["is_pilot"]:
-        lines.append(f"- Pilotstand: Die Stichprobe endet am {ts_de(cut['end'])}, vor dem präregistrierten Ende "
-                     f"({ts_de(cut['prereg_end_ts'], seconds=False)}). Die Zahlen des Manuskripts entstehen mit dem "
-                     f"Enddatenlauf.")
+        lines.append(f"- Pilot state: the sample ends at {fmt_ts(cut['end'])}, before the preregistered end "
+                     f"({fmt_ts(cut['prereg_end_ts'], seconds=False)}). The numbers of the manuscript come from the "
+                     f"final data run.")
     lines += [
-        f"- H3: An {pct(h3.get('share_days_over_63_options'), 1)} der Maker-Tage hält das Buch mehr Optionen, als ein "
-        f"SM-Konto auf v2 halten kann; K_SM ist dort kontrafaktisch.",
-        f"- H1: {di(h1.get('n_fills_k_le_0'))} Fills mit K_PM2 ≤ 0 (weit vom Mark bepreiste RFQ-Beine) bleiben in "
-        f"den Summen.",
-        f"- H2 beruht auf {len(h2.get('accounts') or [])} Konten unter PM2; die Verteilung je Konto steht unter (d).",
-        f"- H4: Das Intervall für β ist beschreibend und auf die Ereignistermine bedingt; das Urteil folgt aus dem "
-        f"einseitigen p und dem Placebo-P95. {di(h4.get('clusters'))} Tages-Cluster, {di(h4.get('events'))} "
-        f"Ereignisse mit Zellen." + (f" An Placebo-Terminen streut t mit sd {de(cal.get('t_sd'), 2)} statt 1; die an "
-                                     f"den Placebo-t kalibrierte Spanne steht unter Audit." if cal.get("t_sd") else ""),
-        "- Kapital je Fill ist das Kapital eines leeren Buchs mit genau diesem Kontrakt (Einzelkontrakt); "
-        "Nicht-USDC-Collateral bleibt ausserhalb von K."]
+        f"- H3: on {pct(h3.get('share_days_over_63_options'), 1)} of the maker days the book holds more options than "
+        f"an SM account on v2 can hold; K_SM is counterfactual there.",
+        f"- H1: {di(h1.get('n_fills_k_le_0'))} fills with K_PM2 ≤ 0 (RFQ legs priced far from the mark) stay in "
+        f"the sums.",
+        f"- H2 rests on {len(h2.get('accounts') or [])} accounts under PM2; the distribution per account is under (d).",
+        f"- H4: the interval for β is descriptive and conditional on the event dates; the verdict follows from the "
+        f"one-sided p and the placebo P95. {di(h4.get('clusters'))} day clusters, {di(h4.get('events'))} "
+        f"events with cells." + (f" At placebo dates t scatters with sd {num(cal.get('t_sd'), 2)} instead of 1; the "
+                                 f"range calibrated to the placebo t is under Audit." if cal.get("t_sd") else ""),
+        "- Capital per fill is the capital of an empty book holding exactly this contract (single contract); "
+        "non-USDC collateral stays outside K."]
     return lines + [""]
 
 
@@ -1268,7 +1270,7 @@ def build(results: Path = RESULTS, now: Optional[dt.datetime] = None, prereg_end
     now = now or dt.datetime.now(dt.timezone.utc)
     summary_path = Path(summary_path) if summary_path is not None else results / SUMMARY_NAME
     s, checks = Summary(), Checks()
-    s.put("generated_by", "scripts/p2_zahlenblatt.py")
+    s.put("generated_by", "scripts/p2_numbers.py")
     cut = cutoff(d, s, checks, prereg_end_ts)
     head = header(d, s, cut, results, summary_path, now, checks)
     body = (sample_section(d, s, checks) + validation_section(d, s, checks) + h1_section(d, s, checks)
@@ -1281,10 +1283,10 @@ def build(results: Path = RESULTS, now: Optional[dt.datetime] = None, prereg_end
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    ap = argparse.ArgumentParser(prog="python3 scripts/p2_zahlenblatt.py", description=__doc__,
+    ap = argparse.ArgumentParser(prog="python3 scripts/p2_numbers.py", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", type=Path, default=RESULTS, help="results directory (default results/p2)")
-    ap.add_argument("--out", type=Path, default=OUT, help="markdown output (default docs/paper2/ZAHLENBLATT.md)")
+    ap.add_argument("--out", type=Path, default=OUT, help="markdown output (default docs/paper2/NUMBERS.md)")
     ap.add_argument("--summary", type=Path, default=None, help="summary output (default <results>/summary.json)")
     ap.add_argument("--quiet", action="store_true", help="do not print the sheet")
     args = ap.parse_args(argv)

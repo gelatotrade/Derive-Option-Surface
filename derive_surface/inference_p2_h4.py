@@ -1,6 +1,6 @@
 """H4 of Paper 2 (price of capital): event regression, wild cluster bootstrap and placebo dates.
 
-Preregistration ``docs/paper2/PRAEREGISTRIERUNG.md`` (H4, Inferenz, Nachtrag 3 points 3 and 4, Nachtrag 4 point 3):
+Preregistration ``docs/paper2/PRAEREGISTRIERUNG.md`` (H4, Inference, Addendum 3 points 3 and 4, Addendum 4 point 3):
 
 * **Regression** on the panel of :mod:`derive_surface.p2events` (``data/p2/derived/h4_panel.parquet``):
   ``y_i = alpha_{cell, event} + gamma_{day, currency} + beta * post_i * dose_{cell, event} + e_i``. Both fixed effects
@@ -12,9 +12,9 @@ Preregistration ``docs/paper2/PRAEREGISTRIERUNG.md`` (H4, Inferenz, Nachtrag 3 p
   nested in the day clusters): ``M_D(w * u_r) = sum_h w_h M_D(u_r * 1_h)`` is precomputed once per cluster ``h``, so
   a draw costs ``O(G^2)``. One-sided ``p = (1 + #{t* >= t}) / (B + 1)`` for ``beta > 0``. The interval ``lo, hi``
   is the 90 % percentile interval of the same draws with unrestricted residuals (descriptive; the verdict uses ``p``).
-* **Placebo** (Nachtrag 3.3): 100 replications. For every kept event a date is drawn uniformly from the admissible
+* **Placebo** (Addendum 3.3): 100 replications. For every kept event a date is drawn uniformly from the admissible
   days of its currency: at least 28 days from every parameter change of the currency (every row of the timelines of
-  the H4 managers, also changes that are not events, Nachtrag 4.3), placebo time inside the window of the event's
+  the H4 managers, also changes that are not events, Addendum 4.3), placebo time inside the window of the event's
   manager, ``[t - 14 d, t + 14 d]`` inside the sample. The placebo time keeps the time of day of the real event. The
   date gets the dose vector of a uniformly drawn kept event of the same currency. The panel is built with
   :func:`derive_surface.p2events.build_panel` and ``beta`` is estimated as above.
@@ -29,7 +29,7 @@ in the real panel and with disjoint windows per currency; ``audit``: see below).
 
     python3 scripts/p2_heavy.py --wait-max 500 -- python3 -m derive_surface.inference_p2_h4 run --max-seconds 420
 
-Descriptive figure tables (ABBILDUNGSWAHL section 10; no registered number changes): ``fig_h4_fwl_bins.csv``, the
+Descriptive figure tables (FIGURE_SELECTION section 10; no registered number changes): ``fig_h4_fwl_bins.csv``, the
 residualised regressor and outcome in 20 equal-count bins with their histogram and the slope ``beta``, and
 ``h4_placebo_days.csv``, the candidate placebo days of every kept event with the gap rule and the number of draws.
 ``run`` writes both; ``figtables`` rebuilds them from the stored panel and results without the placebo stage::
@@ -295,7 +295,7 @@ def _timeline_files(ccy: str, root: Path, scope: str) -> List[Path]:
 def change_days(ccy: str, root: Optional[Path] = None, scope: str = "event") -> np.ndarray:
     """UTC day numbers (``ts // 86400``) of every row of the parameter timelines of ``ccy``.
 
-    ``scope="event"``: the timelines of the H4 managers (legacy PM, PM2 standard lib; Nachtrag 4.3).
+    ``scope="event"``: the timelines of the H4 managers (legacy PM, PM2 standard lib; Addendum 4.3).
     ``scope="all"``: every timeline of the currency, also SM and the PM2 account libs (sensitivity)."""
     root = Path(root) if root is not None else PARAMS_DIR
     days = set()
@@ -487,7 +487,7 @@ def event_figure_table(panel: pd.DataFrame, events: pd.DataFrame) -> pd.DataFram
 
 def fwl_bins(panel: pd.DataFrame, n_bins: int = FWL_BINS, n_hist: int = FWL_HIST_BINS,
              f: Optional[Fit] = None) -> pd.DataFrame:
-    """Descriptive picture of ``beta`` (Frisch-Waugh-Lovell, ABBILDUNGSWAHL section 10).
+    """Descriptive picture of ``beta`` (Frisch-Waugh-Lovell, FIGURE_SELECTION section 10).
 
     ``post * dose`` and ``y`` after removing both fixed effects, x in log-% (100 times the residualised regressor).
     ``kind = bin``: ``n_bins`` equal-count bins of the rows sorted by residualised x (stable), with the means of x and
@@ -813,7 +813,7 @@ def event_oi_share(events: pd.DataFrame, oi: pd.DataFrame) -> Dict[str, float]:
 
 def review_extras(panel: pd.DataFrame, h4: Mapping, events: pd.DataFrame, oi: Optional[pd.DataFrame] = None,
                   b: int = B, seed: int = SEED) -> dict:
-    """Review round 1, exploratory (docs/paper2/MANUSKRIPT.md); no registered number changes.
+    """Review round 1, exploratory (docs/paper2/MANUSCRIPT.md); no registered number changes.
 
     ``readings``: level of the outcome in the panel (rows and distinct fills) and the change in the half spread that
     ``beta`` and its descriptive interval imply for capital ten per cent cheaper (dose ``ln 0.9``). ``sells_only`` and

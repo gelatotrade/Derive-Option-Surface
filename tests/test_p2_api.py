@@ -502,9 +502,9 @@ def test_run_writes_csv_meta_and_doc(tmp_path):
     meta = json.loads((tmp_path / "meta.json").read_text())
     assert meta["requests"]["api"] > 0 and meta["requests"]["rpc"] > 0 and meta["rate_per_s"] == 2.0
     doc = (tmp_path / "C5b.md").read_text()
-    assert doc.startswith("## C5b") and "explorativ" in doc and "API-Semantik mit 2 %" in doc
+    assert doc.startswith("## C5b") and "Exploratory" in doc and "API semantics with 2 %" in doc
     assert "K_api" in doc and "| BTC |" in doc
-    assert "Grösste Abweichungen" in doc and " 1 Zellen" not in doc
+    assert "Largest deviations" in doc and " 1 cells" not in doc
     # every markdown table keeps its column count (a "|" inside a cell must be escaped)
     import re
     tables, cur = [], []
@@ -522,10 +522,11 @@ def test_run_writes_csv_meta_and_doc(tmp_path):
     assert (tmp_path / "C5b.md").read_text() == doc
 
 
-def test_german_number_format():
-    assert p2api.de_num(1234567.891, 1) == "1 234 567,9"          # as in the Zahlenblatt
-    assert p2api.de_pct(0.001234, 2) == "+0,12 %" and p2api.de_pct(-0.05, 1) == "−5,0 %"
-    assert p2api.de_num(float("nan"), 2) == "–"
+def test_number_format():
+    assert p2api.fmt_num(1234567.891, 1) == "1,234,567.9"
+    assert p2api.fmt_pct(0.001234, 2) == "+0.12 %" and p2api.fmt_pct(-0.05, 1) == "−5.0 %"
+    assert p2api.fmt_num(float("nan"), 2) == "n/a"
+    assert p2api.fmt_sci(1.8e-15) == "1.8·10⁻¹⁵"
 
 
 def test_cli_help_lists_run_and_report(capsys):

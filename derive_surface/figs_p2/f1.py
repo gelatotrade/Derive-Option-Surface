@@ -1,4 +1,4 @@
-"""F1 of Paper 2: what one contract costs (docs/paper2/ABBILDUNGSWAHL.md, sections 6 and 7, slot F1).
+"""F1 of Paper 2: what one contract costs (docs/paper2/FIGURE_SELECTION.md, sections 6 and 7, slot F1).
 
 Left, six maps (maker sells above, maker buys below; BTC, ETH, HYPE): PM2 capital per contract in per cent of
 notional, ``kappa = 100 sum_K / sum_index`` of the ``pm2`` map in ``results/p2/fig_edge_maps.csv`` (ratio of sums over

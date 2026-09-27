@@ -41,7 +41,7 @@ Done.
 \end{document}
 """
 BIB = "@article{ho1981,\n title={x}}\n@article{other2000,\n title={y}}\n"
-LITERATUR = "| ho1981 | Ho and Stoll |\n| other2000 | Other |\n"
+LITERATURE = "| ho1981 | Ho and Stoll |\n| other2000 | Other |\n"
 BUDGET = {"abstract": 50, "Introduction": 50, "Conclusion": 50}
 
 
@@ -71,12 +71,12 @@ def test_placeholders_outside_comments():
 
 
 def test_citations_must_be_in_the_bib_and_in_the_literature_file():
-    assert not any(pb.citation_problems(TEX, BIB, LITERATUR).values())
+    assert not any(pb.citation_problems(TEX, BIB, LITERATURE).values())
     tex = TEX.replace(r"\citep{ho1981}", r"\citep{ho1981,missing2001}")
-    got = pb.citation_problems(tex, BIB, LITERATUR)
+    got = pb.citation_problems(tex, BIB, LITERATURE)
     assert got["citations not in refs.bib"] == ["missing2001"]
     got = pb.citation_problems(TEX, BIB, "| other2000 |")
-    assert got["citations not in LITERATUR.md"] == ["ho1981"]
+    assert got["citations not in LITERATURE.md"] == ["ho1981"]
 
 
 def test_figure_problems(tmp_path):
@@ -115,7 +115,7 @@ def _paper(tmp_path: Path, tex: str = TEX) -> Path:
     (paper / "figures" / "f1.pdf").write_bytes(b"%PDF")
     (paper / "main.tex").write_text(tex)
     (paper / "refs.bib").write_text(BIB)
-    (tmp_path / "LITERATUR.md").write_text(LITERATUR)
+    (tmp_path / "LITERATURE.md").write_text(LITERATURE)
     return paper
 
 
@@ -131,7 +131,7 @@ def fake_tectonic(log: str, returncode: int = 0, pdf: bool = True):
 
 def _build(tmp_path, paper, runner, text="Introduction Conclusion References"):
     return pb.build(paper, runner=runner, numbers=False, read_pdf=lambda p: (3, text),
-                    literatur_path=tmp_path / "LITERATUR.md", figs=tmp_path / "nofigs", budget=BUDGET,
+                    literature_path=tmp_path / "LITERATURE.md", figs=tmp_path / "nofigs", budget=BUDGET,
                     slots=["f1"], must=["Introduction", "Conclusion", "References"])
 
 
@@ -174,13 +174,13 @@ def test_numbers_must_be_declared_and_every_declaration_must_bind(tmp_path):
     paper = _paper(tmp_path)
 
     def numbers(tex):
-        rep = pb.check_sources(tex, paper, BIB, LITERATUR, tmp_path / "nofigs", results, numbers=True,
+        rep = pb.check_sources(tex, paper, BIB, LITERATURE, tmp_path / "nofigs", results, numbers=True,
                                resolve_commit=lambda sha: True, budget=BUDGET, slots=["f1"])
         return rep.problems["numbers without source"], rep.problems["number declarations unused or invalid"], \
             rep.failed()
 
     missing, unused, failed = numbers(TEX)
-    assert missing == ["caption fig:f1: 200 (nicht erklärt)"] and unused == []
+    assert missing == ["caption fig:f1: 200 (not declared)"] and unused == []
     assert "numbers without source" in failed
     declared = TEX.replace("  \\label{fig:f1}\n", "  \\label{fig:f1}\n% src const:cell_min_fills 200\n")
     assert numbers(declared) == ([], [], [])

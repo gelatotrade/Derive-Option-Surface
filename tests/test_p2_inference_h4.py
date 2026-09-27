@@ -1,4 +1,4 @@
-"""Tests for derive_surface.inference_p2_h4: H4 of Paper 2 (preregistration H4, Nachtraege 3 and 4).
+"""Tests for derive_surface.inference_p2_h4: H4 of Paper 2 (preregistration H4, Addenda 3 and 4).
 
 All tests are offline and use synthetic panels with known solutions: the two-way within estimator against a brute-force
 OLS with dummies, the fast wild cluster bootstrap against an explicit refit of every bootstrap sample, the placebo

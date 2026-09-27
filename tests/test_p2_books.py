@@ -13,7 +13,7 @@ from derive_surface.p2chain import Rpc, ts_at_block
 
 FIX = Path(__file__).parent / "fixtures" / "p2"
 # Real chain data of top-maker accounts (a whole multicall answer, a day of BalanceAdjusted logs with tx hashes)
-# identifies the account, so these fixtures live in data/p2/fixtures_private (not tracked, Nachtrag 1.4, audit A01);
+# identifies the account, so these fixtures live in data/p2/fixtures_private (not tracked, Addendum 1.4, audit A01);
 # without them the tests that need them are skipped. books_registry.json holds the non-identifying part.
 PRIVATE = Path(__file__).resolve().parents[1] / "data" / "p2" / "fixtures_private"
 

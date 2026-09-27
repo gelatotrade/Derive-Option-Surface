@@ -1,6 +1,6 @@
-"""Offline checks on the Paper 2 bibliography (paper2/refs.bib) and its record docs/paper2/LITERATUR.md.
+"""Offline checks on the Paper 2 bibliography (paper2/refs.bib) and its record docs/paper2/LITERATURE.md.
 
-Every entry is recorded in LITERATUR.md, entries shared with Paper 1 are identical character for character,
+Every entry is recorded in LITERATURE.md, entries shared with Paper 1 are identical character for character,
 published works carry the DOI that was checked against Crossref, and the primary sources of the margin rules
 (contract code and API documentation) are cited with commit and access date (audit A16, A17, A61).
 """
@@ -13,11 +13,11 @@ from typing import Dict, Tuple
 ROOT = Path(__file__).resolve().parents[1]
 BIB2 = ROOT / "paper2" / "refs.bib"
 BIB1 = ROOT / "paper" / "refs.bib"
-LITERATUR = ROOT / "docs" / "paper2" / "LITERATUR.md"
+LITERATURE = ROOT / "docs" / "paper2" / "LITERATURE.md"
 
 ENTRY = re.compile(r"^@(\w+)\s*\{\s*([^,\s]+)\s*,.*?^\}", re.S | re.M)
 
-# Checked against api.crossref.org and doi.org on 25.09.2026 (docs/paper2/LITERATUR.md).
+# Checked against api.crossref.org and doi.org on 25 September 2026 (docs/paper2/LITERATURE.md).
 VERIFIED_DOI = {
     "fournier2020": "10.1017/S0022109019000462",
     "chen2019": "10.1093/rfs/hhy004",
@@ -26,7 +26,7 @@ VERIFIED_DOI = {
     "mackinnon2017": "10.1002/jae.2508",
     "roodman2019": "10.1177/1536867X19830877",
 }
-# Kept identical to paper/refs.bib, whose entry has no doi field; LITERATUR.md records the DOI.
+# Kept identical to paper/refs.bib, whose entry has no doi field; LITERATURE.md records the DOI.
 DOI_EXEMPT = {"burlig2018"}
 SHARED_WITH_PAPER1 = {"garleanu2009", "muravyev2016", "christoffersen2018",
                       "cameron2008", "mackinnon2017", "roodman2019", "burlig2018"}
@@ -47,15 +47,15 @@ def text(entry: str, name: str) -> str:
     return re.sub(r"(?<!\\)[{}]", "", field(entry, name))
 
 
-def test_every_entry_is_a_row_of_literatur():
-    lit = LITERATUR.read_text(encoding="utf-8")
+def test_every_entry_is_a_row_of_literature():
+    lit = LITERATURE.read_text(encoding="utf-8")
     keys = entries(BIB2.read_text(encoding="utf-8"))
     assert [k for k in keys if not re.search(r"^\| " + re.escape(k) + r" \|", lit, re.M)] == []
 
 
-def test_literatur_states_the_number_of_entries():
-    lit = LITERATUR.read_text(encoding="utf-8")
-    stated = re.search(r"`paper2/refs\.bib` \((\d+) Einträge\)", lit)
+def test_literature_states_the_number_of_entries():
+    lit = LITERATURE.read_text(encoding="utf-8")
+    stated = re.search(r"`paper2/refs\.bib` \((\d+) entries\)", lit)
     assert stated and int(stated.group(1)) == len(entries(BIB2.read_text(encoding="utf-8")))
 
 

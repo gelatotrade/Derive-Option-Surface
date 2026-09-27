@@ -47,9 +47,9 @@ RAW_DIR = FEEDS_DIR / "raw"
 VOLFEED_DIR = Path("data/p1/volfeed")
 LOG_PATH = Path("data/p2/logs/A1.jsonl")
 
-# 17.09.2026 12:00:00 UTC (pilot cut of Paper 1) is block 44 812 392; the load runs to 13:26:55 UTC as a buffer.
+# 2026-09-17 12:00:00 UTC (pilot cut of Paper 1) is block 44 812 392; the load runs to 13:26:55 UTC as a buffer.
 TO_BLOCK = 44_815_000
-FILL_START_BLOCK = ANCHOR_BLOCK  # 11.01.2024 00:00:01 UTC, first day of the Paper 1 sample
+FILL_START_BLOCK = ANCHOR_BLOCK  # 2024-01-11 00:00:01 UTC, first day of the Paper 1 sample
 
 # keccak256 of the event signatures (computed once with eth_hash, confirmed on real logs in tests/fixtures/p2)
 SPOT_PRICE_UPDATED = "0xbd86cbf2ccd8e501428ca22429126186e6ed6c5287f2be73152c58bae94f4183"  # SpotPriceUpdated(uint96,uint96,uint64)
@@ -75,7 +75,7 @@ HEARTBEAT = {"spot": 180, "forward": 3600, "vol": 1200, "rate_pm2": 43200, "perp
 
 # Addresses: SRM oracles (OraclesSet, unchanged since deploy), PM/PM2 interestRateFeed(), PerpAsset.perpFeed()
 # (PerpFeedUpdated only at deploy). Sources: data/p2/kontext/margin-historie/{deploy,addresses_head}.json and eth_call
-# on 24.09.2026. Deploy blocks from eth_getCode bisection (deploy.json) or the constructor event of the feed.
+# on 2026-09-24. Deploy blocks from eth_getCode bisection (deploy.json) or the constructor event of the feed.
 FEEDS: Dict[str, dict] = {
     "BTC": {
         "spot": "0x5eb59391e7870807ad2c8792e8c5e75838e0fdb0",

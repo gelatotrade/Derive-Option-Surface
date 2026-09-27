@@ -13,7 +13,7 @@
   ``data/p2/books/snapshots.parquet`` (Task A5) by fixed criteria.
 
 The two account fixtures identify real accounts (whole balances at a block, ``sha256(str(id))[:10]`` is reversible by
-enumeration), so they are written to ``data/p2/fixtures_private`` (not tracked, Nachtrag 1.4, audit A01); the tests
+enumeration), so they are written to ``data/p2/fixtures_private`` (not tracked, Addendum 1.4, audit A01); the tests
 skip without them. The case fixtures ``sm_chain_cases.json`` and ``pm_chain_cases.json`` hold synthetic portfolios
 and stay in tests/fixtures/p2.
 

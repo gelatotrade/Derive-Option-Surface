@@ -523,8 +523,8 @@ def book_at(snapshot_rows, tape_rows, ts: int, subaccount: Optional[int] = None,
     fill that is ``markouts.ts_maker``, not ``markouts.ts``: ``ts`` is the taker row, and for RFQ fills the maker row
     is older (median 4 s, up to 28 min), so ``ts`` would put the fill itself into the book before it. Prefer
     :func:`book_before_fill`, which cuts at the own row and always drops the fill's ``trade_id``. Fills with exactly
-    the same millisecond (other legs of a multi-leg RFQ, batched matches) are left out, as preregistered ("früherer
-    Zeitstempel"). The snapshot day must contain ``ts`` (``ValueError`` otherwise); select it with :func:`fill_day`.
+    the same millisecond (other legs of a multi-leg RFQ, batched matches) are left out, as preregistered ("with an
+    earlier timestamp"). The snapshot day must contain ``ts`` (``ValueError`` otherwise); select it with :func:`fill_day`.
 
     Limitations: the tape holds option fills only, so perps stay at their day-start value (``perp_entry = None``),
     and trade-module transfers between subaccounts of one operator are not in the tape. The exact book at the fill's
@@ -1076,21 +1076,21 @@ def missing_fill_days(rows: pd.DataFrame, events: pd.DataFrame, loaded: set, max
 
 # ================================================================ Part 2 (task B3): marginal capital, netting value, holding time
 #
-# Preregistration (docs/paper2/PRAEREGISTRIERUNG.md incl. Nachtrag 1):
+# Preregistration (docs/paper2/PRAEREGISTRIERUNG.md incl. Addendum 1):
 # * H2 population: maker fills of the ten dominant subaccounts in the PM2 window of the fill's currency whose account is
 #   under PM2 at the start of the UTC day; a seeded simple random sample of 20 000 (numpy default_rng(20260924)).
-# * book before a fill = day-start snapshot + BalanceAdjusted events up to the fill's transaction (Nachtrag 1);
+# * book before a fill = day-start snapshot + BalanceAdjusted events up to the fill's transaction (Addendum 1);
 #   dK = K(after) - K(before) = p q_new + net(before) - net(after) at zero cash under PM2 with the account's lib.
 # * netting value of a maker day: K of the day-start book (marks M_b of Paper 1) under SM, legacy PM (BTC/ETH legs only)
 #   and PM2, each currency its own portfolio under PM2 and the legacy PM; only currencies whose PM2 window is open.
 # * holding time (sensitivity): FIFO per subaccount and instrument over the tape fills, reconciled to the day-start
 #   snapshots (transfers), median per Paper-1 cell on the maker side.
 
-PM2_WINDOW_START = {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_819_200}  # 12.06.2025 23:00, 11.11.2025
+PM2_WINDOW_START = {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_819_200}  # 2025-06-12 23:00, 2025-11-11
 LEGACY_PM_CCYS = ("BTC", "ETH")
 H2_N = 20_000
 H2_SEED = 20260924
-PILOT_END_MS = 1_789_646_400_000  # 17.09.2026 12:00 UTC (pilot cut of Paper 1)
+PILOT_END_MS = 1_789_646_400_000  # 2026-09-17 12:00 UTC (pilot cut of Paper 1)
 DERIVED_DIR = Path("data/p2/derived")
 
 

@@ -56,7 +56,7 @@
 % Placeholder for a number or a sentence that the registered analysis has not produced yet. None is left;
 % the macro stays so that a new placeholder is visible in the PDF and fails scripts/p2_build.py.
 % Rule: every number in the text comes from results/p2 or is a constant of the pre-registration; the chain
-% of checks is scripts/p2_number_check.py (report in docs/paper2/ZAHLENPRUEFUNG.md).
+% of checks is scripts/p2_number_check.py (report in docs/paper2/NUMBER_CHECK.md).
 \newcommand{\PH}[1]{\textbf{[#1]}}
 
 \begin{document}
@@ -97,7 +97,7 @@ two are rejected. Figures are from a pilot cut.
 % Declared sources (scripts/p2_number_check.py, rules in its docstring): every number, date and clock time of
 % the abstract, of a section or subsection and of a caption is bound by "% src source printed" in that unit, one
 % entry per occurrence and in the order of the text; constants of the pre-registration as const:name, counts that
-% the sentence itself makes evident as text:label. Report: docs/paper2/ZAHLENPRUEFUNG.md.
+% the sentence itself makes evident as text:label. Report: docs/paper2/NUMBER_CHECK.md.
 
 \begin{keywords}
 market microstructure \sep options \sep portfolio margin \sep market making \sep funding constraints
@@ -225,10 +225,10 @@ single contracts on the BTC surface.
   the forward. Height is volatility, colour is capital, and black lines join points of equal capital. Panels
   c and d name the rule that sets the capital at each point: the worst scenario of the PM2 grid, and the
   branch of the standard margin formula. Their grid lines are the delta and tenor bucket edges of
-  Figures~\ref{fig:f1} and~\ref{fig:f2}; the surface holds out-of-the-money options only, so buckets above an
-  absolute delta of 0.6 have no counterpart here. Standard margin is set in per cent of spot and shown in per
-  cent of the forward. Capital follows the contracts on chain; the venue's off-chain engine discounts PM2 at a
-  flat two per cent.}
+  Figures~\ref{fig:f1} and~\ref{fig:f2}, and the ticks on their right edge mark the listed expiries; the
+  surface holds out-of-the-money options only, so buckets above an absolute delta of 0.6 have no counterpart
+  here. Standard margin is set in per cent of spot and shown in per cent of the forward. Capital follows the
+  contracts on chain; the venue's off-chain engine discounts PM2 at a flat two per cent.}
   \label{fig:t1}
 % src fig_t1_meta.csv:value@key=ts 08:00 17 September 2026
 % src const:delta_edge_60_delta 0.6
@@ -266,11 +266,11 @@ is why this paper measures them on real ones.
   contingencies (solid line), which is less than the sum of the legs margined one by one (dash dot); standard
   margin is dashed.}
   \label{fig:t2}
-% src semantik/box_diskont.json:box_*.api_ts~all 24 September 2026
+% src semantics/box_diskont.json:box_*.api_ts~all 24 September 2026
 % src fig_t2_b.csv:block@row=1 45\,110\,142
 % src fig_t2_b.csv:row~count four
 % src const:h3_threshold two
-% src semantik/faktoren.csv:messung@buch=b17_exakt,fall=B,F_Cnet=11.86 17 September
+% src semantics/faktoren.csv:messung@buch=b17_exakt,fall=B,F_Cnet=11.86 17 September
 % src fig_t2_b.csv:F_Cnet@row=0 11.86
 % src fig_t2_b.csv:F_R_engine@row=0 10.76
 % src fig_t1_meta.csv:value@key=ts 17 September 2026
@@ -278,11 +278,11 @@ is why this paper measures them on real ones.
 % src reference_book.csv:tenor_days@ccy=BTC,day=2026-09-17 22
 \end{figure*}
 % src text:two_engines Two
-% src summary.json:semantik_box_expiries fourteen
-% src semantik/box_diskont.json:box_*.api_ts~all 24 September 2026
-% src semantik/box_diskont.json:box_*.r_api~pct~all 2.0000
-% src semantik/box_diskont.json:box_*.r_chain~min~pct 3.64
-% src semantik/box_diskont.json:box_*.r_chain~max~pct 3.82
+% src summary.json:semantics_box_expiries fourteen
+% src semantics/box_diskont.json:box_*.api_ts~all 24 September 2026
+% src semantics/box_diskont.json:box_*.r_api~pct~all 2.0000
+% src semantics/box_diskont.json:box_*.r_chain~min~pct 3.64
+% src semantics/box_diskont.json:box_*.r_chain~max~pct 3.82
 % src summary.json:api_n 195
 % src summary.json:api_day 25 September 2026
 % src text:two_semantics two
@@ -301,11 +301,8 @@ is why this paper measures them on real ones.
 The fills are those of \citet{albiez2026}: every BTC, ETH and HYPE option fill from 11 January 2024 to the
 pilot cut of 17 September 2026, 603\,940 in all, each with the maker's side, price, size and the net edge
 thirty minutes after the fill in USDC per contract. The venue reports the maker's fee and rebate as totals per
-fill; here they are divided by the fill's size (Addendum 2), while the companion paper subtracts the totals
-from the markout per contract, a form kept as a sensitivity. Its version of 19 September 2026 also divides the
-net edge per contract by the notional of the whole fill in its map per notional; both unit errors change its
-net-edge figures, its count of cells with a surviving edge and that map, and will be corrected, so values per
-notional here differ. SM covers the whole sample (HYPE from 11
+fill; here they are divided by the fill's size (Addendum 2). The companion paper was corrected on 25 September
+2026 and uses the same unit per contract. SM covers the whole sample (HYPE from 11
 November 2025; six earlier HYPE fills have no manager), the legacy manager BTC and ETH throughout, and PM2 BTC
 and ETH from 12 June 2025 23:00 UTC and HYPE from 11 November 2025. That span is the PM2 window of an
 underlying; only H4 also uses events before it.
@@ -372,7 +369,7 @@ registration are exploratory, those added after the first results post hoc.
 % src const:pilot_cut 17 September 2026
 % src summary.json:fills_total 603\,940
 % src const:markout_minutes thirty
-% src git:103c676 19 September 2026
+% src git:faf6cea 25 September 2026
 % src const:window_hype 11 November 2025
 % src summary.json:fills_outside_every_window six
 % src const:pm2_window_btc_eth 12 June 2025 23:00
@@ -511,7 +508,7 @@ that is not positive stay in the sums (Addendum 4).
   \includegraphics[width=\linewidth]{figures/f4.pdf}
   \caption{\textbf{What netting is worth (H3).} Panel a is $K_{\mathrm{SM}}/K_{\mathrm{PM2}}$ for the opening
   books of 1\,943 maker-days against the number of option legs, as the median per bin with the interquartile
-  band. Beyond 63 options, the most the endpoint accepted for a standard margin account in probes of September
+  band. Beyond 63 options, the most the endpoint accepted for a standard-margin account in probes of September
   2026, $K_{\mathrm{SM}}$ is counterfactual; this is the case on 1\,431 maker-days. The dashed line is the
   registered threshold of two. Panel b is the registered median with its 90 per cent interval, the
   sensitivities including the legacy manager on BTC and ETH legs, and, on grey, exploratory rows: SM against
@@ -621,10 +618,10 @@ across managers, is not examined.
   underlying at the start of each month. Panel b marks every parameter change of the legacy manager and of PM2
   as a grey tick and the registered H4 events as symbols: filled when they enter the panel, half filled when
   kept without a cell of 20 fills on each side, and hollow when dropped by the one per cent dose rule. The
-  number is the change that the parameters alone make to the capital of the reference straddle, in log per
-  cent. Grey bars are the windows of 14 days on either side of each kept event; the windows of January and of
-  May 2026 overlap, so 6\,527 fills enter two events. Black dashes below each line are the days from which
-  placebo dates may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the
+  number is the change that the parameters alone make to the capital of the reference straddle of the
+  underlying, in log per cent. Grey bars are the windows of 14 days on either side of each kept event; the
+  windows of January and of May 2026 overlap, so 6\,527 fills enter two events. Black dashes below each line
+  are the days from which placebo dates may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the
   forward on the listed expiry nearest to 30 days, one contract per leg, in per cent of the forward; the small
   saw teeth come from rolling between expiries of 21 and 36 days, and the legacy line is thin in months in
   which the legacy manager held less than 5 per cent of BTC open interest. Parameter changes of standard
@@ -738,8 +735,8 @@ No sensitivity named in the pre-registration or its addenda changes a verdict. U
 is 0.903 and the netting ratio 5.614, and the median marginal cost is 0.0291 on 19\,693 fills with each
 account's own library (some carry a lower maintenance factor) and 0.0278 with the standard library; this
 variant was set to one library per ratio after the first results. With the net edge in the form of the
-companion paper $\rho$ is 0.913. With the book rebuilt from the trade tape, or for the next single contract
-instead of the whole fill, the median marginal cost is 0.0340 and 0.0329.
+companion paper's first version $\rho$ is 0.913. With the book rebuilt from the trade tape, or for the next
+single contract instead of the whole fill, the median marginal cost is 0.0340 and 0.0329.
 % src summary.json:sens_b_mm_h1_pm2_mm_stat 0.903
 % src summary.json:sens_b_mm_h3_mm_stat 5.614
 % src summary.json:sens_b_mm_h2_ratio_mm_stat 0.0291
@@ -811,14 +808,14 @@ validates them against the chain, computes every capital figure, runs the infere
 at \url{https://github.com/gelatotrade/Derive-Option-Surface}, together with its tests.
 
 The four hypotheses, their rejection rules and the inference were committed in
-\path{docs/paper2/PRAEREGISTRIERUNG.md} on 24 September 2026 at 22:33 UTC+2, in commit \texttt{1d13227},
+\path{docs/paper2/PRAEREGISTRIERUNG.md} on 24 September 2026 at 22:33 UTC+2, in commit \texttt{cc0a29f},
 before any capital figure of the registered analysis had been computed \citep{burlig2018}. The pre-registration
-is written in German, and its addenda are headed Nachtrag; an English translation made after the analysis is in
-\path{docs/paper2/PREREGISTRATION_EN.md}, and the German original is binding. Four dated addenda of 25
+is written in German, and its addenda are headed \emph{Nachtrag}; an English translation made after the analysis
+is in \path{docs/paper2/PREREGISTRATION.md}, and the German original is binding. Four dated addenda of 25
 September 2026 (UTC+2) follow in the same file: the exact on-chain book for H2, before the first capital figure
-of the registered form, with zero cash (Addendum 1, \texttt{eb534fe}); the unit of fee and rebate
-(Addendum 2, \texttt{9465210}) and the details of bootstrap and placebo (Addendum 3, \texttt{bfc34c8}), before
-the first inference; and the readings of H2 to H4 (Addendum 4, \texttt{c4fcb59}). Addenda 1 to 3 were each
+of the registered form, with zero cash (Addendum 1, \texttt{85bb0b7}); the unit of fee and rebate
+(Addendum 2, \texttt{6005d7c}) and the details of bootstrap and placebo (Addendum 3, \texttt{8778432}), before
+the first inference; and the readings of H2 to H4 (Addendum 4, \texttt{e492ba1}). Addenda 1 to 3 were each
 committed before the step they govern. Addendum 4 was written after capital per fill, marginal costs, netting
 ratios, the doses and the H4 panel with its half spreads had been computed; it records readings already
 implemented, but precedes any test statistic. The validation fixtures committed just before Addendum 1 had
@@ -830,14 +827,17 @@ already be read for SM; and margin histories of at-the-money contracts under the
 registration does not list. The half spreads that enter H4 were known from the companion
 paper before registration; the registration fixes the doses, the events and the test.
 
-All commit times are local times of the author's machine. The commits were not on a public server before the
-results existed, so no public timestamp precedes the results; the history shows the order of the commits, not
-what was computed locally between them.
+All commit times are local times of the author's machine. Before publication the local history was rewritten
+to remove account identifiers. The registered texts are byte-identical to those of the original commits and the
+commit times are unchanged; \path{docs/paper2/HISTORY_REWRITE.md} maps the old commit hashes to the new ones.
+The pre-registration becomes public with the push of this history, after the results existed, so no public
+timestamp precedes the results; the history shows the order of the commits, not what was computed locally
+between them.
 % src const:managers three
 % src derived:n_hypotheses four
-% src git:1d13227 24 September 2026 22:33
+% src git:cc0a29f 24 September 2026 22:33
 % src const:addenda Four
-% src git:c4fcb59 25 September 2026
+% src git:e492ba1 25 September 2026
 % src const:managers three
 
 \section*{Competing interest}

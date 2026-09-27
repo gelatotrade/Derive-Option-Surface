@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Check the Paper 2 figures against ``results/p2`` and write ``docs/paper2/ABBILDUNGEN.md``.
+"""Check the Paper 2 figures against ``results/p2`` and write ``docs/paper2/FIGURE_CHECKS.md``.
 
 * Runs the check list (``CHECKS``) of every slot of ``derive_surface.figures_p2``: the value the figure prints, read
   from its ``results/p2/fig_<slot>*.csv``, against the result file it comes from (never against the figure table
-  itself). The column "Bauanweisung" compares with the number printed in ``docs/paper2/ABBILDUNGSWAHL.md`` where
-  the slot records one (pilot cut 17.09.2026).
+  itself). The column "Build instruction" compares with the number printed in ``docs/paper2/FIGURE_SELECTION.md``
+  where the slot records one (pilot cut 17 September 2026).
 * Checks the print size of every ``paper2/figures/<slot>.pdf`` and, when they exist, the GIF (at most 8 MB) and the
   social cards (1600 x 900).
 * Checks that every element a caption announces is drawn (``CAPTION_ELEMENTS``): a phrase of the manuscript caption
@@ -38,7 +38,7 @@ from derive_surface import figures_p2  # noqa: E402
 RESULTS = Path("results/p2")
 FIGURES = Path("paper2/figures")
 TEX = Path("paper2/main.tex")
-SHEET = Path("docs/paper2/ABBILDUNGEN.md")
+SHEET = Path("docs/paper2/FIGURE_CHECKS.md")
 BUILD_SCRIPT = Path("scripts/p2_build.py")
 GIF = Path("docs/media/p2_btc_capital_surface.gif")
 SOCIAL = Path("paper2/social")
@@ -109,27 +109,27 @@ def first_difference(a: str, b: str, width: int = 60) -> str:
 
 def compare_captions(tex: str, captions: Dict[str, str], exceptions: Sequence[Tuple[str, str, str, str]] = ()
                      ) -> pd.DataFrame:
-    """One row per slot: ``status`` in {gleich, gleich mit Ausnahme, abweichend, fehlt}, and a note."""
+    """One row per slot: ``status`` in {equal, equal with exception, differs, missing}, and a note."""
     found = tex_captions(tex)
     rows = []
     for slot, ref in captions.items():
         if slot not in found:
-            rows.append({"slot": slot, "status": "fehlt", "note": f"keine Abbildung figures/{slot}.pdf in main.tex"})
+            rows.append({"slot": slot, "status": "missing", "note": f"no figure figures/{slot}.pdf in main.tex"})
             continue
         cap = norm(found[slot])
-        status, note = "abweichend", ""
-        for candidate, label in ((ref, "gleich"), (_apply(ref, slot, exceptions), "gleich mit Ausnahme")):
+        status, note = "differs", ""
+        for candidate, label in ((ref, "equal"), (_apply(ref, slot, exceptions), "equal with exception")):
             parts = re.split(r"\\PH\{[^}]*\}", norm(candidate))
             if re.fullmatch(r"(?:.+?)".join(re.escape(p) for p in parts), cap, re.S):
                 status = label
                 break
-        if status == "gleich mit Ausnahme":
+        if status == "equal with exception":
             note = "; ".join(reason for s, _, _, reason in exceptions if s == slot)
-        elif status == "abweichend":
+        elif status == "differs":
             note = first_difference(norm(ref), cap)
         dashes = [d for d in ("—", "–") if d in found[slot]]
         if dashes:
-            note = (note + "; " if note else "") + f"Gedankenstrich in main.tex: {' '.join(dashes)}"
+            note = (note + "; " if note else "") + f"dash in main.tex: {' '.join(dashes)}"
         rows.append({"slot": slot, "status": status, "note": note})
     return pd.DataFrame(rows, columns=["slot", "status", "note"])
 
@@ -154,7 +154,7 @@ def shape_checks(figures: Path = FIGURES, gif: Path = GIF, social: Path = SOCIAL
     for slot, (w, h) in figures_p2.SIZES.items():
         pdf = Path(figures) / f"{slot}.pdf"
         if not pdf.exists():
-            rows.append({"what": f"{slot}.pdf", "figure": "fehlt", "target": f"{w} × {h} in", "ok": False})
+            rows.append({"what": f"{slot}.pdf", "figure": "missing", "target": f"{w} × {h} in", "ok": False})
             continue
         pw, ph = pdf_size(pdf)
         rows.append({"what": f"{slot}.pdf", "figure": f"{pw:.3f} × {ph:.3f} in", "target": f"{w} × {h} in",
@@ -208,7 +208,7 @@ def placement_checks(tex: str, figures: Path = FIGURES, fs_min: float = figures_
         w = re.search(r"width\s*=\s*([\d.]*)\s*\\(?:linewidth|textwidth|columnwidth)", g.group(1) or "")
         what = f"{pdf.name} set in main.tex"
         if not pdf.exists() or not w:
-            rows.append({"what": what, "figure": "fehlt" if not pdf.exists() else f"Breite {g.group(1)!r}",
+            rows.append({"what": what, "figure": "missing" if not pdf.exists() else f"width {g.group(1)!r}",
                          "target": f"≥ {fs_min:g} pt", "ok": False})
             continue
         scale = (float(w.group(1)) if w.group(1) else 1.0) * line / pdf_size(pdf)[0]
@@ -392,7 +392,7 @@ def _cell(v) -> str:
 
 
 def _yes(v: Optional[bool]) -> str:
-    return "–" if v is None else ("ja" if v else "nein")
+    return "n/a" if v is None else ("yes" if v else "no")
 
 
 def sheet(checks: pd.DataFrame, shapes: pd.DataFrame, captions: pd.DataFrame, results: Path) -> str:
@@ -400,29 +400,29 @@ def sheet(checks: pd.DataFrame, shapes: pd.DataFrame, captions: pd.DataFrame, re
     n, bad = len(checks), int((~checks["ok"]).sum())
     instr = checks["instruction"].dropna()
     lines = [
-        "# Abbildungen Paper 2: Prüfliste", "",
-        f"Erzeugt {now} mit `scripts/p2_figure_check.py` aus `{results}`. Jede Zeile vergleicht den Wert, den die "
-        "Abbildung druckt (ihre Tabelle `results/p2/fig_<slot>_*.csv`), mit der Datei in `results/p2`, aus der er "
-        "stammt, nie mit sich selbst. Spalte *Bauanweisung*: dieselbe Zahl gegen die Prüfzahl in "
-        "`docs/paper2/ABBILDUNGSWAHL.md` (Pilotschnitt 17.09.2026), wo der Slot eine hat.", "",
-        f"**Ergebnis:** {n - bad} von {n} Prüfungen ja"
-        + (f", **{bad} nein**" if bad else "") + f"; Bauanweisung {int(instr.sum())} von {len(instr)} ja; "
-        f"Gestalt {int(shapes['ok'].sum())} von {len(shapes)} ja; Captions "
-        f"{int(captions['status'].str.startswith('gleich').sum())} von {len(captions)} gleich.", "",
-        "## Prüfzahlen", "",
-        "| Slot | Prüfung | Wert Abbildung | Wert results | ja/nein | Bauanweisung |",
+        "# Figures of Paper 2: check list", "",
+        f"Generated {now} with `scripts/p2_figure_check.py` from `{results}`. Every row compares the value that the "
+        "figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never "
+        "with itself. Column *Build instruction*: the same number against the check number in "
+        "`docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.", "",
+        f"**Result:** {n - bad} of {n} checks yes"
+        + (f", **{bad} no**" if bad else "") + f"; build instruction {int(instr.sum())} of {len(instr)} yes; "
+        f"shape {int(shapes['ok'].sum())} of {len(shapes)} yes; captions "
+        f"{int(captions['status'].str.startswith('equal').sum())} of {len(captions)} equal.", "",
+        "## Check numbers", "",
+        "| Slot | Check | Value in figure | Value in results | yes/no | Build instruction |",
         "|---|---|---|---|---|---|",
     ]
     for r in checks.to_dict("records"):
         lines.append(f"| {r['slot'].upper()} | {_cell(r['check'])} | {_cell(r['figure'])} | {_cell(r['source'])} | "
                      f"{_yes(r['ok'])} | {_yes(r['instruction'])} |")
-    lines += ["", "## Gestalt", "", "| Datei | gemessen | Vorgabe | ja/nein |", "|---|---|---|---|"]
+    lines += ["", "## Shape", "", "| File | measured | target | yes/no |", "|---|---|---|---|"]
     for r in shapes.to_dict("records"):
         lines.append(f"| `{r['what']}` | {r['figure']} | {r['target']} | {_yes(r['ok'])} |")
-    lines += ["", "## Captions: `paper2/main.tex` gegen `figures_p2.CAPTIONS`", "",
-              "Gemeldet, nicht geändert. `\\PH{key}` der Modul-Caption steht für beliebigen Text im Manuskript; "
-              "Ausnahmen aus `CAPTION_EXCEPTIONS` in `scripts/p2_build.py`.", "",
-              "| Slot | Status | Hinweis |", "|---|---|---|"]
+    lines += ["", "## Captions: `paper2/main.tex` against `figures_p2.CAPTIONS`", "",
+              "Reported, not changed. `\\PH{key}` of the module caption stands for any text in the manuscript; "
+              "exceptions from `CAPTION_EXCEPTIONS` in `scripts/p2_build.py`.", "",
+              "| Slot | Status | Note |", "|---|---|---|"]
     for r in captions.to_dict("records"):
         lines.append(f"| {r['slot'].upper()} | {r['status']} | {_cell(r['note']) if r['note'] else ''} |")
     return "\n".join(lines) + "\n"
@@ -444,18 +444,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args.sheet.parent.mkdir(parents=True, exist_ok=True)
     args.sheet.write_text(sheet(checks, shapes, captions, args.results))
     for slot, grp in checks.groupby("slot", sort=False):
-        print(f"{slot}: {int(grp['ok'].sum())}/{len(grp)} ja")
+        print(f"{slot}: {int(grp['ok'].sum())}/{len(grp)} yes")
     for r in checks.loc[~checks["ok"]].to_dict("records"):
-        print(f"  NEIN {r['slot']} {r['check']}: {_cell(r['figure'])} gegen {_cell(r['source'])} {r['error']}")
+        print(f"  NO {r['slot']} {r['check']}: {_cell(r['figure'])} against {_cell(r['source'])} {r['error']}")
     for r in shapes.loc[~shapes["ok"]].to_dict("records"):
-        print(f"  NEIN Gestalt {r['what']}: {r['figure']} (Vorgabe {r['target']})")
+        print(f"  NO shape {r['what']}: {r['figure']} (target {r['target']})")
     for r in captions.to_dict("records"):
-        if r["status"] != "gleich":
+        if r["status"] != "equal":
             print(f"  Caption {r['slot']}: {r['status']} {r['note'][:160]}")
     print(f"wrote {args.sheet}")
     failed = (~checks["ok"]).any() or (~shapes["ok"]).any()
     if args.strict_captions:
-        failed = failed or (~captions["status"].str.startswith("gleich")).any()
+        failed = failed or (~captions["status"].str.startswith("equal")).any()
     return 1 if failed else 0
 
 

@@ -680,4 +680,4 @@ def test_describe_change_names_grid_and_tail_changes():
     assert pp.describe_change(None, a) == "Start"
     d = pp.describe_change(a, b)
     assert "±17 %→±14 %" in d and "maxExpiries 14→16" in d
-    assert "Tail-Dämpfung" in pp.describe_change(b, c)
+    assert "tail dampening" in pp.describe_change(b, c)

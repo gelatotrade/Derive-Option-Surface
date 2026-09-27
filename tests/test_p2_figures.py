@@ -61,9 +61,9 @@ def _t1(rd: Path) -> dict:
 
 
 def _t2(rd: Path) -> dict:
-    (rd / "semantik").mkdir(parents=True)
+    (rd / "semantics").mkdir(parents=True)
     (rd / "params").mkdir()
-    T2._faktoren().to_csv(rd / "semantik" / "faktoren.csv", index=False)
+    T2._faktoren().to_csv(rd / "semantics" / "faktoren.csv", index=False)
     params = {m: Timeline("BTC", m, root=REAL / "params").entry_at(T2.t2.REF_TS) for m in ("pm2", "sm")}
     for m, entry in params.items():
         (rd / "params" / f"BTC_{m}.json").write_text(json.dumps([entry]))
@@ -442,11 +442,11 @@ def test_check_script_reports_caption_drift_without_changing_the_tex():
            "\n% \\begin{figure}\\includegraphics{figures/a1.pdf}\\caption{Does it match?}\\end{figure}\n")
     assert chk.tex_captions(tex)["t1"].startswith(r"\textbf{The surface.}")
     res = chk.compare_captions(tex, caps).set_index("slot")
-    assert res.loc["t1", "status"] == "gleich"                      # \PH{n} stands for 740
-    assert res.loc["f3", "status"] == "abweichend" and "Gedankenstrich" in res.loc["f3", "note"]
-    assert res.loc["a1", "status"] == "fehlt"                         # commented out
+    assert res.loc["t1", "status"] == "equal"                       # \PH{n} stands for 740
+    assert res.loc["f3", "status"] == "differs" and "dash in main.tex" in res.loc["f3", "note"]
+    assert res.loc["a1", "status"] == "missing"                       # commented out
     ex = [("f3", "The next contract.", r"The next {contract} — changed.", "reason")]
-    assert chk.compare_captions(tex, caps, ex).set_index("slot").loc["f3", "status"] == "gleich mit Ausnahme"
+    assert chk.compare_captions(tex, caps, ex).set_index("slot").loc["f3", "status"] == "equal with exception"
 
 
 def test_check_script_media_checks_compare_cards_with_their_sources(tmp_path):

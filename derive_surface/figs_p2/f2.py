@@ -1,4 +1,5 @@
-"""F2 of Paper 2: the map in two denominators, H1 (docs/paper2/ABBILDUNGSWAHL.md, sections 6 and 7, slot F2).
+"""F2 of Paper 2: the map in two denominators, H1 (docs/paper2/FIGURE_SELECTION.md, sections 6 and 7,
+slot F2).
 
 a  Six maps (maker sells above, maker buys below; BTC, ETH, HYPE) of net edge per unit of PM2 capital, ``B_bp`` of
    ``results/p2/h1_cells.csv``, grey by log|B| per row (floor 1 bp), negative cells hatched.
@@ -61,7 +62,7 @@ N_TOP = 10
 FOREST_ROWS = [
     ("registered", "h1", None, "registered"),
     ("maintenance margin", "sens", "b_mm.h1_pm2_mm", "sensitivity"),
-    ("net edge, Paper 1", "sens", "c_p1_net_edge.h1_pm2", "sensitivity"),
+    ("companion net edge", "sens", "c_p1_net_edge.h1_pm2", "sensitivity"),
     ("per day to expiry", "sens", "f_time.to_expiry", "exploratory"),
     ("per holding time", "sens", "f_time.holding", "exploratory"),
     ("SM capital", "sens", "a_maps.sm_pm2_window", "exploratory"),

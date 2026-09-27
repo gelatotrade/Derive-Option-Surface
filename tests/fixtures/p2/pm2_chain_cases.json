@@ -1357,7 +1357,7 @@
  },
  "cases": [
   {
-   "name": "BTC_45113645 B1 short 84000C Okt",
+   "name": "BTC_45113645 B1 short 84000C Oct",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1384,7 +1384,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B2 RR Dez delta-gehedgt",
+   "name": "BTC_45113645 B2 RR Dec delta-hedged",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1417,7 +1417,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B3 Kalender nahe dteFloor",
+   "name": "BTC_45113645 B3 calendar near dteFloor",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1489,7 +1489,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B5 Sep27 lang + Perp",
+   "name": "BTC_45113645 B5 Sep27 long + Perp",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1528,7 +1528,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B6 RR Maerz 1:1 (M~0)",
+   "name": "BTC_45113645 B6 RR Mar 1:1 (M~0)",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1561,7 +1561,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B7 Vega-neutral Kalender",
+   "name": "BTC_45113645 B7 Vega-neutral calendar",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1600,7 +1600,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B8 Perp allein",
+   "name": "BTC_45113645 B8 Perp alone",
    "snapshot": "BTC_45113645",
    "legs": [],
    "perp": "2500000000000000000",
@@ -1620,7 +1620,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B9 LP Skew Abs Maerz",
+   "name": "BTC_45113645 B9 LP Skew Abs Mar",
    "snapshot": "BTC_45113645",
    "legs": [
     [
@@ -1677,7 +1677,7 @@
    }
   },
   {
-   "name": "BTC_45113645 B10 LP Skew Abs 29.09.",
+   "name": "BTC_45113645 B10 LP Skew Abs 29 Sep",
    "snapshot": "BTC_45113645",
    "legs": [
     [

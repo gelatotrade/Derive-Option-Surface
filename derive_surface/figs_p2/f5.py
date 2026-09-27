@@ -1,4 +1,4 @@
-"""F5 of Paper 2: the engine over time (ABBILDUNGSWAHL section 7, F5; 7.0 x 4.3 in).
+"""F5 of Paper 2: the engine over time (FIGURE_SELECTION section 7, F5; 7.0 x 4.3 in).
 
 a  share of option open interest per manager at the start of each month (``manager_oi_share.csv`` samples
    00:00:01 UTC on the 1st), one strip per underlying (PM2 at the bottom).
@@ -57,8 +57,8 @@ CAPTION = (
     r"the start of each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey "
     r"tick and the registered H4 events as symbols: filled when they enter the panel, half filled when kept without a cell of 20 "
     r"fills on each side, and hollow when dropped by the one per cent dose rule. The number is the change that the "
-    r"parameters alone make to the capital of the reference straddle, in log per cent. Grey bars are the windows of "
-    r"14 days on either side of each kept event; the windows of January and of May 2026 overlap, so "
+    r"parameters alone make to the capital of the reference straddle of the underlying, in log per cent. Grey bars "
+    r"are the windows of 14 days on either side of each kept event; the windows of January and of May 2026 overlap, so "
     r"\PH{h4-dup-fills} fills enter two events. Black dashes below each line are the days from which placebo dates "
     r"may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the forward on the "
     r"listed expiry nearest to 30 days, one contract per leg, in per cent of the forward; the small saw teeth come "

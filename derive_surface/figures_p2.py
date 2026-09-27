@@ -1,7 +1,7 @@
 """Figures of paper 2: registry of the nine slots, build, checks and the media of the paper (GIF, social cards).
 
 Every slot lives in its own module ``derive_surface/figs_p2/<slot>.py`` (build instruction
-``docs/paper2/ABBILDUNGSWAHL.md``, sections 6 and 7). A slot module has
+``docs/paper2/FIGURE_SELECTION.md``, sections 6 and 7). A slot module has
 
 * ``build(out_dir, results_dir) -> list[Path]``: writes the numbers of the figure as ``results/p2/fig_<slot>*.csv``
   and ``<slot>.pdf`` / ``<slot>.png`` (400 dpi) at print size to ``paper2/figures/`` (laid out at 7.0 or 3.4 in,
@@ -126,7 +126,7 @@ def run_checks(slot: str, results_dir: Path = RESULTS_DIR, checks: Optional[Sequ
     """Evaluate the check list of ``slot`` against ``results_dir``.
 
     ``ok`` is figure == source (the check of the build instruction, section 11); ``instruction`` compares the
-    figure with the number printed in the build instruction where the slot records one (pilot cut 17.09.2026),
+    figure with the number printed in the build instruction where the slot records one (pilot cut 2026-09-17),
     ``None`` where it does not. ``checks`` replaces the module's list (tests point F6 at a synthetic panel)."""
     mod = FIGURES[slot]
     rd = Path(results_dir)
