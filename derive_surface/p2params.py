@@ -55,7 +55,7 @@ PARAMS_DIR = REPO / "results" / "p2" / "params"
 DATA_DIR = REPO / "data" / "p2" / "params"
 LOG_PATH = REPO / "data" / "p2" / "logs" / "A2.jsonl"
 OI_LEGACY = REPO / "data" / "p2" / "kontext" / "margin-historie" / "oi_legacy.json"
-EVENTS_KONTEXT = REPO / "data" / "p2" / "kontext" / "margin-historie" / "events.json"
+EVENTS_CONTEXT = REPO / "data" / "p2" / "kontext" / "margin-historie" / "events.json"
 OI_SHARE_CSV = REPO / "results" / "p2" / "manager_oi_share.csv"
 
 CCYS = ("BTC", "ETH", "HYPE")

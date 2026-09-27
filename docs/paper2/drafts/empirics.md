@@ -10,7 +10,7 @@ The prototypes are under `data/p2/fig_proto/empirie/`. The script is `proto_empi
 
 | Slot | Prototype | Data |
 |---|---|---|
-| T2 | `t2_empirie.png`, `fig_t2.csv` | real (`results/p2/semantics/faktoren.csv`) |
+| T2 | `t2_empirie.png`, `fig_t2.csv` | real (`results/p2/semantics/factors.csv`) |
 | F1 | `f1_empirie.png`, `fig_f1.csv` | real (`capital.parquet` × buckets from `markouts.parquet`) |
 | F5 | `f5_empirie.png`, `fig_f5_events.csv` | real (`reference_book.csv`, `manager_oi_share.csv`, `events.csv`, `params/*.json`) |
 | A1 | `a1_empirie.png`, `fig_a1.csv` | real (`validation.csv`) |
@@ -110,8 +110,8 @@ that `events.csv` lists, and whether the verdict line agrees with `rejected`.
 
 - **Purpose.** The figure shows why `C − net` is not a requirement, and that the contradiction 11 against 1.2 arises from
   book and valuation.
-- **Data source.** `results/p2/semantics/faktoren.csv`, rows `historisch 17.09.` (`b17_exakt`) and `historisch
-  24.09. … (H1_…)` (`b24`), cases A and B. Columns `SM_Cnet, PM2_Cnet, SM_R_engine, PM2_R_engine, V_und_SM,
+- **Data source.** `results/p2/semantics/factors.csv`, rows `historical 2026-09-17…` (`b17_exact`) and `historical
+  2026-09-24… (H1_…)` (`b24`), cases A and B. Columns `SM_Cnet, PM2_Cnet, SM_R_engine, PM2_R_engine, V_SM,
   V_PM2, F_Cnet, F_R_engine`. The H0 variant stays out (as in `MANUSCRIPT.md` 3a).
 - **Coding.** Panel a is a dot plot on a logarithmic USDC axis, one row per book and manager. The
   filled marker stands for R, the open one for `C − net = R − V`, and the grey connection is V. Managers by colour

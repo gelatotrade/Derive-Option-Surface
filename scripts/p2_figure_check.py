@@ -22,11 +22,13 @@ from __future__ import annotations
 import argparse
 import ast
 import datetime as dt
+import math
+import numbers
 import re
 import sys
 import warnings
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 import pandas as pd
 
@@ -387,8 +389,29 @@ def element_checks(tex: str, results: Path = RESULTS, elements=CAPTION_ELEMENTS)
 
 # ---------------------------------------------------------------------------------------------------- sheet
 
+def _order(x) -> Tuple[int, float, str]:
+    """Sort key for the members of a set and the keys of a mapping: numbers by value, then text."""
+    if isinstance(x, numbers.Real):
+        f = float(x)
+        return 0, (f if f == f else math.inf), ""
+    return 1, 0.0, str(x)
+
+
+def _sorted(v):
+    """``v`` with every set and every mapping in sorted order (members, keys), nested ones included. The order of a
+    set, and of a mapping filled from one, follows the hash seed of the run; sorted, the sheet is the same on every
+    run with the same results."""
+    if isinstance(v, (set, frozenset)):
+        return [_sorted(x) for x in sorted(v, key=_order)]
+    if isinstance(v, Mapping):
+        return {k: _sorted(v[k]) for k in sorted(v, key=_order)}
+    if isinstance(v, (list, tuple)):
+        return [_sorted(x) for x in v]
+    return v
+
+
 def _cell(v) -> str:
-    return figures_p2._fmt(v, 90).replace("|", "\\|").replace("\n", " ")
+    return figures_p2._fmt(_sorted(v), 90).replace("|", "\\|").replace("\n", " ")
 
 
 def _yes(v: Optional[bool]) -> str:

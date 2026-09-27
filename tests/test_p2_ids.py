@@ -5,6 +5,7 @@ import hmac
 import json
 import re
 import subprocess
+import zlib
 from pathlib import Path
 
 import numpy as np
@@ -258,3 +259,98 @@ def test_private_fixtures_are_not_tracked():
     moved = {"pm_chain_accounts.json", "sm_chain_accounts.json", "books_chain_snapshot.json", "books_events_day.json",
              "b1_chain_cases.json", "gen_b1_fixture.py"}
     assert not [f for f in _tracked_files() if f.startswith("tests/") and Path(f).name in moved]
+
+
+# --------------------------------------------------------------------------------------------
+# Guard: no raw ids of PM2 override accounts in any tracked file (audit A01, Addendum 1.4)
+# --------------------------------------------------------------------------------------------
+
+OVERRIDES_RAW = REPO / "data" / "p2" / "params"  # *_pm2_overrides_raw.json, private (not tracked)
+# a whole number: not inside a word (a pseudonym, a hex string), not part of a decimal fraction and not zero-padded
+# (PDF offsets); a full stop that ends a sentence may follow
+DEC_TOKEN = re.compile(r"(?<![\w.])([1-9]\d*)(?!\w|\.\d)")
+HEX_LITERAL = re.compile(r"0[xX]([0-9a-fA-F]{1,63})(?![0-9a-fA-F])")
+PDF_STREAM = re.compile(rb"stream\r?\n(.*?)\r?\nendstream", re.S)
+ACCOUNT_COLUMN = re.compile(r"account|(?:^|_)sub(?:$|_)", re.I)
+
+
+def _override_accounts(params: Path = OVERRIDES_RAW) -> set:
+    ids = set()
+    for f in sorted(Path(params).glob("*_pm2_overrides_raw.json")):
+        ids |= {int(e["account"]) for e in json.loads(f.read_text())}
+    return ids
+
+
+def _id_hits(text: str, ids) -> int:
+    """Occurrences of ``ids`` in ``text``: as a decimal token, as a hex literal shorter than 32 bytes, and as a
+    32-byte word anywhere (log topic, ABI data, calldata; with or without 0x, any case)."""
+    dec = {str(i) for i in ids}
+    n = sum(1 for m in DEC_TOKEN.finditer(text) if m.group(1) in dec)
+    n += sum(1 for m in HEX_LITERAL.finditer(text) if int(m.group(1), 16) in ids)
+    low = text.lower()
+    return n + sum(low.count(format(i, "064x")) for i in ids)
+
+
+def _file_hits(path: Path, ids) -> int:
+    """``_id_hits`` over the bytes of a file (latin-1, so binary files are scanned too), the inflated streams of a
+    PDF, and the account columns of a parquet file."""
+    data = path.read_bytes()
+    parts = [data]
+    if path.suffix.lower() == ".pdf":
+        for m in PDF_STREAM.finditer(data):
+            try:
+                parts.append(zlib.decompress(m.group(1)))
+            except zlib.error:
+                pass
+    n = sum(_id_hits(part.decode("latin-1"), ids) for part in parts)
+    if path.suffix.lower() == ".parquet":
+        import pyarrow.parquet as pq
+
+        cols = [c for c in pq.read_schema(path).names if ACCOUNT_COLUMN.search(c)]
+        if cols:
+            df = pd.read_parquet(path, columns=cols)
+            n += sum(int(pd.to_numeric(df[c], errors="coerce").isin(list(ids)).sum()) for c in cols)
+    return n
+
+
+def test_override_guard_finds_every_form_and_nothing_else(tmp_path):
+    ids = {61234, 88888}  # synthetic
+    word = format(61234, "064x")
+    for text in ('{"account": 61234}', '"subaccount": "61234"', "account 61234.", f"lib 0x{61234:x}",
+                 f"lib 0X{61234:X}", f'topics: ["0x{word}"]', f"0x{'0' * 64}{word}", f"0xa1b2c3d4{word}",
+                 word.upper()):
+        assert _id_hits(text, ids) == 1, text
+    # not an account: a float, a pseudonym, a zero-padded PDF offset, a longer number, a fraction, a longer literal
+    assert _id_hits(f"61234.5 -61234.75 W9f61234 0000061234 00000 n 612345 1.61234 0x{61234:x}0", ids) == 0
+    params = tmp_path / "params"
+    params.mkdir()
+    (params / "BTC_pm2_overrides_raw.json").write_text(json.dumps([{"account": 61234, "lib": "0x1"}]))
+    (params / "ETH_pm2_overrides_raw.json").write_text(json.dumps([{"account": "88888", "lib": "0x2"}]))
+    (params / "ETH_pm2_overrides.json").write_text(json.dumps([{"account": "X0123456789"}]))
+    assert _override_accounts(params) == ids and _override_accounts(tmp_path / "missing") == set()
+    pdf = tmp_path / "f.pdf"
+    pdf.write_bytes(b"%PDF-1.4\n1 0 obj\n<</Filter /FlateDecode>>\nstream\n" + zlib.compress(b"BT (maker 88888) Tj ET")
+                    + b"\nendstream\nendobj\n")
+    assert _file_hits(pdf, ids) == 1
+    parquet = tmp_path / "m.parquet"
+    pd.DataFrame({"maker_sub": [61234, 5], "strike": [61234.0, 88888.0]}).to_parquet(parquet)
+    assert _file_hits(parquet, ids) == 1  # the account column only, not the strike
+
+
+def test_no_raw_override_account_ids_in_tracked_files():
+    """The raw ids of the PM2 override accounts stay in data/p2/params (Addendum 1.4): tests use synthetic ids, the
+    results and documents p2ids labels. Scans every tracked file in every form an id took in the old history
+    (decimal, hex literal, 32-byte word; inflated PDF streams, account columns of parquet files). Needs the private
+    override lists, else skipped."""
+    ids = _override_accounts()
+    if not ids:
+        pytest.skip(f"private override lists missing: {OVERRIDES_RAW}/*_pm2_overrides_raw.json")
+    hits = {}
+    for rel in _tracked_files():
+        f = REPO / rel
+        if f.is_file():
+            n = _file_hits(f, ids)
+            if n:
+                hits[rel] = n
+    # files and counts only: the failure message must not repeat the ids
+    assert not hits, f"raw override account ids in tracked files (use p2ids labels or synthetic ids): {hits}"

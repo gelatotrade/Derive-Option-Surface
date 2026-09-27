@@ -60,6 +60,10 @@ names, and gives the old name first where it describes the content of old commit
 
    The scrubbed `results/p2/params/*_pm2_overrides.json` of Stage A to Addendum 4 are byte-identical to the
    labelled files of Stage B.
+
+   Since 27 September 2026 both extensions are part of `scripts/p2_history_scrub.py` (option `--overrides`), and
+   its `check` counts these forms too. Rerun on every file state of the old range, the script gives the same
+   placeholders and the same results as the run described here.
 3. **English messages.** The commit messages were translated into English with `git filter-branch --msg-filter`.
    Type prefixes and `Co-Authored-By` trailers are kept verbatim. Each message still describes the original
    commit, for example "463 tests green" in Stage A, and "history not rewritten" and "Paper 1 finding
@@ -88,8 +92,10 @@ For every commit, the author date equals the committer date, and both equal the 
 | Addendum 3 | `bfc34c81c507c51a38e83878422b89d072f9ed18` | `8778432b49f01532809517d592acda4727d7aaa8` | 2026-09-25 00:29:56 +0200 | `55ea5cc2868ae7244fa693af5718171aef78673f` | `536a39cbac9a762d97d38e57ce1ac41439f22f676b3432ff31d8d3b9556c7c09` |
 | Addendum 4 | `c4fcb59d61b73549aa90cacbd3b997816f36d823` | `e492ba123c4c81ddc478c0c6ef2246867deeeaae` | 2026-09-25 01:29:58 +0200 | `96986c732c85408daa4e704c519601bb531fdc4b` | `eb5e269571df785c0bc65e0b9ebb230dab9380edb95a951b63656eae07bb05f9` |
 
-`PRAEREGISTRIERUNG.md` is not changed after Addendum 4. The tip carries the Addendum 4 version, and the blob
-named in `docs/paper2/PREREGISTRATION.md` (formerly `PREREGISTRATION_EN.md`) is unchanged.
+The rewrite did not change `PRAEREGISTRIERUNG.md`: the tip of the rewritten history carries the Addendum 4 version.
+Afterwards, on 27 September 2026, the file was only extended: Addendum 5 appends the mapping above and changes no
+earlier rule. `docs/paper2/PREREGISTRATION.md` (formerly `PREREGISTRATION_EN.md`) translates it and names the git
+blob of the extended file.
 
 ## All rewritten commits
 
@@ -128,7 +134,7 @@ The other commits have the same diff as their originals.
 ## Checks
 
 - **A01, the script's check.** `scripts/p2_history_scrub.py check main..paper2-capital` reports 0 files. It
-  reported 12 files over the old range.
+  reported 12 files over the old range; with the extensions built in, it reports 16 there.
 - **A01, a wider scan.** A second scan covered every file of every tree in `main..paper2-capital`, not only the
   Paper 2 roots. It looked for:
   - unsalted hashes of all ids below 250,000;
@@ -177,8 +183,20 @@ The other commits have the same diff as their originals.
   Status later on 27 September 2026, with the English file names: `paper2/main.tex`, `derive_surface/social_p2.py`
   with the social cards, `NUMBER_CHECK.md` and `tests/test_p2_number_check.py` cite the new hashes, and every
   commit that `main.tex` cites is an ancestor of this branch. In a clone that holds only this branch,
-  `scripts/p2_build.py` now reports "build clean". Addendum 5 is not written yet, and `MANUSCRIPT.md`,
-  `FIGURE_SELECTION.md`, `VALIDATION.md` and the master plan still name old hashes.
+  `scripts/p2_build.py` now reports "build clean".
+
+  Addendum 5 is written. `PRAEREGISTRIERUNG.md` ends with a dated "Nachtrag 5 (27.09.2026)". It gives the reason
+  and the old and new commits of the pre-registration and Addenda 1 to 4 with their author and committer times. It
+  states that the registered texts are byte-identical, points to the SHA-256 values above and says that the
+  pre-registration becomes public only with the push. It changes no earlier rule. `PREREGISTRATION.md` translates
+  it as Addendum 5 and names the new blob, and `tests/test_p2_prereg_en.py` expects five addenda. `MANUSCRIPT.md`,
+  `FIGURE_SELECTION.md`, `VALIDATION.md`, `HANDOVER.md`, `REPORT_2026-09-25.md` and the master plan now name the
+  new hashes; where they describe the old history, they give the old hash with the new one ("old (now new)").
+  `AUDIT.md` and `HISTORY_CLEANUP.md` keep the old hashes in their body, each followed by its new one; in the
+  command block of `HISTORY_CLEANUP.md` a comment gives the mapping.
+  `paper2/main.tex` names Addendum 5 in one sentence of the section "Data, code and pre-registration" (its date is
+  the constant `addendum5_day` of `scripts/p2_number_check.py`) and refers to this file for the mapping. Still
+  open: the external anchoring, which waits for the push.
 
   `AUDIT.md`, `HISTORY_CLEANUP.md` and `REPORT_2026-09-25.md` are dated reports about the old history. They keep
   their content and are now in English, under English file names.

@@ -61,12 +61,12 @@ def results(tmp_path: Path) -> Path:
     (r / "h4.json").write_text(json.dumps({"stat": -4.6, "rejected": True, "placebo": {"admissible_days": {
         "ETH-pm2-20260108": {"days": 10, "first": "2025-07-16", "last": "2025-07-25"},
         "BTC-pm2-20260108": {"days": 54, "first": "2025-07-16", "last": "2026-03-21"}}}}))
-    (r / "semantics" / "box_diskont.json").write_text(json.dumps({"box_2026-09-24T11:27Z": [
+    (r / "semantics" / "box_discount.json").write_text(json.dumps({"box_2026-09-24T11:27Z": [
         {"r_chain": 0.0364, "r_api": 0.02}, {"r_chain": 0.0382, "r_api": 0.02}, {"r_chain": 0.0371, "r_api": 0.02}]}))
-    (r / "semantics" / "faktoren.csv").write_text(
-        "messung,buch,fall,block,F_Cnet\n"
-        "historisch 17.09. 10:45:13Z Blk 44810149,b17,A,44810149,2.33\n"
-        "historisch 17.09. 10:45:13Z Blk 44810149,b17,B,44810149,11.86\n")
+    (r / "semantics" / "factors.csv").write_text(
+        "measurement,book,case,block,F_Cnet\n"
+        "historical 2026-09-17T10:45:13Z block 44810149,b17,A,44810149,2.33\n"
+        "historical 2026-09-17T10:45:13Z block 44810149,b17,B,44810149,11.86\n")
     (r / "fig_f1_a.csv").write_text(
         "ccy,side,cell,occupied,kappa_pm2\n"
         "BTC,sell,BTC|sell|00-10|<=2d,True,13.136\nBTC,sell,BTC|sell|10-25|2-7d,True,7.798\n"
@@ -267,13 +267,13 @@ def test_count_and_distinct_count_rows(results):
 
 def test_glob_needs_one_value_or_an_aggregate(results):
     body = "\\section{E}\nThe feed ranged from 3.64 to 3.82 per cent; the endpoint uses 2.0000 per cent.\n"
-    good = body + ("% src semantics/box_diskont.json:box_*.r_chain~min~pct 3.64\n"
-                   "% src semantics/box_diskont.json:box_*.r_chain~max~pct 3.82\n"
-                   "% src semantics/box_diskont.json:box_*.r_api~pct 2.0000\n")
+    good = body + ("% src semantics/box_discount.json:box_*.r_chain~min~pct 3.64\n"
+                   "% src semantics/box_discount.json:box_*.r_chain~max~pct 3.82\n"
+                   "% src semantics/box_discount.json:box_*.r_api~pct 2.0000\n")
     assert not bad(check(results, good))
-    glob_any = body + ("% src semantics/box_diskont.json:box_*.r_chain~pct 3.64\n"
-                       "% src semantics/box_diskont.json:box_*.r_chain~pct 3.82\n"
-                       "% src semantics/box_diskont.json:box_*.r_api~pct 2.0000\n")
+    glob_any = body + ("% src semantics/box_discount.json:box_*.r_chain~pct 3.64\n"
+                       "% src semantics/box_discount.json:box_*.r_chain~pct 3.82\n"
+                       "% src semantics/box_discount.json:box_*.r_api~pct 2.0000\n")
     assert bad(check(results, glob_any)) == [("3.64", "mismatch"), ("3.82", "mismatch")]
 
 
@@ -348,7 +348,7 @@ def test_sign_and_magnitude_only_as_declared(results):
 def test_scientific_notation_and_long_integers(results):
     vs = check(results, "\\section{Data}\nThe median is $8.7\\times10^{-10}$ at block 44\\,810\\,149.\n"
                         "% src summary.json:validation_single_median_rel 8.7\\times10^{-10}\n"
-                        "% src semantics/faktoren.csv:block@fall=B 44\\,810\\,149\n")
+                        "% src semantics/factors.csv:block@case=B 44\\,810\\,149\n")
     assert [v.ok for v in vs] == [True, True]
 
 
@@ -372,7 +372,7 @@ def test_partial_dates_clock_times_and_constants(results):
                         "% src summary.json:api_day September 2026\n"
                         "% src h4.json:placebo.admissible_days.ETH-pm2-20260108.first 16 July\n"
                         "% src h4.json:placebo.admissible_days.ETH-pm2-20260108.last 25 July 2025\n"
-                        "% src semantics/faktoren.csv:messung@fall=B 10:45\n"
+                        "% src semantics/factors.csv:measurement@case=B 10:45\n"
                         "% src const:sample_start 11 January 2024 00:00\n")
     assert [(v.token.raw, v.ok) for v in vs] == [("September 2026", True), ("16 July", True),
                                                 ("25 July 2025", True), ("10:45", True),
@@ -497,12 +497,12 @@ The off-chain engine discounts PM2 at an undocumented flat rate, which a box spr
 The on-chain engine discounts with the rate feed, which ranged from 3.64 to 3.82
 per cent across the same expiries. In the probes that preceded this paper it gave a ratio of standard to PM2
 margin of 11.86 at block 44\,810\,149 on 17 September at 10:45.
-% src semantics/box_diskont.json:box_*.r_api~pct 2.0000
-% src semantics/box_diskont.json:box_*.r_chain~min~pct 3.64
-% src semantics/box_diskont.json:box_*.r_chain~max~pct 3.82
-% src semantics/faktoren.csv:F_Cnet@buch=b17,fall=B 11.86
-% src semantics/faktoren.csv:block@fall=B 44\,810\,149
-% src semantics/faktoren.csv:messung@fall=B 17 September 10:45
+% src semantics/box_discount.json:box_*.r_api~pct 2.0000
+% src semantics/box_discount.json:box_*.r_chain~min~pct 3.64
+% src semantics/box_discount.json:box_*.r_chain~max~pct 3.82
+% src semantics/factors.csv:F_Cnet@book=b17,case=B 11.86
+% src semantics/factors.csv:block@case=B 44\,810\,149
+% src semantics/factors.csv:measurement@case=B 17 September 10:45
 
 \section{Data and measurement}\label{sec:data}
 The fills are every BTC, ETH and HYPE option fill from 11 January 2024 to the pilot cut of 17 September 2026,

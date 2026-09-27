@@ -22,23 +22,23 @@ REPO = Path(__file__).resolve().parents[1]
 REAL = REPO / "results" / "p2"
 
 
-def _faktoren() -> pd.DataFrame:
+def _factors() -> pd.DataFrame:
     rows = []
-    hist17 = "historisch 17.09. 10:45:13Z Blk 44810149"
-    hist24 = "historisch 24.09. 09:24:59Z Blk 45110142 (H1_liste)"
-    for messung, buch, fall, sm_r, pm2_r, v_sm, v_pm2 in [
-            (hist17, "b17_exakt", "A", 500_000.0, 150_000.0, -100_000.0, -99_000.0),
-            (hist17, "b17_exakt", "B", 190_000.0, 18_000.0, 1_800.0, 1_700.0),
-            (hist17, "b17_exakt", "C", 250_000.0, 80_000.0, -50_000.0, -49_000.0),
+    hist17 = "historical 2026-09-17T10:45:13Z block 44810149"
+    hist24 = "historical 2026-09-24T09:24:59Z block 45110142 (H1_list)"
+    for measurement, book, case, sm_r, pm2_r, v_sm, v_pm2 in [
+            (hist17, "b17_exact", "A", 500_000.0, 150_000.0, -100_000.0, -99_000.0),
+            (hist17, "b17_exact", "B", 190_000.0, 18_000.0, 1_800.0, 1_700.0),
+            (hist17, "b17_exact", "C", 250_000.0, 80_000.0, -50_000.0, -49_000.0),
             (hist24, "b24", "A", 640_000.0, 180_000.0, -830_000.0, -829_000.0),
             (hist24, "b24", "B", 210_000.0, 100_000.0, -500_000.0, -499_500.0),
-            ("historisch 24.09. 09:24:59Z Blk 45110142 (H0_heutige_Liste)", "b24", "B", 1.0, 1.0, -1.0, -1.0),
-            ("live live_result.json Blk 45114232", "b17_heute", "A", 1.0, 1.0, -1.0, -1.0)]:
+            ("historical 2026-09-24T09:24:59Z block 45110142 (H0_todays_list)", "b24", "B", 1.0, 1.0, -1.0, -1.0),
+            ("live live_result.json block 45114232", "b17_today", "A", 1.0, 1.0, -1.0, -1.0)]:
         sm_c, pm2_c = sm_r - v_sm, pm2_r - v_pm2
-        rows.append({"messung": messung, "buch": buch, "fall": fall, "SM_Cnet": sm_c, "PM2_Cnet": pm2_c,
+        rows.append({"measurement": measurement, "book": book, "case": case, "SM_Cnet": sm_c, "PM2_Cnet": pm2_c,
                      "F_Cnet": round(sm_c / pm2_c, 2), "SM_R_ticker": np.nan, "PM2_R_ticker": np.nan,
                      "F_R_ticker": np.nan, "SM_R_engine": sm_r, "PM2_R_engine": pm2_r,
-                     "F_R_engine": round(sm_r / pm2_r, 2), "V_und_SM": v_sm, "V_PM2": v_pm2})
+                     "F_R_engine": round(sm_r / pm2_r, 2), "V_SM": v_sm, "V_PM2": v_pm2})
     return pd.DataFrame(rows)
 
 
@@ -68,7 +68,7 @@ def res(tmp_path, real_params):
     rd = tmp_path / "results"
     (rd / "semantics").mkdir(parents=True)
     (rd / "params").mkdir()
-    _faktoren().to_csv(rd / "semantics" / "faktoren.csv", index=False)
+    _factors().to_csv(rd / "semantics" / "factors.csv", index=False)
     for m, entry in real_params.items():
         (rd / "params" / f"BTC_{m}.json").write_text(json.dumps([entry]))
     row = _reference_row(real_params["pm2"]["params"], real_params["sm"]["params"])
@@ -78,14 +78,14 @@ def res(tmp_path, real_params):
 
 
 def test_probe_rows_are_the_four_historical_books_in_drawing_order():
-    rows = t2.probe_rows(_faktoren())
+    rows = t2.probe_rows(_factors())
     assert list(rows["label"]) == ["17 Sep, mixed", "24 Sep, mixed", "17 Sep, short", "24 Sep, short"]
     assert list(rows["block"]) == [44810149, 45110142, 44810149, 45110142]
 
 
 def test_probe_rows_refuse_anything_but_four_rows():
-    f = _faktoren()
-    extra = f.iloc[[4]].assign(messung="historisch 24.09. 09:24:59Z Blk 45110142 (second list)")
+    f = _factors()
+    extra = f.iloc[[4]].assign(measurement="historical 2026-09-24T09:24:59Z block 45110142 (second list)")
     with pytest.raises(ValueError, match="four"):
         t2.probe_rows(pd.concat([f, extra]))
 
@@ -160,12 +160,12 @@ def test_caption_has_no_dashes():
     assert "—" not in t2.CAPTION and "–" not in t2.CAPTION
 
 
-@pytest.mark.skipif(not (REAL / "semantics" / "faktoren.csv").exists() or not (REAL / "reference_book.csv").exists(),
+@pytest.mark.skipif(not (REAL / "semantics" / "factors.csv").exists() or not (REAL / "reference_book.csv").exists(),
                     reason="real results not present")
 def test_real_data_meets_the_build_instruction(tmp_path):
     rd = tmp_path / "results"
     (rd / "semantics").mkdir(parents=True)
-    shutil.copy(REAL / "semantics" / "faktoren.csv", rd / "semantics" / "faktoren.csv")
+    shutil.copy(REAL / "semantics" / "factors.csv", rd / "semantics" / "factors.csv")
     shutil.copy(REAL / "reference_book.csv", rd / "reference_book.csv")
     shutil.copytree(REAL / "params", rd / "params")
     t2.build(out_dir=tmp_path / "figures", results_dir=rd)

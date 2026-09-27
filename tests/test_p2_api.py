@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 
 import numpy as np
 import pandas as pd
@@ -520,6 +521,55 @@ def test_run_writes_csv_meta_and_doc(tmp_path):
     assert p2api.main(["report", "--csv", str(tmp_path / "api_snapshot.csv"), "--meta", str(tmp_path / "meta.json"),
                        "--doc", str(tmp_path / "C5b.md")]) == 0
     assert (tmp_path / "C5b.md").read_text() == doc
+
+
+GERMAN = re.compile(r"[äöüÄÖÜß]|\b(?:und|der|die|das|nicht|mit|oder|aus|von|bis|Seite|Laufzeit|Fenster|Typwahl|"
+                    r"Stand|vorgegeben|Zelle|Zellen)\b")
+
+
+def test_report_is_english_whatever_run_wrote_the_meta_file(tmp_path, monkeypatch):
+    """The meta file stores the source of the call/put choice as a key, and the document text comes from the code:
+    ``p2 api report`` on the meta file of the run of 25 September 2026, whose ``types_source`` is German text, must
+    not write German into docs/paper2/status/C5b.md again."""
+    params = _params("BTC")
+    monkeypatch.setattr(p2api, "load_cell_types", lambda path=None: _types())
+    paths = {"csv_path": tmp_path / "api_snapshot.csv", "meta_path": tmp_path / "meta.json",
+             "doc_path": tmp_path / "C5b.md"}
+    p2api.run(ccys=("BTC",), api=FakeApi(), rpc=FakeRpc(), params_at=lambda c, m, ts: (params[m], "x"),
+              clock=lambda: float(NOW), **paths)
+    meta = json.loads(paths["meta_path"].read_text())
+    assert meta["types_source"] == "markouts"
+    markouts = "Type choice from: `data/p1/derived/markouts.parquet` (maker side, |Δ| and tenor bucket, PM2 window)."
+    doc = paths["doc_path"].read_text()
+    assert markouts in doc and not GERMAN.search(doc)
+    legacy = {"`data/p1/derived/markouts.parquet` (Maker-Seite, |Δ|- und Laufzeit-Bucket, PM2-Fenster)": markouts,
+              "markouts": markouts, "given": "Type choice from: given by the caller of `run`.",
+              "vorgegeben": "Type choice from: n/a.", None: "Type choice from: n/a."}
+    for stored, line in legacy.items():
+        meta["types_source"] = stored
+        paths["meta_path"].write_text(json.dumps(meta, ensure_ascii=False))
+        assert p2api.main(["report", "--csv", str(paths["csv_path"]), "--meta", str(paths["meta_path"]),
+                           "--doc", str(paths["doc_path"])]) == 0
+        doc = paths["doc_path"].read_text()
+        assert line in doc and not GERMAN.search(doc), stored
+
+
+def test_report_dates_do_not_follow_the_locale():
+    import locale
+
+    old = locale.setlocale(locale.LC_TIME)
+    try:
+        for name in ("de_DE.UTF-8", "de_DE", "German_Germany.1252"):
+            try:
+                locale.setlocale(locale.LC_TIME, name)
+                break
+            except locale.Error:
+                continue
+        assert p2api._utc_day("2026-03-05T23:59:59+00:00") == "5 March 2026"
+        assert p2api._utc_text("2026-12-25T00:44:17+00:00") == "25 December 2026 00:44:17"
+        assert p2api._utc_day(None) == "n/a"
+    finally:
+        locale.setlocale(locale.LC_TIME, old)
 
 
 def test_number_format():

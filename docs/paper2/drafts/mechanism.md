@@ -12,7 +12,7 @@ Prototypes (pilot data, cut of 2026-09-17) under `data/p2/fig_proto/mechanismus/
 | File | Slot | Data |
 |---|---|---|
 | `t1_proto.png` | T1 | real: probe grid BTC 2026-09-17 08:00 UTC, engine replica for the binding rule |
-| `t2_proto.png` | T2 | real: `results/p2/semantics/faktoren.csv`, engine replica (straddle) |
+| `t2_proto.png` | T2 | real: `results/p2/semantics/factors.csv`, engine replica (straddle) |
 | `f1_proto.png` | F1 | real: `capital.parquet` ⋈ `markouts.parquet`, engine replica (anatomy) |
 | `f2_proto_synth.png` | F2 | **synthetic**, watermark PROTOTYP |
 | `f5_proto.png` | F5 | real: `manager_oi_share.csv`, `params/`, `events.csv`, `reference_book.csv` |
@@ -127,8 +127,8 @@ the map (H1), F3/F4 the book (H2/H3), F5/F6 time and dose (H4), A1 the fidelity 
 
 - **Purpose:** show the reading `C − net` as a source of error and, in the same place, make visible the rule “worst scenario of the
   book” that explains H2 and H3.
-- **Data:** a and b from `results/p2/semantics/faktoren.csv`, rows where `messung` starts with `historisch`, without
-  `H0_`, `fall ∈ {A, B}` (exactly four rows: 17 Sep A/B, 24 Sep A/B); columns `SM_R_engine, PM2_R_engine, V_und_SM,
+- **Data:** a and b from `results/p2/semantics/factors.csv`, rows where `measurement` starts with `historical`, without
+  `H0_`, `case ∈ {A, B}` (exactly four rows: 17 Sep A/B, 24 Sep A/B); columns `SM_R_engine, PM2_R_engine, V_SM,
   V_PM2, F_Cnet, F_R_engine`. c from the replica at the T1 block: reference straddle as in `reference_book` (strike =
   forward, expiry nearest to 30 days), scenario PnL via `margin_pm2._Params/_expiry_factors/_leg_prices/_span`,
   capital via `net_margin` for the straddle, for both legs one by one and for SM.
@@ -141,7 +141,7 @@ the map (H1), F3/F4 the book (H2/H3), F5/F6 time and dose (H4), A1 the fidelity 
 - **Core message (5 s):** `C − net` pushes every factor towards 1, because the same position value sits in both
   numerators; for the straddle PM2 charges only its worst scenario, not the sum of its legs.
 - **Pitfalls:**
-  - `faktoren.csv` holds several measurements per book (H0 list, live); filter explicitly and test for four rows.
+  - `factors.csv` holds several measurements per book (H0 list, live); filter explicitly and test for four rows.
     The numbers in the caption in `main.tex` (11.86/10.76, 1.19/2.14, 2.33/3.19, 1.46/3.61) must come
     from it.
   - Sign: V is negative for shorts; −V is drawn.

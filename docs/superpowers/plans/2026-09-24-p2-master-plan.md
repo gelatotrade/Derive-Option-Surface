@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.9.6 (system), numpy, pandas, pyarrow, requests, scipy, matplotlib; pytest; tectonic for LaTeX. No new dependencies.
 
-**Spec:** `docs/superpowers/specs/2026-09-24-p2-capital-design.md` · **Pre-registration:** `docs/paper2/PRAEREGISTRIERUNG.md` (commit `1d13227`) · **Semantics:** `docs/paper2/get_margin_semantics.md`.
+**Spec:** `docs/superpowers/specs/2026-09-24-p2-capital-design.md` · **Pre-registration:** `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) · **Semantics:** `docs/paper2/get_margin_semantics.md`.
 
 ## Global Constraints
 
@@ -218,7 +218,7 @@
 - [ ] Outline and word budget from spec §7; `p2_wordcount.py` with a budget per section (±10 %).
 - [ ] Literature: only sources with a verified DOI or publisher page (one web agent), list with verification notes in `MANUSCRIPT.md`.
 - [ ] `p2_number_check.py`: every number in the text must occur in `results/p2` (rounding allowed, explicit list of exceptions).
-- [ ] Build with tectonic, check the log, overfull boxes, budget. Name the pre-registration commit `1d13227` in the text.
+- [ ] Build with tectonic, check the log, overfull boxes, budget. Name the pre-registration commit `cc0a29f` in the text.
 
 ---
 

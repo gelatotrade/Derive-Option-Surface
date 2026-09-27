@@ -700,6 +700,39 @@ STATUS_TEXT = {"ok": "measured", "no_expiry": "no listed expiry in the tenor buc
                "no_strike": "no strike of the type in the |Δ| bucket", "api_error": "error of the API",
                "chain_error": "eth_call failed", "chain_revert": "chain feed reverted",
                "nan": "value not finite"}
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+          "November", "December")  # not strftime("%B"), which follows the locale (de_DE on the author's machine)
+
+
+def _repo_rel(p: Path) -> str:
+    """``p`` relative to the repository as the code names it (no symlink resolved), else as given."""
+    try:
+        return Path(p).relative_to(REPO).as_posix()
+    except ValueError:
+        return str(p)
+
+
+TYPES_SOURCES = ("markouts", "given")  # values of the meta field types_source: keys, never document text
+
+
+def types_source_key(value) -> Optional[str]:
+    """Key of the meta field ``types_source``. A meta file written before the keys held the document text itself
+    (the run of 25 September 2026: the path of the Paper 1 markouts and a German description); it is read by the
+    path."""
+    text = "" if value is None else str(value).strip()
+    if text in TYPES_SOURCES:
+        return text
+    return "markouts" if "markouts.parquet" in text else None
+
+
+def types_source_text(value) -> str:
+    """The English text of ``types_source`` in the document, whatever run wrote the meta file."""
+    key = types_source_key(value)
+    if key == "markouts":
+        return f"`{_repo_rel(MARKOUTS)}` (maker side, |Δ| and tenor bucket, PM2 window)"
+    if key == "given":
+        return "given by the caller of `run`"
+    return MISSING
 
 
 def _utc(iso: Optional[str]) -> Optional[dt.datetime]:
@@ -711,13 +744,13 @@ def _utc(iso: Optional[str]) -> Optional[dt.datetime]:
 def _utc_day(iso: Optional[str]) -> str:
     """'25 September 2026'."""
     t = _utc(iso)
-    return MISSING if t is None else f"{t.day} {t.strftime('%B %Y')}"
+    return MISSING if t is None else f"{t.day} {MONTHS[t.month - 1]} {t.year}"
 
 
 def _utc_text(iso: Optional[str]) -> str:
     """'25 September 2026 00:44:17'."""
     t = _utc(iso)
-    return MISSING if t is None else f"{t.day} {t.strftime('%B %Y %H:%M:%S')}"
+    return MISSING if t is None else f"{_utc_day(iso)} {t:%H:%M:%S}"
 
 
 def _table(header: Sequence[str], rows: Sequence[Sequence[str]], align: Sequence[str]) -> List[str]:
@@ -760,7 +793,7 @@ def render_doc(df: pd.DataFrame, meta: Mapping) -> str:
     if params:
         parts = [f"{c} SM from {v.get('sm', MISSING)}, PM2 from {v.get('pm2', MISSING)}" for c, v in params.items()]
         L.append("- Parameters (standard lib, `results/p2/params`, valid entry): " + "; ".join(parts) + " UTC.")
-    L.append(f"- Type choice from: {meta.get('types_source', MISSING)}.")
+    L.append(f"- Type choice from: {types_source_text(meta.get('types_source'))}.")
     L.append(f"- Result: `results/p2/api_snapshot.csv` ({n_cells} rows, one per cell), metadata "
              f"`{meta.get('meta', 'data/p2/api_snapshot/meta.json')}`.")
     L.append("")
@@ -962,10 +995,10 @@ def run(ccys: Sequence[str] = CCYS, csv_path: Path = CSV_PATH, meta_path: Path =
     throttle = Throttle(RATE)
     api = api if api is not None else ApiClient(throttle=throttle, log_path=log_path)
     rpc = rpc if rpc is not None else SharedRpc(throttle, log_path=log_path)
-    types_source = "given"
+    types_source = "given"  # a key of TYPES_SOURCES; the document text comes from types_source_text
     if types is None:
         types = load_cell_types()
-        types_source = f"`{_rel(MARKOUTS)}` (maker side, |Δ| and tenor bucket, PM2 window)"
+        types_source = "markouts"
     params_at = params_at or TimelineParams()
     start = float(clock())
     wall_start = _utc_now()

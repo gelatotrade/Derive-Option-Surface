@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Scrub account identifiers from the Paper 2 history on a NEW branch (audit A01, Addendum 1.4).
 
-Guide with the full command sequence: docs/paper2/HISTORY_CLEANUP.md. Short form:
+Guide: docs/paper2/HISTORY_CLEANUP.md. The run of 27 September 2026 (docs/paper2/HISTORY_REWRITE.md) replayed the
+Paper 2 commits onto main as the new branch paper2-capital and scrubbed them there:
 
-    git branch paper2-kapital-bereinigt paper2-kapital
     FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch \\
-        --index-filter 'python3 "<repo>/scripts/p2_history_scrub.py" index' -- e7361d2^..paper2-kapital-bereinigt
-    python3 scripts/p2_history_scrub.py check 1d13227^..paper2-kapital-bereinigt
+        --index-filter 'python3 "<repo>/scripts/p2_history_scrub.py" index' -- main..paper2-capital
+    python3 scripts/p2_history_scrub.py check main..paper2-capital
 
 ``index`` works on the index of one commit (as git filter-branch --index-filter calls it):
 
@@ -14,16 +14,26 @@ Guide with the full command sequence: docs/paper2/HISTORY_CLEANUP.md. Short form
 2. in text files under results/p2, docs/paper2, paper2 and tests it replaces every unsalted ``sha256(str(id))[:10]``
    (reversed by enumeration of the ids below ``LIMIT``) by the p2ids label of the id (M1..M10 or salted X label);
 3. in tests/ it replaces raw top-maker ids with at least five digits by ``PLACEHOLDER_ID`` and, in a
-   tests/test_p2_ids.py whose ``TOP`` line is the real ranked list, every top-maker id by ``SYNTHETIC_TOP``.
+   tests/test_p2_ids.py whose ``TOP`` line is the real ranked list, every top-maker id by ``SYNTHETIC_TOP``;
+4. it covers the raw ids of the PM2 override accounts (``data/p2/params/*_pm2_overrides_raw.json``) and the long
+   top-maker ids in every form the history held them:
+   * tests/: a decimal id with at least five digits becomes a synthetic placeholder (``PLACEHOLDER_ID`` for a top
+     maker, one five-digit id from ``PLACEHOLDER_BASE`` on per override account, fixed by the salt and never a real
+     id); a hex literal of at most 32 bytes, or a 32-byte word of ABI data, a log topic or calldata, whose value is
+     such an id becomes the placeholder in the same width and case;
+   * docs/paper2, results/p2, paper2: a decimal id with at least five digits becomes the p2ids label of the account
+     (M1..M10, or X and the salted HMAC).
 
 ``check`` scans every commit of a revision range and prints counts per file (never ids or hashes); exit code 1 if
-anything is left. The script holds no ids: the ranked list and the salt are read from data/p2 of this checkout
-(``--top``, ``--salt``). Files outside the Paper 2 roots (Paper 1) are never changed.
+anything is left. The script holds no ids: the ranked list, the override lists and the salt are read from data/p2
+of this checkout (``--top``, ``--overrides``, ``--salt``). Files outside the Paper 2 roots (Paper 1) are never
+changed.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import re
 import subprocess
@@ -34,21 +44,28 @@ from typing import Dict, List, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 TOP_PATH = REPO / "data" / "p2" / "books" / "top_makers.json"
 SALT_PATH = REPO / "data" / "p2" / "secret_salt.txt"
+OVERRIDES_DIR = REPO / "data" / "p2" / "params"
+OVERRIDES_GLOB = "*_pm2_overrides_raw.json"
 
 MOVED_FIXTURES = tuple(f"tests/fixtures/p2/{name}" for name in (
     "pm_chain_accounts.json", "sm_chain_accounts.json", "books_chain_snapshot.json", "books_events_day.json",
     "b1_chain_cases.json", "gen_b1_fixture.py"))
 SCRUB_ROOTS = ("results/p2/", "docs/paper2/", "paper2/", "tests/")
+LABEL_ROOTS = ("results/p2/", "docs/paper2/", "paper2/")  # raw ids become labels here, placeholders in tests/
 TEXT_SUFFIXES = (".json", ".jsonl", ".csv", ".md", ".txt", ".tex", ".bib", ".tsv", ".py")
 SYNTHETIC_TOP = [104, 101, 110, 107, 102, 109, 103, 108, 105, 106]  # as in tests/test_p2_ids.py
 PLACEHOLDER_ID = 4242
+PLACEHOLDER_BASE = 90_000  # placeholders of the override accounts: 90000 to 99999
 LONG_ID = 10_000  # shorter ids collide with strikes and counts
+MIN_HEX_ID = 100  # smaller hex values collide with flags and constants
 LIMIT = 250_000  # enumeration bound, as in the guard of tests/test_p2_ids.py
 IDS_TEST = "tests/test_p2_ids.py"
 
 HASH_TOKEN = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{10}(?![0-9a-fA-F])")
-INT_TOKEN = re.compile(r"(?<![\w.])(\d+)(?![\w.])")
+# a whole number: not inside a word or a decimal fraction; a full stop that ends a sentence may follow
+INT_TOKEN = re.compile(r"(?<![\w.])(\d+)(?!\w|\.\d)")
 TOP_LINE = re.compile(r"^TOP = \[([\d,\s]*)\][^\n]*$", re.M)
+HEX_TOKEN = re.compile(r"0x([0-9a-fA-F]+)")
 
 _TABLE: Optional[Dict[str, int]] = None
 
@@ -68,21 +85,60 @@ def _in_roots(path: str) -> bool:
     return path.startswith(SCRUB_ROOTS)
 
 
+def hex_fields(digits: str) -> List[Tuple[int, int, int]]:
+    """(start, end, value) of the fields of a hex literal (digits without ``0x``) that can hold an id: the whole
+    literal up to 32 bytes; beyond that its 32-byte words, when the literal is ABI data or a log topic list (a
+    multiple of 64 digits) or calldata (a 4-byte selector, then 32-byte words); nothing otherwise."""
+    if len(digits) <= 64:
+        return [(0, len(digits), int(digits, 16))]
+    first = len(digits) % 64
+    if first not in (0, 8):
+        return []
+    return [(k, k + 64, int(digits[k:k + 64], 16)) for k in range(first, len(digits), 64)]
+
+
 class Scrubber:
-    def __init__(self, top: Sequence[int], salt: Optional[bytes]):
+    def __init__(self, top: Sequence[int], salt: Optional[bytes], overrides: Sequence[int] = ()):
         self.top = [int(x) for x in top]
         self.salt = salt
+        self.overrides = sorted({int(x) for x in overrides})
         self._labeler = None
+        self._placeholders: Optional[Dict[int, int]] = None
         self.long_ids = {i: PLACEHOLDER_ID for i in self.top if i >= LONG_ID}
         self.all_ids = dict(zip(self.top, SYNTHETIC_TOP))
+        own = set(self.overrides) - set(self.top)  # override accounts outside the top ten get their own placeholder
+        self.long_accounts = {i for i in set(self.top) | own if i >= LONG_ID}  # decimal: tests/ and the label roots
+        self.hex_accounts = {i for i in set(self.long_ids) | own if i >= MIN_HEX_ID}  # hex: tests/
         self._top_seq = re.compile(r"(?<![\w.])" + r"\s*,\s*".join(map(str, self.top)) + r"(?![\w.])")
+
+    def _hmac(self, i: int) -> str:
+        if self.salt is None:
+            raise FileNotFoundError("salt needed for the placeholders of the override accounts")
+        return hmac.new(self.salt, str(i).encode(), hashlib.sha256).hexdigest()
+
+    def placeholders(self) -> Dict[int, int]:
+        """Replacement id in tests/ per account: ``PLACEHOLDER_ID`` for a long top-maker id; for every override
+        account outside the top ten a five-digit id from ``PLACEHOLDER_BASE`` on, fixed by the salt, one per account
+        and never one of the real ids."""
+        if self._placeholders is None:
+            ph = dict(self.long_ids)
+            own = sorted(set(self.overrides) - set(self.top), key=self._hmac)
+            used = set(ph.values()) | set(self.top) | set(self.overrides)
+            for i in own:
+                n = PLACEHOLDER_BASE + int(self._hmac(i)[:8], 16) % 10_000
+                while n in used:
+                    n = PLACEHOLDER_BASE + (n + 1 - PLACEHOLDER_BASE) % 10_000
+                ph[i] = n
+                used.add(n)
+            self._placeholders = ph
+        return self._placeholders
 
     def label(self, i: int) -> str:
         if self._labeler is None:
             sys.path.insert(0, str(REPO))
-            from derive_surface.p2ids import Labeler  # lazy: pandas is imported only when a hash is found
+            from derive_surface.p2ids import Labeler  # lazy: pandas is imported only when a label is needed
             if self.salt is None:
-                raise FileNotFoundError("salt needed to label an unsalted hash")
+                raise FileNotFoundError("salt needed to label an account")
             self._labeler = Labeler(self.top, self.salt)
         return self._labeler.label(i)
 
@@ -114,22 +170,56 @@ class Scrubber:
 
             def sub_id(m):
                 i = int(m.group(1))
-                if i not in mapping:
+                if i in mapping:
+                    new = mapping[i]
+                elif i in self.long_accounts:
+                    new = self.placeholders()[i]
+                else:
                     return m.group(0)
                 counts["raw_ids"] += 1
-                return str(mapping[i])
+                return str(new)
 
             text = INT_TOKEN.sub(sub_id, text)
+            text = HEX_TOKEN.sub(lambda m: self._sub_hex(m, counts), text)
+        elif path.startswith(LABEL_ROOTS):
+            def sub_label(m):
+                i = int(m.group(1))
+                if i not in self.long_accounts:
+                    return m.group(0)
+                counts["raw_ids"] += 1
+                return self.label(i)
+
+            text = INT_TOKEN.sub(sub_label, text)
         return text, counts
 
+    def _sub_hex(self, m, counts: Dict[str, int]) -> str:
+        """A hex literal with every id field replaced by the placeholder of its account (same width and case)."""
+        digits = m.group(1)
+        upper = any(c in "ABCDEF" for c in digits) and not any(c in "abcdef" for c in digits)
+        out = digits
+        for start, end, value in reversed(hex_fields(digits)):
+            if value in self.hex_accounts:
+                new = format(self.placeholders()[value], f"0{end - start}x")
+                out = out[:start] + (new.upper() if upper else new) + out[end:]
+                counts["raw_ids"] += 1
+        return "0x" + out
+
+    def _raw_ids(self, path: str, text: str) -> set:
+        """The distinct raw ids that ``scrub`` would replace in ``path`` (decimal, hex literal or 32-byte word)."""
+        if not (_is_text(path) and _in_roots(path)):
+            return set()
+        found = {int(t) for t in INT_TOKEN.findall(text)} & self.long_accounts
+        if path.startswith("tests/"):
+            found |= {v for m in HEX_TOKEN.finditer(text) for _, _, v in hex_fields(m.group(1))} & self.hex_accounts
+        return found
+
     def leaks(self, path: str, text: str) -> Dict[str, int]:
-        """Counts only: distinct unsalted hashes, distinct long top ids in tests/, the ordered top list."""
+        """Counts only: distinct unsalted hashes; distinct raw ids of top makers and override accounts that
+        ``scrub`` replaces (decimal in tests/ and the label roots, hex literal or 32-byte word in tests/); the
+        ordered top list."""
         table = unsalted_table()
         hashes = len({t for t in HASH_TOKEN.findall(text) if t in table}) if _is_text(path) else 0
-        raw = 0
-        if path.startswith("tests/") and _is_text(path):
-            found = {int(t) for t in INT_TOKEN.findall(text)}
-            raw = len(found & set(self.long_ids))
+        raw = len(self._raw_ids(path, text))
         top_list = 1 if _is_text(path) and self._top_seq.search(text) else 0
         return {"hashes": hashes, "raw_ids": raw, "top_list": top_list}
 
@@ -154,10 +244,19 @@ def _read_blobs(shas: List[str]) -> Dict[str, bytes]:
     return blobs
 
 
-def _load(top_path: Path, salt_path: Optional[Path]) -> Scrubber:
+def load_overrides(directory: Path) -> List[int]:
+    """Raw ids of the PM2 override accounts in ``directory/*_pm2_overrides_raw.json``; an error if there is none."""
+    files = sorted(Path(directory).glob(OVERRIDES_GLOB))
+    if not files:
+        raise FileNotFoundError(f"no {OVERRIDES_GLOB} in {directory}")
+    return sorted({int(e["account"]) for f in files for e in json.loads(f.read_text())})
+
+
+def _load(top_path: Path, salt_path: Optional[Path], overrides_dir: Optional[Path] = None) -> Scrubber:
     top = [int(x) for x in json.loads(Path(top_path).read_text())["subaccounts"]]
     salt = bytes.fromhex(Path(salt_path).read_text().strip()) if salt_path and Path(salt_path).exists() else None
-    return Scrubber(top, salt)
+    overrides = load_overrides(overrides_dir) if overrides_dir is not None else []
+    return Scrubber(top, salt, overrides)
 
 
 def run_index(scrubber: Scrubber) -> Dict[str, int]:
@@ -224,16 +323,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     a = sub.add_parser("index", help="scrub the current index (git filter-branch --index-filter)")
     a.add_argument("--top", type=Path, default=TOP_PATH)
     a.add_argument("--salt", type=Path, default=SALT_PATH)
+    a.add_argument("--overrides", type=Path, default=OVERRIDES_DIR, help=f"directory with {OVERRIDES_GLOB}")
     b = sub.add_parser("check", help="scan a revision range, counts only")
     b.add_argument("rev")
     b.add_argument("--top", type=Path, default=TOP_PATH)
+    b.add_argument("--overrides", type=Path, default=OVERRIDES_DIR, help=f"directory with {OVERRIDES_GLOB}")
     args = ap.parse_args(argv)
     if args.cmd == "index":
-        stats = run_index(_load(args.top, args.salt))
+        stats = run_index(_load(args.top, args.salt, args.overrides))
         if any(stats.values()):
             print(f"p2_history_scrub: {stats}", file=sys.stderr)
         return 0
-    return run_check(_load(args.top, None), args.rev)
+    return run_check(_load(args.top, None, args.overrides), args.rev)
 
 
 if __name__ == "__main__":

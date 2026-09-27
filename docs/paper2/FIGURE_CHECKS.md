@@ -1,6 +1,6 @@
 # Figures of Paper 2: check list
 
-Generated 2026-09-27 11:08 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
+Generated 2026-09-27 12:19 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
 
 **Result:** 231 of 231 checks yes; build instruction 108 of 108 yes; shape 22 of 22 yes; captions 9 of 9 equal.
 
@@ -50,10 +50,10 @@ Generated 2026-09-27 11:08 UTC with `scripts/p2_figure_check.py` from `results/p
 | F1 | occupied cells | 173 | 173 | yes | yes |
 | F1 | crosses (under 200 fills, incl. empty combinations) | 37 | 37 | yes | yes |
 | F1 | crosses by currency | {BTC: 10, ETH: 2, HYPE: 25} | {BTC: 10, ETH: 2, HYPE: 25} | yes | yes |
-| F1 | fills per cell = pm2 map | {BTC\|sell\|00-10\|<=2d: 4505, BTC\|sell\|00-10\|2-7d: 2652, BTC\|sell\|00-10\|7-30d: 2990, BTC\|se… | {BTC\|buy\|00-10\|2-7d: 2149, BTC\|buy\|00-10\|30-90d: 994, BTC\|buy\|00-10\|7-30d: 1933, BTC\|buy\|… | yes | n/a |
+| F1 | fills per cell = pm2 map | {BTC\|buy\|00-10\|2-7d: 2149, BTC\|buy\|00-10\|30-90d: 994, BTC\|buy\|00-10\|7-30d: 1933, BTC\|buy\|… | {BTC\|buy\|00-10\|2-7d: 2149, BTC\|buy\|00-10\|30-90d: 994, BTC\|buy\|00-10\|7-30d: 1933, BTC\|buy\|… | yes | n/a |
 | F1 | fills and contracts equal in pm2, sm_pm2win, pm_pm2win | True | True | yes | n/a |
 | F1 | kappa = 100 sum_K / sum_index of h1_cells (max abs gap) | 3.55271e-15 | 0 | yes | yes |
-| F1 | printed kappa (two significant digits) and crosses | {BTC\|sell\|00-10\|<=2d: 13, BTC\|sell\|00-10\|2-7d: 9.9, BTC\|sell\|00-10\|7-30d: 9.4, BTC\|sell\|0… | {BTC\|sell\|00-10\|<=2d: 13, BTC\|sell\|00-10\|2-7d: 9.9, BTC\|sell\|00-10\|7-30d: 9.4, BTC\|sell\|0… | yes | n/a |
+| F1 | printed kappa (two significant digits) and crosses | {BTC\|buy\|00-10\|2-7d: 0.12, BTC\|buy\|00-10\|30-90d: 0.47, BTC\|buy\|00-10\|7-30d: 0.20, BTC\|buy… | {BTC\|buy\|00-10\|2-7d: 0.12, BTC\|buy\|00-10\|30-90d: 0.47, BTC\|buy\|00-10\|7-30d: 0.20, BTC\|buy… | yes | n/a |
 | F1 | kappa span of occupied cells by currency and side | {BTC\|buy: [0.0736079, 10.8554], BTC\|sell: [7.79838, 17.6902], ETH\|buy: [0.0802237, 14.525… | {BTC\|buy: [0.0736079, 10.8554], BTC\|sell: [7.79838, 17.6902], ETH\|buy: [0.0802237, 14.525… | yes | yes |
 | F1 | q_SM min, max, cells, cells below 1 | [0.752032, 4.6692, 173, 86] | [0.752032, 4.6692, 173, 86] | yes | yes |
 | F1 | q_PM min, max, cells, cells below 1 | [0.946187, 1.73585, 128, 2] | [0.946187, 1.73585, 128, 2] | yes | yes |
@@ -68,13 +68,13 @@ Generated 2026-09-27 11:08 UTC with `scripts/p2_figure_check.py` from `results/p
 | F2 | sign line after the cells with A_bp > 0 | 99.5 | 99.5 | yes | yes |
 | F2 | cells with A_bp > 0 / <= 0 / all, by side | {buy: [61, 26, 87], sell: [38, 48, 86]} | {buy: [61, 26, 87], sell: [38, 48, 86]} | yes | yes |
 | F2 | hatched = B_bp < 0 = A_bp <= 0 (sign(A) = sign(B)) | [BTC\|buy\|00-10\|<=2d, BTC\|buy\|10-25\|<=2d, BTC\|buy\|25-40\|2-7d, BTC\|buy\|25-40\|<=2d, BTC\|buy\|… | [BTC\|buy\|00-10\|<=2d, BTC\|buy\|10-25\|<=2d, BTC\|buy\|25-40\|2-7d, BTC\|buy\|25-40\|<=2d, BTC\|buy\|… | yes | n/a |
-| F2 | printed B_bp (at most four characters) and crosses | {BTC\|sell\|00-10\|<=2d: 5.5, BTC\|sell\|00-10\|2-7d: 6.6, BTC\|sell\|00-10\|7-30d: 5.0, BTC\|sell\|… | {BTC\|sell\|00-10\|<=2d: 5.5, BTC\|sell\|00-10\|2-7d: 6.6, BTC\|sell\|00-10\|7-30d: 5.0, BTC\|sell\|… | yes | n/a |
+| F2 | printed B_bp (at most four characters) and crosses | {BTC\|buy\|00-10\|2-7d: 2k, BTC\|buy\|00-10\|30-90d: 1k, BTC\|buy\|00-10\|7-30d: 1k, BTC\|buy\|00-10… | {BTC\|buy\|00-10\|2-7d: 2k, BTC\|buy\|00-10\|30-90d: 1k, BTC\|buy\|00-10\|7-30d: 1k, BTC\|buy\|00-10… | yes | n/a |
 | F2 | B_bp of panel a = h1_cells | 0 | 0 | yes | n/a |
 | F2 | ranks and rank intervals of panel b = h1_cells (max abs gap) | 0 | 0 | yes | n/a |
 | F2 | ten largest \|rank_shift\| (ties by cell id) | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | yes | n/a |
 | F2 | header line = verdict rebuilt from h1.json rule and bounds | registered: 0.90 [0.88, 0.91] → rejected | registered: 0.90 [0.88, 0.91] → rejected | yes | n/a |
 | F2 | sample line: cells and day clusters | 173 cells · 463 day clusters | 173 cells · 463 day clusters | yes | yes |
-| F2 | forest rows (stat, lo, hi) = h1.json and sensitivity.json | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:b_mm.h1_pm2_mm: [0.902559, 0.8… | {sensitivity.json:a_maps.sm_pm2_window: [0.897527, 0.873447, 0.902462], sensitivity.json:… | yes | n/a |
+| F2 | forest rows (stat, lo, hi) = h1.json and sensitivity.json | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:a_maps.pm_pm2_window: [0.90764… | {h1.json: [0.902944, 0.880564, 0.907433], sensitivity.json:a_maps.pm_pm2_window: [0.90764… | yes | n/a |
 | F2 | fills in occupied cells (panel a) = h1.json n_fills | 331813 | 331813 | yes | yes |
 | F2 | cells present in every replicate | 173 | 173 | yes | yes |
 | F2 | kappa span of the occupied cells | [0.0736079, 38.7334] | [0.0736079, 38.7334] | yes | yes |
@@ -99,14 +99,14 @@ Generated 2026-09-27 11:08 UTC with `scripts/p2_figure_check.py` from `results/p
 | F4 | counterfactual days | fig_f4_a.csv counterfactual: SM counterfactual: 1 431 of 1 943 maker-days; legs >= 64: 14… | h3.json days_over_63_options; fig_h3_series.csv | yes | n/a |
 | F4 | threshold line | fig_f4_a.csv threshold: dashed line at 2.0; h3.json 2.0 | h3.json threshold | yes | n/a |
 | F5 | f5.b.events: event symbols in b = rows of events.csv | 18 | 18 | yes | yes |
-| F5 | f5.b.status_counts: filled / half filled / hollow symbols | {panel: 13, dropped: 4, kept_no_cell: 1} | {panel: 13, dropped: 4, kept_no_cell: 1} | yes | yes |
+| F5 | f5.b.status_counts: filled / half filled / hollow symbols | {dropped: 4, kept_no_cell: 1, panel: 13} | {dropped: 4, kept_no_cell: 1, panel: 13} | yes | yes |
 | F5 | f5.b.status_ids: filled symbols are exactly kept & panel_cells > 0 (events.csv) | {BTC-pm-20240612: dropped, BTC-pm-20250222: panel, BTC-pm2-20251010: dropped, BTC-pm2-202… | {BTC-pm-20240612: dropped, BTC-pm-20250222: panel, BTC-pm2-20251010: dropped, BTC-pm2-202… | yes | n/a |
 | F5 | f5.b.panel_cells: panel cells of the filled events = h4.json cell_events | 475 | 475 | yes | yes |
 | F5 | f5.b.jumps: effect of the parameters alone, log-% (reference_book.csv) | {BTC-pm-20240612: 0, BTC-pm-20250222: -18.5637, BTC-pm2-20251010: 0, BTC-pm2-20260108: 1.… | {BTC-pm-20240612: 0, BTC-pm-20250222: -18.5637, BTC-pm2-20251010: 0, BTC-pm2-20260108: 1.… | yes | yes |
 | F5 | f5.b.printed_jumps: printed numbers = signed whole log-% of reference_book.csv | {BTC-pm-20240612: 0, BTC-pm-20250222: −19, BTC-pm2-20251010: 0, BTC-pm2-20260108: +2, BTC… | {BTC-pm-20240612: 0, BTC-pm-20250222: −19, BTC-pm2-20251010: 0, BTC-pm2-20260108: +2, BTC… | yes | n/a |
 | F5 | f5.b.windows: +-14 day windows of the kept events (events.csv) | {BTC-pm-20250222: [1739044357, 1741463557], BTC-pm2-20260108: [1766703049, 1769122249], B… | {BTC-pm-20250222: [1739044357, 1741463557], BTC-pm2-20260108: [1766703049, 1769122249], B… | yes | n/a |
-| F5 | f5.b.timeline_rows: grey ticks per rail = rows of params/{CCY}_{m}.json | {BTC PM2: 23, BTC legacy PM: 7, ETH PM2: 22, ETH legacy PM: 6, HYPE PM2: 21} | {BTC legacy PM: 7, BTC PM2: 23, ETH legacy PM: 6, ETH PM2: 22, HYPE PM2: 21} | yes | n/a |
-| F5 | f5.b.placebo_days: placebo days per rail (h4.json placebo.admissible_days) | {BTC legacy PM: 363, BTC PM2: 54, ETH legacy PM: 319, ETH PM2: 10, HYPE PM2: 67} | {BTC legacy PM: 363, BTC PM2: 54, ETH legacy PM: 319, ETH PM2: 10, HYPE PM2: 67} | yes | yes |
+| F5 | f5.b.timeline_rows: grey ticks per rail = rows of params/{CCY}_{m}.json | {BTC PM2: 23, BTC legacy PM: 7, ETH PM2: 22, ETH legacy PM: 6, HYPE PM2: 21} | {BTC PM2: 23, BTC legacy PM: 7, ETH PM2: 22, ETH legacy PM: 6, HYPE PM2: 21} | yes | n/a |
+| F5 | f5.b.placebo_days: placebo days per rail (h4.json placebo.admissible_days) | {BTC PM2: 54, BTC legacy PM: 363, ETH PM2: 10, ETH legacy PM: 319, HYPE PM2: 67} | {BTC PM2: 54, BTC legacy PM: 363, ETH PM2: 10, ETH legacy PM: 319, HYPE PM2: 67} | yes | yes |
 | F5 | f5.a.shares: stacked shares = manager_oi_share.csv after fillna(0) | [0.781064, 0.218936, 0, 0.460144, 0.539856, 0, 0.318577, 0.681423, 0, 0.260018, 0.739982,… | [0.781064, 0.218936, 0, 0.460144, 0.539856, 0, 0.318577, 0.681423, 0, 0.260018, 0.739982,… | yes | n/a |
 | F5 | f5.a.pm2_last_month: PM2 share of option OI in the last month (September 2026) | {BTC: 0.909567, ETH: 0.71894, HYPE: 0.879198} | {BTC: 0.909567, ETH: 0.71894, HYPE: 0.879198} | yes | yes |
 | F5 | f5.c.btc_last: BTC reference straddle on the last day, % of forward (SM, legacy PM, PM2) | [29.6109, 19.6794, 10.0339] | [29.6109, 19.6794, 10.0339] | yes | yes |
@@ -121,8 +121,8 @@ Generated 2026-09-27 11:08 UTC with `scripts/p2_figure_check.py` from `results/p
 | F6 | f6.a.dose_stats: median, min, max (log-%); % positive, % below -1, % with \|dose\| < 1 | [-0.633617, -44.2078, 2.20238, 11.1579, 48.6316, 44.4211] | [-0.633617, -44.2078, 2.20238, 11.1579, 48.6316, 44.4211] | yes | yes |
 | F6 | f6.a.band: printed share of pairs with \|dose\| < 1 log-% | \|dose\| < 1 log-%: 44.4 % of pairs | \|dose\| < 1 log-%: 44.4 % of pairs | yes | n/a |
 | F6 | f6.a.medians: median bar per row = median dose of the event's pairs | [-12.3632, 1.177, 0, -0.946601, -20.7195, -12.2334, 1.17629, 0, -0.00347127, -11.9695, 0,… | [-12.3632, 1.177, 0, -0.946601, -20.7195, -12.2334, 1.17629, 0, -0.00347127, -11.9695, 0,… | yes | n/a |
-| F6 | f6.head.panel: header numbers = h4_panel.parquet | {events: 13, pairs: 475, rows: 91446, fills: 84919, fills_in_two_windows: 6527, day_clust… | {events: 13, pairs: 475, rows: 91446, fills: 84919, fills_in_two_windows: 6527, day_clust… | yes | yes |
-| F6 | f6.head.h4: header numbers = h4.json | {events: 13, pairs: 475, rows: 91446, fills: 84919, fills_in_two_windows: 6527, day_clust… | {events: 13, pairs: 475, rows: 91446, fills: 84919, fills_in_two_windows: 6527, day_clust… | yes | n/a |
+| F6 | f6.head.panel: header numbers = h4_panel.parquet | {day_ccy_effects: 322, day_clusters: 141, events: 13, fills: 84919, fills_in_two_windows:… | {day_ccy_effects: 322, day_clusters: 141, events: 13, fills: 84919, fills_in_two_windows:… | yes | yes |
+| F6 | f6.head.h4: header numbers = h4.json | {day_ccy_effects: 322, day_clusters: 141, events: 13, fills: 84919, fills_in_two_windows:… | {day_ccy_effects: 322, day_clusters: 141, events: 13, fills: 84919, fills_in_two_windows:… | yes | n/a |
 | F6 | f6.b.line: slope of the line x 100 = h4.json stat (beta) | -4.59923 | -4.59923 | yes | n/a |
 | F6 | f6.b.fwl_slope: fwl_slope of fig_h4_fwl_bins.csv = h4.json stat | -4.59923 | -4.59923 | yes | n/a |
 | F6 | f6.b.bins: 20 bins covering all panel rows (h4.json n) | [20, 91446] | [20, 91446] | yes | n/a |
@@ -134,7 +134,7 @@ Generated 2026-09-27 11:08 UTC with `scripts/p2_figure_check.py` from `results/p
 | F6 | f6.c.criteria: check list = h4.json criteria (p, beta > 0, beta > P95) | [False, False, 0.6224] | [False, False, 0.6224] | yes | n/a |
 | F6 | f6.c.verdict: printed verdict = h4.json rejected | H4: rejected | H4: rejected | yes | n/a |
 | F6 | f6.c.placebo_days: placebo days per timeline = h4.json placebo.admissible_days | placebo days: BTC 54 · ETH 10 · HYPE 67 · legacy 363 / 319 | placebo days: BTC 54 · ETH 10 · HYPE 67 · legacy 363 / 319 | yes | yes |
-| F6 | f6.d.rows: forest rows = h4.json and sensitivity_h4.json by_ccy (stat, lo, hi, clusters) | {registered: [-4.59923, -26.0402, 16.5908, 141], BTC only: [-3.41805, -10.5088, 3.56931, … | {registered: [-4.59923, -26.0402, 16.5908, 141], BTC only: [-3.41805, -10.5088, 3.56931, … | yes | n/a |
+| F6 | f6.d.rows: forest rows = h4.json and sensitivity_h4.json by_ccy (stat, lo, hi, clusters) | {BTC only: [-3.41805, -10.5088, 3.56931, 126], ETH only: [-1.89895, -8.36344, 4.67704, 12… | {BTC only: [-3.41805, -10.5088, 3.56931, 126], ETH only: [-1.89895, -8.36344, 4.67704, 12… | yes | n/a |
 | A1 | a_n_BTC_sm: a: n printed for BTC SM | 100 | 100 | yes | yes |
 | A1 | a_n_BTC_pm: a: n printed for BTC legacy PM | 100 | 100 | yes | yes |
 | A1 | a_n_BTC_pm2: a: n printed for BTC PM2 | 100 | 100 | yes | yes |

@@ -156,3 +156,36 @@ bevor eine Teststatistik berechnet wird:
    gilt mit dem Stand nach der letzten.
 4. **H1:** Keine Ausschlüsse; die 20 Fills mit K_PM2 ≤ 0 (weit vom Mark bepreiste RFQ-Beine) bleiben in den
    Summen.
+
+## Nachtrag 5 (27.09.2026): Umschreiben der lokalen Historie vor der Veröffentlichung
+
+Dieser Nachtrag entsteht nach allen registrierten Ergebnissen. Er ändert keine Regel der Präregistrierung oder der
+Nachträge 1 bis 4, keine Teststatistik und kein Ergebnis. Er hält fest, warum die Commits der Präregistrierung und
+der Nachträge 1 bis 4 neue Hashes tragen:
+
+| Fassung | Alter Commit | Neuer Commit | Autor- und Committer-Zeit |
+|---|---|---|---|
+| Präregistrierung | `1d13227b6f0698f29fcd95d18c5828ae6a0bbc5e` | `cc0a29f655b50c7415e01583b25952e9831bbecd` | 24.09.2026 22:33:50 +0200 |
+| Nachtrag 1 | `eb534fe80dea66e651589e1ea01dfdeec6040c47` | `85bb0b7e17a3d32731a83de40ab88b8e012f3983` | 25.09.2026 00:26:54 +0200 |
+| Nachtrag 2 | `94652106387bc1f6006e0dbe02ac0a7edb13ea67` | `6005d7c53ccf51d3df7d038025f546eb5d07a6ef` | 25.09.2026 00:29:29 +0200 |
+| Nachtrag 3 | `bfc34c81c507c51a38e83878422b89d072f9ed18` | `8778432b49f01532809517d592acda4727d7aaa8` | 25.09.2026 00:29:56 +0200 |
+| Nachtrag 4 | `c4fcb59d61b73549aa90cacbd3b997816f36d823` | `e492ba123c4c81ddc478c0c6ef2246867deeeaae` | 25.09.2026 01:29:58 +0200 |
+
+1. **Grund:** Vor der ersten Veröffentlichung wurde die lokale, nie gepushte Historie von Paper 2 umgeschrieben
+   (Audit A01, `docs/paper2/AUDIT.md`). Zum einen wurden Kontokennungen entfernt, vor allem aus Test-Fixtures und
+   Tests: rohe Kontonummern dominanter Maker-Subaccounts und von PM2-Override-Konten sowie unsalzte, durch
+   Durchprobieren umkehrbare Hashes (Nachtrag 1, Punkt 4). Zum anderen setzen die Commits von Paper 2 jetzt auf die
+   korrigierte und bereinigte Historie von Paper 1 auf (Zweig `main`), in der auch jüngere Commits von Paper 1 neue
+   Hashes tragen. Dadurch hat jeder Commit von Paper 2 einen neuen Hash, auch die fünf Commits der Tabelle.
+2. **Bytegleiche Texte:** In jedem der fünf neuen Commits ist diese Datei bytegleich mit der Fassung im alten Commit
+   (derselbe Git-Blob, derselbe SHA-256), und der Diff jedes dieser Commits gegenüber seinem Eltern-Commit ist
+   derselbe wie im Original. Blob-Hashes und SHA-256 der fünf Fassungen stehen in `docs/paper2/HISTORY_REWRITE.md`.
+3. **Zeiten:** Autor und Committer sind mit Name, E-Mail, Datum, Uhrzeit und Zeitzone erhalten; in jedem der fünf
+   Commits ist die Autor-Zeit gleich der Committer-Zeit (Tabelle). Es bleiben lokale Zeiten des Rechners des Autors.
+   Weil sie erhalten sind, liegen die umgeschriebenen Commits zeitlich vor dem Commit `d2a2b43` auf `main`
+   (25.09.2026, 12:37 +0200), auf dem sie jetzt aufsetzen. Die Zeiten geben an, wann die Texte zuerst committet
+   wurden.
+4. **Öffentlichkeit:** Die alten Commits wurden nie gepusht und werden nicht veröffentlicht, weil sie die entfernten
+   Kennungen enthalten; die Zuordnung alt → neu lässt sich daher nur im lokalen Repository des Autors prüfen.
+   Öffentlich wird die Präregistrierung erst mit dem Push der umgeschriebenen Historie, also nach den Ergebnissen.
+   Einen öffentlichen Zeitstempel vor den Ergebnissen gibt es nicht.

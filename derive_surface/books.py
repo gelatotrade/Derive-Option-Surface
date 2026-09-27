@@ -40,7 +40,7 @@ from .p2types import Book, OptionLeg
 
 MARKOUTS = Path("data/p1/derived/markouts.parquet")
 TAPE_DIR = Path("data/p1/tape")
-KONTEXT = Path("data/p2/kontext/margin-historie")
+CONTEXT_DIR = Path("data/p2/kontext/margin-historie")   # local context probes (git-ignored; directory name kept)
 BOOKS_DIR = Path("data/p2/books")
 LOG_PATH = Path("data/p2/logs/A5.jsonl")
 EVENTS_DIR = BOOKS_DIR / "events"
@@ -254,9 +254,9 @@ class AssetRegistry:
         return cls(assets, mgrs)
 
     @classmethod
-    def from_kontext(cls, kontext: Path = KONTEXT) -> "AssetRegistry":
-        head = json.loads((Path(kontext) / "addresses_head.json").read_text())["cur"]
-        cur = json.loads((Path(kontext) / "all_currencies.json").read_text())["result"]
+    def from_context(cls, context: Path = CONTEXT_DIR) -> "AssetRegistry":
+        head = json.loads((Path(context) / "addresses_head.json").read_text())["cur"]
+        cur = json.loads((Path(context) / "all_currencies.json").read_text())["result"]
         managers, seen = [], set()
         for r in cur:
             for m in r.get("managers") or []:
@@ -302,7 +302,7 @@ _DEFAULT_REGISTRY: Optional[AssetRegistry] = None
 def default_registry() -> AssetRegistry:
     global _DEFAULT_REGISTRY
     if _DEFAULT_REGISTRY is None:
-        _DEFAULT_REGISTRY = AssetRegistry.from_kontext()
+        _DEFAULT_REGISTRY = AssetRegistry.from_context()
         _DEFAULT_REGISTRY.load_cash(BOOKS_DIR / "cash_assets.json")
     return _DEFAULT_REGISTRY
 

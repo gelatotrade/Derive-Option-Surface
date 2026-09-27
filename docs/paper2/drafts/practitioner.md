@@ -100,8 +100,8 @@ categories were read, no result values. The prototypes stay synthetic. The final
 ## T2: What `get_margin` returns
 
 - **Purpose:** show the bot developer that `C − net` is not margin, and resolve the factors 11.86 against 1.19.
-- **Data:** `results/p2/semantics/faktoren.csv`, rows `historisch …` without `H0_`, cases A and B. Columns
-  `SM_R_engine, PM2_R_engine, V_und_SM, V_PM2, F_Cnet, F_R_engine`. Prototype table `fig_t2.csv`.
+- **Data:** `results/p2/semantics/factors.csv`, rows `historical …` without `H0_`, cases A and B. Columns
+  `SM_R_engine, PM2_R_engine, V_SM, V_PM2, F_Cnet, F_R_engine`. Prototype table `fig_t2.csv`.
 - **Coding:** panel a: one mixed book (24 Sep, case B), one horizontal bar `C − net = R − V` per manager.
   The R part is solid in the manager colour, the −V part hatched. One sees that −V (497,000 USDC) is the same for both
   managers and dwarfs R. Panel b: a dumbbell per probe book (4 rows), open circle = factor on
@@ -114,7 +114,7 @@ categories were read, no result values. The prototypes stay synthetic. The final
   in one request, `positions = q, changes = Δq, collateral_changes = −p·Δq → ΔK = −(post − pre)`. If the jury
   wants no text in the figure, it goes verbatim into the caption.
 - **Pitfalls:**
-  - The variant of the book of 24 Sep (`H1_…` against `H0_heutige_Liste`) must be named, otherwise 1.19 does not match
+  - The variant of the book of 24 Sep (`H1_…` against `H0_todays_list`) must be named, otherwise 1.19 does not match
     1.22.
   - The arrow for the book of 17 Sep B points to the left (11.86 → 10.76). That is correct (V > 0), but it looks like an
     error. The caption should say that V is positive there.

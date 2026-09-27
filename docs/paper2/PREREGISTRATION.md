@@ -1,15 +1,15 @@
 # Pre-registration Paper 2: Capital-adjusted edge on Derive (English translation)
 
 > **Translation, not part of the registration.** This English text was made on 25 September 2026, after all
-> registered results had been computed and after the audit of the paper (`docs/paper2/AUDIT.md`, finding A64). It
-> translates `docs/paper2/PRAEREGISTRIERUNG.md` as it stands with Addenda 1 to 4, git blob
-> `96986c732c85408daa4e704c519601bb531fdc4b` (`git hash-object docs/paper2/PRAEREGISTRIERUNG.md`). **The German
-> original is binding**; where the two texts differ, the German text applies. The registration itself is commit
-> `1d13227`; the commits of the four addenda are named in the section "Data, code and pre-registration" of
-> `paper2/main.tex`. Since the history rewrite of 27 September 2026 these commits carry new hashes (the
-> registration is `cc0a29f`); `docs/paper2/HISTORY_REWRITE.md` maps old to new and shows that
-> `PRAEREGISTRIERUNG.md` is byte-identical in every pair, so the blob above is unchanged. Until 27 September 2026
-> this translation was `docs/paper2/PREREGISTRATION_EN.md`.
+> registered results had been computed and after the audit of the paper (`docs/paper2/AUDIT.md`, finding A64);
+> Addendum 5 was translated on 27 September 2026. It translates `docs/paper2/PRAEREGISTRIERUNG.md` as it stands
+> with Addenda 1 to 5, git blob `c2d7378bfa0d51ac63d819ec9ded8571535ab4a6`
+> (`git hash-object docs/paper2/PRAEREGISTRIERUNG.md`). **The German original is binding**; where the two texts
+> differ, the German text applies. The registration itself is commit `cc0a29f`; the commits of Addenda 1 to 4 are
+> named in the section "Data, code and pre-registration" of `paper2/main.tex`. These are the hashes after the
+> history rewrite of 27 September 2026: the registration `1d13227` is now `cc0a29f`. Addendum 5 maps old to new, and
+> `docs/paper2/HISTORY_REWRITE.md` shows that `PRAEREGISTRIERUNG.md` is byte-identical in each pair of old and
+> new commit. Until 27 September 2026 this translation was `docs/paper2/PREREGISTRATION_EN.md`.
 >
 > Conventions: "Nachtrag" is rendered as "Addendum", as in the paper. Numbers use a decimal point instead of the
 > German decimal comma and dates are written out; code names, symbols and formulas are unchanged. File paths are
@@ -177,3 +177,35 @@ statistic is computed:
    mean dose. For combined changes on one day, e is the time of the first change, and K_nach applies with the state
    after the last.
 4. **H1:** No exclusions; the 20 fills with K_PM2 ≤ 0 (RFQ legs priced far from the mark) stay in the sums.
+
+## Addendum 5 (27 September 2026): rewriting the local history before publication
+
+This addendum is written after all registered results. It changes no rule of the pre-registration or of Addenda 1
+to 4, no test statistic and no result. It records why the commits of the pre-registration and of Addenda 1 to 4
+carry new hashes:
+
+| Version | Old commit | New commit | Author and committer time |
+|---|---|---|---|
+| Pre-registration | `1d13227b6f0698f29fcd95d18c5828ae6a0bbc5e` | `cc0a29f655b50c7415e01583b25952e9831bbecd` | 24 September 2026 22:33:50 +0200 |
+| Addendum 1 | `eb534fe80dea66e651589e1ea01dfdeec6040c47` | `85bb0b7e17a3d32731a83de40ab88b8e012f3983` | 25 September 2026 00:26:54 +0200 |
+| Addendum 2 | `94652106387bc1f6006e0dbe02ac0a7edb13ea67` | `6005d7c53ccf51d3df7d038025f546eb5d07a6ef` | 25 September 2026 00:29:29 +0200 |
+| Addendum 3 | `bfc34c81c507c51a38e83878422b89d072f9ed18` | `8778432b49f01532809517d592acda4727d7aaa8` | 25 September 2026 00:29:56 +0200 |
+| Addendum 4 | `c4fcb59d61b73549aa90cacbd3b997816f36d823` | `e492ba123c4c81ddc478c0c6ef2246867deeeaae` | 25 September 2026 01:29:58 +0200 |
+
+1. **Reason:** Before the first publication, the local history of Paper 2, which had never been pushed, was
+   rewritten (audit A01, `docs/paper2/AUDIT.md`). First, account identifiers were removed, mainly from test fixtures
+   and tests: raw account numbers of dominant maker subaccounts and of PM2 override accounts, and unsalted hashes
+   that can be reversed by enumeration (Addendum 1, point 4). Second, the Paper 2 commits now build on the corrected
+   and cleaned history of Paper 1 (branch `main`), in which later Paper 1 commits carry new hashes as well. As a
+   result, every Paper 2 commit has a new hash, the five commits of the table included.
+2. **Byte-identical texts:** In each of the five new commits this file is byte-identical to the version in the old
+   commit (same git blob, same SHA-256), and the diff of each of these commits against its parent is the same as in
+   the original. The blob hashes and SHA-256 values of the five versions are in `docs/paper2/HISTORY_REWRITE.md`.
+3. **Times:** Author and committer are kept with name, e-mail, date, time of day and time zone; in each of the five
+   commits the author time equals the committer time (table). They remain local times of the author's machine.
+   Because they are kept, the rewritten commits are dated before the commit `d2a2b43` on `main` (25 September 2026,
+   12:37 +0200) on which they now build. The times state when the texts were first committed.
+4. **Publication:** The old commits were never pushed and will not be published, because they contain the removed
+   identifiers; the mapping from old to new can therefore be checked only in the author's local repository. The
+   pre-registration becomes public only with the push of the rewritten history, that is, after the results. There is
+   no public timestamp before the results.

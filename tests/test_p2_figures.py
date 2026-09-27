@@ -63,7 +63,7 @@ def _t1(rd: Path) -> dict:
 def _t2(rd: Path) -> dict:
     (rd / "semantics").mkdir(parents=True)
     (rd / "params").mkdir()
-    T2._faktoren().to_csv(rd / "semantics" / "faktoren.csv", index=False)
+    T2._factors().to_csv(rd / "semantics" / "factors.csv", index=False)
     params = {m: Timeline("BTC", m, root=REAL / "params").entry_at(T2.t2.REF_TS) for m in ("pm2", "sm")}
     for m, entry in params.items():
         (rd / "params" / f"BTC_{m}.json").write_text(json.dumps([entry]))
@@ -483,6 +483,29 @@ def test_caption_elements_must_be_drawn(tmp_path):
     pd.DataFrame({"kind": ["registered", "band"]}).to_csv(rd / "fig_f2_c.csv", index=False)
     assert chk.element_checks(tex, rd).set_index("check").loc[
         'caption "grey band": a row of kind band (h1_sign.sign_floor)', "ok"]
+
+
+def test_check_sheet_is_the_same_whatever_the_order_of_sets_and_mappings():
+    """The F2 forest source was a mapping filled from a set, so FIGURE_CHECKS.md changed with the hash seed of the
+    run; the sheet prints every set and every mapping sorted, nested ones included."""
+    chk = _check_script()
+    keys = ["sensitivity.json:b_mm", "h1.json", 10, "sensitivity.json:a_maps", 2.5]
+
+    def sheet(order):
+        checks = pd.DataFrame([
+            chk._row("f2", "forest rows", {k: (1, 2) for k in order}, set(order), True),
+            chk._row("f5", "ids", frozenset(order), {k: {"b": 1, "a": {3, 1, 2}} for k in order}, True)])
+        shapes = pd.DataFrame(columns=["what", "figure", "target", "ok"])
+        captions = pd.DataFrame(columns=["slot", "status", "note"])
+        text = chk.sheet(checks, shapes, captions, Path("results/p2"))
+        return "\n".join(line for line in text.splitlines() if not line.startswith("Generated "))
+
+    first = sheet(keys)
+    assert all(sheet(order) == first for order in (keys[::-1], keys[2:] + keys[:2], sorted(keys, key=str)))
+    assert chk._cell({"b": 1, 10: 2, "a": 3, 2.5: 4}) == "{2.5: 4, 10: 2, a: 3, b: 1}"  # numbers first, then text
+    assert chk._cell({"x", "b", "a"}) == "[a, b, x]"
+    assert chk._cell({"k": [{"z": 1, "y": 2}, frozenset({3, 1})]}) == "{k: [{y: 2, z: 1}, [1, 3]]}"
+    assert chk._cell([3, 1, 2]) == "[3, 1, 2]"  # a list keeps its order
 
 
 # ---------------------------------------------------------------------------------------------- set in the paper

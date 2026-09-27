@@ -402,5 +402,5 @@ Further gaps, by urgency:
 
 ## Files
 
-- This verdict: `docs/paper2/drafts/jury_gestaltung.md`
+- This verdict: `docs/paper2/drafts/jury_design.md`
 - Measurement: `data/p2/fig_proto/jury/audit_protos.py`, `data/p2/fig_proto/jury/audit_protos.csv`

@@ -3,7 +3,7 @@
 2026-09-25. Three independent draft sets of nine slots each (lenses: mechanism, empirics, practitioner; under
 `docs/paper2/drafts/`, prototypes under `data/p2/fig_proto/`), then two judges with different lenses: a
 referee who recomputed the claims against the data (`jury_referee.md`), and a design review that measured width and
-smallest font after placement and looked at every prototype in greyscale (`jury_gestaltung.md`,
+smallest font after placement and looked at every prototype in greyscale (`jury_design.md`,
 measurement `data/p2/fig_proto/jury/audit_protos.csv`). This file settles every point of dispute and is the
 **binding specification for building** `derive_surface/figures_p2.py`, `figdata_p2.py`, `scripts/p2_figure_check.py`,
 the social cards and the GIF. Where a draft or a judge says otherwise, this file applies.
@@ -213,7 +213,7 @@ accounts one by one in F4 (CSV), the mechanics rows `hedges_worst` from M (they 
 | H2 account M5 with 5,958 fills (P) | 5,957 after excluding one fill with K_single ≤ 0 | row M5 |
 
 Confirmed (a selection): all numbers in table 3 of the referee, plus T1 (PM2 3.42 to 13.70 %, SM 12.37 to 15.01 % of the
-forward, SM cheaper at 9 of 740 nodes), the four factor pairs from `faktoren.csv`, the F1 spans, the H1 sign structure
+forward, SM cheaper at 9 of 740 nodes), the four factor pairs from `factors.csv`, the F1 spans, the H1 sign structure
 (74 of 173 cells with edge ≤ 0, capital denominator positive in all 173 cells, sign(A) = sign(B) everywhere), the
 parameter jumps (BTC PM2 +1.60 / −10.49 / −7.84 / −26.05 log-%).
 
@@ -383,9 +383,9 @@ nodes, median SM/PM2 1.261. All 1,480 values lie in [3; 15.5]. Decomposition = g
 M c is the bridge from the single contract (F1) to the book (F3, F4). Templates: `praktiker/t2_praktiker.png`,
 `mechanismus/t2_proto.png`.
 
-**Data.** a, b: `results/p2/semantics/faktoren.csv`, filter: `messung` starts with `historisch` and does not contain `H0_`,
-`fall ∈ {A, B}`; exactly four rows (test). Columns `SM_R_engine, PM2_R_engine, V_und_SM, V_PM2, F_Cnet, F_R_engine`.
-Row names: b17_exakt A “17 Sep, short”, B “17 Sep, mixed”; b24 (H1 list) A “24 Sep, short”, B “24 Sep, mixed”.
+**Data.** a, b: `results/p2/semantics/factors.csv`, filter: `measurement` starts with `historical` and does not contain `H0_`,
+`case ∈ {A, B}`; exactly four rows (test). Columns `SM_R_engine, PM2_R_engine, V_SM, V_PM2, F_Cnet, F_R_engine`.
+Row names: b17_exact A “17 Sep, short”, B “17 Sep, mixed”; b24 (H1 list) A “24 Sep, short”, B “24 Sep, mixed”.
 c: row BTC 2026-09-17 of `results/p2/reference_book.csv` (08:00 UTC, listed expiry with 22 days, strike =
 forward = 76,587.73). Scenario P&L of the book (short call + short put at the strike) via `figdata_p2.pm2_scenarios(book,
 state, params)` with `Timeline("BTC", "pm2").at(ts)`; capital lines `K_pm2`, `K_sm` from the same row and
@@ -810,8 +810,10 @@ steps in the time strip = exp(jump from F5) − 1: +1.6 %, −10.0 %, −7.5 %, 
 
 Shared: `figures_social` style (fixed size without `bbox tight`), font at least 28 px, everything inside the frame
 (test on `tightbbox`), every number in the title readable in the image, colour double-coded as in the paper, simple per cent.
-Footer “Derive, chain 957 · replica of the deployed margin contracts · pre-registration commit c4fcb59”. Output
-`paper2/social/s1_three_engines.png`, `s2_straddle_vs_call.png`, `s3_verdicts.png`, tables `results/p2/fig_s{1,2,3}.csv`.
+Footer “Derive, chain 957 · replica of the deployed margin contracts · pre-registration commit c4fcb59”
+(`c4fcb59` is now `e492ba1`; since review round 1 the footer names the pre-registration commit itself, now
+`cc0a29f`, see `docs/paper2/MANUSCRIPT.md` section 7.2). Output `paper2/social/s1_three_engines.png`,
+`s2_straddle_vs_call.png`, `s3_verdicts.png`, tables `results/p2/fig_s{1,2,3}.csv`.
 
 1. **“One short BTC straddle. Three margin engines.”** Left two thirds: time series from F5 c (2024-01 to 2026-09,
    lines 4 px, line style per manager), at the PM2 line the steps “+2 %”, “−10 %”, “−8 %”, “−23 %”, vertical lines
@@ -870,7 +872,7 @@ Pattern `scripts/p1_figure_check.py`, without tautological comparisons: the scri
 `fig_<slot>_<panel>.csv` (column `printed` and the full values) and compares them with the sources, not with themselves.
 It writes `docs/paper2/FIGURE_CHECKS.md` and exits with a status ≠ 0 on any deviation.
 
-- **Sources:** T2 against `faktoren.csv` (exactly four rows); T1 against `probe_BTC_2026-09-17_summary.json` and the grid; F1
+- **Sources:** T2 against `factors.csv` (exactly four rows); T1 against `probe_BTC_2026-09-17_summary.json` and the grid; F1
   against `fig_edge_maps.csv`; F2 against `h1_cells.csv` and `h1.json`; F3 against `fig_h2_dist.csv`, `h2.json`, `sens_h2.csv`;
   F4 against `fig_h3_series.csv`, `h3.json`, `sens_h3.csv`; F5 against `reference_book.csv`, `events.csv`,
   `manager_oi_share.csv`, `h4.json`; F6 against `h4_doses.csv`, `h4_panel.parquet`, `fig_h4_events.csv`, `h4.json`,
@@ -910,7 +912,7 @@ It writes `docs/paper2/FIGURE_CHECKS.md` and exits with a status ≠ 0 on any de
 ## 13 · Files
 
 - This specification: `docs/paper2/FIGURE_SELECTION.md`
-- Drafts and jury: `docs/paper2/drafts/{mechanism,empirics,practitioner,jury_referee,jury_gestaltung}.md`
+- Drafts and jury: `docs/paper2/drafts/{mechanism,empirics,practitioner,jury_referee,jury_design}.md`
 - Prototypes and measurement: `data/p2/fig_proto/{mechanismus,empirie,praktiker,jury}/`
 - To build: `derive_surface/figures_p2.py`, `derive_surface/figdata_p2.py`, additions to `figstyle.py`,
   `p2surface.py`, `inference_p2.py`, `inference_p2_h4.py`; `scripts/p2_figure_check.py`; `tests/test_p2_figures.py`;

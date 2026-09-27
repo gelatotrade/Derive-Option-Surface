@@ -1,7 +1,7 @@
 """T2 · What ``get_margin`` returns, and how PM2 prices a book (FIGURE_SELECTION.md section 7, T2), 7.0 x 2.6 in.
 
-* a, b: the four historical probe books of ``results/p2/semantics/faktoren.csv`` (the file keeps the column names
-  of the probes: ``messung`` starts with "historisch", no "H0_", ``fall`` A or B). a splits ``C - net`` of the mixed book of 24 Sep 2026 into the requirement
+* a, b: the four historical probe books of ``results/p2/semantics/factors.csv`` (``measurement`` starts with
+  "historical", no "H0_", ``case`` A or B). a splits ``C - net`` of the mixed book of 24 Sep 2026 into the requirement
   ``R`` and the value term ``-V`` of each manager; b sets the SM/PM2 ratio read on ``C - net`` against the ratio on
   ``R`` for all four books.
 * c: the scenario profit and loss of the BTC reference straddle of 17 Sep 2026, 08:00 UTC (the row of
@@ -41,7 +41,7 @@ from . import _kit_t2a1 as kit  # noqa: E402
 
 SLOT = "t2"
 WIDTH, HEIGHT = 7.0, 2.6
-FAKTOREN = Path("semantics") / "faktoren.csv"
+FACTORS = Path("semantics") / "factors.csv"
 REFBOOK = Path("reference_book.csv")
 REF_CCY, REF_DAY, REF_TS = "BTC", "2026-09-17", 1_789_632_000   # 17 Sep 2026 08:00 UTC
 REPRO_REL = 1e-9
@@ -69,16 +69,16 @@ CAPTION = (
 
 # ---------------------------------------------------------------------------------------------------- data
 
-def probe_rows(faktoren: pd.DataFrame) -> pd.DataFrame:
+def probe_rows(factors: pd.DataFrame) -> pd.DataFrame:
     """The four historical probe books (A = short, B = mixed) in drawing order, with label and block."""
-    f = faktoren
-    sel = f[f["messung"].astype(str).str.startswith("historisch") & ~f["messung"].astype(str).str.contains("H0_")
-            & f["fall"].isin(["A", "B"])].copy()
-    if len(sel) != 4 or sel[["buch", "fall"]].duplicated().any():
-        raise ValueError(f"faktoren.csv: expected exactly four historical probe rows (A/B), found {len(sel)}")
-    day = {b: ("17 Sep" if str(b).startswith("b17") else "24 Sep") for b in sel["buch"]}
-    sel["label"] = [f"{day[b]}, {'mixed' if c == 'B' else 'short'}" for b, c in zip(sel["buch"], sel["fall"])]
-    sel["block"] = [int(re.search(r"Blk\s+(\d+)", str(m)).group(1)) for m in sel["messung"]]
+    f = factors
+    sel = f[f["measurement"].astype(str).str.startswith("historical")
+            & ~f["measurement"].astype(str).str.contains("H0_") & f["case"].isin(["A", "B"])].copy()
+    if len(sel) != 4 or sel[["book", "case"]].duplicated().any():
+        raise ValueError(f"factors.csv: expected exactly four historical probe rows (A/B), found {len(sel)}")
+    day = {b: ("17 Sep" if str(b).startswith("b17") else "24 Sep") for b in sel["book"]}
+    sel["label"] = [f"{day[b]}, {'mixed' if c == 'B' else 'short'}" for b, c in zip(sel["book"], sel["case"])]
+    sel["block"] = [int(re.search(r"block\s+(\d+)", str(m)).group(1)) for m in sel["measurement"]]
     sel = sel.set_index("label").loc[ROW_ORDER].reset_index()
     return sel
 
@@ -125,9 +125,9 @@ def _reference_row(results_dir: Path) -> pd.Series:
 
 
 def load(results_dir: Path = Path("results/p2")) -> dict:
-    """Everything T2 draws, from ``results_dir`` (faktoren.csv, reference_book.csv, params/)."""
+    """Everything T2 draws, from ``results_dir`` (factors.csv, reference_book.csv, params/)."""
     rd = Path(results_dir)
-    probes = probe_rows(pd.read_csv(rd / FAKTOREN))
+    probes = probe_rows(pd.read_csv(rd / FACTORS))
     row = _reference_row(rd)
     ts, F = int(row["ts"]), float(row["forward"])
     tl = {m: Timeline(REF_CCY, m, root=rd / "params") for m in ("pm2", "sm")}
@@ -188,14 +188,14 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
     pr = data["probes"]
     a_row = pr[pr["label"] == "24 Sep, mixed"].iloc[0]
     a = []
-    for mgr, R, V, C in (("sm", a_row["SM_R_engine"], a_row["V_und_SM"], a_row["SM_Cnet"]),
+    for mgr, R, V, C in (("sm", a_row["SM_R_engine"], a_row["V_SM"], a_row["SM_Cnet"]),
                          ("pm2", a_row["PM2_R_engine"], a_row["V_PM2"], a_row["PM2_Cnet"])):
         R, V, C = float(R), float(V), float(C)
         for item, value, printed in (("R", R, f"R {_k(R)}"), ("minus_V", -V, ""),
-                                     ("C_minus_net", R - V, _k(R - V)), ("C_minus_net_faktoren", C, "")):
+                                     ("C_minus_net", R - V, _k(R - V)), ("C_minus_net_factors", C, "")):
             a.append({"manager": mgr, "item": item, "value_usdc": value, "value_drawn_thousand": value / 1e3,
-                      "printed": printed, "buch": a_row["buch"], "fall": a_row["fall"], "block": int(a_row["block"])})
-    b = pd.DataFrame({"row": np.arange(4), "label": pr["label"], "buch": pr["buch"], "fall": pr["fall"],
+                      "printed": printed, "book": a_row["book"], "case": a_row["case"], "block": int(a_row["block"])})
+    b = pd.DataFrame({"row": np.arange(4), "label": pr["label"], "book": pr["book"], "case": pr["case"],
                       "block": pr["block"].astype(int), "F_Cnet": pr["F_Cnet"].astype(float),
                       "F_R_engine": pr["F_R_engine"].astype(float),
                       "printed_Cnet": [f"{x:.2f}" for x in pr["F_Cnet"]],
@@ -404,7 +404,7 @@ def _fc(rd: Path) -> pd.DataFrame:
 
 
 def _src_probe(rd: Path) -> pd.DataFrame:
-    return probe_rows(pd.read_csv(rd / FAKTOREN)).set_index("label")
+    return probe_rows(pd.read_csv(rd / FACTORS)).set_index("label")
 
 
 def _src_ref(rd: Path) -> pd.Series:
@@ -453,7 +453,7 @@ CHECKS: List[dict] = [
     kit.check("a_sm_R", "a: SM requirement R, USDC", _a("sm", "R"), lambda rd: float(
         _src_probe(rd).loc["24 Sep, mixed", "SM_R_engine"]), expected=211_023.47, expected_tol=0.005),
     kit.check("a_sm_minusV", "a: SM value term -V, USDC", _a("sm", "minus_V"), lambda rd: -float(
-        _src_probe(rd).loc["24 Sep, mixed", "V_und_SM"]), expected=496_914.28, expected_tol=0.005),
+        _src_probe(rd).loc["24 Sep, mixed", "V_SM"]), expected=496_914.28, expected_tol=0.005),
     kit.check("a_sm_Cnet", "a: SM C - net = R - V, USDC (bar end, printed 708)", _a("sm", "C_minus_net"),
               lambda rd: float(_src_probe(rd).loc["24 Sep, mixed", "SM_Cnet"]), expected=707_937.75,
               expected_tol=0.005, abs_=0.011),

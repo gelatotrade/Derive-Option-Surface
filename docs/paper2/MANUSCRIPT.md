@@ -28,7 +28,7 @@ pipeline overwrites them later. `paper2/thumbnails/cas-email.jpeg` is a copy fro
 needs the file for the e-mail symbol; without it the build fails.
 
 **Rules for the text:** English, concise, no dashes (em or en dash) in running text, only keys from
-`paper2/refs.bib`. Every number comes from `results/p2/` or from the pre-registration (commit `1d13227`);
+`paper2/refs.bib`. Every number comes from `results/p2/` or from the pre-registration (commit `cc0a29f`);
 otherwise a `\PH{…}` stands there. The macro is `\newcommand{\PH}[1]{\textbf{[#1]}}`, so in the PDF the
 placeholders appear in bold in square brackets. Before submission, `grep -c '\\PH{' paper2/main.tex` may return
 only 1 (the definition).
@@ -49,7 +49,7 @@ abstract included. Formulas count. The tolerance is +10 %.
 | 4 Results | `sec:results` | 4.1 H1 (F1, F2), 4.2 H2 (F3), 4.3 H3 (F4), 4.4 H4 (F5, F6) | 1,400 | 453 | ~950 for the `*-reading` paragraphs and findings |
 | 5 Discussion | `sec:discussion` | three paragraphs on meaning (`disc-map`, `disc-book`, `disc-price`), one paragraph on limits (done); Fig. A1 | 400 | 175 | ~225 |
 | 6 Conclusion | `sec:conclusion` | two sentences done, `concl-results`, `concl-close` | 200 | 55 | ~145 |
-| Back matter | n/a | Data, code and pre-registration (commit `1d13227`); Competing interest; Use of generative tools | n/a | 255 | n/a |
+| Back matter | n/a | Data, code and pre-registration (commit `1d13227`, now `cc0a29f`); Competing interest; Use of generative tools | n/a | 255 | n/a |
 | **Total** | | | **3,970** | **2,968** | |
 
 Like Paper 1, the total of 2,968 counts all sections including the back matter. Without the back matter it is
@@ -66,7 +66,7 @@ caption of F6.
 | Slot | Label | Environment | Placeholder PDF | Caption draft | Data (planned) |
 |---|---|---|---|---|---|
 | T1 | `fig:t1` | `figure*` | 7.0 × 3.0 in | engine view of the BTC surface, colour = PM2 or SM capital per short contract | `results/p2/surface_t1.json` (block, grid, K per point) from `p2surface.py` |
-| T2 | `fig:t2` | `figure*` | 7.0 × 2.6 in | net = C + V − R; factors on C − net against R for the probe books of 17 and 24 September | `results/p2/semantics/faktoren.csv` (available) |
+| T2 | `fig:t2` | `figure*` | 7.0 × 2.6 in | net = C + V − R; factors on C − net against R for the probe books of 17 and 24 September | `results/p2/semantics/factors.csv` (available) |
 | F1 | `fig:f1` | `figure*` | 7.0 × 3.6 in | capital per contract by manager over \|Δ\| × tenor, buy and sell | `results/p2/capital_cells.csv` |
 | F2 | `fig:f2` | `figure*` | 7.0 × 3.2 in | edge per notional against edge per PM2 capital, rank links, ρ with interval (H1) | `results/p2/h1_cells.csv`, `summary.json` → `H1` |
 | F3 | `fig:f3` | `figure` | 3.4 × 2.4 in | distribution of ΔK / K_single, threshold ½, median with interval (H2) | `results/p2/h2_marginal.csv`, `summary.json` → `H2` |
@@ -87,18 +87,18 @@ adapt them to the chosen design without introducing new numbers.
 
 | Place | Number in the text | Source |
 |---|---|---|
-| Sec. 2, paragraph "Two engines" | fourteen listed BTC expiries | `results/p2/semantics/box_diskont.json`, key `box_2026-09-24T11:27Z`, 14 rows |
+| Sec. 2, paragraph "Two engines" | fourteen listed BTC expiries | `results/p2/semantics/box_discount.json`, key `box_2026-09-24T11:27Z`, 14 rows |
 | ditto | two per cent to within 2.7 × 10⁻⁷ | ditto, field `r_api`, max \|r_api − 0.02\| = 2.70e−7 |
 | ditto | 24 September 2026 | ditto, `api_ts` |
-| ditto | 3.64 to 3.82 per cent | ditto, field `r_chain` min/max (the same in `v_konvention.json`, field `r_feed`) |
-| Sec. 2, paragraph "Reading C − net", T2 caption | 11.86 (C − net), 10.76 (R) | `results/p2/semantics/faktoren.csv`, row `historisch 17.09. 10:45:13Z Blk 44810149`, `b17_exakt`, case B, columns `F_Cnet`, `F_R_engine` |
-| ditto | 1.19 (C − net), 2.14 (R) | ditto, row `historisch 24.09. 09:24:59Z Blk 45110142 (H1_0928-81k_0929-76k-81k)`, `b24`, case B |
-| ditto | block 44 810 149, 17 September 2026; block 45 110 142, "a week later" | ditto, column `messung` |
+| ditto | 3.64 to 3.82 per cent | ditto, field `r_chain` min/max (the same in `v_convention.json`, field `r_feed`) |
+| Sec. 2, paragraph "Reading C − net", T2 caption | 11.86 (C − net), 10.76 (R) | `results/p2/semantics/factors.csv`, row `historical 2026-09-17T10:45:13Z block 44810149`, `b17_exact`, case B, columns `F_Cnet`, `F_R_engine` |
+| ditto | 1.19 (C − net), 2.14 (R) | ditto, row `historical 2026-09-24T09:24:59Z block 45110142 (H1_0928-81k_0929-76k-81k)`, `b24`, case B |
+| ditto | block 44 810 149, 17 September 2026; block 45 110 142, "a week later" | ditto, column `measurement` |
 | ditto | PM2 value −496 859 USDC | ditto, row 24 September H1, case B, column `V_PM2` = −496,858.84 |
 | T2 caption | 2.33 / 3.19 (17 September, case A); 1.46 / 3.61 (24 September, case A) | ditto, case A of the two historical rows |
-| Sec. 4.3 | ratios on R ran from 2.14 to 10.76 | ditto, minimum and maximum of `F_R_engine` over all rows with `historisch` |
+| Sec. 4.3 | ratios on R ran from 2.14 to 10.76 | ditto, minimum and maximum of `F_R_engine` over all rows with `historical` |
 
-Note on the row of 24 September: `faktoren.csv` has two historical variants (`H1_…` and `H0_heutige_Liste`). The
+Note on the row of 24 September: `factors.csv` has two historical variants (`H1_…` and `H0_todays_list`). The
 text uses `H1_…` because this variant reproduces the original measurement (1.19 corresponds to the earlier reading
 of 1.2, see `get_margin_semantics.md` section 4). The variant `H0` gives 1.22 and 2.52 and lies within the range
 2.14 to 10.76.
@@ -106,7 +106,7 @@ of 1.2, see `get_margin_semantics.md` section 4). The variant `H0` gives 1.22 an
 ### 3b · Constants from the pre-registration and the specification (not results)
 
 These values are the design of the study and not a measurement. They are in `docs/paper2/PRAEREGISTRIERUNG.md`,
-commit `1d13227`:
+commit `1d13227` (now `cc0a29f`):
 
 - Start of the sample 11 January 2024; manager windows: SM the whole period (HYPE from 11 November 2025), legacy
   PM BTC/ETH the whole period, PM2 BTC/ETH from 12 June 2025 23:00 UTC, HYPE from 11 November 2025.
@@ -117,7 +117,7 @@ commit `1d13227`:
   percentile", "100 placebo dates", "28 days".
 - Inference: "9 999 draws". Validation: "48 random blocks", "20 maker-days", thresholds "0.1 per cent" and
   "1 per cent", "95th percentile".
-- Back matter: commit `1d13227`, 24 September 2026, 22:33 UTC+2 (from `git log`).
+- Back matter: commit `1d13227` (now `cc0a29f`), 24 September 2026, 22:33 UTC+2 (from `git log`).
 
 Counting words without a measurement: "three managers", "four hypotheses/contributions", "two engines".
 
@@ -253,10 +253,11 @@ State after the audit (25 September 2026): all 30 keys from `paper2/refs.bib` ar
 | Back matter | albiez2026, derivegetmargin, derivev2core, burlig2018 |
 
 `albiez2026` is `@unpublished` (working paper, FHNW) without a DOI and lies outside the Crossref check. The
-version (19 September 2026, commit `103c676`, last change to `paper/main.tex`) is named by the text in section 3,
-not by the bib entry (A18). The inference citations (`cameron2008`, `mackinnon2017`, `roodman2019`) and
-`burlig2018` are taken over character for character from `paper/refs.bib` (A61); the earlier "open" item is thus
-done.
+version of 19 September 2026 (commit `103c676`, now `81d89dc`; last change to `paper/main.tex`) is named by the
+text in section 3, not by the bib entry (A18). Since 27 September 2026 the text names the revised version of
+25 September 2026 (`% src git:faf6cea`). The inference citations (`cameron2008`, `mackinnon2017`, `roodman2019`)
+and `burlig2018` are taken over character for character from `paper/refs.bib` (A61); the earlier "open" item is
+thus done.
 
 ---
 
@@ -269,18 +270,23 @@ done.
 3. **Abstract sentence on H4** (`h4-direction`) depends on the sign. On rejection, "did not respond measurably" is
    more honest than a number.
 4. **`paper2/main.pdf`** is build output and is now in `.gitignore` (done).
-5. **Public anchoring of the pre-registration (A02).** The times of `1d13227` and the four addenda are local git
+5. **Public anchoring of the pre-registration (A02).** The times of `cc0a29f` and the addenda are local git
    times; no commit is on a remote. The manuscript now says so ("All commit times are local times of the author's
-   machine …"). Recommendation: first settle A01 (`docs/paper2/HISTORY_CLEANUP.md`), then push the branch and
-   integrate it with a merge commit (no squash, no rebase), and in addition stamp the commit hashes with
-   OpenTimestamps or upload `PRAEREGISTRIERUNG.md` with its addenda to OSF. Once that is done, give the date of
-   publication or the timestamp in the section "Data, code and pre-registration" (date declared via `% src git:`
-   or as a constant).
-6. **Clean up the history (A01).** If the author follows `docs/paper2/HISTORY_CLEANUP.md`, the hashes of the
-   addenda change (test run: `eb534fe` → `1d6b2de`, `9465210` → `3872ed0`, `bfc34c8` → `985ec99`, `c4fcb59` →
-   `396e180`; the real run is what counts; `1d13227` and `103c676` stay). Afterwards update in `paper2/main.tex` the
-   four hashes in the section "Data, code and pre-registration" and the declaration `% src git:c4fcb59`, regenerate
-   `docs/paper2/NUMBER_CHECK.md` and adjust section 7.2 of this file.
+   machine …"). Recommendation: A01 is settled (item 6), so push the branch and integrate it with a merge commit
+   (no squash, no rebase), and in addition stamp the commit hashes with OpenTimestamps or upload
+   `PRAEREGISTRIERUNG.md` with its addenda to OSF. Once that is done, give the date of publication or the timestamp
+   in the section "Data, code and pre-registration" (date declared via `% src git:` or as a constant).
+6. **Clean up the history (A01).** Done on 27 September 2026, not exactly as planned in
+   `docs/paper2/HISTORY_CLEANUP.md`; the record is `docs/paper2/HISTORY_REWRITE.md`. Every Paper 2 commit has a new
+   hash, the pre-registration included, and so have the later Paper 1 commits; the hashes of the test run in
+   `docs/paper2/HISTORY_CLEANUP.md` do not apply. Old (now new): pre-registration `1d13227` (now `cc0a29f`),
+   Addenda 1 to 4 `eb534fe`, `9465210`, `bfc34c8` and `c4fcb59` (now `85bb0b7`, `6005d7c`, `8778432` and
+   `e492ba1`), Paper 1 `103c676` (now `81d89dc`; the manuscript cites the revised version `faf6cea` instead).
+   Addendum 5 of `PRAEREGISTRIERUNG.md` (27 September 2026) records the mapping for the pre-registration and its
+   addenda. `paper2/main.tex` names the new hashes, including the declaration `% src git:e492ba1`, and
+   `docs/paper2/NUMBER_CHECK.md` is regenerated. Where this file describes the old history, it gives the old hash
+   together with the new one. The section "Data, code and pre-registration" names Addendum 5 in one sentence
+   (date declared as `const:addendum5_day`) and points to `docs/paper2/HISTORY_REWRITE.md` for the mapping.
 
 ---
 
@@ -319,8 +325,8 @@ full run. Then `scripts/p2_numbers.py`. Tests in `tests/test_p2_inference.py` an
 - `p2_number_check.py`: declarations in the abstract apply only to the abstract (so "two are rejected" no longer
   binds every "two" of the text to `derived:n_rejected`); dates and times of day can be declared
   (`% src file:key <date>`, `const:`, `git:<sha>` for the author date of a commit). With this, "25 September 2026"
-  (addenda) goes to `git:c4fcb59`, the date of the API probe to `api_day`, "08:00" to `fig_t1_meta.csv`,
-  "fourteen" to `semantics_box_expiries`, "−0.105" to `h4_review_ten_pct_dose`.
+  (addenda) goes to `git:c4fcb59` (now `git:e492ba1`), the date of the API probe to `api_day`, "08:00" to
+  `fig_t1_meta.csv`, "fourteen" to `semantics_box_expiries`, "−0.105" to `h4_review_ten_pct_dose`.
 - `p2_figure_check.py`: new check `CAPTION_ELEMENTS`. If a caption names a band or a group of rows (F2 "grey band",
   F3/F4 "per/by parameter regime", "by the manager of the account", "by book size", "on the same BTC and ETH legs"),
   the figure table must contain these rows.
@@ -331,7 +337,7 @@ full run. Then `scripts/p2_numbers.py`. Tests in `tests/test_p2_inference.py` an
   instruction.
 - Social cards: s1 "a fill costs … per contract" instead of "the next contract"; s3 no longer "the map … stays the
   same" but the sign pattern (0.90) and the profitable cells (0.63); the footer names the pre-registration
-  `1d13227` instead of `c4fcb59`.
+  `1d13227` (now `cc0a29f`) instead of `c4fcb59` (now `e492ba1`).
 
 ### 7.3 Proposals rejected or only partly adopted
 
@@ -399,9 +405,10 @@ full run. Then `scripts/p2_numbers.py`. Tests in `tests/test_p2_inference.py` an
 ## 8 · Audit round (25 September 2026)
 
 Basis: `docs/paper2/AUDIT.md` (69 findings). This section records what changed in the manuscript. No registered
-verdict changes; `results/p2/h1.json` to `h4.json` are bit-identical to `d51ede0`. Guard for the corrected
-wording: `tests/test_p2_manuscript.py` (withdrawn phrases must not return, required disclosures must stay, floats
-before the conclusion, PDF metadata; the test also checks that the audited version `3ec74f4` fails every check).
+verdict changes; `results/p2/h1.json` to `h4.json` are bit-identical to `d51ede0` (now `1c29ba8`). Guard for the
+corrected wording: `tests/test_p2_manuscript.py` (withdrawn phrases must not return, required disclosures must stay,
+floats before the conclusion, PDF metadata; the test also checks that the audited version `3ec74f4` (now `1894bad`)
+fails every check).
 
 ### 8.1 State of the check chain
 
@@ -428,11 +435,11 @@ hoc values cited in the abstract, introduction and conclusion (0.634 and 0.243 w
 range.
 
 Labelling (A03): section 3 sets out "Analyses not named in the registration are exploratory, those added after the
-first results post hoc". Post hoc are all quantities that arose only with `48e4032` or later (keys `h1_sign_*`,
-`sens_h1_sign_*`, `h1_top*`, `*_by_regime_*`, `*_by_account_manager_*`, `sens_e_h3_sm_pm2_le63_no_sm`,
-`h4_review_*`, all audit keys); exploratory are the unregistered quantities computed with the results in `93b42bc`
-(H2 per account, H3 up to 63 options, placebo over all timelines) and those the pre-registration names as
-exploratory (maps, per underlying, time normalisations).
+first results post hoc". Post hoc are all quantities that arose only with `48e4032` (now `ae87357`) or later
+(keys `h1_sign_*`, `sens_h1_sign_*`, `h1_top*`, `*_by_regime_*`, `*_by_account_manager_*`,
+`sens_e_h3_sm_pm2_le63_no_sm`, `h4_review_*`, all audit keys); exploratory are the unregistered quantities computed
+with the results in `93b42bc`, now `f7ba923` (H2 per account, H3 up to 63 options, placebo over all timelines),
+and those the pre-registration names as exploratory (maps, per underlying, time normalisations).
 
 ### 8.2 Changes per finding
 
@@ -452,7 +459,7 @@ exploratory (maps, per underlying, time normalisations).
 | A13 | 4.1 "a maker buy binds about its premium out of the money and less in the money"; "where a long option binds about its premium" only for far out of the money; captions F1 and F2 from the modules. |
 | A14 | Abstract "the margin rules are public contracts with parameters on chain, and the venue's off-chain engine can be queried for any book"; section 2 "The managers' contracts are public \citep{derivev2core} … BitMEX instead margins each position at a percentage of its notional \citep{soska2021}"; conclusion "The rules that set it are public contracts". Title unchanged (the abstract carries the qualification). |
 | A15, A16, A17, A60, A61 | Sentences of the literature agent adopted (penalise/bound, fournier2020, chen2019, ahn2025, derivev2core, derivegetmargin, cameron2008, mackinnon2017, roodman2019, burlig2018, "The question extends", cells "a maker side and the absolute delta and tenor buckets of"). |
-| A18 | Section 3: version of 19 September 2026 (`% src git:103c676`), both unit errors (fee and rebate per fill; map per notional over the notional of the whole fill), the affected items are net edge numbers, the cell count of the fourth hypothesis and the map per notional, correction announced, values per notional therefore differ. |
+| A18 | Section 3: version of 19 September 2026 (`% src git:103c676`, now `git:81d89dc`; since 27 September 2026 the revised version of 25 September 2026, `git:faf6cea`), both unit errors (fee and rebate per fill; map per notional over the notional of the whole fill), the affected items are net edge numbers, the cell count of the fourth hypothesis and the map per notional, correction announced, values per notional therefore differ. |
 | A28 | Appendix B: 15 % of the draws at or above the estimate, bias-corrected 0.898 to 0.920; 7.3 no. 1 corrected. |
 | A29, A30 | Appendix B: one event more in the placebo panels (HYPE of 8 January 2026), overlapping ETH windows of 10 days, placebos with separate windows (P95 26.02, 48 %, sd(t) 1.77); median dose −4.52, trimmed −4.08. |
 | A34 | Reference book "a short straddle at the forward of each underlying (BTC in panel c)"; "11 of the 14 kept events" (`fig_f5_b.csv:jump_logpct@…~count`), range 3.4 to 37.4 over the underlyings and 7.8 to 26.0 for BTC with row binding. |

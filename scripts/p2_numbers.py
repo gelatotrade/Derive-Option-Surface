@@ -1073,7 +1073,7 @@ def review_section(d: Dict[str, Any], s: Summary, checks: Checks, results: Path)
     s.put("validation_single_blocks_per_cell", max(blocks) if blocks else None)
     s.put("validation_single_blocks_per_cell_min", min(blocks) if blocks else None)
     # probes of the off-chain discount: expiries of the box-spread measurement quoted in Section 2
-    box_path = Path(results) / "semantics" / "box_diskont.json"
+    box_path = Path(results) / "semantics" / "box_discount.json"
     box = json.loads(box_path.read_text()) if box_path.is_file() else {}
     first = next((v for k, v in sorted(box.items()) if k.startswith("box_") and isinstance(v, list)), None)
     s.put("semantics_box_expiries", len(first) if first is not None else None)

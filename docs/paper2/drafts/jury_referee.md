@@ -3,7 +3,7 @@
 Status 2026-09-25. Basis: the three draft sets `mechanism.md`, `empirics.md` and `practitioner.md`, all
 prototypes under `data/p2/fig_proto/`, the specification (section 6), the pre-registration with Addenda 1
 to 4, `paper2/main.tex` and the data under `data/p2/derived/` and `results/p2/`. Nothing was committed. I deliberately did not read the
-verdict of the second judge (`jury_gestaltung.md`), so that both verdicts
+verdict of the second judge (`jury_design.md`), so that both verdicts
 stay independent.
 
 **Blindness to the verdicts.** From the inference files I read only schema, keys and structural numbers
@@ -13,7 +13,7 @@ criteria and the placebo percentiles were masked. One disclosure: in `h4.json` t
 is worded so that it holds for either sign. I do not know the other verdicts (H1 to H3).
 
 The recomputation used `capital.parquet` ⋈ `markouts.parquet` (336,087 fills in the PM2 window), the
-probe grid of 2026-09-17, `faktoren.csv`, `reference_book.csv`, `events.csv`, `params/*.json`,
+probe grid of 2026-09-17, `factors.csv`, `reference_book.csv`, `events.csv`, `params/*.json`,
 `h4_doses.csv`, `h4_panel.parquet`, `marginal.parquet`, `maker_days.parquet` and `validation.csv`. The
 helper scripts are only in the scratchpad.
 
@@ -154,7 +154,7 @@ below 7 pt after this scaling. As M rightly notes, `figures_p1.py` itself sets 6
 |---|---|---|---|
 | ATM 30-day short PM2 11.8 %, SM 14.1 % of the forward | P, M (F1 anatomy) | 11.83 / 14.08 (grid Δ 0.50, 30.4 d) | ✓ |
 | PM2 3.4 to 13.7 %, SM 12.4 to 15.0 % on 2026-09-17 | P, E, M | 342 to 1,370 bp / 1,237 to 1,501 bp | ✓ |
-| T2 factors 11.86/10.76, 1.19/2.14, 2.33/3.19, 1.46/3.61; R 211k/99k, −V 497k | all | `faktoren.csv` rows b17_exakt and b24 (H1 variant) | ✓ |
+| T2 factors 11.86/10.76, 1.19/2.14, 2.33/3.19, 1.46/3.61; R 211k/99k, −V 497k | all | `factors.csv` rows b17_exact and b24 (H1 variant) | ✓ |
 | “For the book of 24 Sep, C − net under PM2 is six times R” | E | 595,694 / 98,835 = 6.03 | ✓ |
 | Straddle PM2 9.7 %, legs separately 23.5 %, SM 29.0 % | M (T2c) | arithmetically ✓, but a different object from F5c (10.0 / 29.6 %) | ✗ unify (2.3) |
 | BTC buys SM 0.07 to 16.9 %, PM2 0.07 to 10.9 %; sells SM 12.8 to 15.1, legacy 8.5 to 24.3, PM2 7.8 to 17.7 % | M | 0.07–16.85 / 0.07–10.86; 12.83–15.11 / 8.48–24.30 / 7.80–17.69 | ✓ |
@@ -222,7 +222,7 @@ F3/F4 (book).
 
 **Requirements:** Put the labels in b above and below, so that 2.14 and 2.33 do not collide (M). The
 arrow for the book of 17 Sep B points to the left, because V > 0; the caption says so. The H0 variant stays out, and
-a test checks exactly the four rows from `faktoren.csv`.
+a test checks exactly the four rows from `factors.csv`.
 
 ### F1 · What a contract costs
 
@@ -428,7 +428,7 @@ linear bars from 0.
 
 ## 7 · For the check script `scripts/p2_figure_check.py`
 
-- Every printed number against its source: T2 against `faktoren.csv` (exactly four rows), F1 against `fig_edge_maps.csv`,
+- Every printed number against its source: T2 against `factors.csv` (exactly four rows), F1 against `fig_edge_maps.csv`,
   F5 against `reference_book.csv` and `events.csv`, A1 against `validation.csv`, all verdict bars against
   `h*.json`. The verdict line is rebuilt from `rule` and the bounds and must match `rejected`.
 - Counts: crosses in F1 = cells under 200 fills (BTC: 10 per manager, 70 − 60 over both sides; all

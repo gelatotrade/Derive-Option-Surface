@@ -78,6 +78,7 @@ def missing_disclosures(tex: str) -> list:
         ("A18 same unit as the companion paper", data, r"uses the same unit per contract"),
         ("A01 history rewrite disclosed", back, r"history was rewritten to remove account identifiers"),
         ("A01 map of old and new hashes", back, r"HISTORY_REWRITE\.md\} maps the old commit hashes"),
+        ("A01 Addendum 5 records the rewrite", back, r"Addendum 5 of 27 September 2026, written after all results"),
         ("A09 wallets of the subaccounts", data, r"share a wallet"),
         ("A05 power of H4", flat, r"The test has little power"),
         ("A05 placebo-calibrated range", flat, r"Calibrated on those placebo statistics"),

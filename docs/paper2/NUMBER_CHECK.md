@@ -1,14 +1,14 @@
 # Number check Paper 2
 
-Generated 2026-09-27 11:28 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-09-27 12:19 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 
 ## Result
 
-- Numbers, dates and commits in the text: 352
+- Numbers, dates and commits in the text: 353
 - Result: 251
-- Constant: 75
+- Constant: 76
 - Commit date: 4
 - Text count: 17
 - Commit: 5
@@ -68,11 +68,11 @@ Text counts (without a data source, for review):
 | caption fig:t1 | `17 September 2026` | Result | fig_t1_meta.csv:value@key=ts | = 2026-09-17 |
 | caption fig:t1 | `0.6` | Constant | const:delta_edge_60_delta | \|Δ\| bucket edge 60 % as delta 0.6 (docs/paper1/PRAEREGISTRIERUNG.md, Cells and classes) |
 | caption fig:t1 | `two` | Constant | const:api_discount_pct | API semantics with 2 % (exploratory) (docs/paper2/PRAEREGISTRIERUNG.md, Inference) |
-| caption fig:t2 | `24 September 2026` | Result | semantics/box_diskont.json:box_*.api_ts~all | all: 2026-09-24, 2026-09-24, 2026-09-24, 2026-09-24 … |
+| caption fig:t2 | `24 September 2026` | Result | semantics/box_discount.json:box_*.api_ts~all | all: 2026-09-24, 2026-09-24, 2026-09-24, 2026-09-24 … |
 | caption fig:t2 | `45110142` | Result | fig_t2_b.csv:block@row=1 | = 4.51101e+07 |
 | caption fig:t2 | `four` | Result | fig_t2_b.csv:row~count | = 4 |
 | caption fig:t2 | `two` | Constant | const:h3_threshold | H3: median of K_SM / K_PM2 greater than 2 (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
-| caption fig:t2 | `17 September` | Result | semantics/faktoren.csv:messung@buch=b17_exakt,fall=B,F_Cnet=11.86 | = --09-17 |
+| caption fig:t2 | `17 September` | Result | semantics/factors.csv:measurement@book=b17_exact,case=B,F_Cnet=11.86 | = --09-17 |
 | caption fig:t2 | `11.86` | Result | fig_t2_b.csv:F_Cnet@row=0 | = 11.86 |
 | caption fig:t2 | `10.76` | Result | fig_t2_b.csv:F_R_engine@row=0 | = 10.76 |
 | caption fig:t2 | `17 September 2026` | Result | fig_t1_meta.csv:value@key=ts | = 2026-09-17 |
@@ -80,10 +80,10 @@ Text counts (without a data source, for review):
 | caption fig:t2 | `22` | Result | reference_book.csv:tenor_days@ccy=BTC,day=2026-09-17 | = 22 |
 | The engine and what it returns | `Two` | Text count | text:two_engines | count word from the sentence |
 | The engine and what it returns | `fourteen` | Result | summary.json:semantics_box_expiries | = 14 |
-| The engine and what it returns | `24 September 2026` | Result | semantics/box_diskont.json:box_*.api_ts~all | all: 2026-09-24, 2026-09-24, 2026-09-24, 2026-09-24 … |
-| The engine and what it returns | `2.0000` | Result | semantics/box_diskont.json:box_*.r_api~pct~all | all: 1.99997, 1.99999, 1.99999, 1.99999 … |
-| The engine and what it returns | `3.64` | Result | semantics/box_diskont.json:box_*.r_chain~min~pct | = 3.64 |
-| The engine and what it returns | `3.82` | Result | semantics/box_diskont.json:box_*.r_chain~max~pct | = 3.82 |
+| The engine and what it returns | `24 September 2026` | Result | semantics/box_discount.json:box_*.api_ts~all | all: 2026-09-24, 2026-09-24, 2026-09-24, 2026-09-24 … |
+| The engine and what it returns | `2.0000` | Result | semantics/box_discount.json:box_*.r_api~pct~all | all: 1.99997, 1.99999, 1.99999, 1.99999 … |
+| The engine and what it returns | `3.64` | Result | semantics/box_discount.json:box_*.r_chain~min~pct | = 3.64 |
+| The engine and what it returns | `3.82` | Result | semantics/box_discount.json:box_*.r_chain~max~pct | = 3.82 |
 | The engine and what it returns | `195` | Result | summary.json:api_n | = 195 |
 | The engine and what it returns | `25 September 2026` | Result | summary.json:api_day | = 2026-09-25 |
 | The engine and what it returns | `two` | Text count | text:two_semantics | count word from the sentence |
@@ -315,6 +315,7 @@ Text counts (without a data source, for review):
 | Data, code and pre-registration | `Four` | Constant | const:addenda | four dated addenda (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 4) |
 | Data, code and pre-registration | `25 September 2026` | Commit date | git:e492ba1 | = 2026-09-25 |
 | Data, code and pre-registration | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
+| Data, code and pre-registration | `27 September 2026` | Constant | const:addendum5_day | Addendum 5, dated 27 September 2026 (history rewrite, after all results) (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 5) |
 | Data, code and pre-registration | `cc0a29f` | Commit | git: commit present |  |
 | Data, code and pre-registration | `85bb0b7` | Commit | git: commit present |  |
 | Data, code and pre-registration | `6005d7c` | Commit | git: commit present |  |
@@ -394,7 +395,7 @@ Text counts (without a data source, for review):
 
 ## Constants of the pre-registration
 
-Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) with Addenda 1 to 4 of 25 September 2026; the bucket edges from `docs/paper1/PRAEREGISTRIERUNG.md`. In the manuscript as `const:name`. Sections are named as in the English translations, with the heading of the binding German original in quotation marks.
+Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) with Addenda 1 to 4 of 25 September 2026 and Addendum 5 of 27 September 2026; the bucket edges from `docs/paper1/PRAEREGISTRIERUNG.md`. In the manuscript as `const:name`. Sections are named as in the English translations, with the heading of the binding German original in quotation marks.
 
 | Name | Value | Meaning | Section |
 |---|---|---|---|
@@ -440,6 +441,7 @@ Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) with Addenda 1 to 
 | `interval_lower_percentile` | 5 | interval from the 5th percentile of the replications | Addendum 3 ("Nachtrag 3") |
 | `interval_upper_percentile` | 95 | to the 95th percentile of the replications | Addendum 3 ("Nachtrag 3") |
 | `addenda` | 4 | four dated addenda | Addendum 4 ("Nachtrag 4") |
+| `addendum5_day` | 2026-09-27 | Addendum 5, dated 27 September 2026 (history rewrite, after all results) | Addendum 5 ("Nachtrag 5") |
 | `sm_max_options` | 63 | 63 options that an SM account on v2 can hold | Addendum 4 ("Nachtrag 4") |
 | `delta_edge_10` | 10 | \|Δ\| bucket edge 10 % | Cells and classes ("Zellen und Klassen") (Paper 1) |
 | `delta_edge_25` | 25 | \|Δ\| bucket edge 25 % | Cells and classes ("Zellen und Klassen") (Paper 1) |

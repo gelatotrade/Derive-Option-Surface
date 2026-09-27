@@ -78,7 +78,7 @@ ticker `mark_price`:
 | Ticker | D = S/F from the basis. `mark_price` is rounded to 1 USD; exactly, M = −rho/τ |
 
 Two reviewers measured the 2 % rate independently with box spreads: one over all 14 expiries with
-|r − 0.02| ≤ 3e−7 (`results/p2/semantics/box_diskont.json`, repeated at 11:44 UTC), the other over 9 expiries with
+|r − 0.02| ≤ 3e−7 (`results/p2/semantics/box_discount.json`, repeated at 11:44 UTC), the other over 9 expiries with
 |r − 0.02| < 1e−8 (`data/p2/semantik_20260924/verify-mtm/box_api.json`). The error made by taking ticker marks
 instead of V_eng grows roughly with (b − r_Engine)·τ·V:
 
@@ -87,13 +87,13 @@ instead of V_eng grows roughly with (b − r_Engine)·τ·V:
 | SM v2 | +0.16 % | +0.48 % | +1.22 % | +2.60 % | +3.96 % | +5.33 % |
 | PM2 v2 | +0.12 % | +0.28 % | +0.71 % | +1.58 % | +2.39 % | +3.25 % |
 
-Median per tenor. Source: `results/p2/semantics/v_konvention.json`, 24 options at 11:22 UTC.
+Median per tenor. Source: `results/p2/semantics/v_convention.json`, 24 options at 11:22 UTC.
 
 K_p − R_eng = Σ p·q − V_eng. The difference between the two is therefore a valuation convention, not capital. This
 makes K_p the better denominator for "edge per margin", while R_eng is the better quantity for the geometry of the
 engine itself.
 
-**Live probe of K_p** (12:21 UTC, `results/p2/semantics/kapitalmass_check.jsonl`): a book with four legs is opened
+**Live probe of K_p** (12:21 UTC, `results/p2/semantics/capital_measure_check.jsonl`): a book with four legs is opened
 with deposit K and premium flow at the mark. This gives `net_IM` = −0.88 USD (SM, K = 48,963 USD) and −6.73 USD
 (PM2, K = 15,215 USD). The marginal form via pre/post matches K(q+Δ) − K(q) to within 0.88 and 9.17 USD
 respectively. The remainder is price drift between separate requests.
@@ -114,7 +114,7 @@ the requirement as `C − net`. Both books were rebuilt and recomputed at the hi
 
 IM, in chain semantics at the respective block (PM2 via eth_call with the feed rate, SM via the offline engine with
 D = 1). The difference from the API semantics is small for these books. The rebuild matches the original numbers to
-within 374 USD. Source: `results/p2/semantics/faktoren.csv`.
+within 374 USD. Source: `results/p2/semantics/factors.csv`.
 
 The gap in case B (11.86 versus 1.19) has two causes:
 
@@ -195,7 +195,7 @@ The scripts are under `data/p2/semantik_20260924/` in the subfolders `code-pm2/`
 ## 8. Parameter history of PM2 BTC
 
 PM2 for BTC has existed since 9 June 2025, 05:18 UTC. The rate feed was stale until 12 June 2025; reconstruction is
-possible from 13 June 2025. Changes according to the events (`results/p2/semantics/pm2_parameter_btc.json`):
+possible from 13 June 2025. Changes according to the events (`results/p2/semantics/pm2_parameters_btc.json`):
 
 | Date (UTC) | Change |
 |---|---|

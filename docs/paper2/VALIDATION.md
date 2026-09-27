@@ -151,7 +151,7 @@ time UTC+2) and commit times:
 | Maker days (H3) | `data/p2/derived/maker_days.parquet` | 00:53:09 |
 | Chain responses | `data/p2/validation/chain.jsonl` | 00:53:40 to 01:08:47 |
 | Validation result | `results/p2/validation_summary.json` | 01:16:57 |
-| Addendum 4 ("The validation against `eth_call` is passed") | commit `c4fcb59` | 01:29:58 |
+| Addendum 4 ("The validation against `eth_call` is passed") | commit `c4fcb59` (now `e492ba1`) | 01:29:58 |
 | First test statistic | `results/p2/h1.json` | 01:42:53 |
 
 Capital per fill, doses and maker days were therefore created before or alongside the validation. What was kept is
@@ -160,8 +160,8 @@ checked …": the validation had passed and was recorded in Addendum 4 before th
 The manuscript likewise claims only this order ("Before any capital entered a test"). Not kept are step 3 of the
 specification and the wording of the heading. The validation draws its own samples and compares replica and chain
 directly; it uses none of the capital figures computed earlier. Whether the replica was still changed between 00:40
-and commit `591d2d5` (01:30:22) the history does not show, because Stage B is a single commit; the audit recomputed
-samples of the capital figures independently (32 fills, 5 maker days, 7 H2 fills, 16 dose fills;
+and commit `591d2d5` (now `58551d6`) at 01:30:22 the history does not show, because Stage B is a single commit; the
+audit recomputed samples of the capital figures independently (32 fills, 5 maker days, 7 H2 fills, 16 dose fills;
 `docs/paper2/AUDIT.md`, perspective engine). File and git times are set locally and prove nothing to third parties
 (audit A02).
 

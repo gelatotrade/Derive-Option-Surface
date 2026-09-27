@@ -91,7 +91,8 @@ and that belongs in the title.
   `docs/superpowers/plans/`, specifications under `docs/superpowers/specs/`.
 - **Test-driven.** First the failing test, then the code. The suite must stay green.
 - **Pre-registration** before every measurement, with dated addenda. Never change anything retroactively.
-- **Paper in English, project documentation in German.** No em or en dashes in running text.
+- **Paper and public documentation in English (since 25 September 2026); pre-registrations stay in German as
+  binding originals with English translations.** No em or en dashes in running text.
 - **Little text, many figures.** Hard word budgets per section, monitored by
   `scripts/p1_wordcount.py`. A section that exceeds its budget gets cut.
 - **Every number in the text must be traceable in `results/`.** Check scripts enforce this.
@@ -120,6 +121,9 @@ therefore out of date; section 9 of the note lists them. The most important:
 - SM is not convex. PM2 is convex in natural books, not in constructed ones. There is no absolute breaking point in
   size; R is homogeneous of degree 1.
 - Raw data are under `data/p2/semantik_20260924/` (not in git), small tables under `results/p2/semantics/`.
+  Since 27 September 2026 these tables carry English file names, column names and labels (`box_discount.json`,
+  `factors.csv`, `capital_measure_check.jsonl`, `pm2_parameters_btc.json`, `v_convention.json`); the values are
+  unchanged.
 
 Next step: make the decisions from section 10 of the note, then brainstorming, specification and pre-registration.
 
@@ -127,11 +131,12 @@ Next step: make the decisions from section 10 of the note, then brainstorming, s
 
 Status and open decisions are in `docs/paper2/REPORT_2026-09-25.md`. In short: manuscript `paper2/main.tex`
 (12 pages, built with `python3 scripts/p2_build.py`), branch `paper2-kapital` (local, not pushed), pre-registration
-`1d13227` with four addenda, audit `docs/paper2/AUDIT.md`. Before any push, read `docs/paper2/HISTORY_CLEANUP.md`
-first. Paper 1 has a unit error in fee and rebate (`docs/paper1/FINDING_2026-09-25_FEE_UNITS.md`), which must be
-corrected before the final data run.
+`1d13227` (now `cc0a29f`) with four addenda, audit `docs/paper2/AUDIT.md`. Before any push, read
+`docs/paper2/HISTORY_CLEANUP.md` first. Paper 1 has a unit error in fee and rebate
+(`docs/paper1/FINDING_2026-09-25_FEE_UNITS.md`), which must be corrected before the final data run.
 
 > Translated on 27 September 2026. Both points of this addendum are settled since: Paper 1 was corrected in its
 > revision of 25 September 2026 (`docs/paper1/REVISION_2026-09-25.md`), and the history was cleaned on
 > 27 September 2026. The branch is now `paper2-capital` and the pre-registration commit `cc0a29f`
-> (`docs/paper2/HISTORY_REWRITE.md`).
+> (`docs/paper2/HISTORY_REWRITE.md`); Addendum 5 of the pre-registration (27 September 2026) records the mapping
+> from the old to the new commits.
