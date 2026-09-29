@@ -1,11 +1,15 @@
-"""F5 of Paper 2: the engine over time (FIGURE_SELECTION section 7, F5; 7.0 x 4.3 in).
+"""F5 of Paper 2: the engine over time (FIGURE_SELECTION section 7, F5; 7.0 x 5.15 in).
 
 a  share of option open interest per manager at the start of each month (``manager_oi_share.csv`` samples
    00:00:01 UTC on the 1st), one strip per underlying (PM2 at the bottom).
 b  five rails (BTC legacy PM, BTC PM2, ETH legacy PM, ETH PM2, HYPE PM2): every row of the parameter timeline as a
    grey tick, the registered H4 events in the status grammar of section 6.2 (filled = in the H4 panel, left half =
    kept without a panel cell, hollow = dropped by the dose rule), the effect of the parameters alone on the reference
-   straddle in log-%, the +-14 day windows of the kept events and the admissible placebo days.
+   straddle in log-%, the +-14 day windows of the kept events and the admissible placebo days. Each rail has three
+   lanes: the numbers stand above their symbols (numbers of close events pushed apart, ``label_offsets``; a leader
+   line once a number no longer overhangs its symbol), the symbols, ticks and window bars sit on the rail, the placebo
+   dashes 0.3 rows below it. A key in two rows under the title of b explains the marks (4.3 in tall before the
+   revision of 29 September 2026, when the numbers stood beside the symbols and ran into each other).
 c  capital of the BTC reference straddle per manager in per cent of the forward; the legacy line is thin in months
    where the legacy manager holds less than ``LEGACY_THICK_SHARE`` of BTC open interest (``legacy_thin_below``).
 
@@ -16,6 +20,7 @@ Inputs in ``results_dir``: ``manager_oi_share.csv``, ``params/{CCY}_{pm,pm2}.jso
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -29,28 +34,40 @@ from .. import p2events
 from . import _kit_f5f6 as kit
 
 NAME = "f5"
-WIDTH, HEIGHT = 7.0, 4.3
+WIDTH, HEIGHT = 7.0, 5.15
 DAY = 86_400
 T0, T1 = pd.Timestamp("2024-01-01"), pd.Timestamp("2026-09-30")
 RAILS: List[Tuple[str, str]] = [("BTC", "pm"), ("BTC", "pm2"), ("ETH", "pm"), ("ETH", "pm2"), ("HYPE", "pm2")]
 CCYS = ("BTC", "ETH", "HYPE")
 WINDOW_DAYS = p2events.WINDOW_DAYS
 PM2_START_TS = p2events.PM2_START_TS
-CLOSE_DAYS = 30               # two events closer than this on one rail: earlier number left, later right
 LEGACY_THICK_SHARE = 0.05     # legacy line thin (0.5 pt) in months where the legacy manager holds less of BTC OI
 PANEL_A_TITLE = "share of option open interest at the start of each month"
+PANEL_B_TITLE = "parameter changes · number = effect of the parameters alone on the reference straddle, log-%"
 MAX_JUMP_LAG_DAYS = 1
-PLACEBO_OFFSET = 0.40          # rows below the rail (0.3 in the instruction; 0.4 keeps numbers from looking underlined)
-NEAR_DAYS = 7                 # timeline rows this close before the PM2 window mark sit between it and its label
 REF_DAY = "2026-09-17"
+
+# panel b: three lanes per rail, numbers above the rail, symbols on it, placebo days below it
+PLACEBO_OFFSET = 0.30         # rows below the rail (instruction: 0.3 rows)
+PLACEBO_LW = 1.5              # pt
+LABEL_LIFT = 4.5              # pt from the rail to the lower edge of an event number
+LABEL_GAP = 3.0               # pt at least between two numbers on one rail; closer numbers move apart
+SHIFT_MIN = 0.5               # pt: a number moved less than this stands centred "above" its symbol
+WINDOW_HALF = 0.17            # rows: half height of the grey +-14 day bars
+TICK_HALF = 0.04              # in: half height of a grey timeline tick (0.08 in tall)
+BRACKET_UP, BRACKET_DOWN = 0.40, 0.22   # rows above / below the rail of the "PM2 window" bracket
+BRACKET_DAYS = 12             # length of the bracket's serifs
+MARKER_PT = {"o": 4.6, "D": 4.0}
 
 HALO = [patheffects.withStroke(linewidth=2.0, foreground="white")]   # numbers stay legible over grey ticks
 
 # layout in inches
 L, R = 0.95, 5.88
 A_TOP, A_H, A_GAP = 0.25, 0.42, 0.05
-B_TOP, B_H = 1.88, 1.00
-C_TOP, C_H = 3.12, 0.90
+B_TITLE, B_LEGEND = 1.68, 1.84       # top of the title and of the symbol legend of b
+B_TOP, B_H = 2.15, 1.58
+B_YLIM = (-0.62, 4.5)               # rows, top and bottom (rails at 0 .. 4)
+C_TOP, C_H = B_TOP + B_H + 0.24, 0.90
 
 CAPTION = (
     r"\textbf{The engine over time.} Panel a is the share of option open interest per manager and underlying at "
@@ -112,15 +129,55 @@ def status(ev) -> str:
     return "panel" if int(ev.panel_cells) > 0 else "kept_no_cell"
 
 
+@lru_cache(maxsize=None)
+def _text_width_pt(text: str) -> float:
+    """Advance width of ``text`` at ``kit.FS_MIN`` in points (the layout width matplotlib gives the drawn text)."""
+    if not text:
+        return 0.0
+    from matplotlib.backends.backend_agg import RendererAgg
+    from matplotlib.font_manager import FontProperties
+
+    w, _, _ = RendererAgg(72, 72, 72).get_text_width_height_descent(text, FontProperties(size=kit.FS_MIN), False)
+    return float(w)
+
+
+def _points_per_day() -> float:
+    """Points per calendar day on the printed canvas (the canvas shrinks to the print width, the type does not)."""
+    from ._print import print_width
+
+    days = mdates.date2num(T1) - mdates.date2num(T0)
+    return (R - L) * print_width(WIDTH) / WIDTH * 72.0 / days
+
+
+def label_offsets(x_days, texts, gap: float = LABEL_GAP) -> np.ndarray:
+    """Horizontal offsets in points of the event numbers of one rail (sorted by time), which stand centred above their
+    symbols: numbers that would come closer than ``gap`` are pushed apart symmetrically, in time order, until none
+    does (the earlier one of two close events to the left, the later one to the right)."""
+    x = np.asarray(x_days, dtype=float) * _points_per_day()
+    w = np.array([_text_width_pt(t) for t in texts], dtype=float)
+    c = x.copy()
+    for _ in range(500):
+        moved = False
+        for k in range(len(c) - 1):
+            need = (w[k] + w[k + 1]) / 2.0 + gap - (c[k + 1] - c[k])
+            if need > 1e-6:
+                c[k] -= need / 2.0
+                c[k + 1] += need / 2.0
+                moved = True
+        if not moved:
+            break
+    return c - x
+
+
 def _label_sides(ev: pd.DataFrame) -> Dict[str, str]:
+    """Where each event number (event rows of table b) stands: "above" its symbol, or above and moved "left" /
+    "right" of it (with a leader line once it no longer overhangs the symbol)."""
     out = {}
     for _, g in ev.groupby(["ccy", "manager"], sort=False):
-        g = g.sort_values("event_ts", kind="mergesort")
-        ts = g["event_ts"].to_numpy(np.int64)
-        for k, eid in enumerate(g["event_id"]):
-            nxt = k + 1 < len(ts) and ts[k + 1] - ts[k] < CLOSE_DAYS * DAY
-            prv = k > 0 and ts[k] - ts[k - 1] < CLOSE_DAYS * DAY
-            out[eid] = "left" if nxt and not prv else "right"
+        g = g.sort_values("row_ts", kind="mergesort")
+        dx = label_offsets(_x(g["row_ts"]), list(g["printed"].astype(str)))
+        for eid, d in zip(g["event_id"], dx):
+            out[eid] = "above" if abs(d) <= SHIFT_MIN else ("left" if d < 0 else "right")
     return out
 
 
@@ -148,7 +205,6 @@ def table_b(results_dir: Path) -> pd.DataFrame:
     events = pd.read_csv(rd / "events.csv")
     rb = pd.read_csv(rd / "reference_book.csv")
     h4 = json.loads((rd / "h4.json").read_text())
-    sides = _label_sides(events)
     pl_days, pl_printed = _placebo_days(rd, h4, events)
     rows = []
     for ccy, m in RAILS:
@@ -174,7 +230,7 @@ def table_b(results_dir: Path) -> pd.DataFrame:
                          "jump_logpct": jump, "jump_day": jday,
                          "window_lo": int(e.event_ts) - WINDOW_DAYS * DAY if kept else np.nan,
                          "window_hi": int(e.event_ts) + WINDOW_DAYS * DAY if kept else np.nan,
-                         "label_side": sides[e.event_id], "printed": kit.signed_int(jump)})
+                         "label_side": "", "printed": kit.signed_int(jump)})
         for d in pl_days.get((ccy, m), []):
             rows.append({"mark": "placebo_day", "ccy": ccy, "manager": m, "rail": rail,
                          "row_ts": int(_day_ts([d])[0]), "placebo_days": pd.to_numeric(n_pl, errors="coerce")})
@@ -183,7 +239,10 @@ def table_b(results_dir: Path) -> pd.DataFrame:
                          "row_ts": int(PM2_START_TS[ccy]), "printed": "PM2 window"})
     cols = ["mark", "ccy", "manager", "rail", "row_ts", "kinds", "event_id", "status", "panel_cells", "jump_logpct",
             "jump_day", "window_lo", "window_hi", "placebo_days", "label_side", "printed"]
-    return pd.DataFrame(rows, columns=cols)
+    out = pd.DataFrame(rows, columns=cols)
+    is_ev = out["mark"] == "event"
+    out.loc[is_ev, "label_side"] = out.loc[is_ev, "event_id"].map(_label_sides(out[is_ev]))
+    return out
 
 
 def table_c(results_dir: Path) -> pd.DataFrame:
@@ -261,60 +320,86 @@ def _panel_a(fig, a: pd.DataFrame) -> None:
                    handlelength=1.6, handleheight=0.8, columnspacing=1.2, borderaxespad=0.1, borderpad=0.1)
 
 
+def _marker_kw(manager: str, st: str) -> dict:
+    """Event symbol in the status grammar of section 6.2: shape and colour = manager, fill = status."""
+    color, _, marker = kit.MANAGER[manager]
+    fill = {"panel": "full", "kept_no_cell": "left", "dropped": "none"}[st]
+    return dict(linestyle="none", marker=marker, markersize=MARKER_PT[marker], markeredgecolor=color,
+                markerfacecolor=color if fill != "none" else "white", markerfacecoloralt="white",
+                fillstyle=fill if fill != "none" else "full", markeredgewidth=0.9)
+
+
+def _legend_b(fig) -> None:
+    """Key of the marks of b in two rows under its title: the three fills of the event symbols (each shown for the
+    legacy PM diamond and the PM2 circle), then tick, window bar and placebo dash."""
+    from matplotlib.legend_handler import HandlerTuple
+    from matplotlib.lines import Line2D
+
+    def pair(st):
+        return tuple(Line2D([], [], **_marker_kw(m, st)) for m in ("pm", "pm2"))
+
+    handles = [pair("panel"), pair("kept_no_cell"), pair("dropped"),
+               Line2D([], [], linestyle="none", marker="|", markersize=2 * TICK_HALF * 72, markeredgewidth=0.6,
+                      color="#999999"),
+               Patch(facecolor="black", alpha=0.12, edgecolor="none"),
+               Line2D([], [], color="black", linewidth=PLACEBO_LW, solid_capstyle="butt")]
+    labels = ["in the H4 panel", "kept, no cell", "dropped (dose rule)", "parameter change", "±14 day window",
+              "placebo days"]
+    order = [0, 3, 1, 4, 2, 5]                      # filled by column: symbols in the first row, marks in the second
+    W, H = fig.get_size_inches()
+    fig.legend([handles[k] for k in order], [labels[k] for k in order], loc="upper left",
+               bbox_to_anchor=(L / W, 1.0 - B_LEGEND / H), ncol=3, frameon=False,
+               handler_map={tuple: HandlerTuple(ndivide=None, pad=0.15)}, handlelength=1.5, handleheight=0.8,
+               handletextpad=0.4, columnspacing=1.6, labelspacing=0.35, borderaxespad=0.0, borderpad=0.0)
+
+
 def _panel_b(fig, b: pd.DataFrame) -> None:
-    kit.letter(fig, 0.02, B_TOP - 0.21, "b")
-    kit.fig_text(fig, L, B_TOP - 0.20, "parameter changes · number = effect of the parameters alone on the "
-                 "reference straddle, log-%", ha="left")
+    kit.letter(fig, 0.02, B_TITLE - 0.01, "b")
+    kit.fig_text(fig, L, B_TITLE, PANEL_B_TITLE, ha="left")
+    _legend_b(fig)
     ax = kit.axes_at(fig, L, B_TOP, R - L, B_H)
     ax.spines["left"].set_visible(False)
     n = len(RAILS)
-    row_in = B_H / (n - 0.0)
-    tick_half = 0.04 / row_in                           # grey tick 0.08 in tall
+    row_in = B_H / (B_YLIM[1] - B_YLIM[0])
+    tick_half = TICK_HALF / row_in
     for i, (ccy, m) in enumerate(RAILS):
         rail = rail_label(ccy, m)
         rb = b[b["rail"] == rail]
-        ev = rb[rb["mark"] == "event"]
+        ev = rb[rb["mark"] == "event"].sort_values("row_ts", kind="mergesort")
         for e in ev[ev["status"] != "dropped"].itertuples():
-            ax.fill_between(_x([e.window_lo, e.window_hi]), i - 0.25, i + 0.25, color="black", alpha=0.12,
-                            linewidth=0, zorder=1)
+            ax.fill_between(_x([e.window_lo, e.window_hi]), i - WINDOW_HALF, i + WINDOW_HALF, color="black",
+                            alpha=0.12, linewidth=0, zorder=1)
         tl = rb[rb["mark"] == "timeline_row"]
         ax.vlines(_x(tl["row_ts"]), i - tick_half, i + tick_half, color="#999999", linewidth=0.6, zorder=2)
         pl = rb[rb["mark"] == "placebo_day"]
         if len(pl):
             x0 = _x(pl["row_ts"])
-            ax.hlines(np.full(len(x0), i + PLACEBO_OFFSET), x0, x0 + 1.0, color="black", linewidth=1.2, capstyle="butt",
-                      zorder=2)
-        color, _, marker = kit.MANAGER[m]
-        for e in ev.itertuples():
-            x = _x([e.row_ts])[0]
-            fill = {"panel": "full", "kept_no_cell": "left", "dropped": "none"}[e.status]
-            ax.plot([x], [i], linestyle="none", marker=marker, markersize=4.6 if marker == "o" else 4.0,
-                    markeredgecolor=color, markerfacecolor=color if fill != "none" else "white",
-                    markerfacecoloralt="white", fillstyle=fill if fill != "none" else "full",
-                    markeredgewidth=0.9, zorder=4)
-            left = e.label_side == "left"
-            ax.annotate(e.printed, (x, i), xytext=(-4.5 if left else 4.5, 0), textcoords="offset points",
-                        ha="right" if left else "left", va="center", fontsize=kit.FS_MIN, zorder=5,
-                        path_effects=HALO)
-        ws = rb[rb["mark"] == "window_start"]
-        for w in ws.itertuples():
+            ax.hlines(np.full(len(x0), i + PLACEBO_OFFSET), x0, x0 + 1.0, color="black", linewidth=PLACEBO_LW,
+                      capstyle="butt", zorder=2)
+        xs = _x(ev["row_ts"])
+        dx = label_offsets(xs, list(ev["printed"].astype(str))) if len(ev) else []
+        for e, x, d in zip(ev.itertuples(), xs, dx):
+            ax.plot([x], [i], zorder=4, **_marker_kw(m, e.status))
+            _, _, marker = kit.MANAGER[m]
+            if abs(d) > _text_width_pt(str(e.printed)) / 2.0 + MARKER_PT[marker] / 2.0:   # no longer over it
+                # leader line as an annotation without text, so that the number's box stays the text alone
+                ax.annotate("", (x, i), xytext=(d, LABEL_LIFT), textcoords="offset points", zorder=4.5,
+                            arrowprops=dict(arrowstyle="-", color="black", linewidth=0.5, shrinkA=0.8,
+                                            shrinkB=MARKER_PT[marker] / 2 + 0.6))
+            ax.annotate(e.printed, (x, i), xytext=(d, LABEL_LIFT), textcoords="offset points", ha="center",
+                        va="bottom", fontsize=kit.FS_MIN, zorder=5, path_effects=HALO)
+        for w in rb[rb["mark"] == "window_start"].itertuples():
             x = _x([w.row_ts])[0]
-            ax.plot([x, x], [i - 0.32, i + 0.32], color="black", linewidth=0.8, zorder=3, solid_capstyle="butt")
-            ax.plot([x, x + 12], [i - 0.32, i - 0.32], color="black", linewidth=0.8, zorder=3)
-            ax.plot([x, x + 12], [i + 0.32, i + 0.32], color="black", linewidth=0.8, zorder=3)
-            # label left of the mark, or left of the initial rows just before it; no label if rows sit under it
-            per_in = (mdates.date2num(T1) - mdates.date2num(T0)) / (R - L)          # days per inch
-            ticks = _x(tl["row_ts"])
-            near = ticks[(ticks <= x) & (ticks >= x - NEAR_DAYS)]
-            anchor = min([x] + list(near))
-            if not ((ticks < anchor) & (ticks > anchor - 0.66 * per_in)).any():
-                ax.annotate("PM2 window", (anchor, i), xytext=(-3, 0), textcoords="offset points", ha="right",
-                            va="center", fontsize=kit.FS_MIN, path_effects=HALO)
+            top, bot = i - BRACKET_UP, i + BRACKET_DOWN
+            ax.plot([x + BRACKET_DAYS, x, x, x + BRACKET_DAYS], [top, top, bot, bot], color="black", linewidth=0.8,
+                    zorder=3, solid_joinstyle="miter")
+            ax.annotate(w.printed, (x, top), xytext=(-2.5, 0), textcoords="offset points", ha="right", va="center",
+                        fontsize=kit.FS_MIN, path_effects=HALO, zorder=5)
         head = rb[rb["mark"] == "rail"]
         if len(head) and head["printed"].iloc[0]:
-            ax.annotate(head["printed"].iloc[0], (1.0, i + 0.1), xycoords=("axes fraction", "data"),
+            ax.annotate(head["printed"].iloc[0], (1.0, i), xycoords=("axes fraction", "data"),
                         xytext=(12, 0), textcoords="offset points", ha="left", va="center", fontsize=kit.FS_MIN)
-    ax.set_ylim(n - 0.45, -0.55)
+    ax.set_ylim(B_YLIM[1], B_YLIM[0])
     ax.set_yticks(range(n))
     ax.set_yticklabels([rail_label(c, m) for c, m in RAILS])
     ax.tick_params(axis="y", length=0, pad=4)

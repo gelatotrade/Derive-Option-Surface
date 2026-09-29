@@ -86,12 +86,11 @@ CAPTION = (
     "Panel b ranks the \\PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because "
     "capital is positive in every cell, the \\PH{h1-pos} cells with positive edge come first in both rankings, and "
     "the grey lines mark that boundary. Crosses give the 90 per cent rank intervals of the ten largest moves. Panel "
-    "c is the registered test, Spearman's $\\rho$ with its 90 per cent day-cluster interval, which is narrower than "
-    "its circle and printed above the panel, against the threshold of 0.5, followed by sensitivities and, on grey, "
-    "exploratory rows; in the rows by the sign of the edge the cells are chosen again in every replicate. The grey "
-    "band is the $\\rho$ that the sign pattern alone produces when ranks are shuffled within each sign group. Edge "
-    "is a flow per fill and capital a "
-    "stock, so a cell's value is not a return per unit of time.")
+    "c is the registered test: Spearman's $\\rho$ with its 90 per cent day-cluster interval, which is narrower than "
+    "its circle and printed above the panel, set against the threshold of 0.5. Sensitivities follow and then, on "
+    "grey, exploratory rows; in the rows by the sign of the edge the cells are chosen again in every replicate. "
+    "The grey band is the $\\rho$ that the sign pattern alone produces when ranks are shuffled within each sign "
+    "group. Edge is a flow per fill and capital a stock, so a cell's value is not a return per unit of time.")
 
 
 # =====================================================================================================================

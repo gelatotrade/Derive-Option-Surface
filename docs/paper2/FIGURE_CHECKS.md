@@ -1,6 +1,6 @@
 # Figures of Paper 2: check list
 
-Generated 2026-09-27 12:19 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
+Generated 2026-09-29 16:27 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
 
 **Result:** 231 of 231 checks yes; build instruction 108 of 108 yes; shape 22 of 22 yes; captions 9 of 9 equal.
 
@@ -250,7 +250,7 @@ Generated 2026-09-27 12:19 UTC with `scripts/p2_figure_check.py` from `results/p
 | `f2.pdf` | 6.840 × 4.400 in | 6.84 × 4.4 in | yes |
 | `f3.pdf` | 3.290 × 4.000 in | 3.29 × 4.0 in | yes |
 | `f4.pdf` | 3.290 × 4.000 in | 3.29 × 4.0 in | yes |
-| `f5.pdf` | 6.840 × 4.300 in | 6.84 × 4.3 in | yes |
+| `f5.pdf` | 6.840 × 5.150 in | 6.84 × 5.15 in | yes |
 | `f6.pdf` | 6.840 × 4.200 in | 6.84 × 4.2 in | yes |
 | `a1.pdf` | 6.840 × 2.500 in | 6.84 × 2.5 in | yes |
 | `docs/media/p2_btc_capital_surface.gif` | 5.19 MB | ≤ 8 MB | yes |

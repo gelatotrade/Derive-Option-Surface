@@ -7,8 +7,8 @@ timeline_row,BTC,pm,BTC legacy PM,1702279663.0,OtherContingencyParameters,,,,,,,
 timeline_row,BTC,pm,BTC legacy PM,1718150487.0,BasisContingencyParameters,BTC-pm-20240612,,,,,,,,,
 timeline_row,BTC,pm,BTC legacy PM,1727239635.0,maxExpiries,,,,,,,,,,
 timeline_row,BTC,pm,BTC legacy PM,1740253957.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm-20250222,,,,,,,,,
-event,BTC,pm,BTC legacy PM,1718150487.0,BasisContingencyParameters,BTC-pm-20240612,dropped,0.0,0.0,2024-06-12,,,,right,0
-event,BTC,pm,BTC legacy PM,1740253957.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm-20250222,panel,25.0,-18.563678960117247,2025-02-23,1739044357.0,1741463557.0,,right,−19
+event,BTC,pm,BTC legacy PM,1718150487.0,BasisContingencyParameters,BTC-pm-20240612,dropped,0.0,0.0,2024-06-12,,,,above,0
+event,BTC,pm,BTC legacy PM,1740253957.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm-20250222,panel,25.0,-18.563678960117247,2025-02-23,1739044357.0,1741463557.0,,above,−19
 placebo_day,BTC,pm,BTC legacy PM,1706140800.0,,,,,,,,,363.0,,
 placebo_day,BTC,pm,BTC legacy PM,1706227200.0,,,,,,,,,363.0,,
 placebo_day,BTC,pm,BTC legacy PM,1706313600.0,,,,,,,,,363.0,,
@@ -396,11 +396,11 @@ timeline_row,BTC,pm2,BTC PM2,1787263765.0,BasisContingencyParameters+CollateralP
 timeline_row,BTC,pm2,BTC PM2,1788150377.0,CollateralParameters,,,,,,,,,,
 timeline_row,BTC,pm2,BTC PM2,1788385565.0,CollateralParameters,,,,,,,,,,
 timeline_row,BTC,pm2,BTC PM2,1788562297.0,CollateralParameters,,,,,,,,,,
-event,BTC,pm2,BTC PM2,1760136931.0,OtherContingencyParameters,BTC-pm2-20251010,dropped,0.0,0.0,2025-10-11,,,,right,0
+event,BTC,pm2,BTC PM2,1760136931.0,OtherContingencyParameters,BTC-pm2-20251010,dropped,0.0,0.0,2025-10-11,,,,above,0
 event,BTC,pm2,BTC PM2,1767912649.0,MarginParameters,BTC-pm2-20260108,panel,25.0,1.5979242068005632,2026-01-09,1766703049.0,1769122249.0,,left,+2
 event,BTC,pm2,BTC PM2,1769142245.0,scenarios,BTC-pm2-20260123,panel,27.0,-10.487424696121955,2026-01-23,1767932645.0,1770351845.0,,right,−10
-event,BTC,pm2,BTC PM2,1779595507.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm2-20260524,panel,38.0,-7.841531618910988,2026-05-24,1778385907.0,1780805107.0,,right,−8
-event,BTC,pm2,BTC PM2,1787263765.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm2-20260820,panel,43.0,-26.045952956496144,2026-08-21,1786054165.0,1788473365.0,,right,−26
+event,BTC,pm2,BTC PM2,1779595507.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm2-20260524,panel,38.0,-7.841531618910988,2026-05-24,1778385907.0,1780805107.0,,above,−8
+event,BTC,pm2,BTC PM2,1787263765.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,BTC-pm2-20260820,panel,43.0,-26.045952956496144,2026-08-21,1786054165.0,1788473365.0,,above,−26
 placebo_day,BTC,pm2,BTC PM2,1752624000.0,,,,,,,,,54.0,,
 placebo_day,BTC,pm2,BTC PM2,1752710400.0,,,,,,,,,54.0,,
 placebo_day,BTC,pm2,BTC PM2,1752796800.0,,,,,,,,,54.0,,
@@ -463,8 +463,8 @@ timeline_row,ETH,pm,ETH legacy PM,1702279649.0,OtherContingencyParameters,,,,,,,
 timeline_row,ETH,pm,ETH legacy PM,1718150487.0,BasisContingencyParameters,ETH-pm-20240612,,,,,,,,,
 timeline_row,ETH,pm,ETH legacy PM,1727239635.0,maxExpiries,,,,,,,,,,
 timeline_row,ETH,pm,ETH legacy PM,1740253957.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,ETH-pm-20250222,,,,,,,,,
-event,ETH,pm,ETH legacy PM,1718150487.0,BasisContingencyParameters,ETH-pm-20240612,dropped,0.0,0.0,2024-06-12,,,,right,0
-event,ETH,pm,ETH legacy PM,1740253957.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,ETH-pm-20250222,panel,50.0,-18.88798646005582,2025-02-23,1739044357.0,1741463557.0,,right,−19
+event,ETH,pm,ETH legacy PM,1718150487.0,BasisContingencyParameters,ETH-pm-20240612,dropped,0.0,0.0,2024-06-12,,,,above,0
+event,ETH,pm,ETH legacy PM,1740253957.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,ETH-pm-20250222,panel,50.0,-18.88798646005582,2025-02-23,1739044357.0,1741463557.0,,above,−19
 placebo_day,ETH,pm,ETH legacy PM,1706140800.0,,,,,,,,,319.0,,
 placebo_day,ETH,pm,ETH legacy PM,1706227200.0,,,,,,,,,319.0,,
 placebo_day,ETH,pm,ETH legacy PM,1706313600.0,,,,,,,,,319.0,,
@@ -807,11 +807,11 @@ timeline_row,ETH,pm2,ETH PM2,1784322411.0,CollateralParameters,,,,,,,,,,
 timeline_row,ETH,pm2,ETH PM2,1786589439.0,CollateralParameters+maxExpiries,,,,,,,,,,
 timeline_row,ETH,pm2,ETH PM2,1787263765.0,BasisContingencyParameters+CollateralParameters+OtherContingencyParameters+VolShockParameters+scenarios,ETH-pm2-20260820,,,,,,,,,
 timeline_row,ETH,pm2,ETH PM2,1788562297.0,CollateralParameters,,,,,,,,,,
-event,ETH,pm2,ETH PM2,1760136931.0,OtherContingencyParameters,ETH-pm2-20251010,dropped,0.0,0.0,2025-10-11,,,,right,0
+event,ETH,pm2,ETH PM2,1760136931.0,OtherContingencyParameters,ETH-pm2-20251010,dropped,0.0,0.0,2025-10-11,,,,above,0
 event,ETH,pm2,ETH PM2,1767912649.0,MarginParameters,ETH-pm2-20260108,panel,37.0,1.6082417902533996,2026-01-09,1766703049.0,1769122249.0,,left,+2
 event,ETH,pm2,ETH PM2,1769142245.0,scenarios,ETH-pm2-20260123,panel,40.0,-4.8760065925169895,2026-01-23,1767932645.0,1770351845.0,,right,−5
-event,ETH,pm2,ETH PM2,1779595507.0,OtherContingencyParameters+VolShockParameters,ETH-pm2-20260524,panel,54.0,-3.3598927139216332,2026-05-24,1778385907.0,1780805107.0,,right,−3
-event,ETH,pm2,ETH PM2,1787263765.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,ETH-pm2-20260820,panel,52.0,-18.279000956483664,2026-08-21,1786054165.0,1788473365.0,,right,−18
+event,ETH,pm2,ETH PM2,1779595507.0,OtherContingencyParameters+VolShockParameters,ETH-pm2-20260524,panel,54.0,-3.3598927139216332,2026-05-24,1778385907.0,1780805107.0,,above,−3
+event,ETH,pm2,ETH PM2,1787263765.0,BasisContingencyParameters+OtherContingencyParameters+VolShockParameters+scenarios,ETH-pm2-20260820,panel,52.0,-18.279000956483664,2026-08-21,1786054165.0,1788473365.0,,above,−18
 placebo_day,ETH,pm2,ETH PM2,1752624000.0,,,,,,,,,10.0,,
 placebo_day,ETH,pm2,ETH PM2,1752710400.0,,,,,,,,,10.0,,
 placebo_day,ETH,pm2,ETH PM2,1752796800.0,,,,,,,,,10.0,,
@@ -845,10 +845,10 @@ timeline_row,HYPE,pm2,HYPE PM2,1779595507.0,BasisContingencyParameters+MarginPar
 timeline_row,HYPE,pm2,HYPE PM2,1786589439.0,CollateralParameters+maxExpiries,,,,,,,,,,
 timeline_row,HYPE,pm2,HYPE PM2,1787263765.0,CollateralParameters+MarginParameters+OtherContingencyParameters+VolShockParameters+scenarios,HYPE-pm2-20260820,,,,,,,,,
 timeline_row,HYPE,pm2,HYPE PM2,1788562297.0,CollateralParameters,,,,,,,,,,
-event,HYPE,pm2,HYPE PM2,1767912649.0,MarginParameters,HYPE-pm2-20260108,kept_no_cell,0.0,1.536593673818572,2026-01-09,1766703049.0,1769122249.0,,right,+2
+event,HYPE,pm2,HYPE PM2,1767912649.0,MarginParameters,HYPE-pm2-20260108,kept_no_cell,0.0,1.536593673818572,2026-01-09,1766703049.0,1769122249.0,,above,+2
 event,HYPE,pm2,HYPE PM2,1778243063.0,BasisContingencyParameters+OtherContingencyParameters,HYPE-pm2-20260508,panel,29.0,-7.426016879640686,2026-05-09,1777033463.0,1779452663.0,,left,−7
 event,HYPE,pm2,HYPE PM2,1779595507.0,BasisContingencyParameters+MarginParameters+OtherContingencyParameters+VolShockParameters+scenarios,HYPE-pm2-20260524,panel,35.0,-37.43221308154349,2026-05-24,1778385907.0,1780805107.0,,right,−37
-event,HYPE,pm2,HYPE PM2,1787263765.0,MarginParameters+OtherContingencyParameters+VolShockParameters+scenarios,HYPE-pm2-20260820,panel,20.0,-20.327270859025298,2026-08-21,1786054165.0,1788473365.0,,right,−20
+event,HYPE,pm2,HYPE PM2,1787263765.0,MarginParameters+OtherContingencyParameters+VolShockParameters+scenarios,HYPE-pm2-20260820,panel,20.0,-20.327270859025298,2026-08-21,1786054165.0,1788473365.0,,above,−20
 placebo_day,HYPE,pm2,HYPE PM2,1770249600.0,,,,,,,,,67.0,,
 placebo_day,HYPE,pm2,HYPE PM2,1770336000.0,,,,,,,,,67.0,,
 placebo_day,HYPE,pm2,HYPE PM2,1770422400.0,,,,,,,,,67.0,,

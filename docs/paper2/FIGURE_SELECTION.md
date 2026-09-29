@@ -31,7 +31,7 @@ label depends on the outcome of a test.
 | F2 | Does the capital denominator reorder the map? | P-F2 (maps, rank against rank) in the grey coding of the design review, verdict bar from E, sign lines from the referee | 7.0 × 4.4 | H1 |
 | F3 | What does the next contract cost in the book of a dominant maker? | P-F3 a ⊕ E-F3 b | 3.4 × 4.0 | H2 |
 | F4 | What is netting worth? | P-F4 b binned ⊕ E-F4 b | 3.4 × 4.0 | H3 |
-| F5 | How has the engine moved over time, and which events carry H4? | P-F5 ⊕ status grammar E ⊕ placebo band of the referee | 7.0 × 4.3 | |
+| F5 | How has the engine moved over time, and which events carry H4? | P-F5 ⊕ status grammar E ⊕ placebo band of the referee | 7.0 × 5.15 | |
 | F6 | Does the half spread follow the price of capital? | The referee's combination: dose strip, FWL picture E, placebo with checklist E, small forest | 7.0 × 4.2 | H4 |
 | A1 | Does the replica match the chain? | M-A1 a ⊕ P-A1 b, p95 mark from E | 7.0 × 2.5 | |
 | GIF | How does the PM2 capital surface move over 15 months? | 3D as in T1 (M, P), timing and hold frames M, honesty rules E | 1200 × 675 px | |
@@ -621,7 +621,7 @@ more than 63 options (73.6 %), `over_63_options` ⇔ n_legs ≥ 64. Nine account
 119, M7 10, M8 239, M10 247; managers M2 SM; M1, M4, M7 PM:ETH, M6 PM:BTC; M3 PM2:HYPE; M5, M8, M10 PM2:ETH. Bins 41,
 29, 57, 170, 215, 431, 909, 91. Legacy rows n 1,640 (303 not applicable = M3). Header checked against h3.json.
 
-### F5 · The engine over time · 7.0 × 4.3 in
+### F5 · The engine over time · 7.0 × 5.15 in
 
 **Why:** P carries the numbers that the text needs before H4; the status grammar of E makes the event selection
 checkable; the placebo band shows that ETH PM2 has only ten admissible placebo days. Templates:
@@ -645,7 +645,14 @@ the overrides); `results/p2/events.csv`; `results/p2/reference_book.csv`; `h4.js
   opacity, height 0.5 rows), so that overlaps turn darker by themselves. Event symbols as in 6.2 at `event_ts`. Number next to each
   (7 pt): pure effect in log-%, an integer with sign; for two events less than 30 days apart the number of the
   earlier one stands on the left, that of the later one on the right. Admissible placebo days as black dashes 1.2 pt, 0.3 rows below the
-  rail, on the right “placebo days: 54”. Start of the PM2 window (2025-06-12 23:00 UTC) as a short mark “PM2 window” on the
+  rail, on the right “placebo days: 54”. *Revision of 29 September 2026:* at 4.3 in the numbers beside the symbols ran
+  into the neighbouring symbols and ticks (ETH PM2 “+2●●−5”, HYPE PM2 “−7●●−37”) and the placebo dashes read as
+  underlines. Since then each rail has three lanes (rows 0.31 in apart, canvas 7.0 × 5.15 in): the number stands
+  centred above its symbol, numbers that would come closer than 3 pt are pushed apart in time order (earlier left,
+  later right; a leader line once a number no longer overhangs its symbol), symbols, ticks and window bars (height
+  0.34 rows) sit on the rail, the placebo dashes (1.5 pt) 0.3 rows below it, “placebo days: 54” at the height of the
+  rail. The “PM2 window” mark is a bracket with its label above the rail, on all three PM2 rails. A key in two rows
+  under the title explains the fills (each for the diamond and the circle), tick, window bar and placebo dash. Start of the PM2 window (2025-06-12 23:00 UTC) as a short mark “PM2 window” on the
   PM2 rails of BTC and ETH, for HYPE from 2025-11-11. Title above b: “parameter changes · number = effect of the parameters
   alone on the reference straddle, log-%”.
 - **c** BTC reference straddle in % of the forward per manager (colour and line style), y 0 to 32, ticks 0 / 10 / 20 / 30,
