@@ -189,3 +189,24 @@ der Nachträge 1 bis 4 neue Hashes tragen:
    Kennungen enthalten; die Zuordnung alt → neu lässt sich daher nur im lokalen Repository des Autors prüfen.
    Öffentlich wird die Präregistrierung erst mit dem Push der umgeschriebenen Historie, also nach den Ergebnissen.
    Einen öffentlichen Zeitstempel vor den Ergebnissen gibt es nicht.
+
+## Nachtrag 6 (30.09.2026, nach den Ergebnissen auf dem Pilotschnitt, vor dem finalen Datenlauf): Gebühr mehrbeiniger RFQ-Pakete
+
+Dieser Nachtrag entsteht nach allen Ergebnissen auf dem Pilotschnitt vom 17.09.2026 und vor dem Datenlauf bis zum
+registrierten Stichtag (30.09.2026 08:00 UTC). Er ändert keine Teststatistik, keine Ablehnungsregel und kein
+Ergebnis; er präzisiert Nachtrag 2, Punkt 1, und fügt eine Sensitivität hinzu.
+
+1. **Befund (Audit A67):** Bei mehrbeinigen RFQ bucht Derive die Maker-Gebühr des Pakets fast immer auf genau ein
+   Bein (Pilot: von 4 996 Paketen mit mehr als einem Bein und Maker-Gebühr 4 511 auf genau einem Bein; Rebates gibt
+   es bei RFQ nicht). „Summen je Fill“ in Nachtrag 2, Punkt 1, gilt wörtlich nur für Orderbuch-Fills; bei einem
+   mehrbeinigen RFQ ist die gebuchte Gebühr eine Summe über das Paket.
+2. **Hauptlesart unverändert:** NE_i = MO_30min,i − (fee_maker,i − rebate_maker,i) / a_i − Hedge_i wie in
+   Nachtrag 2; die Gebühr bleibt auf dem Bein, auf dem sie gebucht ist. Das ist die Lesart von Nachtrag 3, Punkt 3,
+   der Präregistrierung von Paper 1, sodass beide Papiere denselben Netto-Edge verwenden.
+3. **Sensitivität:** H1 wird zusätzlich mit der über das Paket verteilten Gebühr berichtet: Jedes Bein eines Pakets
+   (gleiche `rfq_id` und Maker-Wallet) trägt seine Menge mal (Σ Gebühr − Σ Rebate) / Σ Menge des Pakets;
+   Orderbuch-Fills bleiben unverändert, die Summe des Edge über alle Fills bleibt gleich
+   (`inference_p2.package_fee_net`, `results/p2/sensitivity.json`, Abschnitt `c2_rfq_package`).
+4. **Grössenordnung (Pilot, aus dem Befund zu Paper 1):** Die mittlere Maker-Gebühr je Kontrakt über die RFQ-Fills
+   ist 0,3115 USDC Bein für Bein und 0,3177 USDC über das Paket verteilt
+   (`results/p1_finding/fee_units.json`, `rfq_booking`); in Paper 1 ändert die Verteilung kein Zellurteil.

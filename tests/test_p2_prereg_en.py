@@ -48,13 +48,13 @@ def test_translation_is_dated_later_and_names_the_original_as_binding():
 def test_every_section_addendum_and_item_is_translated():
     de = _sections(DE.read_text())
     en = _sections(EN.read_text())
-    assert len(en) == len(de) == 12  # seven sections, five addenda
+    assert len(en) == len(de) == 13  # seven sections, six addenda
     assert [n for _, n in en] == [n for _, n in de]
     # the headings of the binding German original, matched verbatim ("Nachtrag 1 (25.09.2026, ...")
     de_add = [re.match(r"Nachtrag (\d+) \((\d+)\.(\d+)\.(\d{4})", h).groups() for h, _ in de if h.startswith("Nachtrag")]
     en_add = [re.match(r"Addendum (\d+) \((\d+) September (\d{4})", h).groups() for h, _ in en
               if h.startswith("Addendum")]
-    assert [a[0] for a in en_add] == [a[0] for a in de_add] == ["1", "2", "3", "4", "5"]
+    assert [a[0] for a in en_add] == [a[0] for a in de_add] == ["1", "2", "3", "4", "5", "6"]
     assert all((d[1], d[3]) == (e[1], e[2]) and d[2] == "09" for d, e in zip(de_add, en_add))
     for h in ("**H1 ranking:**", "**H2 marginal cost:**", "**H3 netting value:**", "**H4 price of capital:**"):
         assert h in EN.read_text()

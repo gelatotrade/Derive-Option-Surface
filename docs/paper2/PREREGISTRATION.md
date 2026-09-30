@@ -2,8 +2,8 @@
 
 > **Translation, not part of the registration.** This English text was made on 25 September 2026, after all
 > registered results had been computed and after the audit of the paper (`docs/paper2/AUDIT.md`, finding A64);
-> Addendum 5 was translated on 27 September 2026. It translates `docs/paper2/PRAEREGISTRIERUNG.md` as it stands
-> with Addenda 1 to 5, git blob `c2d7378bfa0d51ac63d819ec9ded8571535ab4a6`
+> Addendum 5 was translated on 27 September 2026 and Addendum 6 on 30 September 2026. It translates
+> `docs/paper2/PRAEREGISTRIERUNG.md` as it stands with Addenda 1 to 6, git blob `06a0004cda02936baf42db3101f2bd24e50f54a8`
 > (`git hash-object docs/paper2/PRAEREGISTRIERUNG.md`). **The German original is binding**; where the two texts
 > differ, the German text applies. The registration itself is commit `cc0a29f`; the commits of Addenda 1 to 4 are
 > named in the section "Data, code and pre-registration" of `paper2/main.tex`. These are the hashes after the
@@ -209,3 +209,24 @@ carry new hashes:
    identifiers; the mapping from old to new can therefore be checked only in the author's local repository. The
    pre-registration becomes public only with the push of the rewritten history, that is, after the results. There is
    no public timestamp before the results.
+
+## Addendum 6 (30 September 2026, after the results on the pilot cut, before the final data run): fee of multi-leg RFQ packages
+
+This addendum is written after all results on the pilot cut of 17 September 2026 and before the data run up to the
+registered cut-off (30 September 2026 08:00 UTC). It changes no test statistic, no rejection rule and no result; it
+makes Addendum 2, point 1, precise and adds a sensitivity.
+
+1. **Finding (audit A67):** On multi-leg RFQs Derive books the maker fee of the package almost always on exactly one
+   leg (pilot: of 4 996 packages with more than one leg and a maker fee, 4 511 on exactly one leg; RFQs carry no
+   rebates). "Totals per fill" in Addendum 2, point 1, holds literally only for order book fills; on a multi-leg RFQ
+   the booked fee is a total over the package.
+2. **Main reading unchanged:** NE_i = MO_30min,i − (fee_maker,i − rebate_maker,i) / a_i − Hedge_i as in Addendum 2;
+   the fee stays on the leg on which it is booked. This is the reading of Addendum 3, point 3, of the Paper 1
+   pre-registration, so both papers use the same net edge.
+3. **Sensitivity:** H1 is also reported with the fee spread over the package: every leg of a package (same `rfq_id`
+   and maker wallet) carries its amount times (Σ fee − Σ rebate) / Σ amount of the package; order book fills are
+   unchanged, and the sum of the edge over all fills stays the same (`inference_p2.package_fee_net`,
+   `results/p2/sensitivity.json`, section `c2_rfq_package`).
+4. **Size (pilot, from the finding on Paper 1):** The mean maker fee per contract over the RFQ fills is 0.3115 USDC
+   leg by leg and 0.3177 USDC spread over the package (`results/p1_finding/fee_units.json`, `rfq_booking`); in
+   Paper 1 the spreading changes no cell verdict.
