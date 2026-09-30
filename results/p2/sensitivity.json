@@ -491,6 +491,78 @@
    "sample": 20000,
    "sample_equals_marginal": true,
    "rule": "descriptive (no preregistered threshold)"
+  },
+  "by_side": {
+   "sell": {
+    "stat": 0.07477297947270317,
+    "lo": 0.06347423259380079,
+    "hi": 0.09194900097947094,
+    "rejected": false,
+    "n": 10403,
+    "n_days": 370,
+    "n_excluded": 0,
+    "share_nonpositive": 0.2948188022685764,
+    "numerator": "dK_per_contract",
+    "denominator": "K_single_pm2",
+    "variant": "ratio",
+    "b": 9999,
+    "seed": 20260924,
+    "level": 0.9,
+    "rule": "H2",
+    "exploratory": true,
+    "libs": "account/standard"
+   },
+   "buy": {
+    "stat": -0.13653623410225904,
+    "lo": -0.20186453916877184,
+    "hi": -0.07462919127776121,
+    "rejected": false,
+    "n": 9596,
+    "n_days": 369,
+    "n_excluded": 1,
+    "share_nonpositive": 0.5549187161317215,
+    "numerator": "dK_per_contract",
+    "denominator": "K_single_pm2",
+    "variant": "ratio",
+    "b": 9999,
+    "seed": 20260924,
+    "level": 0.9,
+    "rule": "H2",
+    "exploratory": true,
+    "libs": "account/standard"
+   }
+  },
+  "sum_ratio": {
+   "all": {
+    "stat": 0.1662527694343416,
+    "lo": null,
+    "hi": null,
+    "rejected": null,
+    "n": 19999,
+    "rule": "descriptive (no preregistered threshold)",
+    "what": "sum(dK) / sum(K_single a)",
+    "exploratory": true
+   },
+   "sell": {
+    "stat": 0.3104352804877355,
+    "lo": null,
+    "hi": null,
+    "rejected": null,
+    "n": 10403,
+    "rule": "descriptive (no preregistered threshold)",
+    "what": "sum(dK) / sum(K_single a)",
+    "exploratory": true
+   },
+   "buy": {
+    "stat": -0.3966798637375379,
+    "lo": null,
+    "hi": null,
+    "rejected": null,
+    "n": 9596,
+    "rule": "descriptive (no preregistered threshold)",
+    "what": "sum(dK) / sum(K_single a)",
+    "exploratory": true
+   }
   }
  },
  "e_h3": {
@@ -1245,5 +1317,67 @@
   "basic_hi": 0.9253241305143907,
   "bc_lo": 0.8982668230342418,
   "bc_hi": 0.9196433796258809
+ },
+ "i_rfq": {
+  "h1_pm2_no_rfq": {
+   "stat": 0.9001346950263359,
+   "lo": 0.8894328066154692,
+   "hi": 0.9132228968142281,
+   "rejected": true,
+   "n": 153,
+   "n_days": 463,
+   "n_fills": 241077,
+   "n_fills_k_le_0": 0,
+   "min_fills": 200,
+   "b": 9999,
+   "seed": 20260924,
+   "level": 0.9,
+   "rule": "H1",
+   "exploratory": true
+  },
+  "top10_edge_share": {
+   "stat": 0.8957465918461766,
+   "what": "RFQ share of the edge",
+   "lo": null,
+   "hi": null,
+   "rejected": null,
+   "n": 13637,
+   "rule": "descriptive (no preregistered threshold)",
+   "cells": [
+    "BTC|buy|00-10|2-7d",
+    "BTC|buy|00-10|7-30d",
+    "BTC|buy|00-10|>90d",
+    "BTC|buy|90-100|<=2d",
+    "ETH|buy|00-10|2-7d",
+    "ETH|buy|00-10|30-90d",
+    "ETH|buy|00-10|>90d",
+    "HYPE|buy|00-10|7-30d",
+    "HYPE|buy|10-25|2-7d",
+    "HYPE|buy|25-40|2-7d"
+   ],
+   "exploratory": true
+  },
+  "top10_fill_share": {
+   "stat": 0.39400161325804794,
+   "what": "RFQ share of the fills",
+   "lo": null,
+   "hi": null,
+   "rejected": null,
+   "n": 13637,
+   "rule": "descriptive (no preregistered threshold)",
+   "cells": [
+    "BTC|buy|00-10|2-7d",
+    "BTC|buy|00-10|7-30d",
+    "BTC|buy|00-10|>90d",
+    "BTC|buy|90-100|<=2d",
+    "ETH|buy|00-10|2-7d",
+    "ETH|buy|00-10|30-90d",
+    "ETH|buy|00-10|>90d",
+    "HYPE|buy|00-10|7-30d",
+    "HYPE|buy|10-25|2-7d",
+    "HYPE|buy|25-40|2-7d"
+   ],
+   "exploratory": true
+  }
  }
 }

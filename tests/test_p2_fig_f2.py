@@ -30,7 +30,7 @@ def row(stat, lo, hi, n, n_days=40):
             "rule": "H1", "exploratory": True}
 
 
-def synth(results_dir: Path, seed: int = 1, sign: bool = True, rejected=None) -> None:
+def synth(results_dir: Path, seed: int = 1, sign: bool = True, rejected=None, rfq: bool = True) -> None:
     """h1_cells.csv, h1.json and sensitivity.json with the keys F2 reads."""
     rng = np.random.default_rng(seed)
     rows = []
@@ -76,6 +76,8 @@ def synth(results_dir: Path, seed: int = 1, sign: bool = True, rejected=None) ->
             "c_p1_net_edge": {"h1_pm2": row(0.85, 0.8, 0.89, n)},
             "f_time": {"to_expiry": row(0.7, 0.6, 0.76, n), "holding": row(0.72, 0.65, 0.8, n)},
             "g_by_ccy": {f"pm2_{c}": row(0.8, 0.7, 0.9, 30) for c in CCYS}}
+    if rfq:
+        sens["i_rfq"] = {"h1_pm2_no_rfq": row(0.8, 0.75, 0.85, n - 5)}
     if sign:
         npos = int((h.loc[occ, "A_bp"] > 0).sum())
         sens["h1_sign"] = {"within_pos": row(0.6, 0.45, 0.7, npos), "within_nonpos": row(-0.3, -0.45, 0.1, n - npos),
@@ -161,7 +163,21 @@ def test_sign_rows_and_band_follow_the_data_contract(tmp_path):
     fig, t = f2.make_figure(without)
     c = t["c"]
     assert not ({"edge > 0 only", "edge ≤ 0 only"} & set(c["label"])) and (c["kind"] == "band").sum() == 0
-    assert (c["kind"].isin(["registered", "sensitivity", "exploratory"])).sum() == 10
+    assert (c["kind"].isin(["registered", "sensitivity", "exploratory"])).sum() == 11
+    plt.close(fig)
+
+
+def test_row_without_rfq_fills_follows_the_data_contract(tmp_path):
+    """Audit A12: an exploratory row without RFQ fills, left out while sensitivity.json has no i_rfq entry."""
+    with_rfq, without = tmp_path / "r", tmp_path / "n"
+    synth(with_rfq)
+    synth(without, rfq=False)
+    fig, t = f2.make_figure(with_rfq)
+    row = t["c"].set_index("label").loc["without RFQ fills"]
+    assert row["kind"] == "exploratory" and row["source_key"] == "sensitivity.json:i_rfq.h1_pm2_no_rfq"
+    plt.close(fig)
+    fig, t = f2.make_figure(without)
+    assert "without RFQ fills" not in set(t["c"]["label"])
     plt.close(fig)
 
 

@@ -49,6 +49,8 @@ STRUCT_NAME = {"BasisContingencyParameters": "basis", "OtherContingencyParameter
                "scenarios": "scenarios", "CollateralParameters": "collateral", "maxExpiries": "maxExpiries"}
 SECTION_TITLE = {"a_maps": "(a) Maps under other managers", "b_mm": "(b) MM instead of IM",
                  "c_p1_net_edge": "(c) Net edge in the form of Paper 1 (fee and rebate undivided)",
+                 "c2_rfq_package": "(c2) Fee of a multi-leg RFQ package spread over its legs (addendum 6)",
+                 "i_rfq": "(i) RFQ fills and the top of the capital map (audit A12)",
                  "d_h2": "(d) H2 variants", "e_h3": "(e) H3 variants", "f_time": "(f) Time normalisation",
                  "g_by_ccy": "(g) Values per underlying",
                  "h1_sign": "(h) Sign structure of H1 (review round 1; groups by the sign of the edge choose their "
@@ -64,6 +66,10 @@ VARIANT_LABEL = {
     ("b_mm", "h2_ratio_mm"): "H2 with MM",
     ("b_mm", "h3_mm"): "H3 with MM",
     ("c_p1_net_edge", "h1_pm2"): "H1 with net edge as in Paper 1",
+    ("c2_rfq_package", "h1_pm2"): "H1 with the RFQ package fee spread over its legs",
+    ("i_rfq", "h1_pm2_no_rfq"): "H1 without RFQ fills",
+    ("i_rfq", "top10_edge_share"): "ten best cells per unit of PM2 capital",
+    ("i_rfq", "top10_fill_share"): "ten best cells per unit of PM2 capital",
     ("d_h2", "ratio"): "ratio (equal to test H2)",
     ("d_h2", "ratio_unit"): "next single contract (ratio_unit)",
     ("d_h2", "ratio_tape"): "book from the tape",
@@ -87,10 +93,12 @@ VARIANT_LABEL = {
     ("h1_sign", "within_pos_buy"): "maker buys with edge > 0",
 }
 GROUP_NAME = {"by_label": "account", "by_ccy": "underlying", "by_regime": "regime",
-              "by_account_manager": "manager of the account"}
+              "by_account_manager": "manager of the account", "by_side": "maker side",
+              "sum_ratio": "ratio of the sums,"}
 STATUS_NAME = {"no_options": "without options", "no_snapshot": "without snapshot"}
 REGIMES = ("R1", "R2", "R3", "R4")                   # parameter regimes of the figures (FIGURE_SELECTION 6.6)
-GROUP_SLOTS = {"by_label": LABELS, "by_ccy": CCYS, "by_regime": REGIMES, "by_account_manager": ("SM", "PM", "PM2")}
+GROUP_SLOTS = {"by_label": LABELS, "by_ccy": CCYS, "by_regime": REGIMES, "by_account_manager": ("SM", "PM", "PM2"),
+               "by_side": ("sell", "buy"), "sum_ratio": ("all", "sell", "buy")}
 VERDICT_FIELDS = ("stat", "lo", "hi", "rejected", "n")
 
 NNBSP = " "   # narrow no-break space as thousands separator (as in the Paper 1 sheet)
@@ -729,6 +737,8 @@ def sensitivity_section(d: Dict[str, Any], s: Summary, checks: Checks) -> List[s
             dg = digits.get(rule, 3)
             if rule == "H1":
                 what = "ρ" + (" (edge per capital and year)" if v.get("unit") else "")
+            elif v.get("what"):
+                what = str(v["what"])
             elif v.get("numerator"):
                 what = f"Median {v.get('numerator')}/{v.get('denominator')}"
             else:

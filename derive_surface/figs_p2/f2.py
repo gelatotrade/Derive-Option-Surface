@@ -7,7 +7,8 @@ b  Rank by edge per notional against rank by edge per PM2 capital for the occupi
    diagonal, the sign lines after the cells with positive edge, and rank intervals of the ten largest moves.
 c  The registered test (``h1.json``) as a forest after section 6.5 (``ruler``) with the sensitivities and exploratory
    rows of ``sensitivity.json``; the rows ``edge > 0 only`` / ``edge <= 0 only`` and the band ``sign pattern alone``
-   come from ``sensitivity.json["h1_sign"]`` and are left out while that entry is missing (section 10).
+   come from ``sensitivity.json["h1_sign"]`` and are left out while that entry is missing (section 10); likewise the
+   row ``without RFQ fills`` (``sensitivity.json["i_rfq"]``, audit A12).
 
 The figure layer only counts and sorts; every statistic is read from ``results/p2``.
 
@@ -70,10 +71,12 @@ FOREST_ROWS = [
     ("BTC only", "sens", "g_by_ccy.pm2_BTC", "exploratory"),
     ("ETH only", "sens", "g_by_ccy.pm2_ETH", "exploratory"),
     ("HYPE only", "sens", "g_by_ccy.pm2_HYPE", "exploratory"),
+    ("without RFQ fills", "sens", "i_rfq.h1_pm2_no_rfq", "exploratory"),
     ("edge > 0 only", "sens", "h1_sign.within_pos", "exploratory"),
     ("edge ≤ 0 only", "sens", "h1_sign.within_nonpos", "exploratory"),
 ]
-OPTIONAL_KEYS = {"h1_sign.within_pos", "h1_sign.within_nonpos"}   # section 10: rows drop while missing
+OPTIONAL_KEYS = {"h1_sign.within_pos", "h1_sign.within_nonpos",   # section 10: rows drop while missing
+                 "i_rfq.h1_pm2_no_rfq"}
 BAND_KEY = "h1_sign.sign_floor"
 BAND_LABEL = "sign pattern alone"
 

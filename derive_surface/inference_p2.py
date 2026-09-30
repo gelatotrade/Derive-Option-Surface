@@ -1,10 +1,12 @@
-"""Inference for paper 2: H1 to H3 of the preregistration (docs/paper2/PRAEREGISTRIERUNG.md, addenda 1 to 4)
+"""Inference for paper 2: H1 to H3 of the preregistration (docs/paper2/PRAEREGISTRIERUNG.md, addenda 1 to 6)
 plus the exploratory sensitivities and the tables behind the figures.
 
 Net edge (addendum 2). Per contract ``NE = MO_30m - (fee_maker - rebate_maker) / amount - hedge``, with the hedge of
 Paper 1 (``inference_p1.hedge_cost``: perp taker fee, 1 bp perp half spread, 30 min of funding at the median
 absolute funding rate of the currency). The edge of a fill is ``NE * amount``. Paper 1's form (fee and rebate
-subtracted undivided from the per-contract markout) is kept as ``ne_p1`` for the sensitivity.
+subtracted undivided from the per-contract markout) is kept as ``ne_p1`` for the sensitivity. A multi-leg RFQ books
+the package's maker fee on one leg; ``edge_pkg`` spreads the fee and rebate of a package (``rfq_id`` x maker wallet)
+over its contracts, the sensitivity of addendum 6 (audit A67); the main statistic keeps the fee where it is booked.
 
 H1 (rank order). Cells = currency x maker side x |delta| bucket x tenor bucket of Paper 1, occupied with at least 200
 fills in the currency's PM2 window. ``A_c = 1e4 * sum(NE a) / sum(index a)`` (bp of notional) and
@@ -56,6 +58,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 from scipy.stats import norm, rankdata
 
 from .capital import WINDOW_START, in_window
@@ -89,6 +92,7 @@ BTC_ETH = ("BTC", "ETH")
 MARKOUT_COLUMNS = ["trade_id", "ts", "currency", "instrument_name", "expiry", "maker_side", "amount", "price",
                    "index_price", "mark_b_t", "delta_t", "fwd_t", "fee_maker", "rebate_maker", "taker_wallet",
                    "mo_usd_30m", "mo_dn_30m", "mo_vol_30m", "delta_bucket", "tenor_bucket"]
+PACKAGE_KEY = ["rfq_id", "maker_wallet"]       # one RFQ package of one maker (addendum 6), read when present
 CAPITAL_COLUMNS = ["trade_id", "ts", "amount", "sec", "K_sm", "K_pm", "K_pm2", "K_sm_mm", "K_pm_mm", "K_pm2_mm"]
 K_COLUMNS = ["K_sm", "K_pm", "K_pm2", "K_sm_mm", "K_pm_mm", "K_pm2_mm"]
 CELL_PARTS = ["ccy", "side", "delta_bucket", "tenor_bucket"]
@@ -177,6 +181,27 @@ def write_csv(df: pd.DataFrame, path: Path) -> None:
 # Net edge per fill
 # =====================================================================================================================
 
+def package_fee_net(frame: pd.DataFrame) -> np.ndarray:
+    """Fee minus rebate per fill in USDC with the booking of a multi-leg RFQ package spread over its legs
+    (addendum 6): every leg of a package (same ``rfq_id`` and maker wallet) carries its amount times
+    (sum(fee) - sum(rebate)) / sum(amount). Order book fills, and frames without ``rfq_id``, keep their own sums."""
+    fee_net = frame["fee_maker"].to_numpy(float) - frame["rebate_maker"].to_numpy(float)
+    if not set(PACKAGE_KEY) <= set(frame.columns):
+        return fee_net
+    ids = frame["rfq_id"]
+    rfq = (ids.notna() & (ids.astype(str) != "")).to_numpy()
+    if not rfq.any():
+        return fee_net
+    amount = frame["amount"].to_numpy(float)
+    sub = frame.loc[rfq, PACKAGE_KEY].assign(amount=amount[rfq], fee_net=fee_net[rfq])
+    g = sub.groupby(PACKAGE_KEY, sort=False, dropna=False)
+    total = g["amount"].transform("sum").to_numpy(float)
+    per_contract = g["fee_net"].transform("sum").to_numpy(float) / np.where(total > 0, total, np.nan)
+    out = fee_net.copy()
+    out[rfq] = per_contract * amount[rfq]
+    return out
+
+
 def edge_frame(markouts: pd.DataFrame, funding: pd.DataFrame, capital: pd.DataFrame,
                half_spread_bp: float = HALF_SPREAD_BP) -> pd.DataFrame:
     """One row per fill: cell, UTC day, net edge per contract (addendum 2) and per fill, Paper 1's form, capital per
@@ -187,6 +212,12 @@ def edge_frame(markouts: pd.DataFrame, funding: pd.DataFrame, capital: pd.DataFr
     fee_net = a["fee_maker"].to_numpy(float) - a["rebate_maker"].to_numpy(float)   # sums per fill
     hedge = a["hedge"].to_numpy(float)                                               # per contract
     edge = mo * amount - fee_net - hedge * amount
+    edge_pkg = mo * amount - package_fee_net(a) - hedge * amount       # addendum 6, sensitivity
+    if "rfq_id" in a:
+        ids = a["rfq_id"]
+        rfq = (ids.notna() & (ids.astype(str) != "")).to_numpy()
+    else:
+        rfq = np.zeros(len(a), dtype=bool)
     # Paper 1's form, fee and rebate undivided. The revised inference_p1.analysis_frame (revision of 2026-09-25)
     # divides them by the amount, so the form of the pre-registered sensitivity is computed here, in the same
     # order of operations as the former analysis_frame.
@@ -214,6 +245,7 @@ def edge_frame(markouts: pd.DataFrame, funding: pd.DataFrame, capital: pd.DataFr
         "cell": cell_labels(ccy, side, a["delta_bucket"], a["tenor_bucket"]),
         "amount": amount, "index_price": a["index_price"].to_numpy(float), "mo": mo, "fee_net": fee_net,
         "hedge": hedge, "ne": edge / amount, "edge": edge, "ne_p1": ne_p1, "edge_p1": ne_p1 * amount,
+        "edge_pkg": edge_pkg, "rfq": rfq,
         "tau": cap["sec"].to_numpy(float) / YEAR})
     for k in K_COLUMNS:
         out[k] = cap[k].to_numpy(float)
@@ -230,7 +262,8 @@ def edge_frame(markouts: pd.DataFrame, funding: pd.DataFrame, capital: pd.DataFr
 def load_edge_frame(root: Path) -> pd.DataFrame:
     p = paths(root)
     t0 = time.time()
-    mk = pd.read_parquet(p["markouts"], columns=MARKOUT_COLUMNS)
+    present = set(pq.read_schema(p["markouts"]).names)
+    mk = pd.read_parquet(p["markouts"], columns=MARKOUT_COLUMNS + [c for c in PACKAGE_KEY if c in present])
     fu = pd.read_parquet(p["funding"])
     cap = pd.read_parquet(p["capital"], columns=CAPITAL_COLUMNS)
     fr = edge_frame(mk, fu, cap)
@@ -845,6 +878,61 @@ def h2_regime_rows(mg: pd.DataFrame, **kw) -> Tuple[dict, List[dict]]:
     return d, rows
 
 
+def h2_by_side(mg: pd.DataFrame, **kw) -> Tuple[dict, List[dict]]:
+    """H2 by maker side and as the ratio of the sums sum(dK) / sum(K_single a), for all fills and per side (audit A10,
+    exploratory): the median mixes buys, which mostly release capital, with sells, which bind it. Same exclusions as
+    ``h2_test``; ({}, []) without ``maker_side``."""
+    if "maker_side" not in mg:
+        return {}, []
+    side = np.where(mg["maker_side"].to_numpy(float) > 0, "buy", "sell")
+    d: dict = {"by_side": {}, "sum_ratio": {}}
+    rows: List[dict] = []
+    for s in ("sell", "buy"):
+        sub = mg[side == s]
+        if len(sub):
+            d["by_side"][s] = _h2_stats(h2_test(sub, variant="ratio", **kw))
+            rows.append({"variant": "ratio", "group": f"side={s}", **d["by_side"][s]})
+    ok = (mg["status"] == "ok").to_numpy() if "status" in mg else np.ones(len(mg), dtype=bool)
+    num = mg["dK_per_contract"].to_numpy(float)
+    den = mg["K_single_pm2"].to_numpy(float)
+    amount = mg["amount"].to_numpy(float)
+    keep = ok & (den > 0) & np.isfinite(num) & np.isfinite(den)
+    for name, m in (("all", keep), ("sell", keep & (side == "sell")), ("buy", keep & (side == "buy"))):
+        total = float(np.sum(den[m] * amount[m]))
+        d["sum_ratio"][name] = {"stat": float(np.sum(num[m] * amount[m])) / total if total > 0 else float("nan"),
+                                "lo": None, "hi": None, "rejected": None, "n": int(m.sum()),
+                                "rule": "descriptive (no preregistered threshold)",
+                                "what": "sum(dK) / sum(K_single a)", "exploratory": True}
+    return d, rows
+
+
+RFQ_TOP = 10
+
+
+def rfq_entries(frame: pd.DataFrame, cells: pd.DataFrame, k_col: str = "K_pm2", min_fills: int = MIN_CELL_FILLS,
+                top: int = RFQ_TOP, **kw) -> dict:
+    """H1 on the fills without RFQ, and the share of RFQ fills in the edge and in the fills of the ``top`` occupied
+    cells by edge per unit of capital (audit A12, exploratory): the top of the capital map is far wing buys whose edge
+    is close to the gap between fill price and SVI mark."""
+    rfq = frame["rfq"].to_numpy(bool) if "rfq" in frame else np.zeros(len(frame), dtype=bool)
+    _, res = edge_map(frame[~rfq], k_col, min_fills=min_fills, **kw)
+    v = h1_verdict(res)
+    v["capital"] = k_col
+    out = {"h1_pm2_no_rfq": _stats(v, "H1")}
+    occ = cells[cells["occupied"].astype(bool)]
+    best = set(occ.sort_values(["B_bp", "cell"], ascending=[False, True], kind="mergesort")["cell"].head(top))
+    m = frame["cell"].isin(best).to_numpy()
+    edge = frame["edge"].to_numpy(float)
+    total = float(edge[m].sum())
+    base = {"lo": None, "hi": None, "rejected": None, "n": int(m.sum()),
+            "rule": "descriptive (no preregistered threshold)", "cells": sorted(best), "exploratory": True}
+    out[f"top{top}_edge_share"] = {"stat": float(edge[m & rfq].sum()) / total if total else float("nan"),
+                                   "what": "RFQ share of the edge", **base}
+    out[f"top{top}_fill_share"] = {"stat": float((m & rfq).sum()) / float(m.sum()) if m.any() else float("nan"),
+                                   "what": "RFQ share of the fills", **base}
+    return out
+
+
 def h3_review_rows(md: pd.DataFrame, **kw) -> Tuple[dict, List[dict]]:
     """H3 per parameter regime, per manager of the account and on books of at most 63 options without the SM
     accounts (exploratory)."""
@@ -900,8 +988,9 @@ def review_entries(pm2: pd.DataFrame, cells: pd.DataFrame, mg: pd.DataFrame, md:
     interval = h1_interval_shape(full[1]["_draws"], full[1]["stat"], level=kw.get("level", LEVEL),
                                  b=kw.get("b", B), seed=kw.get("seed", SEED))
     d_reg, h2_rows = h2_regime_rows(mg, **kw)
+    d_side, side_rows = h2_by_side(mg, **kw)
     e_add, h3_rows = h3_review_rows(md, **kw)
-    return sign, {"by_regime": d_reg}, e_add, h2_rows, h3_rows, interval
+    return sign, {"by_regime": d_reg, **d_side}, e_add, h2_rows + side_rows, h3_rows, interval
 
 
 def _merge_rows(old: pd.DataFrame, new: List[dict]) -> pd.DataFrame:
@@ -936,6 +1025,7 @@ def run_extras(root: Path = REPO, out: Optional[Path] = None, b: int = B, seed: 
     if pop is not None:
         sens["d_h2"]["population"] = pop
     sens.setdefault("e_h3", {}).update(e_add)
+    sens["i_rfq"] = rfq_entries(pm2, cells, min_fills=min_fills, **kw)
     write_json(sens, out / "sensitivity.json")
     for name, rows in (("sens_h2.csv", h2_rows), ("sens_h3.csv", h3_rows)):
         old = pd.read_csv(out / name) if (out / name).exists() else pd.DataFrame(columns=["variant", "group"])
@@ -1056,6 +1146,8 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
     }
     # (c) Paper 1's net edge form (fee and rebate undivided)
     sens["c_p1_net_edge"] = {"h1_pm2": emap("pm2_p1ne", pm2, "K_pm2", edge_col="edge_p1")}
+    # (c2) the fee of a multi-leg RFQ package spread over its legs (addendum 6, audit A67)
+    sens["c2_rfq_package"] = {"h1_pm2": emap("pm2_rfqpkg", pm2, "K_pm2", edge_col="edge_pkg")}
 
     # (d) H2 variants, per account and per currency
     h2_rows = []
@@ -1140,6 +1232,7 @@ def run_sensitivity(root: Path = REPO, out: Optional[Path] = None, b: int = B, s
     if pop is not None:
         sens["d_h2"]["population"] = pop
     sens["e_h3"].update(e_add)
+    sens["i_rfq"] = rfq_entries(pm2, main_cells, min_fills=min_fills, **kw)
     h2_rows += more_h2
     h3_rows += more_h3
 

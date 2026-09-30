@@ -9,6 +9,7 @@ legacy PM capital,sensitivity.json:a_maps.pm_pm2_window,exploratory,0.9076462644
 BTC only,sensitivity.json:g_by_ccy.pm2_BTC,exploratory,0.8922478466240622,0.8705140316754654,0.9153098082800778,60,463.0,60
 ETH only,sensitivity.json:g_by_ccy.pm2_ETH,exploratory,0.9216322479673245,0.8864717334045883,0.9246096881322289,68,463.0,68
 HYPE only,sensitivity.json:g_by_ccy.pm2_HYPE,exploratory,0.8884057971014493,0.8183135704874835,0.9111989459815547,45,305.0,45
+without RFQ fills,sensitivity.json:i_rfq.h1_pm2_no_rfq,exploratory,0.9001346950263359,0.8894328066154692,0.9132228968142281,153,463.0,153
 edge > 0 only,sensitivity.json:h1_sign.within_pos,exploratory,0.6341249226963512,0.5720706022431847,0.7017456805545731,99,463.0,99
 edge ≤ 0 only,sensitivity.json:h1_sign.within_nonpos,exploratory,0.6358385783043318,0.460377508014841,0.6840647571962637,74,463.0,74
 sign pattern alone,sensitivity.json:h1_sign.sign_floor,band,0.734164012705638,0.6997425033954322,0.7697566645498329,4000,,sign pattern alone

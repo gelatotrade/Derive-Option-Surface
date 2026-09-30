@@ -91,6 +91,27 @@ def test_net_edge_divides_fee_and_rebate_by_amount_addendum_2():
     np.testing.assert_allclose(fr["edge_p1"], ne_p1 * np.array([2.0, 0.5]))
 
 
+def test_rfq_package_fee_is_spread_over_the_legs_addendum_6():
+    """Addendum 6 (audit A67): a multi-leg RFQ books the package's maker fee on one leg; the sensitivity spreads
+    sum(fee) - sum(rebate) over the package's contracts. Order book fills keep their own fee; edge is conserved."""
+    mk = _markouts(n=4, amount=[1.0, 2.0, 1.0, 1.0], fee_maker=[3.0, 0.0, 2.0, 1.0], rebate_maker=[0.0] * 4,
+                   rfq_id=["R1", "R1", "R1", None], maker_wallet=["a", "a", "b", "a"])
+    fr = ip.edge_frame(mk, _funding(), _capital(mk))
+    hedge = fr["hedge"].to_numpy()
+    amount = np.array([1.0, 2.0, 1.0, 1.0])
+    fee_net = np.array([1.0 * 1.0, 1.0 * 2.0, 2.0, 1.0])     # R1 of maker a: 3.0 over 3 contracts; b alone; book
+    np.testing.assert_allclose(fr["edge_pkg"], 10.0 * amount - fee_net - hedge * amount)
+    np.testing.assert_allclose(fr["edge"], 10.0 * amount - np.array([3.0, 0.0, 2.0, 1.0]) - hedge * amount)
+    assert fr["edge_pkg"].sum() == pytest.approx(fr["edge"].sum())
+    assert not {"rfq_id", "maker_wallet"} & set(fr.columns)
+
+
+def test_rfq_package_edge_equals_the_edge_without_rfq_columns():
+    mk = _markouts(n=2)
+    fr = ip.edge_frame(mk, _funding(), _capital(mk))
+    np.testing.assert_allclose(fr["edge_pkg"], fr["edge"])
+
+
 def test_edge_frame_cells_windows_and_tau():
     mk = _markouts(n=4, currency=["BTC", "BTC", "HYPE", "HYPE"],
                    instrument_name=["BTC-X", "BTC-X", "HYPE-X", "HYPE-X"],
@@ -327,7 +348,7 @@ def _marginal(n: int = 60, seed: int = 0) -> pd.DataFrame:
                          "ccy": "ETH", "status": "ok", "amount": 2.0, "dK_per_contract": dk,
                          "dK_unit": dk * 1.1, "dK_tape_per_contract": dk * 0.9, "dK_mm_per_contract": dk * 0.8,
                          "dK_mm_std_per_contract": dk * 0.7, "K_single_pm2": ks, "K_single_pm2_mm": ks * 0.8,
-                         "K_single_pm2_mm_acct": ks * 0.6})
+                         "K_single_pm2_mm_acct": ks * 0.6, "maker_side": np.where(np.arange(n) % 2 == 0, 1, -1)})
 
 
 def test_h2_excludes_nonpositive_single_capital_and_counts():
@@ -588,6 +609,63 @@ def test_top_overlap_counts_cells_best_under_both_denominators():
     assert ip.top_overlap(cells, ks=(1, 2, 3)) == {"top1": 0, "top2": 1, "top3": 2}
 
 
+def test_h2_by_side_splits_the_sample_and_weights_by_stand_alone_capital():
+    """Audit A10 (exploratory): the median by maker side and the ratio of the sums sum(dK a) / sum(K_single a)."""
+    mg = _marginal(80, seed=3)
+    mg["maker_side"] = np.where(np.arange(80) % 3 == 0, 1, -1)
+    mg["amount"] = np.linspace(0.5, 3.0, 80)
+    d, rows = ip.h2_by_side(mg, b=19)
+    keep = mg["K_single_pm2"] > 0
+    for s, sign in (("sell", -1), ("buy", 1)):
+        m = keep & (mg["maker_side"] == sign)
+        ratio = mg.loc[m, "dK_per_contract"] / mg.loc[m, "K_single_pm2"]
+        assert d["by_side"][s]["stat"] == pytest.approx(np.median(ratio))
+        assert d["by_side"][s]["n"] == int(m.sum())
+        a = mg.loc[m, "amount"]
+        want = (mg.loc[m, "dK_per_contract"] * a).sum() / (mg.loc[m, "K_single_pm2"] * a).sum()
+        assert d["sum_ratio"][s]["stat"] == pytest.approx(want)
+    a = mg.loc[keep, "amount"]
+    assert d["sum_ratio"]["all"]["stat"] == pytest.approx(
+        (mg.loc[keep, "dK_per_contract"] * a).sum() / (mg.loc[keep, "K_single_pm2"] * a).sum())
+    assert d["sum_ratio"]["all"]["n"] == int(keep.sum()) and d["sum_ratio"]["all"]["rejected"] is None
+    assert [r["group"] for r in rows] == ["side=sell", "side=buy"]
+
+
+def test_h2_by_side_needs_the_maker_side():
+    assert ip.h2_by_side(_marginal(20).drop(columns="maker_side"), b=9) == ({}, [])
+
+
+def test_edge_frame_flags_rfq_fills():
+    mk = _markouts(n=3, rfq_id=["R1", None, ""], maker_wallet=["a", "a", "a"])
+    assert list(ip.edge_frame(mk, _funding(), _capital(mk))["rfq"]) == [True, False, False]
+    assert not ip.edge_frame(_markouts(n=2), _funding(), _capital(_markouts(n=2)))["rfq"].any()
+
+
+def test_rfq_entries_map_without_rfq_and_rfq_share_of_the_best_cells():
+    """Audit A12 (exploratory): H1 without RFQ fills, and how much of the edge of the best cells per unit of capital
+    comes from RFQ fills."""
+    rng = np.random.default_rng(2)
+    rows, rfq = [], []
+    for c in range(6):
+        for d in range(5):
+            for j in range(4):
+                rows.append((f"BTC|buy|d{c}|t", f"2025-10-0{d + 1}", 10.0 + c + rng.normal(0, 1), 1e5,
+                             1e3 * (6 - c) ** 2, 1.0))
+                rfq.append(j == 0 or c == 5)
+    fr = _fill_frame(rows)
+    fr["rfq"] = rfq
+    cells, _ = ip.edge_map(fr, "K", min_fills=10, b=9)
+    out = ip.rfq_entries(fr, cells, k_col="K", min_fills=10, top=2, b=9)
+    _, res = ip.edge_map(fr[~fr["rfq"]], "K", min_fills=10, b=9)
+    assert out["h1_pm2_no_rfq"]["stat"] == pytest.approx(res["stat"]) and out["h1_pm2_no_rfq"]["rule"] == "H1"
+    best = cells[cells["occupied"]].sort_values("B_bp", ascending=False)["cell"].head(2)
+    m = fr["cell"].isin(set(best))
+    share = fr.loc[m & fr["rfq"], "edge"].sum() / fr.loc[m, "edge"].sum()
+    assert out["top2_edge_share"]["stat"] == pytest.approx(share)
+    assert out["top2_fill_share"]["stat"] == pytest.approx((m & fr["rfq"]).sum() / m.sum())
+    assert out["top2_edge_share"]["n"] == int(m.sum()) and out["top2_edge_share"]["rejected"] is None
+
+
 def test_h1_sign_groups_reuse_the_h1_bootstrap_on_their_cells():
     rng = np.random.default_rng(5)
     rows = []
@@ -732,6 +810,7 @@ def test_main_extras_adds_review_entries_and_keeps_the_rest(tmp_path):
     sens = json.loads((out / "sensitivity.json").read_text())
     assert {"sign_floor", "top_overlap", "within_pos", "within_nonpos"} <= set(sens["h1_sign"])
     assert "by_regime" in sens["d_h2"] and "by_account_manager" in sens["e_h3"]
+    assert {"by_side", "sum_ratio"} <= set(sens["d_h2"]) and "h1_pm2_no_rfq" in sens["i_rfq"]
     before = {k: v for k, v in sens.items() if k not in ("h1_sign", "h1_interval")}
     (out / "sensitivity.json").write_text(json.dumps(before))
     sh3 = pd.read_csv(out / "sens_h3.csv")

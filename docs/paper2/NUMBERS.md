@@ -1,6 +1,6 @@
 # Numbers for Paper 2
 
-Generated 2026-09-27 11:07 UTC from `results/p2` with `scripts/p2_numbers.py`. All headline numbers machine-readable in `results/p2/summary.json` (flat, stable keys).
+Generated 2026-09-30 10:43 UTC from `results/p2` with `scripts/p2_numbers.py`. All headline numbers machine-readable in `results/p2/summary.json` (flat, stable keys).
 
 - **Data status:** Sample from 2024-01-11 00:00 UTC to the last fill at 2026-09-17 11:51:53 UTC. **Pilot state:** the sample ends before the preregistered end (2026-09-30 08:00 UTC); the numbers of the manuscript come from the final data run. Cut-off day 2026-09-17.
 - **Inference:** B = 9 999, seed 20260924, 90 % percentile intervals from a cluster bootstrap over UTC days (H1 to H3, Addendum 3). H4: wild cluster bootstrap with Rademacher weights and restricted residuals, cluster UTC day, one-sided p for β > 0, 100 placebo dates.
@@ -149,6 +149,11 @@ Not preregistered as a test. "Verdict by rule" is the verdict that the preregist
 | regime R2 | Median dK_per_contract/K_single_pm2 | 0.0372 [0.0305; 0.0466] | 7 906 | not rejected |
 | regime R3 | Median dK_per_contract/K_single_pm2 | 0.0117 [−0.0012; 0.0220] | 5 593 | not rejected |
 | regime R4 | Median dK_per_contract/K_single_pm2 | 0.0899 [0.0241; 0.1639] | 1 363 | not rejected |
+| maker side buy | Median dK_per_contract/K_single_pm2 | −0.1365 [−0.2019; −0.0746] | 9 596 | not rejected |
+| maker side sell | Median dK_per_contract/K_single_pm2 | 0.0748 [0.0635; 0.0919] | 10 403 | not rejected |
+| ratio of the sums, all | sum(dK) / sum(K_single a) | 0.166 [n/a; n/a] | 19 999 | descriptive |
+| ratio of the sums, buy | sum(dK) / sum(K_single a) | −0.397 [n/a; n/a] | 9 596 | descriptive |
+| ratio of the sums, sell | sum(dK) / sum(K_single a) | 0.310 [n/a; n/a] | 10 403 | descriptive |
 
 ### (e) H3 variants
 
@@ -208,6 +213,14 @@ Not preregistered as a test. "Verdict by rule" is the verdict that the preregist
 | only maker buys | ρ | 0.721 [0.689; 0.784] | 87 | rejected |
 | maker sells with edge > 0 | ρ | 0.940 [0.924; 0.968] | 38 | rejected |
 | maker buys with edge > 0 | ρ | 0.243 [0.207; 0.446] | 61 | not rejected |
+
+### (i) RFQ fills and the top of the capital map (audit A12)
+
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
+|---|---|---|---:|---|
+| H1 without RFQ fills | ρ | 0.900 [0.889; 0.913] | 153 | rejected |
+| ten best cells per unit of PM2 capital | RFQ share of the edge | 0.896 [n/a; n/a] | 13 637 | descriptive |
+| ten best cells per unit of PM2 capital | RFQ share of the fills | 0.394 [n/a; n/a] | 13 637 | descriptive |
 
 ### (h) H4 variants
 
