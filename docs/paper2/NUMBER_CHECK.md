@@ -1,17 +1,17 @@
 # Number check Paper 2
 
-Generated 2026-09-29 16:27 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-09-30 10:46 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 
 ## Result
 
-- Numbers, dates and commits in the text: 353
-- Result: 251
+- Numbers, dates and commits in the text: 371
+- Result: 266
 - Constant: 76
-- Commit date: 4
-- Text count: 17
-- Commit: 5
+- Commit date: 5
+- Text count: 18
+- Commit: 6
 
 **Errors: 0** (none)
 
@@ -34,6 +34,7 @@ Text counts (without a data source, for review):
 - Post hoc and exploratory results: `ten` (text:top_list) … s would ignore that selection. Of the ten best cells per unit of capital, one i …
 - Post hoc and exploratory results: `ten` (text:top_list) … per unit of capital, one is among the ten best per notional; of the best 20, fi …
 - Post hoc and exploratory results: `20` (text:top_list) … he ten best per notional; of the best 20, five are. The percentile interval of …
+- Post hoc and exploratory results: `ten` (text:top_list) … .889 to 0.913) over 153 cells. In the ten best cells per unit of   capital, RFQ …
 
 ## All numbers
 
@@ -260,14 +261,14 @@ Text counts (without a data source, for review):
 | Results / The price of capital (H4) | `75` | Result | events.csv:panel_cells@manager=pm,kept=True~sum | = 75 |
 | Results / The price of capital (H4) | `14` | Result | summary.json:events_kept | = 14 |
 | Results / The price of capital (H4) | `11` | Result | fig_f5_b.csv:jump_logpct@mark=event,status!=dropped,jump_logpct<0~count | = 11 |
-| Results / The price of capital (H4) | `3.4` | Result | summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct | = 3.35989 |
-| Results / The price of capital (H4) | `37.4` | Result | summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct | = 37.4322 |
-| Results / The price of capital (H4) | `7.8` | Result | fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~max~neg | = 7.84153 |
-| Results / The price of capital (H4) | `26.0` | Result | fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~min~neg | = 26.046 |
+| Results / The price of capital (H4) | `3.4` | Result | summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct~down | = 3.35989 |
+| Results / The price of capital (H4) | `37.4` | Result | summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct~down | = 37.4322 |
+| Results / The price of capital (H4) | `7.8` | Result | fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~max~neg~down | = 7.84153 |
+| Results / The price of capital (H4) | `26.0` | Result | fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~min~neg~down | = 26.046 |
 | Results / The price of capital (H4) | `20 August 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260820 | = 2026-08-20 |
-| Results / The price of capital (H4) | `22.9` | Result | summary.json:event_btc_pm2_20260820_refbook_change~neg~pct | = 22.9303 |
+| Results / The price of capital (H4) | `22.9` | Result | summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down | = 22.9303 |
 | Results / The price of capital (H4) | `8 January 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260108 | = 2026-01-08 |
-| Results / The price of capital (H4) | `1.6` | Result | summary.json:event_btc_pm2_20260108_refbook_log_change,event_eth_pm2_20260108_refbook_log_change,event_hype_pm2_20260108_refbook_log_change~pct~median | = 1.59792 |
+| Results / The price of capital (H4) | `1.6` | Result | summary.json:event_btc_pm2_20260108_refbook_log_change,event_eth_pm2_20260108_refbook_log_change,event_hype_pm2_20260108_refbook_log_change~pct~median~up | = 1.59792 |
 | Results / The price of capital (H4) | `54.5` | Result | summary.json:h4_review_oi_share_min~pct | = 54.478 |
 | Results / The price of capital (H4) | `94.9` | Result | summary.json:h4_review_oi_share_max~pct | = 94.8867 |
 | Results / The price of capital (H4) | `-4.60` | Result | summary.json:h4_stat | = -4.59923 |
@@ -287,7 +288,7 @@ Text counts (without a data source, for review):
 | Results / The price of capital (H4) | `-3.13` | Result | summary.json:h4_cal_ten_pct_change_lo | = -3.12887 |
 | Results / The price of capital (H4) | `+4.39` | Result | summary.json:h4_cal_ten_pct_change_hi | = 4.38683 |
 | Results / The price of capital (H4) | `7.93` | Result | summary.json:h4_cal_y_mean | = 7.93122 |
-| Results / The price of capital (H4) | `39` | Result | summary.json:h4_cal_ten_pct_narrowing_share~pct | = 39.4501 |
+| Results / The price of capital (H4) | `39` | Result | summary.json:h4_cal_ten_pct_narrowing_share~pct~down | = 39.4501 |
 | Results / The price of capital (H4) | `141` | Result | summary.json:h4_clusters | = 141 |
 | Results / Sensitivities | `0.903` | Result | summary.json:sens_b_mm_h1_pm2_mm_stat | = 0.902559 |
 | Results / Sensitivities | `5.614` | Result | summary.json:sens_b_mm_h3_mm_stat | = 5.61428 |
@@ -299,7 +300,7 @@ Text counts (without a data source, for review):
 | Results / Sensitivities | `0.0329` | Result | summary.json:sens_d_h2_ratio_unit_stat | = 0.0329119 |
 | Discussion | `four` | Result | summary.json:h2_n_accounts | = 4 |
 | Discussion | `3.5` | Result | summary.json:h2_stat~pct | = 3.45401 |
-| Discussion | `22.9` | Result | summary.json:event_btc_pm2_20260820_refbook_change~neg~pct | = 22.9303 |
+| Discussion | `22.9` | Result | summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down | = 22.9303 |
 | Discussion | `four` | Result | summary.json:h2_n_accounts | = 4 |
 | Discussion | `13` | Result | summary.json:events_with_cells | = 13 |
 | Discussion | `17 September 2026` | Constant | const:pilot_cut | pilot cut 17 September 2026 12:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
@@ -316,11 +317,13 @@ Text counts (without a data source, for review):
 | Data, code and pre-registration | `25 September 2026` | Commit date | git:e492ba1 | = 2026-09-25 |
 | Data, code and pre-registration | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data, code and pre-registration | `27 September 2026` | Constant | const:addendum5_day | Addendum 5, dated 27 September 2026 (history rewrite, after all results) (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 5) |
+| Data, code and pre-registration | `30 September 2026` | Commit date | git:1b46e80 | = 2026-09-30 |
 | Data, code and pre-registration | `cc0a29f` | Commit | git: commit present |  |
 | Data, code and pre-registration | `85bb0b7` | Commit | git: commit present |  |
 | Data, code and pre-registration | `6005d7c` | Commit | git: commit present |  |
 | Data, code and pre-registration | `8778432` | Commit | git: commit present |  |
 | Data, code and pre-registration | `e492ba1` | Commit | git: commit present |  |
+| Data, code and pre-registration | `1b46e80` | Commit | git: commit present |  |
 | caption fig:a1 | `20` | Result | validation.csv:book@kind=book~distinct | = 20 |
 | caption fig:a1 | `1e-13` | Result | fig_a1_meta.csv:value@key=x_lo | = 1e-13 |
 | caption fig:a1 | `95th` | Constant | const:validation_percentile | 95th percentile of the absolute relative deviation (docs/paper2/PRAEREGISTRIERUNG.md, Validation before measurement) |
@@ -368,8 +371,24 @@ Text counts (without a data source, for review):
 | Post hoc and exploratory results | `0.922` | Result | summary.json:sens_a_maps_sm_pm2_window_stat,sens_a_maps_pm_pm2_window_stat,sens_g_by_ccy_pm2_btc_stat,sens_g_by_ccy_pm2_eth_stat,sens_g_by_ccy_pm2_hype_stat~max | = 0.921632 |
 | Post hoc and exploratory results | `0.806` | Result | summary.json:sens_f_time_to_expiry_stat | = 0.805874 |
 | Post hoc and exploratory results | `0.833` | Result | summary.json:sens_f_time_holding_stat | = 0.833378 |
+| Post hoc and exploratory results | `0.900` | Result | summary.json:sens_i_rfq_h1_pm2_no_rfq_stat | = 0.900135 |
+| Post hoc and exploratory results | `0.889` | Result | summary.json:sens_i_rfq_h1_pm2_no_rfq_lo | = 0.889433 |
+| Post hoc and exploratory results | `0.913` | Result | summary.json:sens_i_rfq_h1_pm2_no_rfq_hi | = 0.913223 |
+| Post hoc and exploratory results | `153` | Result | summary.json:sens_i_rfq_h1_pm2_no_rfq_n | = 153 |
+| Post hoc and exploratory results | `ten` | Text count | text:top_list | count word from the sentence |
+| Post hoc and exploratory results | `89.6` | Result | summary.json:sens_i_rfq_top10_edge_share_stat~pct | = 89.5747 |
+| Post hoc and exploratory results | `39.4` | Result | summary.json:sens_i_rfq_top10_fill_share_stat~pct | = 39.4002 |
 | Post hoc and exploratory results | `0.0117` | Result | summary.json:sens_d_h2_by_regime_r1_stat,sens_d_h2_by_regime_r2_stat,sens_d_h2_by_regime_r3_stat,sens_d_h2_by_regime_r4_stat~min | = 0.0117382 |
 | Post hoc and exploratory results | `0.0899` | Result | summary.json:sens_d_h2_by_regime_r1_stat,sens_d_h2_by_regime_r2_stat,sens_d_h2_by_regime_r3_stat,sens_d_h2_by_regime_r4_stat~max | = 0.0898755 |
+| Post hoc and exploratory results | `0.075` | Result | summary.json:sens_d_h2_by_side_sell_stat | = 0.074773 |
+| Post hoc and exploratory results | `0.063` | Result | summary.json:sens_d_h2_by_side_sell_lo | = 0.0634742 |
+| Post hoc and exploratory results | `0.092` | Result | summary.json:sens_d_h2_by_side_sell_hi | = 0.091949 |
+| Post hoc and exploratory results | `-0.137` | Result | summary.json:sens_d_h2_by_side_buy_stat | = -0.136536 |
+| Post hoc and exploratory results | `-0.202` | Result | summary.json:sens_d_h2_by_side_buy_lo | = -0.201865 |
+| Post hoc and exploratory results | `-0.075` | Result | summary.json:sens_d_h2_by_side_buy_hi | = -0.0746292 |
+| Post hoc and exploratory results | `0.166` | Result | summary.json:sens_d_h2_sum_ratio_all_stat | = 0.166253 |
+| Post hoc and exploratory results | `0.310` | Result | summary.json:sens_d_h2_sum_ratio_sell_stat | = 0.310435 |
+| Post hoc and exploratory results | `0.397` | Result | summary.json:sens_d_h2_sum_ratio_buy_stat~neg | = 0.39668 |
 | Post hoc and exploratory results | `-3.42` | Result | summary.json:sens_h4_by_ccy_btc_beta | = -3.41805 |
 | Post hoc and exploratory results | `-1.90` | Result | summary.json:sens_h4_by_ccy_eth_beta | = -1.89895 |
 | Post hoc and exploratory results | `-10.12` | Result | summary.json:sens_h4_by_ccy_hype_beta | = -10.1236 |

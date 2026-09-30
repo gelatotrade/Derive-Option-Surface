@@ -32,16 +32,16 @@ Core findings, all from the pilot cut of 2026-09-17 with 603,940 fills:
 
 ### What is still open on paper 1
 
-1. **Final data run** after 2026-10-01 with cut-off 2026-09-30, then check all numbers against the new numbers
-   sheet. Check `pmset -g batt` beforehand and ask the user for the power adapter, otherwise the Mac goes to sleep.
-2. **Push and pull request.** When merging, choose “Create a merge commit”, not “Squash”, otherwise
-   the pre-registration commit `3fd9caa` disappears from the history, and exactly this hash is cited in the manuscript.
-3. **Access:** the token in the keychain has no write permission, 403. An SSH key was generated on 2026-09-24
-   and is at `~/.ssh/id_ed25519`, but its public part is **not** yet registered with GitHub.
-   After that, switch the remote to SSH.
-4. **Open user decision:** `results/p1/h1_lorenz.csv` contains 1,388 wallet addresses sorted by gain against
-   makers. The manuscript names none. Clarify before the merge whether the column gets hashed.
-5. Proofreading by a human; so far only the model has read the text.
+State of 30 September 2026: the revision of 25 September 2026 is on `main` (merge commit, pre-registration commit
+`3fd9caa` kept), pushed over SSH, with the wallets of `results/p1/h1_lorenz.csv` pseudonymised; the revised PDF is
+on SSRN.
+
+1. **Final data run** of both papers from 2026-10-01 09:00 UTC: the sample ends at the registered cut-off of
+   2026-09-30 08:00 UTC, and tape and SVI history are loaded to cut-off + 25 h so that the last fills get every
+   markout horizon (Paper 1, Addendum 1, point 2). Then check all numbers against the new numbers sheets; run H4
+   of Paper 2 with `--fresh` (audit A32). Check `pmset -g batt` beforehand and ask the user for the power adapter,
+   otherwise the Mac goes to sleep.
+2. Proofreading by a human; so far only the model has read the text.
 
 ## Paper 2: margin polytope and capital-adjusted edge
 

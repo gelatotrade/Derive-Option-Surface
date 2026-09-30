@@ -334,15 +334,82 @@ def test_per_cent_scale_only_as_declared(results):
 def test_sign_and_magnitude_only_as_declared(results):
     fell = ("\\section{R}\nThe capital fell by 22.9 per cent.\n"
             "% src summary.json:event_btc_pm2_20260820_refbook_change<> 22.9\n")
-    assert bad(check(results, fill(fell, "~pct"))) == [("22.9", "mismatch")]
-    assert not bad(check(results, fill(fell, "~neg~pct")))
-    assert not bad(check(results, fill(fell, "~abs~pct")))
+    assert bad(check(results, fill(fell, "~pct~down"))) == [("22.9", "mismatch")]
+    assert not bad(check(results, fill(fell, "~neg~pct~down")))
+    assert not bad(check(results, fill(fell, "~abs~pct~down")))
     rose = ("\\section{R}\nOnly one change raised it, by about 1.6 log per cent.\n"
             "% src summary.json:event_btc_pm2_20260108_refbook_log_change<> 1.6\n")
-    assert not bad(check(results, fill(rose, "~pct")))
-    assert bad(check(results, fill(rose, "~neg~pct"))) == [("1.6", "mismatch")]
+    assert not bad(check(results, fill(rose, "~pct~up")))
+    assert bad(check(results, fill(rose, "~neg~pct~up"))) == [("1.6", "mismatch")]
     minus = "\\section{R}\nA value of $-0.903$.\n% src summary.json:h1_stat -0.903\n"
     assert bad(check(results, minus)) == [("-0.903", "mismatch")]
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Direction words (audit B2): the verb of a change is bound as well as its number
+# ---------------------------------------------------------------------------------------------------------------
+FELL = "\\section{R}\nThe capital <> by 22.9 per cent.\n% src summary.json:event_btc_pm2_20260820_refbook_change<> 22.9\n"
+
+
+def test_a_number_after_a_direction_word_and_by_needs_its_declared_direction(results):
+    assert bad(check(results, fill(FELL, "fell", "~neg~pct"))) == [("22.9", "mismatch")]
+    assert not bad(check(results, fill(FELL, "fell", "~neg~pct~down")))
+    assert not bad(check(results, fill(FELL, "was cut", "~neg~pct~down")))
+
+
+def test_a_changed_verb_fails_although_the_number_still_matches(results):
+    vs = check(results, fill(FELL, "rose", "~neg~pct~down"))
+    assert bad(vs) == [("22.9", "mismatch")] and "rose" in [v for v in vs if not v.ok][0].detail
+    # the verb and the declaration changed alike: ~neg binds a negative change, which cannot rise
+    assert bad(check(results, fill(FELL, "rose", "~neg~pct~up"))) == [("22.9", "mismatch")]
+
+
+def test_a_declared_direction_needs_a_direction_word(results):
+    assert bad(check(results, fill(FELL, "changed", "~neg~pct~down"))) == [("22.9", "mismatch")]
+    assert not bad(check(results, fill(FELL, "changed", "~neg~pct")))
+
+
+def test_the_direction_reaches_across_a_comma_before_by_and_over_a_range(results):
+    body = ("\\section{R}\nThe events made the book <>, by between 3.4 and 37.4 log per cent.\n"
+            "% src summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct~down 3.4\n"
+            "% src summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct~down 37.4\n")
+    assert not bad(check(results, fill(body, "cheaper")))
+    assert bad(check(results, fill(body, "dearer"))) == [("3.4", "mismatch"), ("37.4", "mismatch")]
+
+
+def test_the_direction_stops_at_the_end_of_the_by_phrase(results):
+    body = ("\\section{R}\nThe capital fell by 22.9 per cent, and 14 events passed.\n"
+            "% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down 22.9\n"
+            "% src summary.json:events_kept 14\n")
+    assert not bad(check(results, body))
+
+
+def test_a_magnitude_may_carry_a_down_word(results):
+    body = ("\\section{R}\nA narrowing by up to 42.0 per cent is not excluded.\n"
+            "% src summary.json:h2_share_nonpositive~pct<> 42.0\n")
+    assert not bad(check(results, fill(body, "~down")))
+    assert bad(check(results, fill(body, "~up"))) == [("42.0", "mismatch")]
+
+
+def test_from_to_follows_the_verb(results):
+    body = ("\\section{R}\nThe count <> from 14 to 4.\n"
+            "% src summary.json:events_kept 14\n% src summary.json:h2_n_accounts 4\n")
+    assert not bad(check(results, fill(body, "fell")))
+    assert bad(check(results, fill(body, "rose"))) == [("4", "mismatch")]
+
+
+def test_from_to_on_ranks_reads_a_smaller_rank_as_a_rise(results):
+    body = ("\\section{R}\nThe cell <> from rank 76 to 4.\n"
+            "% src h1_cells.csv:rank_A@BTC|buy|00-10|2-7d 76\n% src h1_cells.csv:rank_B@BTC|buy|00-10|2-7d 4\n")
+    assert not bad(check(results, fill(body, "rises")))
+    assert bad(check(results, fill(body, "falls"))) == [("4", "mismatch")]
+
+
+def test_direction_is_one_operation_and_changes_no_value(results):
+    body = "\\section{R}\nThe median is 3.5 per cent.\n% src summary.json:h2_stat~pct<> 3.5\n"
+    assert bad(check(results, fill(body, "~down~up"))) == [("3.5", "mismatch")]
+    spec, err = nc.parse_spec("summary.json:h2_stat~pct~down")
+    assert spec is not None and not err
 
 
 def test_scientific_notation_and_long_integers(results):
@@ -582,13 +649,13 @@ $-10.12$ for HYPE, on sell cells alone $-3.81$, and with the dose weighted by th
 each with a one-sided $p$ above 0.5; the placebo dates of ETH under
 PM2 can be drawn from 10 days only, between 16 July and 25 July 2025.
 % src summary.json:events_kept 14
-% src summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct 3.4
-% src summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct 37.4
+% src summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct~down 3.4
+% src summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct~down 37.4
 % src summary.json:event_btc_pm2_20260820_refbook_day 20 August 2026
-% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct 22.9
-% src summary.json:event_btc_pm2_20260820_refbook_log_change~neg~pct 26.0
+% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down 22.9
+% src summary.json:event_btc_pm2_20260820_refbook_log_change~neg~pct~down 26.0
 % src summary.json:event_btc_pm2_20260108_refbook_day 8 January 2026
-% src summary.json:event_btc_pm2_20260108_refbook_log_change~pct 1.6
+% src summary.json:event_btc_pm2_20260108_refbook_log_change~pct~up 1.6
 % src summary.json:h4_stat -4.60
 % src summary.json:h4_p 0.6224
 % src summary.json:sens_h4_by_ccy_btc_beta -3.42

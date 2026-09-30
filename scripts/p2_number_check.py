@@ -47,6 +47,7 @@ Operations, appended with ``~`` and applied from left to right:
     ~min ~max ~median ~mean ~sum ~count     reduce the selection to one value
     ~distinct                               the number of distinct values in the selection
     ~all                                    every selected value must match the printed number
+    ~up ~down                               the direction the sentence gives the change (no effect on the value)
 
 Without an aggregate or ``~all`` the selection must hold exactly one distinct value (rows that repeat one value, as
 the row medians of a figure table, count as one).
@@ -59,6 +60,14 @@ it.  Dates ("17 September 2026", "September 2026", "17 September") and clock tim
 time in the value: an ISO or compact date in a string, a day and month in the dotted form (17.09. or 17.09.2026),
 or a Unix time.  Spelled numbers
 from "two" upwards count as numbers ("one" is too ambiguous and is skipped).
+
+Directions (audit B2).  A number that a direction word governs through "by" ("fell by 22.9", "made the book
+cheaper, by between 3.4 and 37.4", "a narrowing by up to 39") must declare the direction of the word, ``~down`` or
+``~up``, and a declared direction needs such a word; the phrase after "by" ends at a comma, a semicolon, a colon or
+the end of the sentence.  Where the operations drop the sign (``~neg``, ``~abs``), the sign of the selected values
+must agree with the direction as well: a negative change cannot rise.  In "falls from 11.86 to 10.76" and "rise from
+rank 76 to 4" the printed numbers must move as the word says (a smaller rank is a rise).  So a changed verb fails
+although every number still matches.
 
     python3 scripts/p2_number_check.py [--tex paper2/main.tex] [--results results/p2]
                                        [--report docs/paper2/NUMBER_CHECK.md] [--no-report] [--template]
@@ -194,6 +203,14 @@ ELEMENTWISE: Dict[str, Callable[[float], float]] = {"pct": lambda v: v * 100.0, 
                                                     "neg": lambda v: -v, "abs": abs}
 AGGREGATES: Dict[str, Callable[[List[float]], float]] = {
     "min": min, "max": max, "median": statistics.median, "mean": statistics.fmean, "sum": math.fsum, "count": len}
+DIRECTIONS = ("up", "down")
+DIRECTION_WORDS: Dict[str, str] = {w: "down" for w in (
+    "fell", "fall", "falls", "falling", "cut", "cuts", "lower", "lowered", "lowers", "cheaper", "narrowed", "narrows",
+    "narrowing", "decrease", "decreased", "decreases", "drop", "dropped", "drops", "reduce", "reduced", "reduces",
+    "shrank", "shrinks")}
+DIRECTION_WORDS.update({w: "up" for w in (
+    "rose", "rise", "rises", "rising", "raise", "raised", "raises", "higher", "dearer", "widened", "widens",
+    "widening", "increase", "increased", "increases", "grew", "grows")})
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -331,9 +348,12 @@ def parse_spec(raw: str) -> Tuple[Optional[Spec], str]:
     file, sep, key = head.partition(":")
     if not sep or not file or not key:
         return None, "source without file:key"
-    unknown = [o for o in ops if o not in ELEMENTWISE and o not in AGGREGATES and o not in ("all", "distinct")]
+    unknown = [o for o in ops if o not in ELEMENTWISE and o not in AGGREGATES and o not in ("all", "distinct")
+               and o not in DIRECTIONS]
     if unknown:
         return None, "unknown operation ~" + ", ~".join(unknown)
+    if sum(o in DIRECTIONS for o in ops) > 1:
+        return None, "one direction, ~up or ~down"
     if ops.count("all") > 1 or ("all" in ops and ops[-1] != "all"):
         return None, "~all stands once and at the end"
     return Spec(raw, file, key, ops), ""
@@ -460,6 +480,8 @@ class Sources:
             if op == "all":
                 every = True
                 continue
+            if op in DIRECTIONS:                # binds the verb of the sentence, not the value
+                continue
             if op == "count":                   # counts rows or keys, whatever they hold
                 values = [float(len(values))]
                 continue
@@ -571,6 +593,12 @@ NUM = re.compile(r"(?<![A-Za-z0-9_.])(?P<sign>[-+]?)(?P<num>\d+(?:\.\d+)?)(?:e(?
 WORD_RE = re.compile(r"(?<![A-Za-z-])(" + "|".join(sorted(WORDS, key=len, reverse=True)) + r")(?:-(" +
                      "|".join(UNITS) + r"))?(?![A-Za-z])", re.I)
 RELATION = re.compile(r"(>=|<=|>|<)\s*$")
+_DIR_WORDS = "|".join(sorted(DIRECTION_WORDS, key=len, reverse=True))
+DIRECTION_WORD = re.compile(r"(?<![A-Za-z-])(" + _DIR_WORDS + r")(?![A-Za-z-])", re.I)
+BY = re.compile(r"(?<![A-Za-z])by(?![A-Za-z])")
+PHRASE_END = re.compile(r"[,;:]|\.(?=\s|$)")
+FROM_TO = re.compile(r"(?<![A-Za-z-])(" + _DIR_WORDS + r")\s+from\s+(rank\s+)?([-+]?\d+(?:\.\d+)?)\s+to\s+"
+                     r"(?:rank\s+)?([-+]?\d+(?:\.\d+)?)(?![\d.]\d)", re.I)
 
 
 def clean(text: str) -> Tuple[str, List[Token]]:
@@ -815,12 +843,70 @@ def _context(plain: str, tok: Token, width: int = 38) -> str:
     return plain[max(0, tok.pos - width):tok.pos + len(tok.raw) + width].strip()
 
 
+def governing_direction(plain: str, pos: int, reach: int = 100) -> Tuple[str, str]:
+    """(direction, word) of the direction word that governs the number at ``pos`` through "by", else ("", "")."""
+    head = plain[:pos]
+    by = None
+    for by in BY.finditer(head):
+        pass
+    if by is None:
+        return "", ""
+    mid = head[by.end():]
+    if len(mid) > reach or PHRASE_END.search(mid) or DIRECTION_WORD.search(mid):
+        return "", ""
+    before = head[max(0, by.start() - reach):by.start()]
+    ends = [m.end() for m in re.finditer(r"[;:]|\.(?=\s)", before)]
+    before = before[ends[-1]:] if ends else before
+    words = list(DIRECTION_WORD.finditer(before))
+    if not words:
+        return "", ""
+    word = words[-1].group(1)
+    return DIRECTION_WORDS[word.lower()], word
+
+
+def direction_error(plain: str, tok: Token, spec: str, sources: Sources) -> str:
+    """Why the direction word of the sentence and the declaration of the number disagree ("" if they agree)."""
+    ops = spec.split("~")[1:]
+    declared = next((o for o in ops if o in DIRECTIONS), "")
+    direction, word = governing_direction(plain, tok.pos)
+    if direction and not declared:
+        return "'{}' governs this number through 'by': declare ~{}".format(word, direction)
+    if declared and not direction:
+        return "declared ~{}, but no direction word governs this number through 'by'".format(declared)
+    if declared != direction:
+        return "'{}' says {}, the declaration ~{}".format(word, direction, declared)
+    if direction and ("neg" in ops or "abs" in ops):
+        parsed, _ = parse_spec(spec)
+        raw, err = sources.select(parsed) if parsed else ([], "")
+        nums = [_number(v) for v in raw] if not err else []
+        signs = {n > 0 for n in nums if n is not None and n != 0}
+        if len(signs) == 1 and ("up" if signs.pop() else "down") != direction:
+            return "'{}' says {}, but the selected change is {}".format(
+                word, direction, "negative" if direction == "up" else "positive")
+    return ""
+
+
+def from_to_errors(plain: str) -> Dict[int, str]:
+    """Position of the second number -> error, for every "<word> from X to Y" whose numbers move against the word
+    (with "rank" a smaller number is a rise)."""
+    out: Dict[int, str] = {}
+    for m in FROM_TO.finditer(plain):
+        direction = DIRECTION_WORDS[m.group(1).lower()]
+        x, y = float(m.group(3)), float(m.group(4))
+        up = y < x if m.group(2) else y > x
+        if x != y and up != (direction == "up"):
+            out[m.start(4)] = "'{}' says {}, but the text goes from {}{} to {}".format(
+                m.group(1), direction, "rank " if m.group(2) else "", m.group(3), m.group(4))
+    return out
+
+
 def check_unit(unit: Unit, sources: Sources, resolve_commit: Callable[[str], bool]) -> List[Verdict]:
     plain, toks = scan(unit.text)
     printed = [t for t in toks if t.kind != "commit"]
     commits = [t for t in toks if t.kind == "commit"]
     flat = [(d, p) for d in unit.decls for p in d.tokens]
     pairs = dict((j, i) for i, j in _align([p.key() for _, p in flat], [t.key() for t in printed]))
+    moves = from_to_errors(plain)
     out: List[Verdict] = []
     for j, tok in enumerate(printed):
         ctx = _context(plain, tok)
@@ -829,6 +915,10 @@ def check_unit(unit: Unit, sources: Sources, resolve_commit: Callable[[str], boo
             continue
         decl, p = flat[pairs[j]]
         ok, how, detail = evaluate(p, decl.spec, sources)
+        if ok and tok.kind == "number" and not decl.spec.startswith("text:"):
+            err = direction_error(plain, tok, decl.spec, sources) or moves.get(tok.pos, "")
+            if err:
+                ok, how, detail = False, "mismatch", err
         out.append(Verdict(unit.where, tok, ok, how, decl.spec, detail, decl.line, ctx))
     used = set(pairs.values())
     for i, (decl, p) in enumerate(flat):

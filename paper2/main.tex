@@ -48,7 +48,7 @@
   \else
     \__short_authors: :~
   \fi
-  { \rmfamily \itshape Working~paper,~29~September~2026 }
+  { \rmfamily \itshape Working~paper,~30~September~2026 }
   \group_end:
 }
 \ExplSyntaxOff
@@ -301,7 +301,8 @@ paper measures them on real ones.
 The fills are those of \citet{albiez2026}: every BTC, ETH and HYPE option fill from 11 January 2024 to the
 pilot cut of 17 September 2026, 603\,940 in all. Each carries the maker's side, price and size, and the net
 edge in USDC per contract thirty minutes after the fill. The venue reports the maker's fee and rebate as
-totals per fill; here they are divided by the fill's size (Addendum 2). The companion paper was corrected on
+totals per fill; here they are divided by the fill's size (Addendum 2). On a multi-leg RFQ the venue books
+the fee of the whole package on one leg, where it stays (Addendum 6). The companion paper was corrected on
 25 September 2026 and uses the same unit per contract. SM covers the whole sample (HYPE from 11 November 2025;
 six earlier HYPE fills have no manager). The legacy manager covers BTC and ETH throughout. PM2 covers BTC and
 ETH from 12 June 2025 23:00 UTC and HYPE from 11 November 2025; this span is the PM2 window of an underlying.
@@ -703,14 +704,14 @@ and no variant in Appendix~\ref{app:inference} meets the registered rule.
 % src events.csv:panel_cells@manager=pm,kept=True~sum 75
 % src summary.json:events_kept 14
 % src fig_f5_b.csv:jump_logpct@mark=event,status!=dropped,jump_logpct<0~count 11
-% src summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct 3.4
-% src summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct 37.4
-% src fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~max~neg 7.8
-% src fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~min~neg 26.0
+% src summary.json:event_eth_pm2_20260524_refbook_log_change~neg~pct~down 3.4
+% src summary.json:event_hype_pm2_20260524_refbook_log_change~neg~pct~down 37.4
+% src fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~max~neg~down 7.8
+% src fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~min~neg~down 26.0
 % src events.csv:event_day@event_id=BTC-pm2-20260820 20 August 2026
-% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct 22.9
+% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down 22.9
 % src events.csv:event_day@event_id=BTC-pm2-20260108 8 January 2026
-% src summary.json:event_btc_pm2_20260108_refbook_log_change,event_eth_pm2_20260108_refbook_log_change,event_hype_pm2_20260108_refbook_log_change~pct~median 1.6
+% src summary.json:event_btc_pm2_20260108_refbook_log_change,event_eth_pm2_20260108_refbook_log_change,event_hype_pm2_20260108_refbook_log_change~pct~median~up 1.6
 % src summary.json:h4_review_oi_share_min~pct 54.5
 % src summary.json:h4_review_oi_share_max~pct 94.9
 % src summary.json:h4_stat -4.60
@@ -730,7 +731,7 @@ and no variant in Appendix~\ref{app:inference} meets the registered rule.
 % src summary.json:h4_cal_ten_pct_change_lo -3.13
 % src summary.json:h4_cal_ten_pct_change_hi +4.39
 % src summary.json:h4_cal_y_mean 7.93
-% src summary.json:h4_cal_ten_pct_narrowing_share~pct 39
+% src summary.json:h4_cal_ten_pct_narrowing_share~pct~down 39
 % src summary.json:h4_clusters 141
 
 \subsection{Sensitivities}
@@ -777,7 +778,7 @@ left outside $K$. All figures come from the pilot cut of 17 September 2026 and w
 registered sample.
 % src summary.json:h2_n_accounts four
 % src summary.json:h2_stat~pct 3.5
-% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct 22.9
+% src summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down 22.9
 % src summary.json:h2_n_accounts four
 % src summary.json:events_with_cells 13
 % src const:pilot_cut 17 September 2026
@@ -837,7 +838,10 @@ All commit times are local times of the author's machine. Before publication the
 to remove account identifiers. The registered texts are byte-identical to those of the original commits and the
 commit times are unchanged; \path{docs/paper2/HISTORY_REWRITE.md} maps the old commit hashes to the new ones.
 Addendum 5 of 27 September 2026, written after all results, records the rewrite and changes no rule, test
-statistic or result. The pre-registration becomes public with the push of this history, after the results
+statistic or result. Addendum 6 of 30 September 2026 (\texttt{1b46e80}), written after the results on the pilot
+cut and before the final data run, keeps the fee of a multi-leg RFQ package on the leg on which the venue books
+it, as the companion paper does, and adds the fee spread over the package as a sensitivity of H1. The
+pre-registration becomes public with the push of this history, after the results
 existed, so no public timestamp precedes the results. The history shows the order of the commits, not what was
 computed locally between them.
 % src const:managers three
@@ -847,6 +851,7 @@ computed locally between them.
 % src git:e492ba1 25 September 2026
 % src const:managers three
 % src const:addendum5_day 27 September 2026
+% src git:1b46e80 30 September 2026
 
 \section*{Competing interest}
 \phantomsection\addcontentsline{toc}{section}{Competing interest}
@@ -933,9 +938,14 @@ the best 20, five are. The percentile interval of the registered test is not cen
 cent of the draws lie at or above it, and a bias-corrected interval runs from 0.898 to 0.920. Maps in the PM2
 window under the other managers or per underlying give $\rho$ between 0.888 and 0.922; maps normalised by time
 to expiry or by the empirical holding period give 0.806 and 0.833 (Figure~\ref{fig:f2}, panel c).
+Without RFQ fills $\rho$ is 0.900 (0.889 to 0.913) over 153 cells. In the ten best cells per unit of PM2
+capital, RFQ fills carry 89.6 per cent of the edge with 39.4 per cent of the fills.
 
 For H2, the median runs from 0.0117 to 0.0899 over the parameter regimes R1 to R4, which the BTC changes of
-Figure~\ref{fig:f1} bound. Each leg of a multi-leg RFQ package is measured against the book before the whole
+Figure~\ref{fig:f1} bound. By maker side the median is 0.075 (0.063 to 0.092) for sells and $-0.137$
+($-0.202$ to $-0.075$) for buys. Weighted by stand-alone capital, as the sum of $\Delta K$ over the sum of
+stand-alone capital times size, all fills bind 0.166 of their stand-alone capital, sells 0.310, and buys
+release 0.397. Each leg of a multi-leg RFQ package is measured against the book before the whole
 package (Addendum 1), without the other legs. Collateral other than USDC, which the registration leaves outside
 $K$, is held on most maker-days. One PM2 subaccount holds ETH that its library counts as offsetting risk, so
 counting that ETH would lower its PM2 capital.
@@ -971,8 +981,24 @@ $-4.52$; without fills whose log ratio exceeds one in absolute value, it is $-4.
 % src summary.json:sens_a_maps_sm_pm2_window_stat,sens_a_maps_pm_pm2_window_stat,sens_g_by_ccy_pm2_btc_stat,sens_g_by_ccy_pm2_eth_stat,sens_g_by_ccy_pm2_hype_stat~max 0.922
 % src summary.json:sens_f_time_to_expiry_stat 0.806
 % src summary.json:sens_f_time_holding_stat 0.833
+% src summary.json:sens_i_rfq_h1_pm2_no_rfq_stat 0.900
+% src summary.json:sens_i_rfq_h1_pm2_no_rfq_lo 0.889
+% src summary.json:sens_i_rfq_h1_pm2_no_rfq_hi 0.913
+% src summary.json:sens_i_rfq_h1_pm2_no_rfq_n 153
+% src text:top_list ten
+% src summary.json:sens_i_rfq_top10_edge_share_stat~pct 89.6
+% src summary.json:sens_i_rfq_top10_fill_share_stat~pct 39.4
 % src summary.json:sens_d_h2_by_regime_r1_stat,sens_d_h2_by_regime_r2_stat,sens_d_h2_by_regime_r3_stat,sens_d_h2_by_regime_r4_stat~min 0.0117
 % src summary.json:sens_d_h2_by_regime_r1_stat,sens_d_h2_by_regime_r2_stat,sens_d_h2_by_regime_r3_stat,sens_d_h2_by_regime_r4_stat~max 0.0899
+% src summary.json:sens_d_h2_by_side_sell_stat 0.075
+% src summary.json:sens_d_h2_by_side_sell_lo 0.063
+% src summary.json:sens_d_h2_by_side_sell_hi 0.092
+% src summary.json:sens_d_h2_by_side_buy_stat -0.137
+% src summary.json:sens_d_h2_by_side_buy_lo -0.202
+% src summary.json:sens_d_h2_by_side_buy_hi -0.075
+% src summary.json:sens_d_h2_sum_ratio_all_stat 0.166
+% src summary.json:sens_d_h2_sum_ratio_sell_stat 0.310
+% src summary.json:sens_d_h2_sum_ratio_buy_stat~neg 0.397
 % src summary.json:sens_h4_by_ccy_btc_beta -3.42
 % src summary.json:sens_h4_by_ccy_eth_beta -1.90
 % src summary.json:sens_h4_by_ccy_hype_beta -10.12

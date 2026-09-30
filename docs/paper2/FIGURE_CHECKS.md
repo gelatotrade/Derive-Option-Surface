@@ -1,6 +1,6 @@
 # Figures of Paper 2: check list
 
-Generated 2026-09-29 16:27 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
+Generated 2026-09-30 10:46 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
 
 **Result:** 231 of 231 checks yes; build instruction 108 of 108 yes; shape 22 of 22 yes; captions 9 of 9 equal.
 
@@ -235,7 +235,7 @@ Generated 2026-09-29 16:27 UTC with `scripts/p2_figure_check.py` from `results/p
 | F4 | caption "by parameter regime": rows with group regime= | fig_f4_b.csv | drawn | yes | n/a |
 | F4 | caption "by book size": rows sm_pm2_le63 and sm_pm2_gt63 | fig_f4_b.csv | drawn | yes | n/a |
 | F4 | caption "on the same BTC and ETH legs": row sm_pm2_be | fig_f4_b.csv | drawn | yes | n/a |
-| F2 | forest: every estimate inside its interval | fig_f2_c.csv: 12 rows | [] | yes | n/a |
+| F2 | forest: every estimate inside its interval | fig_f2_c.csv: 13 rows | [] | yes | n/a |
 | F3 | forest: every estimate inside its interval | fig_f3_b.csv: 12 rows | [] | yes | n/a |
 | F4 | forest: every estimate inside its interval | fig_f4_b.csv: 13 rows | [] | yes | n/a |
 | F6 | forest: every estimate inside its interval | fig_f6_d.csv: 4 rows | [] | yes | n/a |

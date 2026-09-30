@@ -6,7 +6,8 @@
 > the original history, each followed by its hash in the rewritten history ("old (now new)");
 > `docs/paper2/HISTORY_REWRITE.md` gives the full mapping. A01 is settled by the history rewrite of 27 September
 > 2026, and A24 by the cleaned Paper 1 history on which it builds; Addendum 5 of the pre-registration records the
-> new hashes of the pre-registration and its addenda.
+> new hashes of the pre-registration and its addenda. The section "Status on 30 September 2026" records how every remainder
+> was closed and what is still open.
 
 Date: 25 September 2026. State: branch `paper2-kapital`, commit `3ec74f4` (now `1894bad`; stage E). Synthesis of the findings of nine auditors. Every finding is supported by file:line or a reproducible computation; the auditors' scripts are under `data/p2/audit/<perspective>/` (ignored by git). The auditors changed nothing in the repo; the only exception is this file.
 
@@ -245,6 +246,35 @@ None of them is a red result or touches a verdict.
 5. Via Paper 1: burlig2018 and roodman2019 in paper/refs.bib (A61), implementation of A25 and A68 when rewriting.
 6. Small remainders: numbers by maker side (A10), F2c row without RFQ (A12), rule tests (A31), fingerprint and CLI of the placebo cache (A32), captions and labels in the modules f2, f4, f5 and t1 (A34, A55, A59), B2 to B5 and B7.
 7. Title of the paper (A14), admissible under the audit's condition.
+
+## Status on 30 September 2026
+
+Every remainder of the list above was checked again against branch `paper2-capital`. All but the publication step
+(A02) are closed. The registered verdicts are unchanged: `results/p2/h1.json` to `h4.json` are bit-identical, and
+Addendum 6 changes no test statistic. Check chain after the round: `python3 -m pytest` 1,047 passed;
+`scripts/p2_build.py` "build clean", 12 pages; `scripts/p2_number_check.py` 371 numbers, 0 errors;
+`scripts/p2_figure_check.py --strict-captions` all checks yes.
+
+| ID | Status 30 September 2026 | How |
+|---|---|---|
+| A01 | closed | History rewrite of 27 September 2026, Addendum 5, `docs/paper2/HISTORY_REWRITE.md`. |
+| A02 | open for the author | Push of the branch with a merge commit (no squash, no rebase), external anchoring (OpenTimestamps or OSF) and the date of publication in "Data, code and pre-registration". |
+| A10 | closed | `inference_p2.h2_by_side`: median by maker side and the ratio of the sums, in `sensitivity.json` (`d_h2.by_side`, `d_h2.sum_ratio`) and in Appendix B: sells 0.075 (0.063 to 0.092), buys −0.137 (−0.202 to −0.075); capital-weighted all fills bind 0.166, sells 0.310, buys release 0.397. The Results section stays at its word budget, so the numbers stand in the appendix. |
+| A12 | closed | `inference_p2.rfq_entries`: H1 without RFQ fills as a row of Figure 4 c and in Appendix B, ρ 0.900 (0.889 to 0.913) over 153 cells; in the ten best cells per unit of PM2 capital RFQ fills carry 89.6 per cent of the edge with 39.4 per cent of the fills (`sensitivity.json`, `i_rfq`). |
+| A24 | closed | Wallets of `results/p1/h1_lorenz.csv` pseudonymised with a salted HMAC before the Paper 1 push (`inference_p1.wallet_pseudonym`). |
+| A25, A68 | closed | Paper 1 revision of 25 September 2026: fee and rebate per contract in waterfall, T2 and class table; intervals with B = 9,999 in the text. |
+| A31 | closed | The rule tests check fixed expected verdicts (`test_h1_verdict_rule_and_keys`, `test_h2_rule_rejects_when_upper_bound_reaches_threshold`); `_panel_check` is documented as a check of reproducibility, with `build_panel` tested on hand-built frames in `tests/test_p2_events.py`. |
+| A32 | closed | The placebo fingerprint holds the panel rules (window, minimum fills, gap, separation, TOL, outlier dose) and a hash of the code that turns a draw into a placebo β; changed rules or code stop the run with "stale". `inference_p2_h4 run` has `--out`, `--parts-dir` and `--fresh`, and reads the open interest from `results/p2` even with `--out`. The final run needs `--fresh`, because the stored parts carry the old fingerprint. |
+| A34, A55, A59 | closed | Captions and labels of F5, F2, T1 and F4 corrected in the modules. |
+| A61 | closed | `burlig2018` carries `doi = {10.1016/j.econlet.2018.03.036}` in both bibliographies (checked against Crossref on 30 September 2026); `roodman2019` braces `{Stata}` since the Paper 1 revision. The Paper 1 PDF on SSRN shows the entry without the DOI until its next build. |
+| A67 | closed | Addendum 6 of 30 September 2026 (commit `1b46e80`), before the final data run: the fee stays on the booked leg, as in Paper 1; H1 is also reported with the package fee spread over its legs (`inference_p2.package_fee_net`, `sensitivity.json`, `c2_rfq_package`, computed in the final run). |
+| A14 | kept | Title unchanged; the abstract carries the qualification the audit asked for. |
+| B1, B6 | closed | New files committed; the OS artefacts are out of the index on `paper2-capital` and leave `main` with its merge. |
+| B2 | closed | `p2_number_check.py` binds the direction word as well: a number governed by "fell by", "cheaper, by between", "a narrowing by" needs `~down` or `~up`, a declared direction needs such a word, and with `~neg` or `~abs` the sign of the source must agree; in "falls from X to Y" the numbers must move as the word says (a smaller rank is a rise). Changing "cut" to "raised" in the manuscript now fails. |
+| B3 | closed | Card S3 hatches H4 up to max(0, placebo P95), where the rule rejects every β. |
+| B4 | noted | Results 1,539 of 1,540 words, Data 652 of 660; the additions of this round went to Appendix B, which has no budget. |
+| B5 | closed | `FIGURE_CHECKS.md` is identical under PYTHONHASHSEED 1, 2 and 3. |
+| B7 | closed | `FIGURE_SELECTION.md` sections 6.1, 8, 11 and 13 give the widths 3.29 and 6.84 in, the colour scale over all frames and the file names `p2_btc_capital_surface.*`. |
 
 ## Findings
 
