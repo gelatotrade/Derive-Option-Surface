@@ -223,7 +223,10 @@ parameter jumps (BTC PM2 +1.60 / −10.49 / −7.84 / −26.05 log-%).
 
 ### 6.1 Format and measurement
 
-- Widths 3.4 and 7.0 inches, typeset 1:1 with `\includegraphics[width=\linewidth]`. `figures_p2.py` sets for its
+- Widths 3.29 and 6.84 inches, the measured column and text widths of `paper2/main.tex` (3.2967 and 6.8425 in,
+  audit A48; until 25 September 2026 this said 3.4 and 7.0), typeset 1:1 with `\includegraphics[width=\linewidth]`,
+  so that no font shrinks below 7 pt in the paper; `p2_figure_check.py` reads the width from `main.tex` and the
+  smallest font from the PDF. `figures_p2.py` sets for its
   figures `savefig.bbox = None` and `savefig.pad_inches = 0`; the canvas is the print size. Legends sit inside the
   panel or are replaced by direct labels, with no legend column to the right of the axes.
 - `figstyle` gets `FS_MIN = 7.0`. No text below 7 pt, panel letters 8 pt bold, tick labels black (not
@@ -795,7 +798,10 @@ last frame. For each kept BTC PM2 event (8 Jan, 23 Jan, 24 May, 20 Aug 2026) thr
 vol shocks, contingencies, scenarios · straddle −7.5 %”, “20 Aug 2026 · parameter bundle incl. spot grid ±17 % → ±14 %
 · straddle −23 %” (on two lines if needed).
 
-**Honesty.** A fixed colour scale over all frames (`p2surface.fit_limits`), printed on the colour bar. Every frame shows
+**Honesty.** A fixed colour scale over all frames, printed on the colour bar: the full range of the capital over
+all frames, widened to whole half per cent (`gif_p2.limits`, 3.0 to 19.0 % in the pilot), so that no node is cut
+(audit A23; the first build used the 1st to 99th percentile and painted the cheapest nodes of August 2026 in the
+colour of its lower end). Should a scale ever clip, the colour bar shows arrows and a note. Every frame shows
 date, time and block. Expiries without a fresh feed (older than `LIVE_MAX_AGE`) are left out, and nodes outside the
 live expiries are drawn in `NA_COLOR` instead of being extrapolated; a badge “{k} expiries without fresh feed left out” when
 k > 0. A weekly frame without a live expiry is skipped and noted in the table. Only the
@@ -803,7 +809,8 @@ fixed iso-lines are highlighted, none chosen after the fact.
 
 **Format.** Master 1200 × 675 px for the README and X; banner and date at least 32 px, axes and ticks at least 22 px.
 GIF with a global 256-colour palette under 8 MB; MP4 1280 × 720 via `animate.write_mp4`; static end frame as PNG
-(also the poster in the README). Files `docs/media/BTC_p2_capital_pm2.gif`, `.mp4`, `_end.png`; table
+(also the poster in the README). Files `docs/media/p2_btc_capital_surface.gif`, `.mp4`, `_end.png` (every Paper 2
+medium in `docs/media` starts with `p2_`; the first plan named them `BTC_p2_capital_pm2.*`); table
 `results/p2/gif_frames.csv` (frame, date, ts, block, hold duration, expiries, left-out expiries, K min/median/max,
 banner). Built via `p2surface.animate(managers=("pm2",), …)` with the additions iso-lines, hold frames with banner,
 unit %, SM corner; run only through `scripts/p2_heavy.py` (machine lock, feed history by quarter).
@@ -839,7 +846,8 @@ Footer “Derive, chain 957 · replica of the deployed margin contracts · pre-r
 3. **“Four pre-registered tests. Four verdicts.”** Four rows H1 to H4, each with the statement in plain words on the left
    (“The capital denominator reorders the map”, “The next contract in a big book is cheap”, “PM2 needs less than half of
    SM's capital”, “Cheaper capital, tighter spreads”), a verdict bar in the middle (estimator, interval, threshold,
-   hatched rejection side; H4: β with the placebo P95 as a mark and “one-sided p = …”), and on the right the verdict “rejected”
+   hatched rejection side; H4: β with the placebo P95 as a mark and “one-sided p = …”, hatched up to max(0, P95), since
+   the rule rejects every β up to there, audit B3), and on the right the verdict “rejected”
    or “not rejected”. Numbers only from `h1.json` to `h4.json`; verdicts by the same rules as `ruler`. Title and
    layout do not depend on the outcome.
 
@@ -893,7 +901,7 @@ It writes `docs/paper2/FIGURE_CHECKS.md` and exits with a status ≠ 0 on any de
 - **Identities:** κ in F1 = 100·`sum_K`/`sum_index` in `h1_cells.csv`; T2 c, F5 c and card 1 show the same
   straddle value (10.03 / 29.61 %); last GIF frame = T1 a; F6 b line = β and `fwl_slope` = β (relative ≤ 1e−8);
   sums of the regimes = pooled sums (F1).
-- **Form** (also as a test in `tests/test_p2_figures.py`): PDF width 3.4 or 7.0 inches ± 0.02; no font below
+- **Form** (also as a test in `tests/test_p2_figures.py`): PDF width 3.29 or 6.84 inches ± 0.02; no font below
   7 pt; all texts inside the canvas; exactly one figure with `Axes3D` (T1); no colour other than the manager colours,
   grey and black in F2 to F6 and A1 (check the palette of the artists); ▲/▼ only as side symbols; cards 1600 × 900 px;
   GIF under 8 MB.
@@ -923,5 +931,5 @@ It writes `docs/paper2/FIGURE_CHECKS.md` and exits with a status ≠ 0 on any de
 - Prototypes and measurement: `data/p2/fig_proto/{mechanismus,empirie,praktiker,jury}/`
 - To build: `derive_surface/figures_p2.py`, `derive_surface/figdata_p2.py`, additions to `figstyle.py`,
   `p2surface.py`, `inference_p2.py`, `inference_p2_h4.py`; `scripts/p2_figure_check.py`; `tests/test_p2_figures.py`;
-  outputs `paper2/figures/`, `paper2/social/`, `docs/media/BTC_p2_capital_pm2.*`, `results/p2/fig_<slot>_<panel>.csv`,
+  outputs `paper2/figures/`, `paper2/social/`, `docs/media/p2_btc_capital_surface.*`, `results/p2/fig_<slot>_<panel>.csv`,
   `results/p2/gif_frames.csv`, `docs/paper2/FIGURE_CHECKS.md`.

@@ -355,7 +355,12 @@ def _ruler(ax, v: dict, key: str) -> None:
     ax.set_xlim(x0, x1)
     ax.set_ylim(-1, 1)
     thr = v["threshold"]
-    left, right = (thr, x1) if v["side"] == "upper" else (x0, thr)
+    if v["side"] == "upper":
+        left, right = thr, x1
+    elif v["side"] == "beta":                   # H4 rejects every β ≤ max(0, placebo P95) (audit B3)
+        left, right = x0, max(thr, v["p95"])
+    else:
+        left, right = x0, thr
     ax.add_patch(Rectangle((left, -0.8), right - left, 1.6, fill=False, hatch="//", edgecolor=HATCH_GREY, lw=0.0,
                            zorder=0))
     ax.axvline(thr, color=INK, ls="--", lw=2.0, zorder=1)

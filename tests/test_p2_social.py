@@ -131,6 +131,39 @@ def test_verdict_card_shows_no_interval_for_h4_and_no_exploratory_number(tmp_pat
     plt.close(fig)
 
 
+def _hatched_spans(fig):
+    """(x0, x1) of the hatched rejection side per ruler, top row first."""
+    rulers = [ax for ax in fig.axes if any(p.get_hatch() == "//" for p in ax.patches)]
+    rulers.sort(key=lambda ax: -ax.get_position().y0)
+    out = []
+    for ax in rulers:
+        p = next(p for p in ax.patches if p.get_hatch() == "//")
+        out.append((p.get_x(), p.get_x() + p.get_width(), ax.get_xlim()))
+    return out
+
+
+@pytest.mark.parametrize("beta,p95", [(-4.6, 23.4), (12.0, 23.4), (30.0, 23.4), (5.0, -3.0)])
+def test_h4_ruler_hatches_every_estimate_the_beta_criteria_reject(tmp_path, beta, p95):
+    """Audit B3: under the H4 rule every β ≤ max(0, placebo P95) is rejected, so the hatching reaches the P95 and
+    not only zero; a β between 0 and the P95 lies in the hatched field."""
+    rd = results(tmp_path)
+    (rd / "h4.json").write_text(json.dumps(_h4(beta=beta, p95=p95)))
+    fig, _ = social_p2.card_verdicts(social_p2.load(rd), tmp_path / "out", keep=True)
+    x0, x1, (lim0, _) = _hatched_spans(fig)[3]
+    assert x0 == pytest.approx(lim0) and x1 == pytest.approx(max(0.0, p95))
+    assert (beta <= x1) == (beta <= max(0.0, p95))
+    plt.close(fig)
+
+
+def test_upper_and_lower_rulers_keep_their_hatched_side(tmp_path):
+    rd = results(tmp_path)
+    fig, _ = social_p2.card_verdicts(social_p2.load(rd), tmp_path / "out", keep=True)
+    (a0, a1, (_, h1_hi)), _, (c0, c1, (h3_lo, _)), _ = _hatched_spans(fig)
+    assert (a0, a1) == (pytest.approx(0.5), pytest.approx(h1_hi))
+    assert (c0, c1) == (pytest.approx(h3_lo), pytest.approx(2.0))
+    plt.close(fig)
+
+
 def test_straddle_card_follows_the_title_rule(tmp_path):
     assert social_p2.straddle_title(10.0, 12.0) == social_p2.TITLE_LESS
     assert social_p2.straddle_title(13.0, 12.0) == social_p2.TITLE_LITTLE
