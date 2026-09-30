@@ -25,9 +25,9 @@ VERIFIED_DOI = {
     "cameron2008": "10.1162/rest.90.3.414",
     "mackinnon2017": "10.1002/jae.2508",
     "roodman2019": "10.1177/1536867X19830877",
+    "burlig2018": "10.1016/j.econlet.2018.03.036",
 }
-# Kept identical to paper/refs.bib, whose entry has no doi field; LITERATURE.md records the DOI.
-DOI_EXEMPT = {"burlig2018"}
+DOI_EXEMPT: set = set()
 SHARED_WITH_PAPER1 = {"garleanu2009", "muravyev2016", "christoffersen2018",
                       "cameron2008", "mackinnon2017", "roodman2019", "burlig2018"}
 

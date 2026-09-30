@@ -50,7 +50,7 @@ checked with `diff` and permanently by `tests/test_p2_refs.py`.
 | cameron2008 | Cameron, A. C., Gelbach, J. B., Miller, D. L. (2008). Bootstrap-Based Improvements for Inference with Clustered Errors. *Review of Economics and Statistics* 90(3), 414–427. | 10.1162/rest.90.3.414 | https://api.crossref.org/works/10.1162/rest.90.3.414 (taken over from Paper 1, checked again) | 25 September 2026 | Cluster bootstrap over days and wild cluster bootstrap with restricted residuals (H1 to H4; audit A61). |
 | mackinnon2017 | MacKinnon, J. G., Webb, M. D. (2017). Wild Bootstrap Inference for Wildly Different Cluster Sizes. *Journal of Applied Econometrics* 32(2), 233–254. | 10.1002/jae.2508 | https://api.crossref.org/works/10.1002/jae.2508 (taken over from Paper 1, checked again) | 25 September 2026 | Wild cluster bootstrap with very unequal cluster sizes; the 141 day clusters of H4 differ in size (audit A61). |
 | roodman2019 | Roodman, D., Nielsen, M. Ø., MacKinnon, J. G., Webb, M. D. (2019). Fast and Wild: Bootstrap Inference in Stata Using boottest. *Stata Journal* 19(1), 4–60. | 10.1177/1536867X19830877 | https://api.crossref.org/works/10.1177/1536867X19830877 (taken over from Paper 1, checked again) | 25 September 2026 | Reference for the algorithm of the wild cluster bootstrap with Rademacher weights and restricted residuals, for the number of draws and for the fixed seed (audit A61). |
-| burlig2018 | Burlig, F. (2018). Improving Transparency in Observational Social Science Research: A Pre-Analysis Plan Approach. *Economics Letters* 168, 56–60. | 10.1016/j.econlet.2018.03.036 (not set in the entry, see below) | https://api.crossref.org/works/10.1016/j.econlet.2018.03.036 (taken over from Paper 1, checked again) | 25 September 2026 | Pre-registration as a procedure for observational data whose outcomes exist before the registration (audit A61). |
+| burlig2018 | Burlig, F. (2018). Improving Transparency in Observational Social Science Research: A Pre-Analysis Plan Approach. *Economics Letters* 168, 56–60. | 10.1016/j.econlet.2018.03.036 | https://api.crossref.org/works/10.1016/j.econlet.2018.03.036 (taken over from Paper 1, checked again) | 25 September 2026 | Pre-registration as a procedure for observational data whose outcomes exist before the registration (audit A61). |
 
 Note on (e): `soska2021` and `qin2021` are peer-reviewed ACM conference papers, not journal articles. Crossref lists
 the subtitle of `qin2021` as a separate field (`subtitle`); the main title there reads "An empirical study of DeFi
@@ -134,3 +134,8 @@ appears in the style as "… in stata using boottest", because `Stata` is not br
 
 Status on 27 September 2026: the `roodman2019` point is settled. Since the Paper 1 revision, `paper/refs.bib` braces
 `{Stata}`, and `paper2/refs.bib` took this over in commit `b637822`. `burlig2018` still has no `doi` field.
+
+Status on 30 September 2026: the `burlig2018` point is settled. Both `paper/refs.bib` and `paper2/refs.bib` carry
+`doi = {10.1016/j.econlet.2018.03.036}`, checked again against api.crossref.org on 30 September 2026 (title, journal,
+volume 168, pages 56–60). The revised PDF of Paper 1 on SSRN (revision of 25 September 2026) still lists the entry without
+the DOI; the next build of Paper 1 prints it.
