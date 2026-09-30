@@ -29,6 +29,10 @@ in the real panel and with disjoint windows per currency; ``audit``: see below).
 
     python3 scripts/p2_heavy.py --wait-max 500 -- python3 -m derive_surface.inference_p2_h4 run --max-seconds 420
 
+Stored placebo parts carry a fingerprint of the data, the events, the doses, the seed, the sample, the panel rules
+and the source of the functions that build and fit a placebo panel (audit A32); parts with another fingerprint stop
+the run. ``--fresh`` discards them first, ``--out`` and ``--parts-dir`` reproduce the run outside ``results/p2``.
+
 Descriptive figure tables (FIGURE_SELECTION section 10; no registered number changes): ``fig_h4_fwl_bins.csv``, the
 residualised regressor and outcome in 20 equal-count bins with their histogram and the slope ``beta``, and
 ``h4_placebo_days.csv``, the candidate placebo days of every kept event with the gap rule and the number of draws.
@@ -48,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import inspect
 import json
 import time
 from dataclasses import dataclass
@@ -581,6 +586,16 @@ def _write_json(path: Path, obj) -> None:
     path.write_text(json.dumps(_clean(obj), indent=1, sort_keys=False) + "\n")
 
 
+def _placebo_rules() -> dict:
+    """Panel rules and a hash of the code that turns a draw into a placebo beta (audit A32), read at call time."""
+    code = [p2events.build_panel, placebo_panel, fit, demean_two_way, drop_outlier_cells, _placebo_row]
+    source = "\n".join(inspect.getsource(f) for f in code)
+    return {"window_days": int(p2events.WINDOW_DAYS), "min_side_fills": int(p2events.MIN_SIDE_FILLS),
+            "h4_window_days": int(WINDOW_DAYS), "gap_days": int(GAP_DAYS), "sep_days": int(SEP_DAYS),
+            "tol": float(TOL), "outlier_abs_dose": float(OUTLIER_ABS_DOSE),
+            "code": hashlib.sha256(source.encode()).hexdigest()[:16]}
+
+
 def _fingerprint(frame: pd.DataFrame, kept: pd.DataFrame, doses: pd.DataFrame, seed: int,
                  sample: Tuple[int, int]) -> str:
     d = doses[np.isfinite(doses["dose"].astype(float))].sort_values(["event_id", "cell"])
@@ -588,7 +603,7 @@ def _fingerprint(frame: pd.DataFrame, kept: pd.DataFrame, doses: pd.DataFrame, s
                "frame_y_sum": round(float(np.nansum(frame["y_hs_bp"].to_numpy(float))), 6),
                "kept": [f"{e.event_id}:{int(e.event_ts)}" for e in kept.itertuples()],
                "doses": [f"{r.event_id}|{r.cell}|{float(r.dose):.15e}" for r in d.itertuples()],
-               "seed": int(seed), "sample": [int(sample[0]), int(sample[1])]}
+               "seed": int(seed), "sample": [int(sample[0]), int(sample[1])], "rules": _placebo_rules()}
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -597,11 +612,12 @@ def _load_parts(path: Path, fingerprint: str, draws: Sequence[str]) -> pd.DataFr
         return pd.DataFrame(columns=PART_COLUMNS)
     parts = pd.read_csv(path, dtype={"fingerprint": str, "draws": str})
     if len(parts) and (parts["fingerprint"] != fingerprint).any():
-        raise RuntimeError(f"stale placebo parts in {path} (data or events changed); delete {path.parent} and rerun")
+        raise RuntimeError(f"stale placebo parts in {path} (data, events, panel rules or code changed); "
+                           "rerun with --fresh")
     parts = parts.drop_duplicates("rep", keep="last")
     for r in parts.itertuples():
         if int(r.rep) >= len(draws) or r.draws != draws[int(r.rep)]:
-            raise RuntimeError(f"stale placebo parts in {path} (draw of rep {int(r.rep)} differs); delete and rerun")
+            raise RuntimeError(f"stale placebo parts in {path} (draw of rep {int(r.rep)} differs); rerun with --fresh")
     return parts
 
 
@@ -618,7 +634,10 @@ def _placebo_row(frames, rep_draws, vectors, rep: int) -> dict:
 
 def _panel_check(stored: pd.DataFrame, frame: pd.DataFrame, kept: pd.DataFrame,
                  vectors: Mapping[str, pd.Series]) -> dict:
-    """Rebuild the panel of the real events with ``build_panel`` and compare it with the stored panel."""
+    """Rebuild the panel of the real events with ``build_panel`` and compare it with the stored panel.
+
+    This shows that the stored panel is reproducible by the same code, not that the code is right (audit A31); the
+    rules of ``build_panel`` are tested on hand-built frames with known answers in ``tests/test_p2_events.py``."""
     parts = [p2events.build_panel(frame, e.ccy, int(e.event_ts), vectors.get(e.event_id, pd.Series(dtype=float)),
                                   e.event_id) for e in kept.itertuples()]
     parts = [p for p in parts if len(p)]
@@ -643,9 +662,12 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
         frame: Optional[pd.DataFrame] = None, events: Optional[pd.DataFrame] = None,
         doses: Optional[pd.DataFrame] = None, panel: Optional[pd.DataFrame] = None,
         params_root: Optional[Path] = None, out_dir: Path = RESULTS_DIR, parts_dir: Path = PARTS_DIR,
-        dose_dir: Path = p2events.DOSE_DIR, panel_path: Path = p2events.PANEL_PATH) -> dict:
+        dose_dir: Path = p2events.DOSE_DIR, panel_path: Path = p2events.PANEL_PATH, fresh: bool = False,
+        oi_path: Optional[Path] = None) -> dict:
     """H4 with placebo and sensitivities. The placebo stage is resumable; the outputs are written once all
-    replications of every variant are done (``status`` DONE, else PARTIAL)."""
+    replications of every variant are done (``status`` DONE, else PARTIAL). ``fresh`` discards the stored placebo
+    parts first; ``oi_path`` (default ``out_dir/manager_oi_share.csv``) is the open interest share for the review
+    reading."""
     t0 = time.monotonic()
     if events is None or doses is None:
         ev_list = p2events.event_list(root=params_root)
@@ -663,6 +685,9 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
     frames = split_frame(frame)
 
     parts_dir.mkdir(parents=True, exist_ok=True)
+    if fresh:
+        for variant in VARIANTS:
+            (parts_dir / f"{variant}.csv").unlink(missing_ok=True)
     placebo: Dict[str, pd.DataFrame] = {}
     days_info: Dict[str, dict] = {}
     new = 0
@@ -780,7 +805,7 @@ def run(b: int = B, n_placebo: int = N_PLACEBO, seed: int = SEED, max_seconds: O
         "events_with_cells": _min_med_max(mt["events_with_cells"].to_numpy(float)),
         "placebo_betas": mt["beta"].tolist(), **verdict(f.beta, test["p"], ps_m["p95"])}
 
-    oi_path = out_dir / "manager_oi_share.csv"
+    oi_path = Path(oi_path) if oi_path is not None else out_dir / "manager_oi_share.csv"
     sens["review"] = review_extras(panel, h4, kept, pd.read_csv(oi_path) if oi_path.exists() else None, b=b,
                                    seed=seed)
     fills = load_fill_doses(sorted(map(str, panel["event_id"].unique())), dose_dir)
@@ -1106,6 +1131,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--placebos", type=int, default=N_PLACEBO)
     r.add_argument("--seed", type=int, default=SEED)
     r.add_argument("--max-seconds", type=float, default=420.0)
+    r.add_argument("--out", type=Path, default=RESULTS_DIR, help="output directory (default results/p2)")
+    r.add_argument("--parts-dir", type=Path, default=PARTS_DIR, help="placebo parts (default data/p2/derived/h4_placebo)")
+    r.add_argument("--fresh", action="store_true", help="discard the stored placebo parts and recompute them")
     sub.add_parser("figtables", help="rebuild fig_h4_fwl_bins.csv and h4_placebo_days.csv from stored results")
     x = sub.add_parser("extras", help="review-round readings, side splits and audit entries into "
                                       "sensitivity_h4.json (review, audit) from stored results")
@@ -1118,7 +1146,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if a.cmd == "extras":
         print(json.dumps(_clean(run_extras(b=a.b, seed=a.seed))), flush=True)
         return 0
-    res = run(b=a.b, n_placebo=a.placebos, seed=a.seed, max_seconds=a.max_seconds)
+    res = run(b=a.b, n_placebo=a.placebos, seed=a.seed, max_seconds=a.max_seconds, out_dir=a.out,
+              parts_dir=a.parts_dir, fresh=a.fresh, oi_path=RESULTS_DIR / "manager_oi_share.csv")
     print(json.dumps(_clean(res)), flush=True)
     return 0
 

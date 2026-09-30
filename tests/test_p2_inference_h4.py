@@ -406,6 +406,55 @@ def test_run_refuses_stale_placebo_parts(tmp_path, params_root):
         h4.run(b=19, n_placebo=3, **kw)
 
 
+@pytest.mark.parametrize("module,name,value", [("p2events", "MIN_SIDE_FILLS", 21), ("h4", "WINDOW_DAYS", 15),
+                                               ("h4", "TOL", 1e-10), ("h4", "OUTLIER_ABS_DOSE", 0.5),
+                                               ("h4", "GAP_DAYS", 27)])
+def test_run_refuses_placebo_parts_when_a_panel_rule_changes(tmp_path, params_root, monkeypatch, module, name,
+                                                             value):
+    """Audit A32: cached placebo betas are stale once a panel rule changes, even when data and events do not."""
+    kw = _setup(tmp_path, params_root, effect=0.0)
+    h4.run(b=19, n_placebo=3, **kw)
+    monkeypatch.setattr(p2events if module == "p2events" else h4, name, value)
+    with pytest.raises(RuntimeError, match="stale"):
+        h4.run(b=19, n_placebo=3, **kw)
+
+
+def test_run_refuses_placebo_parts_when_the_panel_code_changes(tmp_path, params_root, monkeypatch):
+    kw = _setup(tmp_path, params_root, effect=0.0)
+    h4.run(b=19, n_placebo=3, **kw)
+    original = h4.placebo_panel
+
+    def placebo_panel(*args, **kwargs):          # same result, other source: the cache cannot know that
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(h4, "placebo_panel", placebo_panel)
+    with pytest.raises(RuntimeError, match="stale"):
+        h4.run(b=19, n_placebo=3, **kw)
+
+
+def test_run_fresh_discards_stale_parts_and_recomputes_every_placebo(tmp_path, params_root):
+    kw = _setup(tmp_path, params_root, effect=0.0)
+    h4.run(b=19, n_placebo=3, **kw)
+    kw["frame"] = kw["frame"].iloc[:-5]
+    res = h4.run(b=19, n_placebo=3, fresh=True, **kw)
+    assert res["status"] == "DONE" and res["placebo_new"] == 3 * 3      # three variants of three replications
+    again = h4.run(b=19, n_placebo=3, **kw)
+    assert again["placebo_new"] == 0
+
+
+def test_run_reads_open_interest_from_its_input_not_from_the_output_dir(tmp_path, params_root):
+    """A reproduction into another directory (``--out``) gives the same outputs as one into results/p2."""
+    kw = _setup(tmp_path, params_root, effect=20.0)
+    oi = tmp_path / "inputs" / "manager_oi_share.csv"
+    oi.parent.mkdir()
+    pd.DataFrame({"month": ["2025-12"], "ccy": ["BTC"], "sm": [0.2], "pm": [0.1], "pm2": [0.7]}).to_csv(oi,
+                                                                                                        index=False)
+    h4.run(b=19, n_placebo=3, oi_path=oi, **kw)
+    sens = json.loads((kw["out_dir"] / "sensitivity_h4.json").read_text())
+    assert sens["review"]["oi_weighted"]["shares"] == {"BTC-pm2-20251215": 0.7}
+    assert not (kw["out_dir"] / "manager_oi_share.csv").exists()
+
+
 def test_main_cli_run(monkeypatch):
     seen = {}
 
@@ -416,6 +465,17 @@ def test_main_cli_run(monkeypatch):
     monkeypatch.setattr(h4, "run", fake_run)
     assert h4.main(["run", "--max-seconds", "30", "--b", "99"]) == 0
     assert seen["max_seconds"] == 30.0 and seen["b"] == 99
+    assert seen["out_dir"] == h4.RESULTS_DIR and seen["parts_dir"] == h4.PARTS_DIR and seen["fresh"] is False
+    assert seen["oi_path"] == h4.RESULTS_DIR / "manager_oi_share.csv"
+
+
+def test_main_cli_run_into_another_directory(monkeypatch, tmp_path):
+    """Audit A32: a reproduction outside results/p2 needs no driver of its own."""
+    seen = {}
+    monkeypatch.setattr(h4, "run", lambda **kw: seen.update(kw) or {"status": "DONE"})
+    assert h4.main(["run", "--out", str(tmp_path / "o"), "--parts-dir", str(tmp_path / "p"), "--fresh"]) == 0
+    assert seen["out_dir"] == tmp_path / "o" and seen["parts_dir"] == tmp_path / "p" and seen["fresh"] is True
+    assert seen["oi_path"] == h4.RESULTS_DIR / "manager_oi_share.csv"
 
 
 # ------------------------------------------------------------------------------------------------ figure tables (F5 b, F6 b)
