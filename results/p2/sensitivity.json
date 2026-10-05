@@ -194,6 +194,24 @@
    "exploratory": true
   }
  },
+ "c2_rfq_package": {
+  "h1_pm2": {
+   "stat": 0.9038687068617862,
+   "lo": 0.8804759167667141,
+   "hi": 0.907470878084281,
+   "rejected": true,
+   "n": 173,
+   "n_days": 463,
+   "n_fills": 331813,
+   "n_fills_k_le_0": 20,
+   "min_fills": 200,
+   "b": 9999,
+   "seed": 20260924,
+   "level": 0.9,
+   "rule": "H1",
+   "exploratory": true
+  }
+ },
  "d_h2": {
   "ratio": {
    "stat": 0.034540122450644445,
@@ -486,12 +504,6 @@
     "libs": "account/standard"
    }
   },
-  "population": {
-   "n": 100995,
-   "sample": 20000,
-   "sample_equals_marginal": true,
-   "rule": "descriptive (no preregistered threshold)"
-  },
   "by_side": {
    "sell": {
     "stat": 0.07477297947270317,
@@ -563,6 +575,12 @@
     "what": "sum(dK) / sum(K_single a)",
     "exploratory": true
    }
+  },
+  "population": {
+   "n": 100995,
+   "sample": 20000,
+   "sample_equals_marginal": true,
+   "rule": "descriptive (no preregistered threshold)"
   }
  },
  "e_h3": {

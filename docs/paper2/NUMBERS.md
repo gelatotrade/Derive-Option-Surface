@@ -1,6 +1,6 @@
 # Numbers for Paper 2
 
-Generated 2026-09-30 10:43 UTC from `results/p2` with `scripts/p2_numbers.py`. All headline numbers machine-readable in `results/p2/summary.json` (flat, stable keys).
+Generated 2026-10-05 07:02 UTC from `results/p2` with `scripts/p2_numbers.py`. All headline numbers machine-readable in `results/p2/summary.json` (flat, stable keys).
 
 - **Data status:** Sample from 2024-01-11 00:00 UTC to the last fill at 2026-09-17 11:51:53 UTC. **Pilot state:** the sample ends before the preregistered end (2026-09-30 08:00 UTC); the numbers of the manuscript come from the final data run. Cut-off day 2026-09-17.
 - **Inference:** B = 9 999, seed 20260924, 90 % percentile intervals from a cluster bootstrap over UTC days (H1 to H3, Addendum 3). H4: wild cluster bootstrap with Rademacher weights and restricted residuals, cluster UTC day, one-sided p for β > 0, 100 placebo dates.
@@ -123,6 +123,12 @@ Not preregistered as a test. "Verdict by rule" is the verdict that the preregist
 | H2 with MM | Median dK_mm_per_contract/K_single_pm2_mm_acct | 0.0291 [0.0251; 0.0339] | 19 693 | not rejected |
 | h2_ratio_mm_std | Median dK_mm_std_per_contract/K_single_pm2_mm | 0.0278 [0.0242; 0.0324] | 19 977 | not rejected |
 | H3 with MM | Median K_sm_mm/K_pm2_mm | 5.614 [5.471; 5.802] | 1 943 | not rejected |
+
+### (c2) Fee of a multi-leg RFQ package spread over its legs (addendum 6)
+
+| Variant | Quantity | Value [90 % interval] | n | Verdict by rule |
+|---|---|---|---:|---|
+| H1 with the RFQ package fee spread over its legs | ρ | 0.904 [0.880; 0.907] | 173 | rejected |
 
 ### (c) Net edge in the form of Paper 1 (fee and rebate undivided)
 
