@@ -291,3 +291,36 @@ def test_label_offsets_push_close_numbers_apart_in_time_order():
     ws = [f5._text_width_pt(s) for s in t]
     for k in range(2):
         assert c[k + 1] - c[k] >= (ws[k] + ws[k + 1]) / 2 + f5.LABEL_GAP - 1e-6
+
+
+def test_time_axis_labels_january_and_july_clear_of_the_y_axis(results):
+    """Audit F10/T10: panel c carried eleven ISO month labels ("2024-01" ...) about one space apart, the first one
+    hanging under the y axis. Now every quarter has a tick, only January and July are labelled ("Jan 2024", the month
+    style of the text), the labels stand well apart and the first starts at the y axis."""
+    major, minor, printed = f5.calendar_ticks()
+    assert printed == ["Jan 2024", "Jul 2024", "Jan 2025", "Jul 2025", "Jan 2026", "Jul 2026"]
+    assert [t.strftime("%Y-%m") for t in minor] == ["2024-04", "2024-10", "2025-04", "2025-10", "2026-04"]
+    fig = f5.figure(results)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    ax_c = next(a for a in fig.axes if a.get_ylabel() == "% of forward")
+    labels = [t for t in ax_c.get_xticklabels() if t.get_text()]
+    assert [t.get_text() for t in labels] == printed
+    boxes = [t.get_window_extent(r) for t in labels]
+    assert boxes[0].x0 >= ax_c.get_window_extent(r).x0 - 0.5           # not under the y axis and its labels
+    gaps_in = [(b.x0 - a.x1) / fig.dpi for a, b in zip(boxes, boxes[1:])]
+    assert min(gaps_in) >= 0.15, gaps_in
+    for ax in fig.axes:                                                  # a, b and c share the ticks
+        if ax.get_xlim() == ax_c.get_xlim():
+            assert np.allclose(ax.get_xticks(), ax_c.get_xticks())
+            assert np.allclose(ax.get_xticks(minor=True), ax_c.get_xticks(minor=True))
+            if ax is not ax_c:
+                assert not any(t.get_text() for t in ax.get_xticklabels())
+
+
+def test_caption_names_the_h4_panel_and_the_event_lines_of_c():
+    """Audit C6 and C10: "the panel" of the H4 regression is the H4 panel (as in the key of b), and the grey vertical
+    lines of panel c are explained."""
+    assert "filled when they enter the H4 panel" in f5.CAPTION
+    assert "enter the panel," not in f5.CAPTION
+    assert "The grey vertical lines in panel c mark the kept BTC events of panel b." in f5.CAPTION

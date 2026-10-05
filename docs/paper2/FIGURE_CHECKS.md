@@ -1,8 +1,8 @@
 # Figures of Paper 2: check list
 
-Generated 2026-09-30 10:46 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
+Generated 2026-10-05 10:03 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
 
-**Result:** 231 of 231 checks yes; build instruction 108 of 108 yes; shape 22 of 22 yes; captions 9 of 9 equal.
+**Result:** 233 of 233 checks yes; build instruction 108 of 108 yes; shape 22 of 22 yes; captions 9 of 9 equal.
 
 ## Check numbers
 
@@ -68,7 +68,8 @@ Generated 2026-09-30 10:46 UTC with `scripts/p2_figure_check.py` from `results/p
 | F2 | sign line after the cells with A_bp > 0 | 99.5 | 99.5 | yes | yes |
 | F2 | cells with A_bp > 0 / <= 0 / all, by side | {buy: [61, 26, 87], sell: [38, 48, 86]} | {buy: [61, 26, 87], sell: [38, 48, 86]} | yes | yes |
 | F2 | hatched = B_bp < 0 = A_bp <= 0 (sign(A) = sign(B)) | [BTC\|buy\|00-10\|<=2d, BTC\|buy\|10-25\|<=2d, BTC\|buy\|25-40\|2-7d, BTC\|buy\|25-40\|<=2d, BTC\|buy\|… | [BTC\|buy\|00-10\|<=2d, BTC\|buy\|10-25\|<=2d, BTC\|buy\|25-40\|2-7d, BTC\|buy\|25-40\|<=2d, BTC\|buy\|… | yes | n/a |
-| F2 | printed B_bp (at most four characters) and crosses | {BTC\|buy\|00-10\|2-7d: 2k, BTC\|buy\|00-10\|30-90d: 1k, BTC\|buy\|00-10\|7-30d: 1k, BTC\|buy\|00-10… | {BTC\|buy\|00-10\|2-7d: 2k, BTC\|buy\|00-10\|30-90d: 1k, BTC\|buy\|00-10\|7-30d: 1k, BTC\|buy\|00-10… | yes | n/a |
+| F2 | printed B_bp (sells in bp, buys in per cent) and crosses | {BTC\|buy\|00-10\|2-7d: 23, BTC\|buy\|00-10\|30-90d: 13, BTC\|buy\|00-10\|7-30d: 14, BTC\|buy\|00-10… | {BTC\|buy\|00-10\|2-7d: 23, BTC\|buy\|00-10\|30-90d: 13, BTC\|buy\|00-10\|7-30d: 14, BTC\|buy\|00-10… | yes | n/a |
+| F2 | every number in a cell at most four characters | True | True | yes | n/a |
 | F2 | B_bp of panel a = h1_cells | 0 | 0 | yes | n/a |
 | F2 | ranks and rank intervals of panel b = h1_cells (max abs gap) | 0 | 0 | yes | n/a |
 | F2 | ten largest \|rank_shift\| (ties by cell id) | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | [BTC\|buy\|00-10\|2-7d, BTC\|buy\|00-10\|30-90d, BTC\|buy\|00-10\|7-30d, BTC\|buy\|00-10\|<=2d, BTC\|b… | yes | n/a |
@@ -135,6 +136,7 @@ Generated 2026-09-30 10:46 UTC with `scripts/p2_figure_check.py` from `results/p
 | F6 | f6.c.verdict: printed verdict = h4.json rejected | H4: rejected | H4: rejected | yes | n/a |
 | F6 | f6.c.placebo_days: placebo days per timeline = h4.json placebo.admissible_days | placebo days: BTC 54 · ETH 10 · HYPE 67 · legacy 363 / 319 | placebo days: BTC 54 · ETH 10 · HYPE 67 · legacy 363 / 319 | yes | yes |
 | F6 | f6.d.rows: forest rows = h4.json and sensitivity_h4.json by_ccy (stat, lo, hi, clusters) | {BTC only: [-3.41805, -10.5088, 3.56931, 126], ETH only: [-1.89895, -8.36344, 4.67704, 12… | {BTC only: [-3.41805, -10.5088, 3.56931, 126], ETH only: [-1.89895, -8.36344, 4.67704, 12… | yes | n/a |
+| F6 | f6.d.hatch: hatching of the registered row ends at max(0, h4.json placebo.p95) | 23.4099 | 23.4099 | yes | n/a |
 | A1 | a_n_BTC_sm: a: n printed for BTC SM | 100 | 100 | yes | yes |
 | A1 | a_n_BTC_pm: a: n printed for BTC legacy PM | 100 | 100 | yes | yes |
 | A1 | a_n_BTC_pm2: a: n printed for BTC PM2 | 100 | 100 | yes | yes |
@@ -186,8 +188,8 @@ Generated 2026-09-30 10:46 UTC with `scripts/p2_figure_check.py` from `results/p
 | A1 | b_books_BTC: b: books of BTC | 7 | 7 | yes | yes |
 | A1 | b_books_ETH: b: books of ETH | 18 | 18 | yes | yes |
 | A1 | b_books_HYPE: b: books of HYPE | 1 | 1 | yes | yes |
-| A1 | feed_age: caption: no PM2-window fill uses a feed older than the validation limits | 1 | 1 | yes | yes |
-| A1 | spot_stale: caption: PM2-window fills with a spot price older than the spot heartbeat | 17 | 17 | yes | n/a |
+| A1 | feed_age: Appendix A: no PM2-window fill uses a feed older than the validation limits | 1 | 1 | yes | yes |
+| A1 | spot_stale: Appendix A: PM2-window fills with a spot price older than the spot heartbeat | 17 | 17 | yes | n/a |
 | GIF | last frame = T1 a: nodes matched, largest gap of K (USDC) | [740, 1.81899e-12] | [740, 0] | yes | n/a |
 | GIF | steps of the straddle in the time strip (simple %) | {BTC-pm2-20260108: +1.6 %, BTC-pm2-20260123: −10 %, BTC-pm2-20260524: −7.5 %, BTC-pm2-202… | {BTC-pm2-20260108: +1.6 %, BTC-pm2-20260123: −10 %, BTC-pm2-20260524: −7.5 %, BTC-pm2-202… | yes | n/a |
 | GIF | frames drawn / skipped (no live expiry) | [80, 0] | [80, 0] | yes | n/a |
@@ -229,13 +231,13 @@ Generated 2026-09-30 10:46 UTC with `scripts/p2_figure_check.py` from `results/p
 | S3 | card number h4_rejected (printed rejected) | 1 | 1 | yes | n/a |
 | F2 | caption "grey band": a row of kind band (h1_sign.sign_floor) | fig_f2_c.csv | drawn | yes | n/a |
 | F2 | caption "exploratory rows": rows of kind exploratory | fig_f2_c.csv | drawn | yes | n/a |
-| F3 | caption "per account": rows with group label= | fig_f3_b.csv | drawn | yes | n/a |
+| F3 | caption "per subaccount": rows with group label= | fig_f3_b.csv | drawn | yes | n/a |
 | F3 | caption "per parameter regime": rows with group regime= | fig_f3_b.csv | drawn | yes | n/a |
-| F4 | caption "by the manager of the account": rows with group account_manager= | fig_f4_b.csv | drawn | yes | n/a |
+| F4 | caption "by the manager of the subaccount": rows with group account_manager= | fig_f4_b.csv | drawn | yes | n/a |
 | F4 | caption "by parameter regime": rows with group regime= | fig_f4_b.csv | drawn | yes | n/a |
 | F4 | caption "by book size": rows sm_pm2_le63 and sm_pm2_gt63 | fig_f4_b.csv | drawn | yes | n/a |
 | F4 | caption "on the same BTC and ETH legs": row sm_pm2_be | fig_f4_b.csv | drawn | yes | n/a |
-| F2 | forest: every estimate inside its interval | fig_f2_c.csv: 13 rows | [] | yes | n/a |
+| F2 | forest: every estimate inside its interval | fig_f2_c.csv: 14 rows | [] | yes | n/a |
 | F3 | forest: every estimate inside its interval | fig_f3_b.csv: 12 rows | [] | yes | n/a |
 | F4 | forest: every estimate inside its interval | fig_f4_b.csv: 13 rows | [] | yes | n/a |
 | F6 | forest: every estimate inside its interval | fig_f6_d.csv: 4 rows | [] | yes | n/a |

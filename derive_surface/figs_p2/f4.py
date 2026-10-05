@@ -2,10 +2,10 @@
 
 Panel a is K_SM / K_PM2 of the opening book against the number of option legs, as the median per bin with the
 interquartile band, read from the maker-day series that the inference wrote (``fig_h3_series.csv``, rows with
-``status == ok``).  The bins double in width from [1, 4) to [256, 512), so the SM account limit of 63 options is a
+``status == ok``).  The bins double in width from [1, 4) to [256, 512), so the SM subaccount limit of 63 legs is a
 real position on the axis; right of it K_SM is counterfactual and the region is hatched.  Panel b is the verdict
 forest (``f34_frame.ruler``) with the registered median, the sensitivities including the legacy manager on BTC
-and ETH legs, and exploratory rows by book size, account manager and parameter regime.
+and ETH legs, and exploratory rows by book size, manager of the subaccount and parameter regime.
 
 No test statistic is computed here; the figure only bins, counts and takes quantiles of a descriptive column.
 """
@@ -34,19 +34,22 @@ XLIM_B = (0.5, 32.0)
 BAND = "#CCCCCC"
 COUNT_STRIP = 0.13                      # share of the axes height kept free for the counts
 SENS = [("maintenance margin", "sm_pm2_mm"), ("legacy PM / PM2", "pm_pm2_be")]
-EXPLORE = [("SM / PM2 same legs", "sm_pm2_be", "all"), ("≤ 63 options", "sm_pm2_le63", "all"),
-           ("> 63 options", "sm_pm2_gt63", "all")]
-MANAGER_ROWS = [("account_manager=PM", "legacy PM accounts"), ("account_manager=PM2", "PM2 accounts")]
+EXPLORE = [("SM / PM2 same legs", "sm_pm2_be", "all"), ("≤ 63 legs", "sm_pm2_le63", "all"),
+           ("> 63 legs", "sm_pm2_gt63", "all")]
+# books by the manager of their subaccount (the text says "subaccount"; "books" keeps the labels short)
+MANAGER_ROWS = [("account_manager=PM", "legacy PM books"), ("account_manager=PM2", "PM2 books")]
 
 CAPTION = (
     r"\textbf{What netting is worth (H3).} Panel a is $K_{\mathrm{SM}}/K_{\mathrm{PM2}}$ for the opening books of "
-    r"\PH{h3-days} maker-days against the number of option legs, as the median per bin with the interquartile "
-    r"band. Beyond 63 options, the most the endpoint accepted for a standard-margin account in probes of September "
-    r"2026, $K_{\mathrm{SM}}$ is counterfactual; this is the case on \PH{h3-over63} maker-days. The dashed line is "
-    r"the registered threshold of two. Panel b is the registered median with its 90 per cent interval, the "
-    r"sensitivities including the legacy manager on BTC and ETH legs, and, on grey, exploratory rows: SM against PM2 "
-    r"on the same BTC and ETH legs, by book size, by the manager of the account and by parameter regime. Clusters are "
-    r"UTC days, not accounts."
+    r"\PH{h3-days} maker-days against the number of option legs, as the median per bin with the interquartile band; "
+    r"the grey numbers above the axis are the maker-days per bin. Beyond 63 legs, the most the endpoint accepted "
+    r"for a standard-margin subaccount in probes of September 2026, $K_{\mathrm{SM}}$ is counterfactual (hatched); "
+    r"this is the case on \PH{h3-over63} maker-days. The dashed line is the registered threshold of two. Panel b is "
+    r"the registered median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC "
+    r"and ETH legs, and, on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by "
+    r"the manager of the subaccount and by parameter regime. The hatched stretch of the registered row, left of the "
+    r"threshold, is the rejection region: the rule rejects H3 if the interval reaches into it. Clusters are UTC "
+    r"days, not subaccounts."
 )
 
 
@@ -85,7 +88,7 @@ def panel_a_table(h: dict, series: pd.DataFrame) -> pd.DataFrame:
                  "printed": f"SM counterfactual: {fmt_int(over)} of {fmt_int(len(ok))} maker-days"})
     rows.append({"kind": "annotation", "key": "limit", "lo": LIMIT_X, "hi": np.nan, "centre": np.nan,
                  "n": SM_MAX_OPTIONS, "median": np.nan, "p25": np.nan, "p75": np.nan,
-                 "printed": f"SM account limit: {SM_MAX_OPTIONS} options"})
+                 "printed": f"SM subaccount limit: {SM_MAX_OPTIONS} legs"})
     rows.append({"kind": "annotation", "key": "threshold", "lo": np.nan, "hi": np.nan, "centre": np.nan,
                  "n": len(ok), "median": float(h["threshold"]), "p25": np.nan, "p75": np.nan,
                  "printed": f"{float(h['threshold']):g}: PM2 saves half"})
@@ -106,7 +109,7 @@ def forest_rows(h: dict, sens: pd.DataFrame, series: pd.DataFrame) -> List[fr.Ro
             rows.append(r)
     ok = series[series["status"].astype(str) == "ok"]
     sm_accounts = sorted(set(ok.loc[ok["manager"].astype(str) == "SM", "label"].astype(str)))
-    sm_label = f"SM account ({sm_accounts[0]})" if len(sm_accounts) == 1 else "SM accounts"
+    sm_label = f"SM books ({sm_accounts[0]})" if len(sm_accounts) == 1 else "SM books"
     for group, label in [("account_manager=SM", sm_label)] + MANAGER_ROWS:
         r = fr.sens_row(sens, label, "exploratory", "sm_pm2", group, "sens_h3.csv")
         if r is not None:
@@ -116,8 +119,8 @@ def forest_rows(h: dict, sens: pd.DataFrame, series: pd.DataFrame) -> List[fr.Ro
 
 
 def header_lines(h: dict) -> List[str]:
-    parts = [f"{len(h['accounts'])} accounts", f"{fmt_int(h['n'])} maker-days",
-             f"{fmt_int(h['n_days'])} day clusters (UTC days, not accounts)"]
+    parts = [f"{len(h['accounts'])} subaccounts", f"{fmt_int(h['n'])} maker-days",
+             f"{fmt_int(h['n_days'])} day clusters (UTC days, not subaccounts)"]
     return [fr.verdict_line(h)] + fr.wrap_parts(parts)
 
 
@@ -231,7 +234,8 @@ def _chk_sample(rd: Path):
     h, series, _ = load(rd)
     _, b = _fig(rd)
     text = " · ".join(b.loc[b["kind"] == "header", "printed"].iloc[1:])
-    want = [f"{len(h['accounts'])} accounts", f"{fmt_int(h['n'])} maker-days", f"{fmt_int(h['n_days'])} day clusters"]
+    want = [f"{len(h['accounts'])} subaccounts", f"{fmt_int(h['n'])} maker-days",
+            f"{fmt_int(h['n_days'])} day clusters"]
     missing = [w for w in want if w not in text]
     ok_rows = int((series["status"].astype(str) == "ok").sum())
     acc_sum = sum(h["accounts"].values())

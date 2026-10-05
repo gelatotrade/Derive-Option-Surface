@@ -231,6 +231,12 @@ parameter jumps (BTC PM2 +1.60 / −10.49 / −7.84 / −26.05 log-%).
   panel or are replaced by direct labels, with no legend column to the right of the axes.
 - `figstyle` gets `FS_MIN = 7.0`. No text below 7 pt, panel letters 8 pt bold, tick labels black (not
   `GREY`). Do not take over the code of `figures_p1.py` that sets 6.0 and 6.5 pt.
+- A panel title next to its letter is 8 pt regular and starts 0.15 in after the bold letter (`kit.letter` plus a
+  regular title); only the letter is bold. Rotated axis labels read from bottom to top, the z label of T1 included
+  (revision of 5 October 2026, audit F13, F15).
+- Powers of ten on logarithmic axes are written as “10” and a raised exponent, two 7 pt texts
+  (`_kit_t2a1.power_ticks`), not as “1e−11” and not in mathtext, whose exponent is set at 4.9 pt (audit F8, T8).
+- Every negative number in a figure carries the minus sign U+2212, never the hyphen-minus (audit F1, T9).
 - Test per figure function (pattern `data/p2/fig_proto/jury/audit_protos.py`): saved PDF width = target ± 0.02
   inches, `get_tightbbox` of every drawing area and every text inside the canvas, no visible text instance below
   `FS_MIN`, exactly one figure with `Axes3D` (T1).
@@ -247,6 +253,8 @@ parameter jumps (BTC PM2 +1.60 / −10.49 / −7.84 / −26.05 log-%).
   maps the sell side is on top. ▲ and ▼ mean nothing else anywhere.
 - **Underlying:** only panel, row or column titles. No colour, no marker shape.
 - **Statistics** (estimator, ECDF, histogram, β line, forest) in black or grey.
+- **Dates** inside figures: day, abbreviated English month, year, in the order of the text, without ISO form and
+  without a leading zero (“22 Feb 2025”, “8 Jan 2026”; month only “Jan 2025”) (revision of 5 October 2026, audit T10).
 - **Event status (F5):** shape = manager; filled = in the H4 panel; left half filled (`fillstyle="left"`) = kept
   without a panel cell (only HYPE PM2 on 2026-01-08); hollow = dropped (dose below 1 %).
 - **Forest rows:** registered = filled black circle, interval 2 pt black, label bold; registered
@@ -262,7 +270,7 @@ parameter jumps (BTC PM2 +1.60 / −10.49 / −7.84 / −26.05 log-%).
 | Capital from fills (F1) | “% of notional” (notional = quantity × index) |
 | Capital on the grid and in the reference book (T1, T2 c, F5 c) | “% of forward” |
 | Change in capital (dose, parameter jump) | “log-%” = 100·Δln K; GIF and cards: simple per cent |
-| Edge per capital (F2) | “bp of capital”, per fill |
+| Edge per capital (F2) | bp of capital per fill for maker sells, per cent of capital for maker buys (F2 panel a) |
 | Half spread (F6) | “bp of index” |
 | Amounts of a book | USDC only in T2 a and in the CSV files |
 | Ratios (F1 strip, F4, T2 b) | logarithmic axis |
@@ -272,7 +280,8 @@ parameter jumps (BTC PM2 +1.60 / −10.49 / −7.84 / −26.05 log-%).
 - One number per cell, sequential grey by log value (`Greys` in the range 0.08 to 0.72), font colour white when the
   luminance of the cell is below 0.45. Cells under 200 fills: empty cross “×” 7 pt `#666666` without fill.
 - No diverging colour maps. Signed maps: grey by |value|, negative cells additionally with
-  hatching `////` in `#666666`, the sign always as a number.
+  hatching `////` in `#666666`, the sign always as a number (minus U+2212). The hatch fills strips above and below
+  the number, not a box behind it, and the white cell grid line is drawn again on top (F2, audit F1).
 - Cell grid: 7 |Δ| buckets (0–10, 10–25, 25–40, 40–60, 60–75, 75–90, 90–100, top to bottom) × 5 tenors
   (≤2, 2–7, 7–30, 30–90, >90 days, left to right). Axis titles “|delta| of the traded option, %” and “tenor, days”.
 
@@ -284,8 +293,14 @@ One function `figures_p2.ruler(ax, rows, h, *, side)` builds the forests of F2 c
   the rule from `h["rule"]` with `h["threshold"]` to `lo`/`hi` and aborts if the result differs from
   `h["rejected"]`. H4 has its own checklist (F6 c) with the same abort rule over `criteria`.
 - Threshold dashed black 0.8 pt. The rejection region is hatched (`////`, `#BBBBBB`), **only** at the height of the
-  registered row: H1 and H2 to the right of the threshold, H3 to the left of it, H4 at β ≤ 0.
-- To the right of each row its n (cells, fills, maker-days or clusters, depending on the test) in 7 pt grey.
+  registered row: H1 and H2 to the right of the threshold, H3 to the left of it, H4 at β ≤ max(0, placebo P95),
+  ended by a dashed mark “P95” (audit B3, as card 3).
+- The caption names the hatch (audit C3). F2, F3, F4: “The hatched stretch of the registered row, right of the
+  threshold, is the rejection region: the rule rejects H1 if the interval reaches into it.” (H2 likewise; H3 with
+  “left of the threshold”). F6: “in the registered row, hatching marks the values of $\beta$ at which the rule
+  rejects H4 whatever the p-value, up to the placebo P95 or zero, whichever is larger”.
+- To the right of each row its n (cells, fills, maker-days or clusters, depending on the test) in 7 pt grey, the
+  column headed “n” (F6 “clusters”).
 - Row labels at most 18 characters. Intervals that run off the axis end in an arrow.
 - Below the header a line with sample and clusters (set per slot below).
 
@@ -343,9 +358,10 @@ row 2 with c (PM2) and d (SM) as 2D maps directly below a and b, and below that 
   `Normalize(3.0, 15.5)` on K_pct, shared by both panels. View elev 24, azim −128 in both, shared z range.
   Iso-lines at 4, 8, 12, 14 %: `contour` on the (delta, log days) grid of K_pct, lifted onto the surface (z = IV
   interpolated bilinearly), black 0.7 pt, one label “8 %” 7 pt per line. Axes: x “call delta (put = Δ − 1)” with ticks 0.1 /
-  0.5 / 0.9; y “days to expiry” with ticks 1, 7, 30, 90, 365; z “implied vol, %”.
+  0.5 / 0.9; y “days to expiry” with ticks 1, 7, 30, 90, 365; z “implied vol, %”, reading from bottom to top like
+  the colour-bar label.
   Titles: “a  PM2: ATM 30 d short = 11.8 % of forward”, “b  SM: ATM 30 d short = 14.1 % of forward” (node Δ 0.50,
-  30.44 days; one decimal, read from the grid).
+  30.44 days; one decimal, read from the grid); the letter bold, the title regular (6.1).
 - **Colour bar:** label “capital per short contract, % of forward”, ticks 4, 6, 8, 10, 12, 14; the four
   iso levels as black cross strokes over the full width of the bar.
 - **c, d:** `pcolormesh` of the classes; fixed fills: “spot +14 %, vol up” `#E0E0E0`; “spot −14 %, vol up” `#A8A8A8`;
@@ -353,28 +369,33 @@ row 2 with c (PM2) and d (SM) as 2D maps directly below a and b, and below that 
   white with `xx`; SM “15 % − OTM” white, “13 % floor” `#E0E0E0` with `///`, “put: 1.05 × MM” white with `..`. Only
   classes that occur go into the legend, all classes with their node count into the CSV. x 0.05 to 0.95 with ticks at 0.10, 0.25,
   0.40, 0.60, 0.75, 0.90; y log 1 to 365 days with ticks 1, 2, 7, 30, 90, 365. Grid lines **only** at the ticks 0.10 …
-  0.90 and 2, 7, 30, 90 (0.4 pt, `#808080`): these are the bucket edges of Paper 1. Iso-lines as in a/b, in 2D, with
+  0.90 and 2, 7, 30, 90 (0.4 pt, `#808080`): these are the bucket edges of Paper 1, built from its `DELTA_EDGES`
+  and mirrored for puts (0.60, 0.75 and 0.90 are the put edges of 40, 25 and 10 %). Iso-lines as in a/b, in 2D, with
   inline labels. The 15 listed expiries as short ticks (0.06 in, pointing inward) on the right axis of c
   and d. Node ATM 30 d as a black dot 3 pt with a white edge and the label “ATM 30 d” in c and d. Titles “c
-  binding PM2 scenario”, “d  binding SM rule”. x label “call delta (put = Δ − 1)”, y label “days to expiry” only in c.
+  binding PM2 scenario”, “d  binding SM rule”, the letter bold, the title regular. x label “call delta (put = Δ − 1)”, y label “days to expiry” only in c.
 - **Header** (7 pt, top left): “BTC · 17 Sep 2026, 08:00 UTC · 15 live expiries · PM2 spot grid ±14 % since 20 Aug
   2026 · chain semantics”.
 
 **Tables.** `fig_t1_ab.csv` (manager, delta, tenor_days, iv, strike, forward, K_usdc, K_pct_forward),
 `fig_t1_cd.csv` (manager, delta, tenor_days, rule, spot_shock, vol_shock, dampening, K_pct_forward), `fig_t1_meta.csv`
 (ts, block, n_expiries, listed tenors, iso levels, node values ATM 30 d, min/median/max per manager, node count
-per class).
+per class, and the grid lines as rows `grid_line_delta` with rule `call_10` … `put_10` and `grid_line_days`, so that
+the 0.60, 0.75 and 0.90 of the caption have a source).
 
 **Caption.**
-> **The surface as the engine sees it.** BTC implied volatility over call delta and tenor at 08:00 UTC on 17 September
+> **The surface as the engine sees it.** BTC implied volatility over call delta and tenor at 08:00~UTC on 17~September
 > 2026, built from the on-chain feeds, with the capital that one short contract binds under PM2 (panel a) and under
 > standard margin (panel b) as colour on a common scale in per cent of the forward. Height is volatility, colour is
-> capital, and black lines join points of equal capital. Panels c and d name the rule that sets the capital at each
-> point: the worst scenario of the PM2 grid, and the branch of the standard margin formula. Their grid lines are the
-> delta and tenor bucket edges of Figures~\ref{fig:f1} and~\ref{fig:f2}; the surface holds out-of-the-money options
-> only, so buckets above an absolute delta of 0.6 have no counterpart here. Standard margin is set in per cent of spot
-> and shown in per cent of the forward. Capital follows the contracts on chain; the venue's off-chain engine discounts
-> PM2 at a flat two per cent.
+> capital, and black lines join points of equal capital. ATM marks the at-the-money node at 30~days to expiry. Panels
+> c and d name the rule that sets the capital at each point: the worst scenario of the PM2 grid, and the branch of the
+> standard margin formula, in which OTM is the amount by which the option is out of the money. Their grid lines are
+> the tenor and absolute delta bucket edges of Figures~\ref{fig:f1} and~\ref{fig:f2}, and the ticks on their right
+> edge mark the listed expiries. For puts the delta edges are mirrored: the lines at 0.60, 0.75 and 0.90 are the put
+> edges of 40, 25 and 10~per~cent. The surface holds out-of-the-money options only, so the buckets from 60~per~cent
+> absolute delta up have no counterpart here. Standard margin is set in per cent of spot and shown in per cent of the
+> forward. Capital follows the smart contracts on chain; the venue's off-chain engine discounts PM2 at a flat
+> two~per~cent.
 
 **Check numbers.** 740 nodes per manager; 15 expiries; ts 1789632000. PM2 K in % of the forward min 3.418 / median 10.448 /
 max 13.704; SM 12.374 / 12.979 / 15.007. ATM 30 d (Δ 0.50, 30.439 days): PM2 11.826, SM 14.080. SM < PM2 at 9 of 740
@@ -420,15 +441,17 @@ state, params)` with `Timeline("BTC", "pm2").at(ts)`; capital lines `K_pm2`, `K_
 pnl_pct_forward, binding; capital lines).
 
 **Caption.**
-> **What \texttt{get\_margin} returns, and how PM2 prices a book.** Panel a splits $C - \mathrm{net}$ into the
-> requirement $R$ and the value term $-V$ for the mixed probe book of 24 September 2026 (block 45\,110\,142); $-V$ is
-> almost the same under both managers and dwarfs $R$. Panel b sets the ratio of standard to PM2 margin read as
-> $C - \mathrm{net}$ (open) against the ratio on $R$ (filled) for the four probe books at their historical blocks. The
-> dashed line is the H3 threshold of two, which was set from these books before any maker book was measured. On the
-> mixed book of 17 September $V$ is positive, so the ratio falls from 11.86 to 10.76. Panel c is the scenario profit and
-> loss of a short BTC straddle struck at the forward on 17 September 2026, on the listed expiry nearest to 30 days
-> (22 days), in per cent of the forward. PM2 charges the worst scenario of the whole book plus contingencies (solid
-> line), which is less than the sum of the legs margined one by one (dash dot); standard margin is dashed.
+> **What \texttt{get\_margin} returns, and how PM2 prices a book.** Panel a splits ${C - \mathrm{net}}$ into the
+> requirement $R$ and the value term $-V$ for the mixed probe book of 24~September 2026 (block 45\,110\,142); $-V$ is
+> almost the same under both managers and dwarfs $R$. Panel b sets the ratio of standard to PM2 margin read as ${C -
+> \mathrm{net}}$ (open) against the ratio on $R$ (filled) for the four probe books at their historical blocks. A short
+> book is short in every option it holds, a mixed book long in some and short in others. The dashed line is the H3
+> threshold of two, which was set from these books before any maker book was measured. On the mixed book of
+> 17~September, $V$ is positive, so the ratio falls from 11.86 to 10.76. Panel c is the scenario profit and loss of a
+> short BTC straddle struck at the forward on 17~September 2026, on the listed expiry nearest to 30~days (22~days), in
+> per cent of the forward, over the spot shocks in order, not to scale. PM2 charges the worst scenario of the whole
+> book plus contingencies (solid line), which is less than the sum of the legs margined one by one (dash dot);
+> standard margin is dashed.
 
 **Check numbers.** Four rows. a: SM R 211,023.47, −V 496,914.28, C − net 707,937.75; PM2 R 98,834.91, −V 496,858.84,
 C − net 595,693.75. b (C − net / R): 17 Sep short 2.33 / 3.19; 17 Sep mixed 11.86 / 10.76; 24 Sep short 1.46 / 3.61;
@@ -449,32 +472,37 @@ fills, contracts, Σ K_sm·a, Σ K_pm·a, Σ K_pm2·a, Σ index·a, occupied fro
 fill) is not to be used: it gives two cell sizes for the same cell.
 
 **Layout.** Six maps on the left (rows: sell on top, buy below; columns BTC, ETH, HYPE), one strip per row on the right.
+Panel letters 8 pt bold: a for the maps, b for the strips. The first map starts at `L_MAP` 0.85 in, so that the
+two-line buy title clears the tick label “90–100”; maps 0.04 in apart.
 
 - **Maps:** grid as in 6.4. Number = κ with two significant digits (0.07, 0.12, 9.9, 13, 39). Grey log per row,
-  shared across the three underlyings. Row titles on the left “maker sells (short)” and “maker buys (long): capital ≈ premium”;
-  column titles BTC, ETH, HYPE; |Δ| labels only on the left, tenor only at the bottom.
+  shared across the three underlyings. Row titles on the left “maker sells (short)” and “maker buys (long): capital ≈
+  premium OTM”; column titles BTC, ETH, HYPE; |Δ| labels only on the left, tenor only at the bottom.
 - **Strips** (one per row, shared x axis): eight rows “SM BTC”, “  R4”, “SM ETH”, “  R4”, “SM HYPE”,
-  “  R4”, “legacy BTC”, “legacy ETH”. One symbol per occupied cell: SM filled vermilion square 2.5 pt (pooled), in the
+  “  R4”, “legacy BTC”, “legacy ETH”, the “R4” labels in grey so that they read as part of the row above. One symbol
+  per occupied cell: SM filled vermilion square 2.5 pt (pooled), in the
   R4 row a hollow square (cells with ≥ 200 fills in R4), legacy a filled green diamond; deterministic vertical
   jitter ±0.18 rows by cell index. Median bar per row in black (height 0.5 rows, 1.2 pt; R4 0.6 pt). Number of
-  cells per row on the right in 7 pt grey. x log 0.6 to 5, ticks 0.6 / 1 / 2 / 4, vertical line at 1 dashed black;
+  cells per row on the right in 7 pt grey, headed “n”. x log 0.6 to 5, ticks 0.6 / 1 / 2 / 4, vertical line at 1 dashed black;
   header above the top strip “← PM2 dearer   PM2 cheaper →”; x label at the bottom “capital ÷ PM2 capital, same fills
   (log)”.
-- **Header** above the maps (7 pt): “number = PM2 capital per contract, % of notional, ratio of sums over the PM2
-  window, pooled over four parameter regimes · × = under 200 fills”.
+- **Header** above the maps (7 pt, two lines that end left of the letter b): “number = PM2 capital per contract, %
+  of notional, ratio of sums over the / PM2 window, pooled over four parameter regimes · × = under 200 fills”.
 
 **Tables.** `fig_f1_a.csv` (ccy, side, delta_bucket, tenor_bucket, fills, contracts, occupied, kappa_pm2, kappa_sm,
 kappa_pm, printed), `fig_f1_b.csv` (ccy, side, cell, manager, regime ∈ {pooled, R4}, ratio, row, jitter),
 `fig_f1_regimes.csv` (see above).
 
 **Caption.**
-> **What one contract costs.** PM2 capital per contract in per cent of notional over the absolute delta of the traded
-> option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums over the fills of the PM2
-> window, which spans four parameter regimes. Each row is shaded on one logarithmic grey scale, and an empty cross marks
-> a cell with fewer than 200 fills. The strips on the right give, for every occupied cell, the capital of the same fills
-> under standard margin (squares) and under the legacy manager (diamonds) divided by PM2 capital, with the median cell
-> as a bar; hollow squares use only the fills after the parameter change of 20 August 2026. For a maker buy, standard
-> margin charges the premium.
+> **What one contract costs.** Panel a is PM2 capital per contract in per cent of notional over the absolute delta of
+> the traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums over the
+> fills of the PM2 window, which the parameter changes of 23~January, 24~May and 20~August 2026 split into four
+> regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and an empty cross marks a cell with fewer than
+> 200 fills. Panel b gives, for every occupied cell, the capital of the same fills under standard margin (squares) and
+> under the legacy manager (diamonds) divided by PM2 capital, with the median cell as a bar and the number of cells
+> under n; the hollow squares of the rows R4 use only the fills after the parameter change of 20~August 2026. For a
+> maker buy, standard margin charges the premium, and PM2 about the premium out of the money (OTM) and less in the
+> money.
 
 **Check numbers.** 210 cells, 173 occupied, 37 crosses (BTC 10 = buy 4 + sell 6, ETH 2, HYPE 25). Fills and contracts
 per cell are equal in all three maps. κ spans (occupied cells): BTC sell 7.80 to 17.69, buy 0.07 to 10.86; ETH
@@ -499,27 +527,33 @@ new entries `sign_floor`, `within_pos`, `within_nonpos` (section 10).
 **Computation.** Only counting and sorting: number of cells with A_bp > 0 (position of the sign lines), the ten largest
 |rank_shift| (ties broken by cell ID).
 
-**Layout.** On the left a (maps, 4.5 in wide, full height), at top right b (rank against rank, 2.3 × 2.25 in), at
-bottom right c (forest, 2.3 × 1.85 in).
+**Layout.** On the left a (maps, right edge at 4.94 in, full height; cells 19.3 pt wide in print), at top right b
+(rank against rank, axes 1.38 × 1.07 in), at bottom right c (forest, axis 0.66 in wide). Revision of 5 October 2026
+(audit F1, F3, F4, F12, T9): the minus sign U+2212 needs the wider cells, which panel c gave up.
 
-- **a** Six maps as in F1 (sell on top, buy below; BTC, ETH, HYPE). Number = B_bp (edge per PM2 capital, bp) with
-  at most four characters: |v| < 10 with one decimal (“3.4”, “−0.8”), 10 ≤ |v| < 1,000 as an integer (“240”, “−35”),
-  |v| ≥ 1,000 in whole thousands (“3k”, “−12k”). Grey by log|B| per row (lower bound 1 bp), negative cells hatched,
-  crosses as in F1. Row titles “maker sells (short)”, “maker buys (long): return on premium”. No colour bar. Header
-  “number = net edge per unit of PM2 capital, bp, per fill · hatched = negative · × = under 200 fills · PM2 window,
-  pooled over four regimes”.
+- **a** Six maps as in F1 (sell on top, buy below; BTC, ETH, HYPE). Number = edge per PM2 capital with at most four
+  characters, in bp (B_bp) for maker sells and in per cent of capital (B_bp / 100; 5k bp prints as 50) for maker
+  buys, since four-character bp negatives with U+2212 do not fit side by side at 7 pt: |v| < 10 with one decimal
+  (“3.4”, “−0.8”), 10 ≤ |v| < 1,000 as an integer (“240”, “−35”), |v| ≥ 1,000 in whole thousands (“3k”, “−12k”). Grey
+  by log|B| per row (lower bound 1 bp), negative cells hatched as in 6.4, crosses as in F1. Row titles “maker sells
+  (short)”, “maker buys (long): capital ≈ premium OTM”. No colour bar. Header in two lines that end 0.5 in left of the
+  letter b: “number = net edge per unit of PM2 capital, per fill: bp for sells, % for buys / hatched = negative · × =
+  under 200 fills · pooled over four regimes”.
 - **b** x = rank_A (“rank by edge per notional”), y = rank_B (“rank by edge per PM2 capital”), both 1 to 173 with
-  rank 1 at top right (axes inverted), ticks 1, 50, 100, 150, 173, and the addition “1 = highest edge” in both
-  axis titles. Diagonal grey dashed 0.6 pt. Sign lines at 99.5 on both axes, grey
-  solid 0.6 pt, labelled “edge ≤ 0” in the lower left block. Symbols: sell ▼ filled black 3 pt, buy
-  ▲ hollow black 3 pt. For the ten largest |rank_shift| the rank intervals as a grey cross (0.6 pt) from
-  rank_A_lo/hi and rank_B_lo/hi.
+  rank 1 at top right (axes inverted), ticks 1, 50, 100, 173, and the addition “1 = highest edge” in both
+  axis titles. Diagonal grey dashed 0.6 pt. Sign lines at 99.5 on both axes, dotted `#999999` 0.9 pt, labelled
+  “↓ edge ≤ 0” under the horizontal line at the right. Symbols: sell ▼ filled black 3 pt, buy
+  ▲ hollow black 3 pt. For the ten largest |rank_shift| the rank intervals as a grey cross (0.6 pt, solid, with end
+  ticks) from rank_A_lo/hi and rank_B_lo/hi.
 - **c** Forest as in 6.5, x = Spearman ρ from −0.2 to 1.0, threshold 0.5, hatching ρ ≥ 0.5 behind the registered
-  row. Grey band across all rows from `sign_floor.p05` to `sign_floor.p95`, labelled “sign pattern alone”.
+  row; the bold verdict line breaks before the arrow (two lines), rows at 8 pt pitch or more. Grey band across all
+  rows from `sign_floor.p05` to `sign_floor.p95`, labelled “sign pattern alone”.
   Rows: “registered” (h1.json); sensitivities “maintenance margin” (`b_mm.h1_pm2_mm`), “net edge, Paper 1”
-  (`c_p1_net_edge.h1_pm2`); exploratory “per day to expiry” (`f_time.to_expiry`), “per holding time” (`f_time.holding`),
+  (`c_p1_net_edge.h1_pm2`), “RFQ fee over legs” (`c2_rfq_package.h1_pm2`, Addendum 6, the fee of an RFQ package
+  spread over its legs; optional, the row drops while the key is missing); exploratory “per day to expiry”
+  (`f_time.to_expiry`), “per holding time” (`f_time.holding`),
   “SM capital” (`a_maps.sm_pm2_window`), “legacy PM capital” (`a_maps.pm_pm2_window`), “BTC only”, “ETH only”, “HYPE
-  only” (`g_by_ccy.pm2_*`), “edge > 0 only”, “edge ≤ 0 only” (new). n = cells. Bold header as in 6.5, below it
+  only” (`g_by_ccy.pm2_*`), “edge > 0 only”, “edge ≤ 0 only” (new). n = cells, column headed “n”. Bold header as in 6.5, below it
   “173 cells · 463 day clusters · rejected if upper bound ≥ 0.5”.
 
 **Tables.** `fig_f2_a.csv` (cells with B_bp, printed, hatched), `fig_f2_b.csv` (ranks, intervals, top10),
@@ -527,16 +561,24 @@ bottom right c (forest, 2.3 × 1.85 in).
 tenor and |Δ| per side, for the text).
 
 **Caption.**
-> **The map in two denominators (H1).** Panel a is net edge per unit of PM2 capital in basis points, per fill, for every
-> cell of the PM2 window by underlying and maker side; negative cells are hatched and an empty cross marks fewer than
-> 200 fills. For a maker buy the denominator is close to the premium, so the lower row is a return on premium and is
-> shaded on its own scale. The map per notional is Figure~\PH{p1-map-fig} of the companion paper. Panel b ranks the
-> \PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because capital is positive in every
-> cell, the \PH{h1-pos} cells with positive edge come first in both rankings, and the grey lines mark that boundary.
-> Crosses give the 90 per cent rank intervals of the ten largest moves. Panel c is the registered test, Spearman's
-> $\rho$ with its 90 per cent day-cluster interval against the threshold of 0.5, followed by sensitivities and, on grey,
-> exploratory rows; the grey band is the $\rho$ that the sign pattern alone produces when ranks are shuffled within each
-> sign group. Edge is a flow per fill and capital a stock, so a cell's value is not a return per unit of time.
+> **The map in two denominators (H1).** Panel a is net edge per unit of PM2 capital, per fill, for every cell of the
+> PM2 window by underlying and maker side, in basis points for maker sells and in per cent for maker buys; negative
+> cells are hatched and an empty cross marks fewer than 200 fills. For a maker buy the denominator is about the
+> premium when the option is out of the money and less in the money; the lower row is shaded on its own scale. The map
+> per notional is Figure~\PH{p1-map-fig} of the companion paper. Panel b ranks the \PH{h1-cells} occupied cells by
+> edge per notional and by edge per PM2 capital; because capital is positive in every cell, the \PH{h1-pos} cells with
+> positive edge come first in both rankings, and the dotted lines mark that boundary. Crosses give the 90~per~cent
+> rank intervals of the ten largest moves. Panel c is the registered test: Spearman's $\rho$ with its 90~per~cent
+> day-cluster interval, which is narrower than its circle and printed above the panel, set against the threshold of
+> 0.5. The hatched stretch of the registered row, right of the threshold, is the rejection region: the rule rejects H1
+> if the interval reaches into it. Sensitivities follow and then, on grey, exploratory rows; n is the number of cells
+> in a row, and in the rows by the sign of the edge the cells are chosen again in every replicate. The grey band is
+> the $\rho$ that the sign pattern alone produces when ranks are shuffled within each sign group. Edge is a flow per
+> fill and capital a stock, so a cell's value is not a return per unit of time.
+
+In `paper2/main.tex` the sentence on the map per notional reads as in `CAPTION_EXCEPTIONS` of `scripts/p2_build.py`: “The map per notional is not drawn; its ranks enter panel b.”
+
+In `paper2/main.tex` the sentence on the map per notional reads as in `CAPTION_EXCEPTIONS` of `scripts/p2_build.py`: “The map per notional is not drawn; its ranks enter panel b.”
 
 **Check numbers.** 173 points; 210 cells, 37 crosses; 99 cells with A_bp > 0, 74 with A_bp ≤ 0 (buy 26 of 87, sell 48
 of 86); sign(A_bp) = sign(B_bp) in all 173; κ between 0.074 and 38.73 %; `n_days` 463; `cells_present_min` 173;
@@ -566,19 +608,21 @@ new regime rows (section 10).
   sensitivities “next contract” (ratio_unit), “maintenance margin” (ratio_mm), “tape book” (ratio_tape); exploratory
   “M3 (HYPE)”, “M5”, “M8”, “M10” (`group = label=…`), “R1 to 23 Jan”, “R2 to 24 May”, “R3 to 20 Aug”, “R4 since 20
   Aug”. n = fills. x label “ΔK per contract / stand-alone PM2 capital”.
-- **Header** on two lines: in bold the verdict line as in 6.5; below it “4 PM2 accounts, ETH and HYPE only · 19 999 of
+- **Header** on two lines: in bold the verdict line as in 6.5; below it “4 PM2 subaccounts, ETH and HYPE only · 19 999 of
   20 000 sampled fills · 372 day clusters”.
 
 **Tables.** `fig_f3_a.csv` (x, ecdf, bands with share, overflows), `fig_f3_b.csv`.
 
 **Caption.**
-> **The next contract in a dominant maker's book (H2).** Panel a is the cumulative distribution of the marginal capital
-> of a fill per contract over its stand-alone PM2 capital, $\Delta K / K_{\text{single}}$, for the \PH{h2-n} tested
-> fills of the four PM2 subaccounts, which trade ETH and HYPE only; the numbers above the bands are the shares of fills
-> in each band, and the shares beyond the axis are given at both ends. The dashed line is the registered threshold of
-> one half, and the bar at height one half is the median with its 90 per cent day-cluster interval. Panel b repeats the
-> registered row above the sensitivities and, on grey, exploratory rows per account and per parameter regime. A maker
-> who starts from an empty book pays the stand-alone capital of Figure~\ref{fig:f1}.
+> **A fill in a dominant maker's book (H2).** Panel a is the cumulative distribution of the marginal capital of a fill
+> per contract over its stand-alone PM2 capital, $\Delta K / K_{\text{single}}$, for the \PH{h2-n} tested fills of the
+> four PM2 subaccounts, which trade ETH and HYPE only; the numbers above the bands are the shares of fills in each
+> band, and the shares beyond the axis are given at both ends. The dashed line is the registered threshold of one
+> half, and the circle at height one half is the median; its 90~per~cent day-cluster interval is narrower than the
+> circle and printed at the top. Panel b repeats the registered row above the sensitivities and, on grey, exploratory
+> rows per subaccount and per parameter regime. The hatched stretch of the registered row, right of the threshold, is
+> the rejection region: the rule rejects H2 if the interval reaches into it. A maker who starts from an empty book
+> pays the stand-alone capital of Figure~\ref{fig:f1}.
 
 **Check numbers.** n 19,999, `n_sample` 20,000, `n_excluded` 1, `n_days` 372, seed 20260924; accounts M3 6,405 (HYPE), M5
 5,957, M8 4,296, M10 3,341; ETH 13,594, HYPE 6,405; first day 2025-09-04; 62 bins, two of them open; band shares and
@@ -586,7 +630,7 @@ overflows add up to 1; ECDF at 0 = `share_le_0` = `h2.json share_nonpositive`; h
 
 ### F4 · What netting is worth (H3) · 3.4 × 4.0 in
 
-**Why:** Book width is the mechanism behind H3 and shows the account limit of 63 options at its real position;
+**Why:** Book width is the mechanism behind H3 and shows the subaccount limit of 63 legs at its real position;
 the forest carries the verdict, the counterfactual share and legacy PM. Same grid as F3. Templates:
 `praktiker/f4_praktiker.png` (b, binned here), `empirie/f4_empirie_SYNTHETIC.png` (forest).
 
@@ -599,25 +643,29 @@ ratio_sm_pm2), `results/p2/h3.json`, `results/p2/sens_h3.csv` and the new rows b
   the median of ratio_sm_pm2 (black line 1.0 pt, dot 2.5 pt at the geometric bin centre) and p25 to p75 as a band
   `#CCCCCC`. x log 1 to 400, ticks 1, 4, 16, 64, 256, “option legs in the book (log)”; y log, ticks 1, 2, 4, 8, 16,
   “K_SM / K_PM2 (log)”. Horizontal line at 2 dashed, “2: PM2 saves half”. Vertical line at 63.5 grey 0.6 pt,
-  “SM account limit: 63 options”; the region to its right hatched (`\\\\`, `#BBBBBB`), text “SM counterfactual: 1 431
+  “SM subaccount limit: 63 legs”; the region to its right hatched (`\\\\`, `#BBBBBB`), text “SM counterfactual: 1 431
   of 1 943 maker-days”. Maker-days per bin as a number in 7 pt grey above the x axis.
 - **b** Forest as in 6.5, x log (0.5 to 32, extended if needed), threshold 2, hatching x ≤ 2 behind the registered
   row. Rows: “registered” (h3.json); sensitivities “maintenance margin” (sm_pm2_mm), “legacy PM / PM2” (pm_pm2_be,
-  BTC and ETH legs, n 1,640); exploratory “SM / PM2, same legs” (sm_pm2_be), “≤ 63 options” (sm_pm2_le63), “> 63
-  options” (sm_pm2_gt63), “SM account (M2)”, “legacy PM accounts”, “PM2 accounts”, “R1 to 23 Jan” to “R4 since 20 Aug”.
+  BTC and ETH legs, n 1,640); exploratory “SM / PM2, same legs” (sm_pm2_be), “≤ 63 legs” (sm_pm2_le63), “> 63
+  legs” (sm_pm2_gt63), “SM books (M2)”, “legacy PM books”, “PM2 books” (books by the manager of their subaccount),
+  “R1 to 23 Jan” to “R4 since 20 Aug”.
   n = maker-days. x label “capital ratio to PM2 (log)”.
-- **Header:** in bold the verdict line; below it “9 accounts · 1 943 maker-days · 462 day clusters (UTC days, not
-  accounts)”.
+- **Header:** in bold the verdict line; below it “9 subaccounts · 1 943 maker-days · 462 day clusters (UTC days, not
+  subaccounts)”.
 
 **Tables.** `fig_f4_a.csv` (lo, hi, centre, n, median, p25, p75), `fig_f4_b.csv`.
 
 **Caption.**
 > **What netting is worth (H3).** Panel a is $K_{\mathrm{SM}}/K_{\mathrm{PM2}}$ for the opening books of \PH{h3-days}
-> maker-days against the number of option legs, as the median per bin with the interquartile band. Beyond 63 options no
-> standard margin account on the venue may hold the book, so $K_{\mathrm{SM}}$ is counterfactual on \PH{h3-over63}
-> maker-days. The dashed line is the registered threshold of two. Panel b is the registered median with its 90 per cent
-> interval, the sensitivities including the legacy manager on BTC and ETH legs, and, on grey, exploratory rows by book
-> size, by the manager of the account and by parameter regime. Clusters are UTC days, not accounts.
+> maker-days against the number of option legs, as the median per bin with the interquartile band; the grey numbers
+> above the axis are the maker-days per bin. Beyond 63 legs, the most the endpoint accepted for a standard-margin
+> subaccount in probes of September 2026, $K_{\mathrm{SM}}$ is counterfactual (hatched); this is the case on
+> \PH{h3-over63} maker-days. The dashed line is the registered threshold of two. Panel b is the registered median with
+> its 90~per~cent interval, the sensitivities including the legacy manager on BTC and ETH legs, and, on grey,
+> exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by the manager of the subaccount and by
+> parameter regime. The hatched stretch of the registered row, left of the threshold, is the rejection region: the
+> rule rejects H3 if the interval reaches into it. Clusters are UTC days, not subaccounts.
 
 **Check numbers.** 1,943 maker-days `ok` (plus 24 `no_options`, 1 `no_snapshot`), 462 clusters, 0 excluded, 1,431 with
 more than 63 options (73.6 %), `over_63_options` ⇔ n_legs ≥ 64. Nine accounts: M1 120, M2 328, M3 303, M4 203, M5 374, M6
@@ -637,7 +685,9 @@ the overrides); `results/p2/events.csv`; `results/p2/reference_book.csv`; `h4.js
 **Computation.** Pure parameter effect per event = 100·ln(K_m/K_m_prev) on the first reference day with
 `m_param_ts ≠ m_param_ts_prev` after the event (at most one day later); |x| < 0.5 becomes “0”.
 
-**Layout.** Shared calendar axis 2024-01-01 to 2026-09-30, quarterly ticks (“2024-01” …), labels only at the bottom.
+**Layout.** Shared calendar axis 2024-01-01 to 2026-09-30, a tick at every quarter, labelled only in January and
+July (“Jan 2024”, “Jul 2024”, …, the month style of 6.2; April and October short and unlabelled), labels only at the
+bottom; the first label starts at the y axis (revision of 5 October 2026, audit F10, T10).
 
 - **a** Three strips BTC, ETH, HYPE (0.42 in each), monthly shares as steps (`steps-post`), stacked from the bottom: PM2
   solid `#0072B2`, legacy PM solid light green (`#009E73`, 35 % opacity), SM white with hatching `////` and edge `#D55E00`.
@@ -669,16 +719,18 @@ event_id, status, jump_logpct, window_lo, window_hi, placebo_days), `fig_f5_c.cs
 K_pm2_pct, legacy_thin).
 
 **Caption.**
-> **The engine over time.** Panel a is the monthly share of option open interest per manager and underlying. Panel b
-> marks every parameter change of the legacy manager and of PM2 as a grey tick and the registered H4 events as
-> symbols: filled when they enter the panel, half filled when kept without a cell of 20 fills on each side, and hollow
-> when dropped by the one per cent dose rule. The number is the change that the parameters alone make to the capital of
-> the reference straddle, in log per cent. Grey bars are the windows of 14 days on either side of each kept event; the
-> windows of January and of May 2026 overlap, so \PH{h4-dup-fills} fills enter two events. Black dashes below each line
-> are the days from which placebo dates may be drawn. Panel c is the capital of the BTC reference book, a short straddle
-> struck at the forward on the listed expiry nearest to 30 days, one contract per leg, in per cent of the forward; the
-> small saw teeth come from rolling between expiries of 21 and 36 days. Parameter changes of standard margin left the
-> reference book unchanged.
+> **The engine over time.** Panel a is the share of option open interest per manager and underlying at the start of
+> each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey tick and the registered
+> H4 events as symbols: filled when they enter the H4 panel, half filled when kept without a cell of 20 fills on each
+> side, and hollow when dropped by the one~per~cent dose rule. The number is the change that the parameters alone make
+> to the capital of the reference straddle of the underlying, in log per cent. Grey bars are the windows of 14~days on
+> either side of each kept event; the windows of January and of May 2026 overlap, so \PH{h4-dup-fills} fills enter two
+> events. Black dashes below each line are the days from which placebo dates may be drawn. Panel c is the capital of
+> the BTC reference book, a short straddle struck at the forward on the listed expiry nearest to 30~days, one contract
+> per leg, in per cent of the forward; the small saw teeth come from rolling between expiries of 21 and 36~days, and
+> the legacy line is thin in months in which the legacy manager held less than \PH{f5-legacy-thin}~per~cent of BTC
+> open interest. The grey vertical lines in panel c mark the kept BTC events of panel b. Parameter changes of standard
+> margin left the reference book unchanged.
 
 **Check numbers.** 18 events: 14 kept (13 with panel cells, 1 without: HYPE PM2 2026-01-08), 4 dropped (BTC and
 ETH legacy 2024-06-12, BTC and ETH PM2 2025-10-10), panel cells together 475. Jumps in log-%: legacy 2025-02-22 BTC
@@ -703,7 +755,8 @@ a dishonest encoding. The strip shows what β is identified from; the checklist 
 c (1.7 in). Header above everything: “13 events · 475 cell-event pairs · 91 446 rows from 84 919 fills (6 527 in two
 windows) · 141 day clusters · 322 day × underlying effects”.
 
-- **a** 13 rows by event date, labels “2025-02-22 BTC legacy” and so on. One symbol per pair at x = 100·dose:
+- **a** 13 rows by event date, labels “22 Feb 2025 BTC legacy” and so on (date style of 6.2; left margin 1.30 in so
+  that the longest label stays on the canvas at print size). One symbol per pair at x = 100·dose:
   sell ▼ filled 0.15 rows above the line, buy ▲ hollow 0.15 below it, 2.5 pt. Median per row as a black bar.
   Grey band |x| < 1 across all rows, labelled at the top “|dose| < 1 log-%: {share} of pairs”. n pairs on the right. x
   linear −46 to +4, ticks −40, −30, −20, −10, 0, “dose: change in log capital of the cell, log-% (< 0: capital got
@@ -711,7 +764,8 @@ windows) · 141 day clusters · 322 day × underlying effects”.
 - **b** With `fig_h4_fwl_bins.csv`: x = residualised post × dose in log-%, y = residualised half spread in bp of the
   index, 20 equally populated bins as black circles with area proportional to the fills; line through the origin with
   slope β/100 black 1.0 pt; text in the panel “β = {stat} bp per log unit · 90 % interval [{lo}, {hi}], descriptive”;
-  below the x axis a strip of 0.15 in with the histogram of the residualised x (40 bins, grey). Axes
+  below the x axis a strip of 0.15 in with the histogram of the residualised x (40 bins, grey), labelled “rows” in
+  grey 7 pt at its left (it counts panel rows, as the header). Axes
   “post × dose, residualised, log-%” and “half spread, residualised, bp of index”.
   **Fallback, only if the inference does not deliver the bins:** within-event contrasts from
   `fig_h4_events.csv`, per event and tercile k x = 100·(t_k_median_dose − mean of the three terciles), y = (t_k_y_post −
@@ -723,22 +777,28 @@ windows) · 141 day clusters · 322 day × underlying effects”.
   rejected”. The line is built from `criteria` and must match `rejected`. At the bottom of the panel “placebo days: BTC 54 · ETH
   10 · HYPE 67 · legacy 363 / 319”.
 - **d** Forest as in 6.5: “registered” (β from h4.json, interval marked as “descriptive”), exploratory “BTC
-  only”, “ETH only”, “HYPE only” (`sensitivity_h4.json by_ccy`), n = clusters. Vertical line at 0 dashed, hatching β
-  ≤ 0 behind the registered row. x “β, bp of index per log unit of capital”.
+  only”, “ETH only”, “HYPE only” (`sensitivity_h4.json by_ccy`), n = clusters. Vertical line at 0 dashed, hatching
+  β ≤ max(0, placebo P95) behind the registered row, ended by a dashed 0.8 pt mark “P95” inside the axes, and the x
+  range includes it (6.5). x “β, bp of index per log unit of capital”.
 
 **Tables.** `fig_f6_a.csv` (event_id, ccy, manager, cell, side, dose_logpct, n_pre, n_post), `fig_f6_b.csv` (bins
-or fallback, with column `mode`), `fig_f6_c.csv` (rep, beta; plus p95, β, p, criteria), `fig_f6_d.csv`.
+or fallback, with column `mode`), `fig_f6_c.csv` (rep, beta; plus p95, β, p, criteria), `fig_f6_d.csv` (with the
+column `reject_upto`, the end of the hatch, checked against h4.json by `f6.d.hatch`).
 
 **Caption.**
 > **The price of capital (H4).** Panel a shows the dose, the change in log capital that a parameter change makes to a
-> cell, for each of the \PH{h4-pairs} cell and event pairs of the \PH{h4-events} events in the panel, sells above and
-> buys below each line, with the median as a bar. Panel b is the half spread against the post-event dose after removing
-> the cell by event and the day by underlying effects, in 20 bins of equal size; the line has the slope $\beta$, whose
-> interval is descriptive because the registered p-value comes from restricted residuals. Panel c places $\beta$ among
-> the estimates at 100 placebo dates and lists both registered criteria. Panel d gives $\beta$ per underlying, for
-> exploration. Most doses are close to zero or negative, so $\beta$ is identified from parameter changes that made
-> capital cheaper. To read the slope: capital ten per cent cheaper is a dose of $-0.105$, which predicts a change in the
-> half spread of $-0.105\,\beta$ basis points of the index.
+> cell, for each of the \PH{h4-pairs} cell-event pairs of the \PH{h4-events} events in the H4 panel, sells above and
+> buys below each line, with the median as a bar. Panel b is the half spread against the post-event dose after
+> removing the cell by event and the day by underlying effects, in 20 bins of equal size, above a grey histogram of
+> that dose over all rows; the line shows the estimate $\beta$, whose interval is descriptive because the registered
+> p-value comes from restricted residuals. Panel c places $\beta$ among the estimates at 100 placebo dates and lists
+> both registered criteria. Panel d gives $\beta$ per underlying, for exploration; in the registered row, hatching
+> marks the values of $\beta$ at which the rule rejects H4 whatever the p-value, up to the placebo P95 or zero,
+> whichever is larger. Most doses are close to zero or negative, so $\beta$ is identified from parameter changes that
+> made capital cheaper. Doses on the axes are in log per cent, 100 times the change in log capital, so the line in
+> panel b has the slope $\beta/100$ per log per cent. To read the slope: capital ten~per~cent cheaper is a dose of
+> $-0.105$, or $-10.5$~log per~cent, which predicts a change in the half spread of $-0.105\,\beta$ basis points of the
+> index.
 
 **Check numbers.** 13 rows; pairs per event 25, 25, 27, 38, 43, 50, 37, 40, 54, 52, 29, 35, 20 (sum 475, equal to
 `fig_h4_events.csv n_cells`); dose over the pairs: median −0.634 log-%, minimum −44.21, maximum +2.20, 11.2 % positive,
@@ -756,30 +816,36 @@ the size of the book. Templates: `mechanismus/a1_proto.png` (a), `praktiker/a1_p
 **Layout.** a 4.2 in wide, b 2.6 in.
 
 - **a** Eight rows (`kind == "single"`): BTC SM, BTC legacy PM, BTC PM2, ETH SM, ETH legacy PM, ETH PM2, HYPE SM,
-  HYPE PM2. x = |rel_err| log 1e−13 to 1e−1; exact zeros in a grey margin strip on the left at 3e−13, labelled
+  HYPE PM2. x = |rel_err| log 1e−13 to 1e−1, tick labels as powers of ten (“≤10^−13” at the edge, “10^−11” …
+  “10^−1”) with `_kit_t2a1.power_ticks` (6.1); exact zeros in a grey margin strip on the left at 3e−13, labelled
   “exact”. Symbols by manager 2 pt, vertical jitter ±0.2. Median as a black bar 1.2 pt over 0.6 rows, p95
   as a black bar 0.6 pt. Thresholds as vertical lines: 1e−3 black dashed “median bound 0.1 %”, 1e−2 black
-  dash-dot “p95 bound 1 %”, labelled directly. n on the right.
+  dash-dot “p95 bound 1 %”, labelled directly. n on the right. Titles “a  single contracts”, “b  opening books”,
+  the letter bold, the title regular.
 - **b** Books (`kind == "book"`): x = n_legs log 2 to 300, y = |rel_err| log 1e−13 to 1e−1 with the margin strip “exact”
-  at the bottom, symbols by manager, thresholds as horizontal lines as in a. Text in the panel: “largest miss 0.05 USDC on K up to 19.5 M
+  at the bottom and powers of ten as in a, symbols by manager, thresholds as horizontal lines as in a; each bound
+  label sits centred on its own line at the right end, on a white box that breaks the line, so that no label stands
+  between the two lines (audit F9). Text in the panel: “largest miss 0.05 USDC on K up to 19.5 M
   USDC” and “26 books from 20 maker-days (BTC 7, ETH 18, HYPE 1)”. MM only in the CSV.
 
 **Tables.** `fig_a1_a.csv`, `fig_a1_b.csv` (with the MM rows and a column `drawn`).
 
 **Caption.**
 > **Does the replica match the chain?** Absolute relative deviation of initial-margin capital between each offline
-> replica and \texttt{eth\_call} on the deployed contracts, for single contracts per underlying and manager (panel a)
-> and for the opening books of 20 maker-days against their number of legs (panel b). Exact matches sit in the strip on
-> the left of panel a and at the bottom of panel b. The lines are the registered bounds for the median (0.1 per cent)
-> and the 95th percentile (1 per cent). One single HYPE contract under PM2 hit a reverting call and is left out. In the
-> PM2 window no fill uses a feed older than the limits of the validation blocks. The replica follows the contracts on
-> chain; the venue's off-chain engine discounts PM2 at a flat two per cent.
+> replica and \texttt{eth\_call} on the deployed smart contracts, for single contracts per underlying and manager
+> (panel a) and for the opening books of 20 maker-days against their number of legs (panel b). Exact matches sit in
+> the strip on the left of panel a and at the bottom of panel b; deviations below $10^{-13}$ sit on the edge of the
+> axis. Thick ticks mark the median of a row, thin ticks its 95th percentile. The lines are the registered bounds for
+> the median (0.1~per~cent) and the 95th percentile (1~per~cent). One single HYPE contract under PM2 hit a reverting
+> call and is left out.
 
 **Check numbers.** n per row 100, HYPE PM2 99; exact zeros (IM, single) BTC PM2 19, BTC SM 45, ETH PM2 15, ETH SM 53,
 HYPE SM 49, total 181; largest single IM value 8.88e−8 (ETH PM2); largest median 3.18e−9 (ETH legacy PM); books 77
 IM rows, 2 to 245 legs, largest value 3.45e−8 (ETH legacy PM), largest absolute deviation 0.0503 USDC, K_chain up to
-19,494,690 USDC; 1 revert case (2 rows). The sentence on feed age is checked against `capital.parquet` in the build (referee:
-in the PM2 window p99 vol 119 s, forward 95 s); if it does not hold, it is dropped.
+19,494,690 USDC; 1 revert case (2 rows). The sentence on feed age stands at the end of the first paragraph of
+Appendix A, not in the caption (`a1.APPENDIX_SENTENCE`, audit C11); it is checked against `capital.parquet` in the
+build (checks `feed_age` and `spot_stale`, labelled “Appendix A:”; referee: in the PM2 window p99 vol 119 s,
+forward 95 s); if it does not hold, it is dropped.
 
 ---
 
@@ -919,8 +985,13 @@ It writes `docs/paper2/FIGURE_CHECKS.md` and exits with a status ≠ 0 on any de
 - New placeholders for `docs/paper2/MANUSCRIPT.md` and the numbers sheet: `p1-map-fig` (number of the notional map in Paper 1),
   `h1-pos` (cells with positive edge), `h3-over63` (maker-days with more than 63 options), `h4-pairs`, `h4-dup-fills`;
   the existing keys `h1-cells`, `h2-n`, `h3-days`, `h4-events` stay in use.
-- Order of the floats as in the skeleton: T1 and T2 in the section on the engine, F1 in data and measurement, F2 to F6 in the
-  results, A1 in the appendix. F3 and F4 as `figure[t]` with identical height.
+- Order of the floats as in the skeleton: T1 and T2 for the section on the engine, F1 for data and measurement, F2 to F6
+  for the results, A1 in the appendix. F3 and F4 as `figure[t]` with identical height. A `figure*` prints at the
+  earliest on the page after the one on which its source is read, so the sources stand about a page of text before
+  the first callout (layout of 5 October 2026): T1 in the Introduction, T2 after the first paragraph of Section 2, F1
+  at the end of Section 2, F2 in Section 3, F3 and F4 after the first paragraph of 4.1, so that they share the page
+  after F2. `scripts/p2_build.py` fails if a figure prints more than one page from its first callout in the text or
+  if a page holds figures only.
 
 ---
 

@@ -133,13 +133,13 @@ def test_checks_agree_on_synthetic_data(res, tmp_path):
 
 
 def test_feed_age_sentence_only_when_it_holds(res, tmp_path):
-    assert a1.FEED_SENTENCE in a1.caption(_load(res))
+    assert a1.feed_sentence(_load(res)["feed_age"]).startswith(a1.FEED_SENTENCE)
     _capital(vol_max=p2validate.MAX_VOL_AGE + 1).to_parquet(res.parent / "capital.parquet")
     data = _load(res)
     assert data["feed_age"]["holds"] is False
-    assert a1.FEED_SENTENCE not in a1.caption(data)
+    assert a1.feed_sentence(data["feed_age"]) == ""
     (res.parent / "capital.parquet").unlink()
-    assert a1.FEED_SENTENCE not in a1.caption(_load(res))
+    assert a1.feed_sentence(_load(res)["feed_age"]) == ""
 
 
 def test_caption_has_no_dashes():
@@ -159,21 +159,22 @@ def test_real_data_meets_the_build_instruction(tmp_path):
     assert bad.empty, bad.to_string()
 
 
-def test_spot_feed_age_is_counted_and_named_in_the_caption(res, tmp_path):
+def test_spot_feed_age_is_counted_and_named_in_the_appendix_sentence(res, tmp_path):
     """A47: the vol and forward limits say nothing about the spot feed; fills of the PM2 window with a spot price
-    older than the spot heartbeat are counted, named in the caption and kept (the first row lies before the
-    window and does not count)."""
+    older than the spot heartbeat are counted, named in the sentence of Appendix A and kept (the first row lies
+    before the window and does not count)."""
     hb = int(p2feeds.HEARTBEAT["spot"])
     data = _load(res)
     assert data["feed_age"]["spot_stale_fills"] == 0 and data["feed_age"]["spot_limit_s"] == hb
-    assert a1.FEED_SENTENCE in a1.caption(data)
-    assert f"none uses a spot price older than the heartbeat of the spot feed ({hb} seconds)" in a1.caption(data)
+    sentence = a1.feed_sentence(data["feed_age"])
+    assert sentence.startswith(a1.FEED_SENTENCE)
+    assert f"none uses a spot price older than the heartbeat of the spot feed ({hb} seconds)" in sentence
     _capital(spot=(5000.0, hb + 6.0, 20.0, 1161.0)).to_parquet(res.parent / "capital.parquet")
     data = _load(res)
     fa = data["feed_age"]
     assert fa["spot_stale_fills"] == 2 and fa["spot_age_max_s"] == 1161.0 and fa["holds"] is True
     assert (f"; 2 fills use a spot price older than the heartbeat of the spot feed ({hb} seconds) and stay in the "
-            "sample.") in a1.caption(data)
+            "sample.") in a1.feed_sentence(fa)
     a1.build(out_dir=tmp_path / "figures", results_dir=res, capital_path=res.parent / "capital.parquet")
     meta = pd.read_csv(res / "fig_a1_meta.csv").set_index("key")["value"]
     assert float(meta["spot_stale_fills"]) == 2 and float(meta["spot_limit_s"]) == hb
@@ -181,10 +182,84 @@ def test_spot_feed_age_is_counted_and_named_in_the_caption(res, tmp_path):
     assert out["agrees"].all(), out.loc[~out["agrees"], ["id", "figure", "source", "error"]].to_string()
 
 
-def test_module_caption_names_vol_and_forward_and_the_spot_count():
-    assert "no fill uses a vol or forward feed older than the limits of the validation blocks" in a1.CAPTION
-    assert "\\PH{a1-spot-stale} fills use a spot price older than the heartbeat of the spot feed" in a1.CAPTION
+def test_caption_says_what_is_drawn_and_the_feed_ages_go_to_appendix_a():
+    """C11: the caption says what is drawn and how to read it (FIGURE_SELECTION 6.8). The feed ages describe nothing
+    drawn and stand in the text of Appendix A; the off-chain discount is said in Figure 1 and Section 2."""
+    assert a1.FEED_SENTENCE not in a1.CAPTION and "heartbeat" not in a1.CAPTION
+    assert "off-chain" not in a1.CAPTION and "discount" not in a1.CAPTION
+    assert "\\PH" not in a1.CAPTION
 
 
-def test_placeholder_clause_is_the_spot_clause():
-    assert a1._SPOT_CLAUSE_PH == a1.SPOT_CLAUSE.format(n="\\PH{a1-spot-stale}", hb="\\PH{a1-spot-heartbeat}")
+def test_appendix_sentence_names_vol_and_forward_and_the_spot_count():
+    assert a1.APPENDIX_SENTENCE.startswith(
+        "In the PM2 window no fill uses a vol or forward feed older than the limits of the validation blocks")
+    assert a1.APPENDIX_SENTENCE == a1.FEED_SENTENCE + a1.SPOT_CLAUSE.format(n="\\PH{a1-spot-stale}",
+                                                                          hb="\\PH{a1-spot-heartbeat}")
+
+
+def _panel_b_bounds(fig):
+    """The main axes of panel b and its two bound labels with the y of their lines (pixels)."""
+    ax = next(a for a in fig.axes if a.get_ylabel() == "|relative deviation of K|")
+    labels = {t.get_text().split()[0]: t for t in ax.texts if "bound" in t.get_text()}
+    return ax, labels
+
+
+def test_bound_labels_of_panel_b_sit_on_their_own_lines(res):
+    """F9: the two bounds are one decade apart; each label sits on its own line (centred on it, breaking it) and
+    reaches neither the other line nor the text block below."""
+    data = _load(res)
+    fig = a1.draw(data)
+    try:
+        fig.canvas.draw()
+        r = fig.canvas.get_renderer()
+        ax, labels = _panel_b_bounds(fig)
+        assert set(labels) == {"median", "p95"}
+        y = {k: ax.transData.transform((1.0, data["thresholds"][k]))[1] for k in labels}
+        for k, t in labels.items():
+            e = t.get_window_extent(r)
+            other = y["p95" if k == "median" else "median"]
+            assert e.y0 < y[k] < e.y1, k
+            assert not e.y0 <= other <= e.y1, k
+            assert t.get_bbox_patch() is not None and t.get_bbox_patch().get_facecolor()[:3] == (1.0, 1.0, 1.0)
+    finally:
+        matplotlib.pyplot.close(fig)
+
+
+def test_log_axes_are_labelled_as_powers_of_ten_with_no_type_under_7pt(res):
+    """F8/T8: both log axes read 10^e as the caption and the appendix do, not '1e-11'; base and exponent are
+    separate texts of 7 pt (mathtext would set the exponent at 4.9 pt)."""
+    fig = a1.draw(_load(res))
+    try:
+        txt = [t.get_text() for t in kit.texts(fig)]
+        assert not [s for s in txt if "1e" in s or "$" in s]
+        assert txt.count("≤10") == 2 and txt.count(f"{kit.MINUS}13") == 2
+        for e in (1, 3, 5, 7, 9, 11):
+            assert txt.count(f"{kit.MINUS}{e}") == 2, e
+        assert kit.small_texts(fig) == []
+    finally:
+        matplotlib.pyplot.close(fig)
+
+
+def test_power_ticks_raise_the_exponent_and_keep_the_axis_label_clear():
+    fig = kit.new_figure(3.0, 2.0)
+    try:
+        ax = kit.axes_at(fig, 0.6, 0.2, 2.2, 1.3)
+        ax.set_xscale("log")
+        ax.set_xlim(1e-9, 1e-1)
+        ax.set_xticks([1e-9, 1e-5, 1e-1])
+        ax.set_xlabel("x")
+        out = kit.power_ticks(ax, "x", [1e-9, 1e-5, 1e-1], prefix={1e-9: "≤"})
+        assert [t.get_text() for t in out] == ["≤10", f"{kit.MINUS}9", "10", f"{kit.MINUS}5", "10", f"{kit.MINUS}1"]
+        assert kit.power_parts(1e3) == ("10", "3")
+        fig.canvas.draw()
+        r = fig.canvas.get_renderer()
+        assert not any(t.get_visible() and t.get_text() for t in ax.get_xticklabels())
+        for base, exp in zip(out[::2], out[1::2]):
+            b, e = base.get_window_extent(r), exp.get_window_extent(r)
+            assert e.x0 >= b.x1 - 0.5 and e.y0 > b.y0 + 0.3 * kit.FS_MIN * fig.dpi / 72.0
+            assert base.get_fontsize() == exp.get_fontsize() == kit.FS_MIN
+        label = ax.xaxis.label.get_window_extent(r)
+        assert label.y1 < min(t.get_window_extent(r).y0 for t in out)
+        assert kit.overlapping_texts(fig) == []
+    finally:
+        matplotlib.pyplot.close(fig)

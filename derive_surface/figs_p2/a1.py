@@ -8,13 +8,17 @@ tables) and the registered bounds of ``validation_summary.json``.
   thick tick, 95th percentile as a thin tick, n on the right.
 * b: the opening books of the maker-days (``kind == "book"``) against their number of legs.
 
-x (a) and y (b) are logarithmic from 1e-13 to 1e-1. Exact zeros are drawn in a separate grey strip (left of a, below
-b); deviations above zero but below 1e-13 (floating-point residue, down to about 1e-16) are drawn on the axis edge,
-labelled "≤1e−13". The caption sentence on feed ages is checked against ``data/p2/derived/capital.parquet``: every
-fill in the PM2 window must use a vol feed no older than ``p2validate.MAX_VOL_AGE`` and a forward no older than
-``p2validate.MAX_FWD_AGE`` (the limits of the validation blocks); otherwise the sentence is left out. The spot feed
-has no such limit in the validation; the sentence counts the fills whose spot price is older than the heartbeat of the
-spot feed (``p2feeds.HEARTBEAT["spot"]``), which stay in the sample as registered.
+x (a) and y (b) are logarithmic from 1e-13 to 1e-1, labelled as powers of ten (``_kit_t2a1.power_ticks``). Exact
+zeros are drawn in a separate grey strip (left of a, below b); deviations above zero but below 1e-13 (floating-point
+residue, down to about 1e-16) are drawn on the axis edge, labelled "≤10^−13".
+
+The sentence on feed ages (:data:`APPENDIX_SENTENCE`) stands in the text of Appendix A, not in the caption, because
+it describes nothing drawn. It is checked against ``data/p2/derived/capital.parquet`` (checks ``feed_age`` and
+``spot_stale``): every fill in the PM2 window must use a vol feed no older than ``p2validate.MAX_VOL_AGE`` and a
+forward no older than ``p2validate.MAX_FWD_AGE`` (the limits of the validation blocks); otherwise the sentence must
+go. The spot feed has no such limit in the validation; the sentence counts the fills whose spot price is older than
+the heartbeat of the spot feed (``p2feeds.HEARTBEAT["spot"]``), which stay in the sample as registered. Its numbers
+are bound in ``main.tex`` to ``fig_a1_meta.csv`` (``spot_stale_fills``, ``spot_limit_s``).
 
 Command line: ``python3 -m derive_surface.figs_p2.a1`` (writes ``paper2/figures/a1.{pdf,png}`` and
 ``results/p2/fig_a1_{a,b,meta}.csv``, prints the checks).
@@ -57,36 +61,28 @@ FEED_SENTENCE = "In the PM2 window no fill uses a vol or forward feed older than
 SPOT_CLAUSE = ("; {n} fills use a spot price older than the heartbeat of the spot feed ({hb} seconds) and stay in the "
                "sample.")
 SPOT_NONE = (", and none uses a spot price older than the heartbeat of the spot feed ({hb} seconds).")
-_CAPTION_HEAD = (
+# the sentence of Appendix A with placeholders for its two numbers
+APPENDIX_SENTENCE = FEED_SENTENCE + SPOT_CLAUSE.format(n=r"\PH{a1-spot-stale}", hb=r"\PH{a1-spot-heartbeat}")
+# says what is drawn and how to read it (FIGURE_SELECTION 6.8); the off-chain discount is said in Figure 1 and
+# Section 2, the feed ages in the text of Appendix A
+CAPTION = (
     r"\textbf{Does the replica match the chain?} Absolute relative deviation of initial-margin capital between each "
-    r"offline replica and \texttt{eth\_call} on the deployed contracts, for single contracts per underlying and "
-    r"manager (panel a) and for the opening books of 20 maker-days against their number of legs (panel b). Exact "
-    r"matches sit in the strip on the left of panel a and at the bottom of panel b; deviations below $10^{-13}$ sit "
-    r"on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile. The lines are "
-    r"the registered bounds for the median (0.1 per cent) and the 95th percentile (1 per cent). One single HYPE "
-    r"contract under PM2 hit a reverting call and is left out."
+    r"offline replica and \texttt{eth\_call} on the deployed smart contracts, for single contracts per underlying "
+    r"and manager (panel a) and for the opening books of 20 maker-days against their number of legs (panel b). "
+    r"Exact matches sit in the strip on the left of panel a and at the bottom of panel b; deviations below "
+    r"$10^{-13}$ sit on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile. "
+    r"The lines are the registered bounds for the median (0.1~per~cent) and the 95th percentile (1~per~cent). One "
+    r"single HYPE contract under PM2 hit a reverting call and is left out."
 )
-_CAPTION_TAIL = r"The replica follows the contracts on chain; the venue's off-chain engine discounts PM2 at a flat two " \
-                r"per cent."
-# the spot clause with placeholders, as a literal: scripts/p2_build.py reads CAPTION without importing the module
-_SPOT_CLAUSE_PH = (r"; \PH{a1-spot-stale} fills use a spot price older than the heartbeat of the spot feed "
-                   r"(\PH{a1-spot-heartbeat} seconds) and stay in the sample.")
-CAPTION = " ".join([_CAPTION_HEAD, FEED_SENTENCE + _SPOT_CLAUSE_PH, _CAPTION_TAIL])
 
 
 def feed_sentence(fa: dict) -> str:
-    """The feed-age sentence of the caption: vol and forward within the validation limits, and the count of fills
+    """The feed-age sentence of Appendix A: vol and forward within the validation limits, and the count of fills
     with a spot price older than the spot heartbeat; empty unless ``capital.parquet`` confirms the first part."""
     if fa["holds"] is not True:
         return ""
     n, hb = int(fa["spot_stale_fills"]), f"{fa['spot_limit_s']:g}"
     return FEED_SENTENCE + (SPOT_CLAUSE.format(n=n, hb=hb) if n > 0 else SPOT_NONE.format(hb=hb))
-
-
-def caption(data: dict) -> str:
-    """The caption; the feed-age sentence only when ``capital.parquet`` confirms it."""
-    sentence = feed_sentence(data["feed_age"])
-    return " ".join([_CAPTION_HEAD] + ([sentence] if sentence else []) + [_CAPTION_TAIL])
 
 
 # ---------------------------------------------------------------------------------------------------- data
@@ -183,10 +179,6 @@ def book_texts(data: dict) -> Dict[str, str]:
     return {"books": f"{data['books']} books from {data['maker_days']} maker-days\n"
                      f"(BTC {c['BTC']}, ETH {c['ETH']}, HYPE {c['HYPE']})",
             "miss": f"largest miss {data['largest_miss']:.2f} USDC\non K up to {data['K_max'] / 1e6:.1f} M USDC"}
-
-
-def _tick_labels() -> List[str]:
-    return [("≤" + kit.sci(x)) if x == X_LO else kit.sci(x) for x in MAJOR]
 
 
 # ---------------------------------------------------------------------------------------------------- tables
@@ -302,7 +294,7 @@ def _panel_a(fig, data: dict) -> None:
     ax.set_xscale("log")
     ax.set_xlim(X_LO, X_HI)
     _log_axis(ax.xaxis)
-    ax.set_xticklabels(_tick_labels())
+    kit.power_ticks(ax, "x", MAJOR, prefix={X_LO: "≤"})
     ax.set_xlabel("|relative deviation of K|, replica vs eth_call")
     strip.set_ylim(len(ROWS) - 0.5, -0.5)
     strip.set_yticks(range(len(ROWS)))
@@ -343,16 +335,18 @@ def _panel_b(fig, data: dict) -> None:
     ax.axhline(th["median"], color="black", lw=0.8, ls="--", zorder=1)
     ax.axhline(th["p95"], color="black", lw=0.8, ls="-.", zorder=1)
     tr = mtransforms.blended_transform_factory(ax.transAxes, ax.transData)
+    # the two lines are one decade (9 pt) apart: each label sits on its own line at the right end and breaks it,
+    # so that no label stands between the lines (a label above the lower line touched the upper one)
     for k in ("median", "p95"):
-        ax.annotate(_bound(k, th[k]), xy=(1.0, th[k]), xycoords=tr, xytext=(0, 1.5), textcoords="offset points",
-                    ha="right", va="bottom", fontsize=kit.FS_MIN)
+        ax.annotate(_bound(k, th[k]), xy=(1.0, th[k]), xycoords=tr, ha="right", va="center", fontsize=kit.FS_MIN,
+                    bbox=dict(boxstyle="square,pad=0.15", fc="white", ec="none"), zorder=5)
     txt = book_texts(data)
-    ax.annotate(txt["books"] + "\n" + txt["miss"], xy=(0.0, th["median"]), xycoords=tr, xytext=(3, -3),
+    ax.annotate(txt["books"] + "\n" + txt["miss"], xy=(0.0, th["median"]), xycoords=tr, xytext=(3, -6.5),
                 textcoords="offset points", ha="left", va="top", fontsize=kit.FS_MIN, linespacing=1.15)
     ax.set_yscale("log")
     ax.set_ylim(X_LO, X_HI)
     _log_axis(ax.yaxis)
-    ax.set_yticklabels(_tick_labels())
+    kit.power_ticks(ax, "y", MAJOR, prefix={X_LO: "≤"})
     ax.set_ylabel("|relative deviation of K|")
     ax.grid(axis="y", which="major", color="#DDDDDD", lw=0.4, zorder=0)
     ax.set_xscale("log")
@@ -545,9 +539,9 @@ CHECKS: List[dict] = (
     + [kit.check(f"b_books_{c}", f"b: books of {c}", _fig_b_item(f"books_{c}"),
                  (lambda c=c: lambda rd: float(_src_ok(rd, "book").loc[lambda d: d["ccy"] == c, "book"].nunique()))(),
                  expected=e) for c, e in (("BTC", 7), ("ETH", 18), ("HYPE", 1))]
-    + [kit.check("feed_age", "caption: no PM2-window fill uses a feed older than the validation limits",
+    + [kit.check("feed_age", "Appendix A: no PM2-window fill uses a feed older than the validation limits",
                  lambda rd: float(str(_fmeta(rd)["feed_sentence_holds"]) == "True"), _src_feed, expected=1.0),
-       kit.check("spot_stale", "caption: PM2-window fills with a spot price older than the spot heartbeat",
+       kit.check("spot_stale", "Appendix A: PM2-window fills with a spot price older than the spot heartbeat",
                  lambda rd: float(_fmeta(rd)["spot_stale_fills"]), _src_spot_stale)]
 )
 

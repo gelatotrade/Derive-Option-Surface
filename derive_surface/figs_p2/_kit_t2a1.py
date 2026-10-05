@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Callable, List, Mapping, Sequence
+from typing import Callable, List, Mapping, Optional, Sequence
 
 import matplotlib
 
@@ -99,10 +99,62 @@ def write_csv(frame: pd.DataFrame, results_dir: Path, name: str) -> Path:
     return path
 
 
-def sci(x: float) -> str:
-    """Tick label of a power of ten with a true minus: 1e-11 -> '1e−11'."""
+SUP_RAISE = 0.42          # baseline of the exponent above that of the base, in em
+SUP_GAP = 0.4             # space between base and exponent, points
+
+
+def power_parts(x: float) -> tuple:
+    """Base and exponent of a power of ten with a true minus: 1e-11 -> ('10', '−11')."""
     e = int(round(math.log10(x)))
-    return f"1e{MINUS}{abs(e)}" if e < 0 else f"1e{e}"
+    return "10", (f"{MINUS}{abs(e)}" if e < 0 else f"{e}")
+
+
+def _width_pt(s: str, size: float) -> float:
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.textpath import text_to_path
+
+    return float(text_to_path.get_text_width_height_descent(s, FontProperties(size=size), ismath=False)[0])
+
+
+def power_ticks(ax, which: str, values: Sequence[float], prefix: Optional[Mapping[float, str]] = None,
+                fontsize: float = FS_MIN) -> List[matplotlib.text.Text]:
+    """Tick labels 10^e at ``values`` of the bottom x axis (``which="x"``) or the left y axis (``"y"``), in place of
+    the axis's own labels. Base and exponent are two texts of the same size, the exponent raised by ``SUP_RAISE``:
+    mathtext would set the exponent at 70 per cent, under ``FS_MIN`` (section 6.1). ``prefix`` puts text before the
+    base of single values (such as "≤" at the edge of the axis). The axis label keeps its distance from these texts
+    (the axis places it by its own labels, which are off). Returns the texts, base and exponent in turn."""
+    from matplotlib.transforms import ScaledTranslation
+
+    rc = matplotlib.rcParams
+    off = float(rc[f"{which}tick.major.size"]) + float(rc[f"{which}tick.major.pad"])
+    cap = 0.73 * fontsize                         # height of the digits (DejaVu Sans)
+    raise_ = SUP_RAISE * fontsize
+    if which == "x":
+        ax.tick_params(axis="x", which="both", labelbottom=False)
+        base_tr = ax.get_xaxis_transform()
+    else:
+        ax.tick_params(axis="y", which="both", labelleft=False)
+        base_tr = ax.get_yaxis_transform()
+    out, widest = [], 0.0
+    for v in values:
+        b, e = power_parts(v)
+        b = (prefix or {}).get(v, "") + b
+        wb, we = _width_pt(b, fontsize), _width_pt(e, fontsize)
+        w = wb + SUP_GAP + we
+        widest = max(widest, w)
+        if which == "x":                          # centred under the tick, the exponent's top at the label line
+            x0, y_exp = -w / 2.0, -off - cap
+            pos = (v, 0.0)
+        else:                                     # right-aligned at the label line, centred on the tick
+            x0, y_exp = -off - w, (raise_ + cap) / 2.0 - cap
+            pos = (0.0, v)
+        y_base = y_exp - raise_
+        for s, dx, dy in ((b, x0, y_base), (e, x0 + wb + SUP_GAP, y_exp)):
+            tr = base_tr + ScaledTranslation(dx / 72.0, dy / 72.0, ax.figure.dpi_scale_trans)
+            out.append(ax.text(*pos, s, transform=tr, ha="left", va="baseline", fontsize=fontsize, clip_on=False))
+    extent = cap + raise_ + 0.24 * fontsize if which == "x" else widest     # 0.24 em: descent of a text line
+    getattr(ax, f"{which}axis").labelpad = off + extent + float(rc["axes.labelpad"])
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ layout checks

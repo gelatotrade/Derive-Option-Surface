@@ -181,6 +181,15 @@ def test_panel_c_says_the_shock_axis_is_not_to_scale():
     assert "spot shocks in order, not to scale" in t2.CAPTION
 
 
+def test_caption_defines_the_kinds_of_book_in_the_row_labels():
+    """C9: the row labels of panel b name short and mixed probe books (case A: every leg short, case B: signs
+    alternating or random); the caption says what each kind is."""
+    kinds = {lab.split(", ")[1] for lab in t2.ROW_ORDER}
+    assert kinds == {"short", "mixed"}
+    assert "A short book is short in every option it holds, a mixed book long in some and short in others." \
+        in t2.CAPTION
+
+
 def test_single_legs_under_sm_are_in_the_table_for_card_2(res, tmp_path, real_params):
     """Section 10: card 2 sets one short call against the short straddle under PM2 and SM, from the same reference
     row; T2 computes the SM legs with the same engine and state (not drawn in T2)."""

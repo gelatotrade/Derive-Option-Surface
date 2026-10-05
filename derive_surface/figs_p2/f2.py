@@ -2,13 +2,17 @@
 slot F2).
 
 a  Six maps (maker sells above, maker buys below; BTC, ETH, HYPE) of net edge per unit of PM2 capital, ``B_bp`` of
-   ``results/p2/h1_cells.csv``, grey by log|B| per row (floor 1 bp), negative cells hatched.
+   ``results/p2/h1_cells.csv``, grey by log|B| per row (floor 1 bp), negative cells hatched. The sells print in bp,
+   the buys in per cent (``ROW_UNIT``): in bp a buy row reads "-418 -397 -109 -255", four characters with a true
+   minus that do not fit a cell side by side.
 b  Rank by edge per notional against rank by edge per PM2 capital for the occupied cells (rank 1 top right), the
-   diagonal, the sign lines after the cells with positive edge, and rank intervals of the ten largest moves.
+   diagonal (dashed), the sign lines after the cells with positive edge (dotted) and the rank intervals of the ten
+   largest moves (solid, with end ticks).
 c  The registered test (``h1.json``) as a forest after section 6.5 (``ruler``) with the sensitivities and exploratory
    rows of ``sensitivity.json``; the rows ``edge > 0 only`` / ``edge <= 0 only`` and the band ``sign pattern alone``
    come from ``sensitivity.json["h1_sign"]`` and are left out while that entry is missing (section 10); likewise the
-   row ``without RFQ fills`` (``sensitivity.json["i_rfq"]``, audit A12).
+   row ``without RFQ fills`` (``sensitivity.json["i_rfq"]``, audit A12) and the Addendum 6 row ``RFQ fee over legs``
+   (``sensitivity.json["c2_rfq_package"]``, the fee of an RFQ package spread over its legs).
 
 The figure layer only counts and sorts; every statistic is read from ``results/p2``.
 
@@ -20,7 +24,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -35,7 +39,7 @@ from matplotlib.patches import Rectangle  # noqa: E402
 from matplotlib.transforms import blended_transform_factory  # noqa: E402
 
 from derive_surface import figstyle  # noqa: E402
-from derive_surface.figs_p2._print import to_print  # noqa: E402
+from derive_surface.figs_p2._print import print_width, to_print  # noqa: E402
 from derive_surface.figs_p2 import f1 as base  # noqa: E402
 from derive_surface.markouts import DELTA_LABELS, TENOR_LABELS  # noqa: E402
 
@@ -49,12 +53,17 @@ LINE_GREY = "#808080"
 BAND_GREY = "#D4D4D4"
 EXPLORATORY_BAND = "#F0F0F0"
 HATCH_GREY = "#BBBBBB"
-MINUS = "-"            # hyphen-minus in the cells: "−725" (0.27 in) does not fit a 0.24 in column, "-725" does
+MINUS = "\u2212"       # the true minus, as in every other figure
+# Unit of the printed number per map row: (label, factor on B_bp). In bp the buy row holds runs such as -418 -397
+# -109 -255, four characters of 17.9 pt ink each with the true minus in cells of 19.3 pt; in per cent they are
+# -4.2 -4.0 -1.1 -2.6 (15.7 pt), and the large buys gain a digit (5k bp prints as 50). The sells keep bp: their
+# small cells (0.1 bp) would round away in per cent.
+ROW_UNIT = {"sell": ("bp", 1.0), "buy": ("%", 0.01)}
 CCYS, SIDES = base.CCYS, base.SIDES
 SIDE_TITLE = {"sell": "maker sells (short)",
               "buy": "maker buys (long):\ncapital ≈ premium OTM"}      # OTM: out of the money (caption)
-HEADER = ("number = net edge per unit of PM2 capital, bp, per fill · hatched = negative\n"
-          "× = under 200 fills · PM2 window, pooled over four regimes")
+HEADER = ("number = net edge per unit of PM2 capital, per fill: bp for sells, % for buys\n"
+          "hatched = negative · × = under 200 fills · pooled over four regimes")
 X_RHO = (-0.2, 1.0)
 N_TOP = 10
 
@@ -64,6 +73,7 @@ FOREST_ROWS = [
     ("registered", "h1", None, "registered"),
     ("maintenance margin", "sens", "b_mm.h1_pm2_mm", "sensitivity"),
     ("companion net edge", "sens", "c_p1_net_edge.h1_pm2", "sensitivity"),
+    ("RFQ fee over legs", "sens", "c2_rfq_package.h1_pm2", "sensitivity"),        # Addendum 6
     ("per day to expiry", "sens", "f_time.to_expiry", "exploratory"),
     ("per holding time", "sens", "f_time.holding", "exploratory"),
     ("SM capital", "sens", "a_maps.sm_pm2_window", "exploratory"),
@@ -76,24 +86,29 @@ FOREST_ROWS = [
     ("edge ≤ 0 only", "sens", "h1_sign.within_nonpos", "exploratory"),
 ]
 OPTIONAL_KEYS = {"h1_sign.within_pos", "h1_sign.within_nonpos",   # section 10: rows drop while missing
-                 "i_rfq.h1_pm2_no_rfq"}
+                 "i_rfq.h1_pm2_no_rfq", "c2_rfq_package.h1_pm2"}
+LABEL_MAX = 18                                                     # section 6.5
+N_TITLE = "n"                                                      # head of the n column (cells)
 BAND_KEY = "h1_sign.sign_floor"
 BAND_LABEL = "sign pattern alone"
 
 CAPTION = (
-    "The map in two denominators (H1). Panel a is net edge per unit of PM2 capital in basis points, per fill, for "
-    "every cell of the PM2 window by underlying and maker side; negative cells are hatched and an empty cross marks "
-    "fewer than 200 fills. For a maker buy the denominator is about the premium when the option is out of the money "
-    "(OTM) and less in the money; the lower row is shaded on its own scale. The map per notional is "
-    "Figure~\\PH{p1-map-fig} of the companion paper. "
-    "Panel b ranks the \\PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because "
-    "capital is positive in every cell, the \\PH{h1-pos} cells with positive edge come first in both rankings, and "
-    "the grey lines mark that boundary. Crosses give the 90 per cent rank intervals of the ten largest moves. Panel "
-    "c is the registered test: Spearman's $\\rho$ with its 90 per cent day-cluster interval, which is narrower than "
-    "its circle and printed above the panel, set against the threshold of 0.5. Sensitivities follow and then, on "
-    "grey, exploratory rows; in the rows by the sign of the edge the cells are chosen again in every replicate. "
-    "The grey band is the $\\rho$ that the sign pattern alone produces when ranks are shuffled within each sign "
-    "group. Edge is a flow per fill and capital a stock, so a cell's value is not a return per unit of time.")
+    "The map in two denominators (H1). Panel a is net edge per unit of PM2 capital, per fill, for every cell of "
+    "the PM2 window by underlying and maker side, in basis points for maker sells and in per cent for maker buys; "
+    "negative cells are hatched and an empty cross marks fewer than 200 fills. For a maker buy the denominator is "
+    "about the premium when the option is out of the money and less in the money; the lower row is shaded on its "
+    "own scale. The map per notional is Figure~\\PH{p1-map-fig} of the companion paper. Panel b ranks the "
+    "\\PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because capital is positive in "
+    "every cell, the \\PH{h1-pos} cells with positive edge come first in both rankings, and the dotted lines mark "
+    "that boundary. Crosses give the 90~per~cent rank intervals of the ten largest moves. Panel c is the "
+    "registered test: Spearman's $\\rho$ with its 90~per~cent day-cluster interval, which is narrower than its "
+    "circle and printed above the panel, set against the threshold of 0.5. The hatched stretch of the registered "
+    "row, right of the threshold, is the rejection region: the rule rejects H1 if the interval reaches into it. "
+    "Sensitivities follow and then, on grey, exploratory rows; n is the number of cells in a row, and in the rows "
+    "by the sign of the edge the cells are chosen again in every replicate. The grey band is the $\\rho$ that the "
+    "sign pattern alone produces when ranks are shuffled within each sign group. Edge is a flow per fill and "
+    "capital a stock, so a cell's value is not a return per unit of time."
+)
 
 
 # =====================================================================================================================
@@ -101,7 +116,8 @@ CAPTION = (
 # =====================================================================================================================
 
 def fmt_edge(v: float) -> str:
-    """At most four characters (section 7 F2): one decimal under 10, whole numbers under 1 000, whole thousands."""
+    """At most four characters (section 7 F2): one decimal under 10, whole numbers under 1 000, whole thousands;
+    negative numbers carry the true minus."""
     if v is None or not np.isfinite(v):
         return ""
     sign = MINUS if v < 0 else ""
@@ -111,6 +127,11 @@ def fmt_edge(v: float) -> str:
     if round(a) < 1000:
         return f"{sign}{round(a):.0f}"
     return f"{sign}{round(a / 1000):.0f}k"
+
+
+def printed_cell(side: str, b_bp: float) -> str:
+    """The number a map cell prints: ``B_bp`` in the unit of its row (``ROW_UNIT``)."""
+    return fmt_edge(float(b_bp) * ROW_UNIT[side][1])
 
 
 def verdict(h: dict, *, side: str) -> bool:
@@ -183,7 +204,8 @@ def table_a(cells: pd.DataFrame) -> pd.DataFrame:
         absb = np.maximum(np.abs(a.loc[m, "B_bp"].to_numpy(float)), 1.0)
         sh, _, _ = base.shade_log(absb, a.loc[m, "occupied"].to_numpy(bool), floor=1.0)
         a.loc[m, "shade"] = sh
-    a["printed"] = [fmt_edge(v) if o else "×" for v, o in zip(a["B_bp"], a["occupied"])]
+    a["unit"] = [ROW_UNIT[s][0] for s in a["side"]]
+    a["printed"] = [printed_cell(s, v) if o else "×" for s, v, o in zip(a["side"], a["B_bp"], a["occupied"])]
     return a
 
 
@@ -257,14 +279,20 @@ def table_shift(cells: pd.DataFrame) -> pd.DataFrame:
 # =====================================================================================================================
 
 def ruler(ax, rows: pd.DataFrame, h: dict, *, side: str, xlim=X_RHO, header_x: float = 0.0,
-          sample: Sequence[str] = (), band: Optional[dict] = None, xlabel: str = "") -> str:
+          sample: Sequence[str] = (), band: Optional[dict] = None, xlabel: str = "",
+          letter: Optional[Tuple[str, float]] = None, head_width: Optional[float] = None) -> str:
     """Forest after section 6.5. ``rows`` in drawing order (label, kind, stat, lo, hi, printed); the registered row is
     the first row of kind ``registered``. Draws the bold verdict line and the sample lines above the axes (left edge
     at ``header_x`` in axes coordinates), the dashed threshold, the rejection hatch in the height of the registered
-    row, grey bands behind exploratory rows, ``band`` (dict with lo, hi, label) behind all rows and n to the right.
+    row, grey bands behind exploratory rows, ``band`` (dict with lo, hi, label) behind all rows and n to the right
+    under the head ``N_TITLE``. ``letter`` (text, x as a fraction of the figure width) is the panel letter, on the
+    first line of the verdict. A verdict line wider than ``head_width`` inches breaks before its arrow.
     Returns the verdict line; raises ValueError if the rule applied to the bounds disagrees with ``h["rejected"]``."""
     rejected = verdict(h, side=side)
     head = header_text(h, rejected)
+    too_long = [str(x) for x in rows["label"] if len(str(x)) > LABEL_MAX]
+    if too_long:
+        raise ValueError(f"row labels longer than {LABEL_MAX} characters: {too_long}")
     thr = float(h["threshold"])
     x0, x1 = xlim
     n = len(rows)
@@ -300,6 +328,8 @@ def ruler(ax, rows: pd.DataFrame, h: dict, *, side: str, xlim=X_RHO, header_x: f
         ax.plot([r.stat], [k], marker="o", ms=4.0 if r.kind == "registered" else 3.5, mfc=face, mec=col,
                 mew=0.8, ls="none", zorder=4)
         ax.text(1.03, k, str(r.printed), transform=trans_n, ha="left", va="center", fontsize=7.0, color=GREY)
+    ax.annotate(N_TITLE, xy=(1.03, 1.0), xycoords="axes fraction", xytext=(0, 1), textcoords="offset points",
+                ha="left", va="bottom", fontsize=7.0, color=GREY)
     labels = list(rows["label"]) + ([band["label"]] if band is not None else [])
     ax.set_yticks(range(n + extra))
     ax.set_yticklabels(labels, fontsize=7.0)
@@ -318,25 +348,47 @@ def ruler(ax, rows: pd.DataFrame, h: dict, *, side: str, xlim=X_RHO, header_x: f
     for i, line in enumerate(reversed(list(sample))):
         ax.annotate(line, xy=(header_x, 1.0), xycoords="axes fraction", xytext=(0, 3 + i * step),
                     textcoords="offset points", ha="left", va="bottom", fontsize=7.0, color=HEAD)
-    ax.annotate(head, xy=(header_x, 1.0), xycoords="axes fraction", xytext=(0, 3 + len(sample) * step + 1.5),
-                textcoords="offset points", ha="left", va="bottom", fontsize=7.0, fontweight="bold", color=INK)
+    off = 3 + len(sample) * step + 1.5
+    lines = [head]
+    if head_width is not None:
+        probe = ax.annotate(head, xy=(header_x, 1.0), xycoords="axes fraction", fontsize=7.0, fontweight="bold")
+        fig = ax.figure
+        if probe.get_window_extent(fig.canvas.get_renderer()).width / fig.dpi > head_width:
+            lines = [head.split(" → ")[0], "→ " + head.split(" → ")[1]]
+        probe.remove()
+    for i, line in enumerate(reversed(lines)):
+        ax.annotate(line, xy=(header_x, 1.0), xycoords="axes fraction", xytext=(0, off + i * step),
+                    textcoords="offset points", ha="left", va="bottom", fontsize=7.0, fontweight="bold", color=INK)
+    if letter is not None:
+        ax.annotate(letter[0], xy=(letter[1], 1.0), xycoords=blended_transform_factory(ax.figure.transFigure,
+                                                                                         ax.transAxes),
+                    xytext=(0, off + (len(lines) - 1) * step), textcoords="offset points", ha="left",
+                    va="bottom", fontsize=8.0, fontweight="bold")
     return head
 
 
-# Layout in inches (canvas 7.0 x 4.4)
-A_RIGHT = 4.50
+# Layout in inches (canvas 7.0 x 4.4). Panel a takes what the right column leaves; that column is as wide as the
+# forest of c with its labels and n, and the verdict line breaks before its arrow (in one bold line it needs 2.18 in).
+# A cell of a map is then 19.3 pt wide in print: neighbours such as "−7.3" and "−126" (16.9 pt ink) keep 2.4 pt and
+# the white grid line between them.
 L_MAP = 0.79
-MAP_GAP = 0.04
+A_RIGHT = 4.94
+MAP_GAP = 0.02
 TOP_MAP = 3.92
 BOTTOM_MAP = 0.48
 ROW_GAP = 0.13
-B_BOX = (5.12, 2.66, 1.80, 1.38)        # left, bottom, width, height of the rank axes (side legend above)
-C_LEFT, C_RIGHT, C_BOTTOM, C_TOP = 5.62, 6.72, 0.36, 1.72
-RIGHT_COL = 4.64                         # left edge of panels b and c (letters, forest header)
+BUY_TITLE_LIFT = 0.06                    # the two-line buy title sits a little high, clear of the tick "90–100"
+RIGHT_COL = 5.00                         # left edge of panels b and c (letters, axis titles)
+B_BOX = (5.54, 3.00, 1.38, 1.07)         # left, bottom, width, height of the rank axes (side legend above)
+B_YLABEL_DROP = 0.06                     # the y title of b sits a little low, clear of the letter b
+C_LEFT, C_RIGHT, C_BOTTOM, C_TOP = 6.085, 6.74, 0.33, 2.00     # 15 rows of 8.0 pt
+SIGN_GREY = "#999999"                    # the sign lines of b: dotted and lighter than the rank intervals
+SIGN_DOTS = (0, (1.0, 1.6))
+CAP = 2.5                                # end ticks of the rank intervals, points
 
 
 def _panel_a(fig, a: pd.DataFrame) -> None:
-    map_w = (A_RIGHT - L_MAP - 2 * MAP_GAP - 0.02) / 3
+    map_w = (A_RIGHT - L_MAP - 2 * MAP_GAP) / 3
     map_h = (TOP_MAP - BOTTOM_MAP - ROW_GAP) / 2
     for r, side in enumerate(SIDES):
         top = TOP_MAP - r * (map_h + ROW_GAP)
@@ -348,8 +400,9 @@ def _panel_a(fig, a: pd.DataFrame) -> None:
                           ylabels=(c == 0), xlabels=(r == 1))
             if r == 0:
                 ax.set_title(ccy, fontsize=8.0, fontweight="bold", pad=3.0)
-        fig.text(*base.fig_xy(fig, 0.27, top - map_h / 2), SIDE_TITLE[side], rotation=90, ha="center", va="center",
-                 fontsize=8.0, multialignment="center")
+        lift = BUY_TITLE_LIFT if side == "buy" else 0.0
+        fig.text(*base.fig_xy(fig, 0.27, top - map_h / 2 + lift), SIDE_TITLE[side], rotation=90, ha="center",
+                 va="center", fontsize=8.0, multialignment="center")
     fig.text(*base.fig_xy(fig, 0.075, (TOP_MAP + BOTTOM_MAP) / 2), base.DELTA_TITLE, rotation=90, ha="center",
              va="center", fontsize=8.0)
     fig.text(*base.fig_xy(fig, L_MAP + 1.5 * map_w + MAP_GAP, 0.04), base.TENOR_TITLE, ha="center", va="bottom",
@@ -367,23 +420,29 @@ def _panel_b(fig, b: pd.DataFrame) -> None:
     ax.set_ylim(*lim)
     ax.plot([1, n], [1, n], color=LINE_GREY, ls="--", lw=0.6, zorder=1)
     pos = float(b["sign_line"].iloc[0]) if n else 0.5
-    ax.axvline(pos, color=LINE_GREY, lw=0.6, zorder=1)
-    ax.axhline(pos, color=LINE_GREY, lw=0.6, zorder=1)
-    ax.text(n + 2, pos + 3, "edge ≤ 0", ha="left", va="top", fontsize=7.0, color=GREY)
+    ax.axvline(pos, color=SIGN_GREY, ls=SIGN_DOTS, lw=0.9, zorder=1)
+    ax.axhline(pos, color=SIGN_GREY, ls=SIGN_DOTS, lw=0.9, zorder=1)
+    # under the sign line at the right, in the block that the sign agreement leaves empty (left, the points crowd)
+    ax.text(-2, pos + 3, "↓ edge ≤ 0", ha="right", va="top", fontsize=7.0, color=GREY)
     t = b[b["top10"]]
-    for r in t.itertuples(index=False):
-        ax.plot([r.rank_A_lo, r.rank_A_hi], [r.rank_B, r.rank_B], color=LINE_GREY, lw=0.6, zorder=2)
-        ax.plot([r.rank_A, r.rank_A], [r.rank_B_lo, r.rank_B_hi], color=LINE_GREY, lw=0.6, zorder=2)
+    for r in t.itertuples(index=False):      # crosses with end ticks: they do not read as the sign lines
+        ax.plot([r.rank_A_lo, r.rank_A_hi], [r.rank_B, r.rank_B], color=LINE_GREY, lw=0.6, marker="|", ms=CAP,
+                mew=0.6, zorder=2)
+        ax.plot([r.rank_A, r.rank_A], [r.rank_B_lo, r.rank_B_hi], color=LINE_GREY, lw=0.6, marker="_", ms=CAP,
+                mew=0.6, zorder=2)
     s, u = b[b["side"] == "sell"], b[b["side"] == "buy"]
     ax.plot(s["rank_A"], s["rank_B"], ls="none", marker="v", ms=3.0, mfc=INK, mec=INK, mew=0.4, zorder=3)
     ax.plot(u["rank_A"], u["rank_B"], ls="none", marker="^", ms=3.0, mfc="white", mec=INK, mew=0.6, zorder=3)
-    ticks = sorted({t for t in (1, 50, 100, 150) if t <= n - 18} | {1, n})   # 150 and 173 as in the brief
+    ticks = sorted({t for t in (1, 50, 100, 150) if t <= n - 30} | {1, n})   # 150 would touch 173 at this width
     for setter in (ax.set_xticks, ax.set_yticks):
         setter(ticks)
     ax.set_xticklabels([str(x) for x in ticks], fontsize=7.0)
     ax.set_yticklabels([str(x) for x in ticks], fontsize=7.0)
     ax.set_xlabel("rank by edge per notional\n(1 = highest edge)", fontsize=7.0, labelpad=2.0)
-    ax.set_ylabel("rank by edge per PM2 capital\n(1 = highest edge)", fontsize=7.0, labelpad=2.0)
+    left, bottom, _, height = B_BOX       # the y title as figure text: longer than the axes are high
+    fig.text(*base.fig_xy(fig, RIGHT_COL + 0.105, bottom + height / 2 - B_YLABEL_DROP),
+             "rank by edge per PM2 capital\n(1 = highest edge)", rotation=90, ha="center", va="center", fontsize=7.0,
+             multialignment="center")
     for name in ("top", "right"):
         ax.spines[name].set_visible(False)
     handles = [Line2D([], [], ls="none", marker="v", ms=3.5, mfc=INK, mec=INK, label="maker sells (short)"),
@@ -401,13 +460,12 @@ def _panel_c(fig, c: pd.DataFrame, h1: dict) -> None:
     rows = c[c["kind"].isin(["registered", "sensitivity", "exploratory"])].reset_index(drop=True)
     b = c[c["kind"] == "band"]
     band = None if b.empty else {"lo": float(b["lo"].iloc[0]), "hi": float(b["hi"].iloc[0]), "label": BAND_LABEL}
-    header_x = (RIGHT_COL + 0.13 - C_LEFT) / (C_RIGHT - C_LEFT)
+    head_left = RIGHT_COL + 0.13                         # right of the letter
+    header_x = (head_left - C_LEFT) / (C_RIGHT - C_LEFT)
+    printed_w = print_width(WIDTH)                       # the canvas shrinks to this width when saved
+    head_width = printed_w - 0.02 - head_left * printed_w / WIDTH
     ruler(ax, rows, h1, side="upper", header_x=header_x, sample=list(c.loc[c["kind"] == "sample", "printed"]),
-          band=band, xlabel="Spearman's ρ")
-    x, _ = base.fig_xy(fig, RIGHT_COL, 0)
-    ax.annotate("c", xy=(x, 1.0), xycoords=blended_transform_factory(fig.transFigure, ax.transAxes),
-                xytext=(0, 3 + 2 * 8.6 + 1.5), textcoords="offset points", ha="left", va="bottom", fontsize=8.0,
-                fontweight="bold")
+          band=band, xlabel="Spearman's ρ", letter=("c", RIGHT_COL / WIDTH), head_width=head_width)
 
 
 def make_figure(results_dir: Path = Path("results/p2")):
@@ -429,7 +487,7 @@ def build(out_dir: Path = Path("paper2/figures"), results_dir: Path = Path("resu
     fig, tables = make_figure(results_dir)
     paths = []
     a_cols = ["cell", "ccy", "side", "delta_bucket", "tenor_bucket", "fills", "occupied", "A_bp", "B_bp", "kappa_pm2",
-              "hatched", "shade", "printed"]
+              "hatched", "shade", "unit", "printed"]
     for key, frame in (("a", tables["a"][a_cols]), ("b", tables["b"]), ("c", tables["c"]),
                        ("shift", tables["shift"])):
         p = results_dir / f"fig_{SLOT}_{key}.csv"
@@ -473,8 +531,9 @@ def _pos_by_side(frame: pd.DataFrame):
 def _printed_src(rd):
     h = _csv(rd, "h1_cells.csv").set_index("cell")
     out = {}
-    for cell in base.full_grid()["cell"]:
-        out[cell] = fmt_edge(h.loc[cell, "B_bp"]) if cell in h.index and bool(h.loc[cell, "occupied"]) else "×"
+    for cell, side in zip(base.full_grid()["cell"], base.full_grid()["side"]):
+        occupied = cell in h.index and bool(h.loc[cell, "occupied"])
+        out[cell] = printed_cell(side, h.loc[cell, "B_bp"]) if occupied else "×"
     return out
 
 
@@ -541,8 +600,10 @@ CHECKS: List[dict] = [
     {"name": "hatched = B_bp < 0 = A_bp <= 0 (sign(A) = sign(B))",
      "figure": lambda rd: sorted(_fa(rd).loc[_fa(rd)["hatched"].astype(str) == "True", "cell"]),
      "source": lambda rd: sorted(_occ(rd).loc[_occ(rd)["A_bp"] <= 0, "cell"])},
-    {"name": "printed B_bp (at most four characters) and crosses",
+    {"name": "printed B_bp (sells in bp, buys in per cent) and crosses",
      "figure": lambda rd: dict(zip(_fa(rd)["cell"], _fa(rd)["printed"].fillna(""))), "source": _printed_src},
+    {"name": "every number in a cell at most four characters",
+     "figure": lambda rd: bool(_fa(rd)["printed"].fillna("").str.len().max() <= 4), "source": lambda rd: True},
     {"name": "B_bp of panel a = h1_cells", "figure": lambda rd: float(np.nanmax(np.abs(
         _fa(rd).set_index("cell").loc[_occ(rd)["cell"], "B_bp"].to_numpy(float) - _occ(rd)["B_bp"].to_numpy(float)))),
      "source": lambda rd: 0.0, "atol": 1e-9},

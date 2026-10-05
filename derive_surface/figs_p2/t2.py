@@ -53,17 +53,17 @@ LABELLED_SHOCKS = (0.34, 0.86, 1.0, 1.14, 6.0)
 XLABEL_C = "spot shock, × spot (in order, not to scale)"   # scenarios at equal steps
 
 CAPTION = (
-    r"\textbf{What \texttt{get\_margin} returns, and how PM2 prices a book.} Panel a splits $C - \mathrm{net}$ into "
-    r"the requirement $R$ and the value term $-V$ for the mixed probe book of 24 September 2026 (block "
+    r"\textbf{What \texttt{get\_margin} returns, and how PM2 prices a book.} Panel a splits ${C - \mathrm{net}}$ "
+    r"into the requirement $R$ and the value term $-V$ for the mixed probe book of 24~September 2026 (block "
     r"45\,110\,142); $-V$ is almost the same under both managers and dwarfs $R$. Panel b sets the ratio of standard "
-    r"to PM2 margin read as $C - \mathrm{net}$ (open) against the ratio on $R$ (filled) for the four probe books at "
-    r"their historical blocks. The dashed line is the H3 threshold of two, which was set from these books before any "
-    r"maker book was measured. On the mixed book of 17 September $V$ is positive, so the ratio falls from 11.86 to "
-    r"10.76. Panel c is the scenario profit and loss of a short BTC straddle struck at the forward on 17 September "
-    r"2026, on the listed expiry nearest to 30 days (22 days), in per cent of the forward, over the spot shocks in "
-    r"order, not to scale. PM2 charges the worst "
-    r"scenario of the whole book plus contingencies (solid line), which is less than the sum of the legs margined one "
-    r"by one (dash dot); standard margin is dashed."
+    r"to PM2 margin read as ${C - \mathrm{net}}$ (open) against the ratio on $R$ (filled) for the four probe books "
+    r"at their historical blocks. A short book is short in every option it holds, a mixed book long in some and "
+    r"short in others. The dashed line is the H3 threshold of two, which was set from these books before any maker "
+    r"book was measured. On the mixed book of 17~September, $V$ is positive, so the ratio falls from 11.86 to "
+    r"10.76. Panel c is the scenario profit and loss of a short BTC straddle struck at the forward on 17~September "
+    r"2026, on the listed expiry nearest to 30~days (22~days), in per cent of the forward, over the spot shocks in "
+    r"order, not to scale. PM2 charges the worst scenario of the whole book plus contingencies (solid line), which "
+    r"is less than the sum of the legs margined one by one (dash dot); standard margin is dashed."
 )
 
 

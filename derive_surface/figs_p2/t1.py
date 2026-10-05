@@ -50,12 +50,16 @@ DAY = 86_400
 MANAGERS = ("pm2", "sm")
 WIDTH, HEIGHT = figstyle.DOUBLE, 4.2
 FS_MIN = 7.0                            # smallest type on the page (section 6.1)
-FS_TAG = 8.0                            # panel titles with their letters
+FS_TAG = 8.0                            # panel letters (bold) and panel titles (regular), as in T2 and A1
+TITLE_GAP = 0.15                        # from the panel letter to its title, inches (T2, A1)
 INK = "#000000"
 ISO = (4.0, 8.0, 12.0, 14.0)            # iso-capital lines, % of forward (section 3, T1)
 CLIM = (3.0, 15.5)                      # colour scale, % of forward
 CBAR_TICKS = (4, 6, 8, 10, 12, 14)
 ATM_DELTA, ATM_DAYS = 0.5, 30.0         # the node quoted in the titles (nearest grid tenor: 30.44 days)
+DELTA_EDGES = (10, 25, 40)              # |delta| bucket edges of Paper 1 below 50, % (F1, F2): calls, mirrored for puts
+DELTA_LINES = tuple([e / 100.0 for e in DELTA_EDGES] + [1.0 - e / 100.0 for e in DELTA_EDGES[::-1]])
+TENOR_LINES = (2, 7, 30, 90)            # tenor bucket edges of Paper 1, days
 GRID_FILE = "t1_grid.csv"
 META_FILE = "t1_grid_meta.json"
 PROBE_GRID = Path("data/p2/surface/probe_BTC_2026-09-17_grid.csv")
@@ -74,16 +78,18 @@ HATCH_COLOR = "#666666"
 MIN_LABEL_VERTICES = 12             # iso-line pieces shorter than this get no label on the 3D surface
 
 CAPTION = (
-    "The surface as the engine sees it. BTC implied volatility over call delta and tenor at 08:00 UTC on 17 September "
-    "2026, built from the on-chain feeds, with the capital that one short contract binds under PM2 (panel a) and under "
-    "standard margin (panel b) as colour on a common scale in per cent of the forward. Height is volatility, colour is "
-    "capital, and black lines join points of equal capital. Panels c and d name the rule that sets the capital at each "
-    "point: the worst scenario of the PM2 grid, and the branch of the standard margin formula. Their grid lines are "
-    "the delta and tenor bucket edges of Figures~\\ref{fig:f1} and~\\ref{fig:f2}, and the ticks on their right "
-    "edge mark the listed expiries; the surface holds out-of-the-money options only, so buckets above an absolute "
-    "delta of 0.6 have no counterpart here. Standard margin is set in per "
-    "cent of spot and shown in per cent of the forward. Capital follows the contracts on chain; the venue's off-chain "
-    "engine discounts PM2 at a flat two per cent."
+    "The surface as the engine sees it. BTC implied volatility over call delta and tenor at 08:00~UTC on "
+    "17~September 2026, built from the on-chain feeds, with the capital that one short contract binds under PM2 "
+    "(panel a) and under standard margin (panel b) as colour on a common scale in per cent of the forward. Height "
+    "is volatility, colour is capital, and black lines join points of equal capital. ATM marks the at-the-money "
+    "node at 30~days to expiry. Panels c and d name the rule that sets the capital at each point: the worst "
+    "scenario of the PM2 grid, and the branch of the standard margin formula, in which OTM is the amount by which "
+    "the option is out of the money. Their grid lines are the tenor and absolute delta bucket edges of "
+    "Figures~\\ref{fig:f1} and~\\ref{fig:f2}, and the ticks on their right edge mark the listed expiries. For puts "
+    "the delta edges are mirrored: the lines at 0.60, 0.75 and 0.90 are the put edges of 40, 25 and 10~per~cent. "
+    "The surface holds out-of-the-money options only, so the buckets from 60~per~cent absolute delta up have no "
+    "counterpart here. Standard margin is set in per cent of spot and shown in per cent of the forward. Capital "
+    "follows the smart contracts on chain; the venue's off-chain engine discounts PM2 at a flat two~per~cent."
 )
 
 
@@ -416,8 +422,17 @@ def header(data: dict) -> str:
             f"expiries · PM2 spot grid {grid} since {_day(data['grid_since'])} · chain semantics")
 
 
+def letter(mgr: str, row: int) -> str:
+    """Panel letter: a, b (surfaces), c, d (rules)."""
+    return "abcd"[2 * row + MANAGERS.index(mgr)]
+
+
 def title(mgr: str, value: float) -> str:
-    return f"{'ab'[MANAGERS.index(mgr)]}  {MANAGER_NAME[mgr]}: ATM 30 d short = {value:.1f} % of forward"
+    """Title of the surface panel next to its letter."""
+    return f"{MANAGER_NAME[mgr]}: ATM 30 d short = {value:.1f} % of forward"
+
+
+RULE_TITLE = {"pm2": "binding PM2 scenario", "sm": "binding SM rule"}
 
 
 def tables(data: dict) -> Dict[str, pd.DataFrame]:
@@ -439,6 +454,10 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
     m("spot_grid_since_ts", data["grid_since"], _day(data["grid_since"]), "pm2")
     for v in ISO:
         m("iso_level", v, f"{v:g} %")
+    for v, e in zip(DELTA_LINES, DELTA_EDGES + DELTA_EDGES[::-1]):    # grid lines of c, d: call delta, |delta| edge
+        m("grid_line_delta", v, f"{v:.2f}", rule=f"{'call' if v < 0.5 else 'put'}_{e}")
+    for v in TENOR_LINES:
+        m("grid_line_days", v, f"{v:d}")
     for v in CBAR_TICKS:
         m("colorbar_tick", v, f"{v:g}")
     m("colour_scale_min", CLIM[0])
@@ -452,7 +471,7 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
         k = g["K_pct"]
         a = float(atm[mg]["K_pct"])
         m("atm_K_pct", a, f"{a:.1f}", mg)
-        m("title", a, title(mg, a), mg)
+        m("title", a, f"{letter(mg, 0)}  {title(mg, a)}", mg)
         m("n_nodes", len(g), "", mg)
         m("K_pct_min", float(k.min()), "", mg)
         m("K_pct_median", float(k.median()), "", mg)
@@ -592,7 +611,8 @@ def _draw_3d(fig, ax, g: pd.DataFrame, mgr: str, norm, zlim) -> None:
     ax.tick_params(axis="z", pad=-1)
     ax.set_xlabel("call delta (put = Δ − 1)", fontsize=FS_MIN, labelpad=-7)
     ax.set_ylabel("days to expiry", fontsize=FS_MIN, labelpad=-7)
-    ax.set_zlabel("implied vol, %", fontsize=FS_MIN, labelpad=-8)
+    ax.zaxis.set_rotate_label(False)        # read from bottom to top, as every other rotated label
+    ax.set_zlabel("implied vol, %", fontsize=FS_MIN, labelpad=-8, rotation=90)
 
 
 def label_missing_levels(ax, x, days, C, labelled) -> List[matplotlib.text.Text]:
@@ -655,16 +675,16 @@ def _draw_rules(fig, ax, g: pd.DataFrame, r: pd.DataFrame, mgr: str, expiry_days
         for t in lbl:
             t.set_path_effects(STROKE)
         label_missing_levels(ax, x, days, C, labelled={t.get_text() for t in lbl})
-    ax.set_xticks([0.10, 0.25, 0.40, 0.60, 0.75, 0.90])
-    ax.set_xticklabels(["0.10", "0.25", "0.40", "0.60", "0.75", "0.90"])
+    ax.set_xticks(list(DELTA_LINES))
+    ax.set_xticklabels([f"{v:.2f}" for v in DELTA_LINES])
     ax.set_yticks([1, 2, 7, 30, 90, 365])
     ax.set_yticklabels(["1", "2", "7", "30", "90", "365"] if first else [])
     ax.yaxis.set_minor_locator(matplotlib.ticker.NullLocator())
     ax.tick_params(labelsize=FS_MIN, colors=INK, length=2.5, width=0.6, pad=1.5)
     ax.grid(False)
-    for v in (0.10, 0.25, 0.40, 0.60, 0.75, 0.90):
+    for v in DELTA_LINES:
         ax.axvline(v, color="#808080", lw=0.4, zorder=2)
-    for v in (2, 7, 30, 90):
+    for v in TENOR_LINES:
         ax.axhline(v, color="#808080", lw=0.4, zorder=2)
     for s in ax.spines.values():
         s.set_linewidth(0.6)
@@ -707,9 +727,10 @@ def draw(data: dict, tabs: Dict[str, pd.DataFrame]) -> plt.Figure:
     for mg in MANAGERS:
         ax = fig.add_axes(_fig_frac(fig, *boxes3d[mg]), projection="3d")
         _draw_3d(fig, ax, data["grids"][mg], mg, norm, zlim)
-        t = meta.loc[(meta["key"] == "title") & (meta["manager"] == mg), "printed"].iloc[0]
-        fig.text(tx[mg] / WIDTH, 1 - 0.22 / HEIGHT, t, fontsize=FS_TAG, fontweight="bold", ha="left", va="top",
-                 color=INK)
+        t = title(mg, float(meta.loc[(meta["key"] == "atm_K_pct") & (meta["manager"] == mg), "value"].iloc[0]))
+        fig.text(tx[mg] / WIDTH, 1 - 0.22 / HEIGHT, letter(mg, 0), fontsize=FS_TAG, fontweight="bold", ha="left",
+                 va="top", color=INK)
+        fig.text((tx[mg] + TITLE_GAP) / WIDTH, 1 - 0.22 / HEIGHT, t, fontsize=FS_TAG, ha="left", va="top", color=INK)
     cax = fig.add_axes(_fig_frac(fig, 6.38, 2.00, 0.10, 1.80))
     cb = fig.colorbar(ScalarMappable(norm=norm, cmap=figstyle_cmap()), cax=cax)
     cb.set_ticks(list(CBAR_TICKS))
@@ -727,9 +748,10 @@ def draw(data: dict, tabs: Dict[str, pd.DataFrame]) -> plt.Figure:
         ax = fig.add_axes(_fig_frac(fig, *boxes2d[mg]))
         handles = _draw_rules(fig, ax, data["grids"][mg], data["rules"][mg], mg, exp_days,
                               _atm_row(data["grids"][mg]), first=(i == 0))
-        ax.set_title("c  binding PM2 scenario" if mg == "pm2" else "d  binding SM rule", loc="left",
-                     fontsize=FS_TAG, fontweight="bold", pad=2.5, color=INK)
         x0, _, w, _ = boxes2d[mg]
+        ax.set_title(RULE_TITLE[mg], loc="left", fontsize=FS_TAG, pad=2.5, color=INK, x=TITLE_GAP / w)
+        ax.annotate(letter(mg, 1), (0.0, 1.0), xycoords="axes fraction", xytext=(0.0, 2.5), textcoords="offset points",
+                    fontsize=FS_TAG, fontweight="bold", ha="left", va="baseline", color=INK)
         leg = fig.legend(handles=handles, loc="upper left", bbox_to_anchor=((x0 - 0.02) / WIDTH, 0.37 / HEIGHT),
                          ncol=2, fontsize=FS_MIN, frameon=False,
                          handlelength=1.6, handleheight=0.9, handletextpad=0.4, columnspacing=0.9, borderaxespad=0.0,

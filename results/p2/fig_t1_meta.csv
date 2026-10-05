@@ -25,6 +25,16 @@ iso_level,,,4.0,4 %
 iso_level,,,8.0,8 %
 iso_level,,,12.0,12 %
 iso_level,,,14.0,14 %
+grid_line_delta,,call_10,0.1,0.10
+grid_line_delta,,call_25,0.25,0.25
+grid_line_delta,,call_40,0.4,0.40
+grid_line_delta,,put_40,0.6,0.60
+grid_line_delta,,put_25,0.75,0.75
+grid_line_delta,,put_10,0.9,0.90
+grid_line_days,,,2.0,2
+grid_line_days,,,7.0,7
+grid_line_days,,,30.0,30
+grid_line_days,,,90.0,90
 colorbar_tick,,,4.0,4
 colorbar_tick,,,6.0,6
 colorbar_tick,,,8.0,8

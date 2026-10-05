@@ -161,6 +161,8 @@ CONSTANTS: Dict[str, Tuple[object, str, str, str]] = {
     "interval_lower_percentile": (5, "interval from the 5th percentile of the replications", PREREG, "Addendum 3"),
     "interval_upper_percentile": (95, "to the 95th percentile of the replications", PREREG, "Addendum 3"),
     "addenda": (4, "four dated addenda", PREREG, "Addendum 4"),
+    "addenda_total": (6, "six dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September 2026",
+                      PREREG, "Addendum 6"),
     "addendum5_day": ("2026-09-27", "Addendum 5, dated 27 September 2026 (history rewrite, after all results)",
                       PREREG, "Addendum 5"),
     "sm_max_options": (63, "63 options that an SM account on v2 can hold", PREREG, "Addendum 4"),
@@ -182,7 +184,7 @@ SECTION_ORIGINAL: Dict[str, str] = {
     "Sample": "Stichprobe", "Semantics and capital": "Semantik und Kapital", "Maker books": "Maker-Bücher",
     "Hypotheses and rejection rules": "Hypothesen und Ablehnungsregeln", "Inference": "Inferenz",
     "Validation before measurement": "Validierung vor der Messung", "Addendum 1": "Nachtrag 1",
-    "Addendum 3": "Nachtrag 3", "Addendum 4": "Nachtrag 4", "Addendum 5": "Nachtrag 5",
+    "Addendum 3": "Nachtrag 3", "Addendum 4": "Nachtrag 4", "Addendum 5": "Nachtrag 5", "Addendum 6": "Nachtrag 6",
     "Cells and classes": "Zellen und Klassen"}
 # Arithmetic identities used to read a result; they are not results.
 IDENTITIES: Dict[str, Tuple[float, str]] = {

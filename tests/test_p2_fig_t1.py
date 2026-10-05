@@ -328,3 +328,47 @@ def test_expiry_ticks_sit_outside_the_rule_panels(results_dir):
                 assert e.x0 >= box.x1 - 0.5, ax.get_title(loc="left")
     finally:
         matplotlib.pyplot.close(fig)
+
+
+def test_panel_letters_are_bold_and_titles_regular(results_dir):
+    """F15: as in T2 and A1 (FIGURE_SELECTION 6.1, panel letters 8 pt bold), the letter is bold and the title next to
+    it has regular weight; the z label of the surfaces reads from bottom to top like every other rotated label (F13)."""
+    data = t1.load(results_dir)
+    fig = t1.draw(data, t1.tables(data))
+    try:
+        fig.canvas.draw()
+        texts = [t for t in fig.findobj(matplotlib.text.Text) if t.get_visible() and t.get_text().strip()]
+        letters = [t for t in texts if t.get_text() in ("a", "b", "c", "d")]
+        assert sorted(t.get_text() for t in letters) == ["a", "b", "c", "d"]
+        assert all(t.get_fontweight() == "bold" and t.get_fontsize() == t1.FS_TAG for t in letters)
+        titles = [t for t in texts if t.get_text().startswith(("PM2: ATM", "SM: ATM", "binding"))]
+        assert len(titles) == 4
+        assert all(t.get_fontweight() == "normal" and t.get_fontsize() == t1.FS_TAG for t in titles)
+        r = fig.canvas.get_renderer()
+        for lt in letters:          # the title starts right of its letter, on the same line
+            box = lt.get_window_extent(r)
+            mate = [t for t in titles if abs(t.get_window_extent(r).y0 - box.y0) < 1.0
+                    and 0.0 < t.get_window_extent(r).x0 - box.x1 < 0.2 * fig.dpi]
+            assert len(mate) == 1, lt.get_text()
+        for ax in fig.axes:
+            if getattr(ax, "name", "") == "3d":
+                assert ax.zaxis.label.get_text() == "implied vol, %"
+                assert ax.zaxis.label.get_rotation() == 90.0
+    finally:
+        matplotlib.pyplot.close(fig)
+
+
+def test_delta_grid_lines_are_the_bucket_edges_mirrored_for_puts(results_dir):
+    """C1: the lines of c and d at call delta 0.10, 0.25, 0.40 are the call edges 10, 25, 40 per cent and those at
+    0.60, 0.75, 0.90 the put edges 40, 25, 10 per cent; the table records which is which for the caption."""
+    assert t1.DELTA_LINES == pytest.approx((0.10, 0.25, 0.40, 0.60, 0.75, 0.90))
+    meta = t1.tables(t1.load(results_dir))["meta"]
+    g = meta[meta["key"] == "grid_line_delta"].set_index("rule")
+    assert list(g.index) == ["call_10", "call_25", "call_40", "put_40", "put_25", "put_10"]
+    for rule, row in g.iterrows():
+        side, edge = rule.split("_")
+        assert row["value"] == pytest.approx(int(edge) / 100.0 if side == "call" else 1.0 - int(edge) / 100.0)
+        assert row["printed"] == f"{row['value']:.2f}"
+    assert list(meta.loc[meta["key"] == "grid_line_days", "value"]) == [2, 7, 30, 90]
+    assert "the lines at 0.60, 0.75 and 0.90 are the put edges of 40, 25 and 10~per~cent" in t1.CAPTION
+    assert "ATM marks the at-the-money node" in t1.CAPTION and "OTM is the amount" in t1.CAPTION

@@ -1,34 +1,37 @@
 # Number check Paper 2
 
-Generated 2026-09-30 10:46 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-10-05 10:03 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 
 ## Result
 
-- Numbers, dates and commits in the text: 371
-- Result: 266
-- Constant: 76
-- Commit date: 5
-- Text count: 18
-- Commit: 6
+- Numbers, dates and commits in the text: 380
+- Result: 271
+- Constant: 75
+- Commit date: 6
+- Text count: 21
+- Commit: 7
 
 **Errors: 0** (none)
 
 Text counts (without a data source, for review):
 
-- Introduction: `four` (text:contributions) … nue actually applies. The paper makes four contributions: a capital map, compute …
+- Introduction: `four` (text:contributions) … nue actually applies. The paper makes four contributions: a capital map over the …
 - caption fig:t2: `30` (text:refbook_target_days) … 2026, on the listed expiry nearest to 30 days (22 days), in per cent of the fo …
 - The engine and what it returns: `Two` (text:two_engines) … single contracts on the BTC surface. Two engines implement the managers. The o …
-- The engine and what it returns: `two` (text:two_semantics) … e contracts on 25 September 2026, the two semantics differed in   capital by a …
-- The engine and what it returns: `two` (text:two_books) … ard to   margin of 11.86 and 1.19 for two books at blocks 44810149 and 45110142 …
+- The engine and what it returns: `two` (text:two_engines_compared) … e contracts on 25 September 2026, the two engines differed in   capital by a me …
 - caption fig:f2: `two` (text:denominators) … The map in two denominators ( ). Panel a is net edge …
 - caption fig:f2: `ten` (text:largest_moves) … the 90 per cent rank intervals of the ten largest moves. Panel c is the registe …
+- Data and measurement: `100` (text:log_pct_factor) … r cent, log changes are multiplied by 100. Events whose largest absolute dose i …
 - caption fig:f5: `two` (text:two_events) … May 2026 overlap, so 6527 fills enter two events. Black dashes below each line …
 - caption fig:f5: `30` (text:refbook_target_days) … rward on the listed expiry nearest to 30 days, one contract per leg, in per ce …
 - Results / A fill in a maker's book (H2): `95th` (text:quantile_level) … r bind more than 0.63 of it. From the 95th percentile on, a fill binds about its …
-- caption fig:f6: `ten` (text:reading_aid_pct) … l cheaper. To read the slope: capital ten per cent cheaper is a dose of -0.105 …
-- Results / The price of capital (H4): `ten` (text:reading_aid_pct) … runs from -41.6 to 29.7. For capital ten per cent cheaper, the range of the ch …
+- caption fig:f6: `100` (text:log_pct_factor) … oses on the axes are in log per cent, 100 times the change in log capital, so t …
+- caption fig:f6: `100` (text:log_pct_factor) … so the line in panel b has the slope /100 per log per cent. To read the slope: …
+- caption fig:f6: `ten` (text:reading_aid_pct) … per cent. To read the slope: capital ten per cent cheaper is a dose of -0.105 …
+- Results / The price of capital (H4): `ten` (text:reading_aid_pct) … runs from -41.6 to 29.7. For capital ten per cent cheaper, the change in the h …
+- Discussion: `ten` (text:reading_aid_pct) … or the test lacked power: for capital ten per cent cheaper, a narrowing by up t …
 - Post hoc and exploratory results: `5th` (text:shuffle_percentile) … roup give a of 0.734 on average, with 5th and 95th percentiles of 0.700 and 0.7 …
 - Post hoc and exploratory results: `95th` (text:shuffle_percentile) … e a of 0.734 on average, with 5th and 95th percentiles of 0.700 and 0.770. Among …
 - Post hoc and exploratory results: `ten` (text:top_list) … s would ignore that selection. Of the ten best cells per unit of capital, one i …
@@ -41,18 +44,27 @@ Text counts (without a data source, for review):
 | Place | Text | Evidence | Source | Value |
 |---|---|---|---|---|
 | abstract | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
+| abstract | `Four` | Result | derived:n_hypotheses | = 4 |
 | abstract | `0.903` | Result | summary.json:h1_stat | = 0.902944 |
 | abstract | `four` | Result | summary.json:h2_n_accounts | = 4 |
 | abstract | `3.5` | Result | summary.json:h2_stat~pct | = 3.45401 |
 | abstract | `nine` | Result | summary.json:h3_n_accounts | = 9 |
 | abstract | `4.75` | Result | summary.json:h3_stat | = 4.74673 |
-| abstract | `Four` | Result | derived:n_hypotheses | = 4 |
-| abstract | `two` | Result | derived:n_rejected | = 2 |
+| abstract | `17 September 2026` | Constant | const:pilot_cut | pilot cut 17 September 2026 12:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
+| caption fig:t1 | `08:00` | Result | fig_t1_meta.csv:value@key=ts | = 08:00 |
+| caption fig:t1 | `17 September 2026` | Result | fig_t1_meta.csv:value@key=ts | = 2026-09-17 |
+| caption fig:t1 | `30` | Result | fig_t1_meta.csv:value@key=atm_tenor_days | = 30.4392 |
+| caption fig:t1 | `0.60` | Result | fig_t1_meta.csv:value@key=grid_line_delta,rule=put_40 | = 0.6 |
+| caption fig:t1 | `0.75` | Result | fig_t1_meta.csv:value@key=grid_line_delta,rule=put_25 | = 0.75 |
+| caption fig:t1 | `0.90` | Result | fig_t1_meta.csv:value@key=grid_line_delta,rule=put_10 | = 0.9 |
+| caption fig:t1 | `40` | Constant | const:delta_edge_40 | \|Δ\| bucket edge 40 % (docs/paper1/PRAEREGISTRIERUNG.md, Cells and classes) |
+| caption fig:t1 | `25` | Constant | const:delta_edge_25 | \|Δ\| bucket edge 25 % (docs/paper1/PRAEREGISTRIERUNG.md, Cells and classes) |
+| caption fig:t1 | `10` | Constant | const:delta_edge_10 | \|Δ\| bucket edge 10 % (docs/paper1/PRAEREGISTRIERUNG.md, Cells and classes) |
+| caption fig:t1 | `60` | Constant | const:delta_edge_60 | \|Δ\| bucket edge 60 % (docs/paper1/PRAEREGISTRIERUNG.md, Cells and classes) |
+| caption fig:t1 | `two` | Constant | const:api_discount_pct | API semantics with 2 % (exploratory) (docs/paper2/PRAEREGISTRIERUNG.md, Inference) |
 | Introduction | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Introduction | `four` | Text count | text:contributions | count word from the sentence |
 | Introduction | `Four` | Result | derived:n_hypotheses | = 4 |
-| Introduction | `Two` | Result | derived:n_rejected | = 2 |
-| Introduction | `four` | Result | derived:n_hypotheses | = 4 |
 | Introduction | `0.903` | Result | summary.json:h1_stat | = 0.902944 |
 | Introduction | `0.881` | Result | summary.json:h1_lo | = 0.880564 |
 | Introduction | `0.907` | Result | summary.json:h1_hi | = 0.907433 |
@@ -65,10 +77,6 @@ Text counts (without a data source, for review):
 | Introduction | `4.75` | Result | summary.json:h3_stat | = 4.74673 |
 | Introduction | `nine` | Result | summary.json:h3_n_accounts | = 9 |
 | Introduction | `0.62` | Result | summary.json:h4_p | = 0.6224 |
-| caption fig:t1 | `08:00` | Result | fig_t1_meta.csv:value@key=ts | = 08:00 |
-| caption fig:t1 | `17 September 2026` | Result | fig_t1_meta.csv:value@key=ts | = 2026-09-17 |
-| caption fig:t1 | `0.6` | Constant | const:delta_edge_60_delta | \|Δ\| bucket edge 60 % as delta 0.6 (docs/paper1/PRAEREGISTRIERUNG.md, Cells and classes) |
-| caption fig:t1 | `two` | Constant | const:api_discount_pct | API semantics with 2 % (exploratory) (docs/paper2/PRAEREGISTRIERUNG.md, Inference) |
 | caption fig:t2 | `24 September 2026` | Result | semantics/box_discount.json:box_*.api_ts~all | all: 2026-09-24, 2026-09-24, 2026-09-24, 2026-09-24 … |
 | caption fig:t2 | `45110142` | Result | fig_t2_b.csv:block@row=1 | = 4.51101e+07 |
 | caption fig:t2 | `four` | Result | fig_t2_b.csv:row~count | = 4 |
@@ -79,6 +87,19 @@ Text counts (without a data source, for review):
 | caption fig:t2 | `17 September 2026` | Result | fig_t1_meta.csv:value@key=ts | = 2026-09-17 |
 | caption fig:t2 | `30` | Text count | text:refbook_target_days | count word from the sentence |
 | caption fig:t2 | `22` | Result | reference_book.csv:tenor_days@ccy=BTC,day=2026-09-17 | = 22 |
+| caption fig:f1 | `23 January` | Result | events.csv:event_day@event_id=BTC-pm2-20260123 | = --01-23 |
+| caption fig:f1 | `24 May` | Result | events.csv:event_day@event_id=BTC-pm2-20260524 | = --05-24 |
+| caption fig:f1 | `20 August 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260820 | = 2026-08-20 |
+| caption fig:f1 | `four` | Result | fig_f1_regimes.csv:regime~distinct | = 4 |
+| caption fig:f1 | `200` | Constant | const:cell_min_fills | cell populated from 200 fills (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
+| caption fig:f1 | `20 August 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260820 | = 2026-08-20 |
+| The engine and what it returns | `11.86` | Result | fig_t2_b.csv:F_Cnet@row=0 | = 11.86 |
+| The engine and what it returns | `1.19` | Result | fig_t2_b.csv:F_Cnet@row=1 | = 1.19 |
+| The engine and what it returns | `17 September` | Result | semantics/factors.csv:measurement@book=b17_exact,case=B,F_Cnet=11.86 | = --09-17 |
+| The engine and what it returns | `24 September 2026` | Result | semantics/factors.csv:measurement@book=b24,case=B,F_Cnet=1.19 | = 2026-09-24 |
+| The engine and what it returns | `10.76` | Result | fig_t2_b.csv:F_R_engine@row=0 | = 10.76 |
+| The engine and what it returns | `2.14` | Result | fig_t2_b.csv:F_R_engine@row=1 | = 2.14 |
+| The engine and what it returns | `-496859` | Result | fig_t2_a.csv:value_usdc@manager=pm2,item=minus_V~neg | = -496859 |
 | The engine and what it returns | `Two` | Text count | text:two_engines | count word from the sentence |
 | The engine and what it returns | `fourteen` | Result | summary.json:semantics_box_expiries | = 14 |
 | The engine and what it returns | `24 September 2026` | Result | semantics/box_discount.json:box_*.api_ts~all | all: 2026-09-24, 2026-09-24, 2026-09-24, 2026-09-24 … |
@@ -87,23 +108,9 @@ Text counts (without a data source, for review):
 | The engine and what it returns | `3.82` | Result | semantics/box_discount.json:box_*.r_chain~max~pct | = 3.82 |
 | The engine and what it returns | `195` | Result | summary.json:api_n | = 195 |
 | The engine and what it returns | `25 September 2026` | Result | summary.json:api_day | = 2026-09-25 |
-| The engine and what it returns | `two` | Text count | text:two_semantics | count word from the sentence |
+| The engine and what it returns | `two` | Text count | text:two_engines_compared | count word from the sentence |
 | The engine and what it returns | `0.08` | Result | summary.json:api_pm2_median_abs_rel~pct | = 0.0802662 |
 | The engine and what it returns | `2.4` | Result | summary.json:api_pm2_max_abs_rel~pct | = 2.41262 |
-| The engine and what it returns | `11.86` | Result | fig_t2_b.csv:F_Cnet@row=0 | = 11.86 |
-| The engine and what it returns | `1.19` | Result | fig_t2_b.csv:F_Cnet@row=1 | = 1.19 |
-| The engine and what it returns | `two` | Text count | text:two_books | count word from the sentence |
-| The engine and what it returns | `44810149` | Result | fig_t2_b.csv:block@row=0 | = 4.48101e+07 |
-| The engine and what it returns | `45110142` | Result | fig_t2_b.csv:block@row=1 | = 4.51101e+07 |
-| The engine and what it returns | `10.76` | Result | fig_t2_b.csv:F_R_engine@row=0 | = 10.76 |
-| The engine and what it returns | `2.14` | Result | fig_t2_b.csv:F_R_engine@row=1 | = 2.14 |
-| The engine and what it returns | `-496859` | Result | fig_t2_a.csv:value_usdc@manager=pm2,item=minus_V~neg | = -496859 |
-| caption fig:f1 | `23 January` | Result | events.csv:event_day@event_id=BTC-pm2-20260123 | = --01-23 |
-| caption fig:f1 | `24 May` | Result | events.csv:event_day@event_id=BTC-pm2-20260524 | = --05-24 |
-| caption fig:f1 | `20 August 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260820 | = 2026-08-20 |
-| caption fig:f1 | `four` | Result | fig_f1_regimes.csv:regime~distinct | = 4 |
-| caption fig:f1 | `200` | Constant | const:cell_min_fills | cell populated from 200 fills (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
-| caption fig:f1 | `20 August 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260820 | = 2026-08-20 |
 | caption fig:f2 | `two` | Text count | text:denominators | count word from the sentence |
 | caption fig:f2 | `200` | Constant | const:cell_min_fills | cell populated from 200 fills (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
 | caption fig:f2 | `173` | Result | summary.json:h1_n_cells | = 173 |
@@ -112,9 +119,9 @@ Text counts (without a data source, for review):
 | caption fig:f2 | `ten` | Text count | text:largest_moves | count word from the sentence |
 | caption fig:f2 | `90` | Constant | const:interval_pct | 90 % interval (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | caption fig:f2 | `0.5` | Constant | const:h1_threshold | H1 rejected if the upper bound is ≥ 0.5 (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| Data and measurement | `603940` | Result | summary.json:fills_total | = 603940 |
 | Data and measurement | `11 January 2024` | Constant | const:sample_start | start of the sample 11 January 2024 00:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data and measurement | `17 September 2026` | Constant | const:pilot_cut | pilot cut 17 September 2026 12:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
-| Data and measurement | `603940` | Result | summary.json:fills_total | = 603940 |
 | Data and measurement | `thirty` | Constant | const:markout_minutes | net edge after 30 minutes (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
 | Data and measurement | `25 September 2026` | Commit date | git:faf6cea | = 2026-09-25 |
 | Data and measurement | `11 November 2025` | Constant | const:window_hype | SM and PM2 for HYPE from 11 November 2025 00:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
@@ -127,6 +134,7 @@ Text counts (without a data source, for review):
 | Data and measurement | `200` | Constant | const:cell_min_fills | cell populated from 200 fills (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
 | Data and measurement | `ten` | Constant | const:dominant_makers | the ten dominant maker subaccounts (docs/paper2/PRAEREGISTRIERUNG.md, Maker books) |
 | Data and measurement | `fourteen` | Constant | const:dose_window_days | dose window [e − 14 days, e) (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| Data and measurement | `100` | Text count | text:log_pct_factor | count word from the sentence |
 | Data and measurement | `fourteen` | Constant | const:regression_window_days | regression window [e − 14 days, e + 14 days] (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | Data and measurement | `20` | Constant | const:h4_min_fills_side | cells need at least 20 fills before and 20 after the event (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | Data and measurement | `90` | Constant | const:interval_pct | 90 % interval (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
@@ -156,11 +164,9 @@ Text counts (without a data source, for review):
 | Results / The capital denominator and the map (H1) | `1.140` | Result | fig_f1_b.csv:row_median@ccy=ETH,side=sell,manager=sm,regime=R4 | = 1.14004 |
 | Results / The capital denominator and the map (H1) | `6` | Result | fig_f1_b.csv:row_n@ccy=BTC,side=sell,manager=sm,regime=R4 | = 6 |
 | Results / The capital denominator and the map (H1) | `18` | Result | fig_f1_b.csv:row_n@ccy=ETH,side=sell,manager=sm,regime=R4 | = 18 |
-| Results / The capital denominator and the map (H1) | `200` | Constant | const:cell_min_fills | cell populated from 200 fills (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
 | Results / The capital denominator and the map (H1) | `1.382` | Result | fig_f1_b.csv:row_median@ccy=BTC,side=sell,manager=pm,regime=pooled | = 1.38242 |
 | Results / The capital denominator and the map (H1) | `1.355` | Result | fig_f1_b.csv:row_median@ccy=ETH,side=sell,manager=pm,regime=pooled | = 1.35481 |
 | Results / The capital denominator and the map (H1) | `173` | Result | summary.json:h1_n_cells | = 173 |
-| Results / The capital denominator and the map (H1) | `200` | Constant | const:cell_min_fills | cell populated from 200 fills (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
 | Results / The capital denominator and the map (H1) | `210` | Result | summary.json:h1_n_cells_any | = 210 |
 | Results / The capital denominator and the map (H1) | `0.903` | Result | summary.json:h1_stat | = 0.902944 |
 | Results / The capital denominator and the map (H1) | `90` | Constant | const:interval_pct | 90 % interval (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
@@ -197,9 +203,8 @@ Text counts (without a data source, for review):
 | caption fig:f5 | `5` | Result | fig_f5_c.csv:legacy_thin_below~max~pct | = 5 |
 | Results / A fill in a maker's book (H2) | `ten` | Constant | const:dominant_makers | the ten dominant maker subaccounts (docs/paper2/PRAEREGISTRIERUNG.md, Maker books) |
 | Results / A fill in a maker's book (H2) | `four` | Result | summary.json:h2_n_accounts | = 4 |
+| Results / A fill in a maker's book (H2) | `20000` | Constant | const:h2_sample | simple random sample of 20 000 fills (H2) (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | Results / A fill in a maker's book (H2) | `100995` | Result | summary.json:h2_population | = 100995 |
-| Results / A fill in a maker's book (H2) | `20000` | Constant | const:h2_sample | simple random sample of 20 000 fills (H2) (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
-| Results / A fill in a maker's book (H2) | `20000` | Constant | const:h2_sample | simple random sample of 20 000 fills (H2) (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | Results / A fill in a maker's book (H2) | `19999` | Result | summary.json:h2_n | = 19999 |
 | Results / A fill in a maker's book (H2) | `372` | Result | summary.json:h2_n_days | = 372 |
 | Results / A fill in a maker's book (H2) | `0.0345` | Result | summary.json:h2_stat | = 0.0345401 |
@@ -217,8 +222,11 @@ Text counts (without a data source, for review):
 | caption fig:f6 | `13` | Result | summary.json:events_with_cells | = 13 |
 | caption fig:f6 | `20` | Result | fig_f6_b.csv:bin@mode=bins,kind=bin~count | = 20 |
 | caption fig:f6 | `100` | Constant | const:placebo_dates | 100 placebo dates (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| caption fig:f6 | `100` | Text count | text:log_pct_factor | count word from the sentence |
+| caption fig:f6 | `100` | Text count | text:log_pct_factor | count word from the sentence |
 | caption fig:f6 | `ten` | Text count | text:reading_aid_pct | count word from the sentence |
 | caption fig:f6 | `-0.105` | Result | summary.json:h4_review_ten_pct_dose | = -0.105361 |
+| caption fig:f6 | `-10.5` | Result | summary.json:h4_review_ten_pct_dose~pct | = -10.5361 |
 | caption fig:f6 | `-0.105` | Result | summary.json:h4_review_ten_pct_dose | = -0.105361 |
 | Results / What netting is worth (H3) | `1943` | Result | summary.json:h3_n | = 1943 |
 | Results / What netting is worth (H3) | `nine` | Result | summary.json:h3_n_accounts | = 9 |
@@ -239,7 +247,6 @@ Text counts (without a data source, for review):
 | Results / What netting is worth (H3) | `1431` | Result | summary.json:h3_days_over_63_options | = 1431 |
 | Results / What netting is worth (H3) | `73.6` | Result | summary.json:h3_share_days_over_63_options~pct | = 73.649 |
 | Results / What netting is worth (H3) | `63` | Constant | const:sm_max_options | 63 options that an SM account on v2 can hold (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 4) |
-| Results / What netting is worth (H3) | `September 2026` | Constant | const:addenda_day | Addenda 1 to 4, dated 25 September 2026 (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 1) |
 | Results / What netting is worth (H3) | `5.465` | Result | summary.json:sens_e_h3_sm_pm2_gt63_stat | = 5.46541 |
 | Results / What netting is worth (H3) | `512` | Result | summary.json:sens_e_h3_sm_pm2_le63_n | = 512 |
 | Results / What netting is worth (H3) | `63` | Constant | const:sm_max_options | 63 options that an SM account on v2 can hold (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 4) |
@@ -266,6 +273,7 @@ Text counts (without a data source, for review):
 | Results / The price of capital (H4) | `7.8` | Result | fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~max~neg~down | = 7.84153 |
 | Results / The price of capital (H4) | `26.0` | Result | fig_f5_b.csv:jump_logpct@mark=event,ccy=BTC,jump_logpct<0~min~neg~down | = 26.046 |
 | Results / The price of capital (H4) | `20 August 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260820 | = 2026-08-20 |
+| Results / The price of capital (H4) | `26.0` | Result | summary.json:event_btc_pm2_20260820_refbook_log_change~neg~pct~down | = 26.046 |
 | Results / The price of capital (H4) | `22.9` | Result | summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down | = 22.9303 |
 | Results / The price of capital (H4) | `8 January 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260108 | = 2026-01-08 |
 | Results / The price of capital (H4) | `1.6` | Result | summary.json:event_btc_pm2_20260108_refbook_log_change,event_eth_pm2_20260108_refbook_log_change,event_hype_pm2_20260108_refbook_log_change~pct~median~up | = 1.59792 |
@@ -296,11 +304,14 @@ Text counts (without a data source, for review):
 | Results / Sensitivities | `19693` | Result | summary.json:sens_b_mm_h2_ratio_mm_n | = 19693 |
 | Results / Sensitivities | `0.0278` | Result | summary.json:sens_b_mm_h2_ratio_mm_std_stat | = 0.0277626 |
 | Results / Sensitivities | `0.913` | Result | summary.json:sens_c_p1_net_edge_h1_pm2_stat | = 0.912609 |
+| Results / Sensitivities | `0.904` | Result | summary.json:sens_c2_rfq_package_h1_pm2_stat | = 0.903869 |
 | Results / Sensitivities | `0.0340` | Result | summary.json:sens_d_h2_ratio_tape_stat | = 0.0340328 |
 | Results / Sensitivities | `0.0329` | Result | summary.json:sens_d_h2_ratio_unit_stat | = 0.0329119 |
 | Discussion | `four` | Result | summary.json:h2_n_accounts | = 4 |
 | Discussion | `3.5` | Result | summary.json:h2_stat~pct | = 3.45401 |
 | Discussion | `22.9` | Result | summary.json:event_btc_pm2_20260820_refbook_change~neg~pct~down | = 22.9303 |
+| Discussion | `ten` | Text count | text:reading_aid_pct | count word from the sentence |
+| Discussion | `39` | Result | summary.json:h4_cal_ten_pct_narrowing_share~pct~down | = 39.4501 |
 | Discussion | `four` | Result | summary.json:h2_n_accounts | = 4 |
 | Discussion | `13` | Result | summary.json:events_with_cells | = 13 |
 | Discussion | `17 September 2026` | Constant | const:pilot_cut | pilot cut 17 September 2026 12:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
@@ -308,21 +319,23 @@ Text counts (without a data source, for review):
 | Conclusion | `3.5` | Result | summary.json:h2_stat~pct | = 3.45401 |
 | Conclusion | `4.75` | Result | summary.json:h3_stat | = 4.74673 |
 | Conclusion | `Four` | Result | derived:n_hypotheses | = 4 |
-| Conclusion | `two` | Result | derived:n_rejected | = 2 |
 | Data, code and pre-registration | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data, code and pre-registration | `four` | Result | derived:n_hypotheses | = 4 |
 | Data, code and pre-registration | `24 September 2026` | Commit date | git:cc0a29f | = 2026-09-24 |
 | Data, code and pre-registration | `22:33` | Commit date | git:cc0a29f | = 22:33 |
-| Data, code and pre-registration | `Four` | Constant | const:addenda | four dated addenda (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 4) |
+| Data, code and pre-registration | `Six` | Constant | const:addenda_total | six dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September 2026 (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 6) |
+| Data, code and pre-registration | `four` | Constant | const:addenda | four dated addenda (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 4) |
 | Data, code and pre-registration | `25 September 2026` | Commit date | git:e492ba1 | = 2026-09-25 |
 | Data, code and pre-registration | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
-| Data, code and pre-registration | `27 September 2026` | Constant | const:addendum5_day | Addendum 5, dated 27 September 2026 (history rewrite, after all results) (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 5) |
+| Data, code and pre-registration | `27 September 2026` | Commit date | git:a3282d6 | = 2026-09-27 |
 | Data, code and pre-registration | `30 September 2026` | Commit date | git:1b46e80 | = 2026-09-30 |
+| Data, code and pre-registration | `0.904` | Result | sensitivity.json:c2_rfq_package.h1_pm2.stat | = 0.903869 |
 | Data, code and pre-registration | `cc0a29f` | Commit | git: commit present |  |
 | Data, code and pre-registration | `85bb0b7` | Commit | git: commit present |  |
 | Data, code and pre-registration | `6005d7c` | Commit | git: commit present |  |
 | Data, code and pre-registration | `8778432` | Commit | git: commit present |  |
 | Data, code and pre-registration | `e492ba1` | Commit | git: commit present |  |
+| Data, code and pre-registration | `a3282d6` | Commit | git: commit present |  |
 | Data, code and pre-registration | `1b46e80` | Commit | git: commit present |  |
 | caption fig:a1 | `20` | Result | validation.csv:book@kind=book~distinct | = 20 |
 | caption fig:a1 | `1e-13` | Result | fig_a1_meta.csv:value@key=x_lo | = 1e-13 |
@@ -330,9 +343,6 @@ Text counts (without a data source, for review):
 | caption fig:a1 | `0.1` | Constant | const:validation_median_pct | median of the absolute relative deviation below 0.1 % (docs/paper2/PRAEREGISTRIERUNG.md, Validation before measurement) |
 | caption fig:a1 | `95th` | Constant | const:validation_percentile | 95th percentile of the absolute relative deviation (docs/paper2/PRAEREGISTRIERUNG.md, Validation before measurement) |
 | caption fig:a1 | `1` | Constant | const:validation_p95_pct | 95th percentile below 1 % (docs/paper2/PRAEREGISTRIERUNG.md, Validation before measurement) |
-| caption fig:a1 | `17` | Result | fig_a1_meta.csv:value@key=spot_stale_fills | = 17 |
-| caption fig:a1 | `180` | Result | fig_a1_meta.csv:value@key=spot_limit_s | = 180 |
-| caption fig:a1 | `two` | Constant | const:api_discount_pct | API semantics with 2 % (exploratory) (docs/paper2/PRAEREGISTRIERUNG.md, Inference) |
 | Validation of the replica | `100` | Result | summary.json:validation_single_blocks_per_cell | = 100 |
 | Validation of the replica | `48` | Constant | const:validation_min_blocks | at least 48 random blocks per underlying and manager (docs/paper2/PRAEREGISTRIERUNG.md, Validation before measurement) |
 | Validation of the replica | `20` | Result | validation.csv:book@kind=book~distinct | = 20 |
@@ -353,6 +363,8 @@ Text counts (without a data source, for review):
 | Validation of the replica | `0.050` | Result | summary.json:validation_book_max_abs_usd | = 0.0502857 |
 | Validation of the replica | `127` | Result | summary.json:h3_days_over_validated_legs | = 127 |
 | Validation of the replica | `317` | Result | summary.json:h3_legs_max | = 317 |
+| Validation of the replica | `17` | Result | fig_a1_meta.csv:value@key=spot_stale_fills | = 17 |
+| Validation of the replica | `180` | Result | fig_a1_meta.csv:value@key=spot_limit_s | = 180 |
 | Post hoc and exploratory results | `0.734` | Result | summary.json:h1_sign_floor_mean | = 0.734164 |
 | Post hoc and exploratory results | `5th` | Text count | text:shuffle_percentile | count word from the sentence |
 | Post hoc and exploratory results | `95th` | Text count | text:shuffle_percentile | count word from the sentence |
@@ -460,6 +472,7 @@ Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) with Addenda 1 to 
 | `interval_lower_percentile` | 5 | interval from the 5th percentile of the replications | Addendum 3 ("Nachtrag 3") |
 | `interval_upper_percentile` | 95 | to the 95th percentile of the replications | Addendum 3 ("Nachtrag 3") |
 | `addenda` | 4 | four dated addenda | Addendum 4 ("Nachtrag 4") |
+| `addenda_total` | 6 | six dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September 2026 | Addendum 6 ("Nachtrag 6") |
 | `addendum5_day` | 2026-09-27 | Addendum 5, dated 27 September 2026 (history rewrite, after all results) | Addendum 5 ("Nachtrag 5") |
 | `sm_max_options` | 63 | 63 options that an SM account on v2 can hold | Addendum 4 ("Nachtrag 4") |
 | `delta_edge_10` | 10 | \|Δ\| bucket edge 10 % | Cells and classes ("Zellen und Klassen") (Paper 1) |

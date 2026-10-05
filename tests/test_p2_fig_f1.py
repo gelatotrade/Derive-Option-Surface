@@ -217,3 +217,57 @@ def test_buy_row_says_capital_is_about_the_premium_only_out_of_the_money():
     assert "OTM" in f1.SIDE_TITLE["buy"]
     assert "premium" in f1.SIDE_TITLE["buy"]
     assert "PM2 about the premium out of the money (OTM) and less in the money" in f1.CAPTION
+
+
+def test_caption_names_the_regimes_and_the_count_column():
+    """F5/C5/R25: the strip rows R4 and the regimes R1 to R4 are named in the caption; C10/F11: n is explained."""
+    assert "split into four regimes, R1 to R4" in f1.CAPTION
+    assert "the hollow squares of the rows R4" in f1.CAPTION
+    assert "the number of cells under n" in f1.CAPTION
+
+
+def test_r4_rows_in_grey_and_the_count_column_headed_n(rd):
+    """F5: the R4 rows read as a part of the row above them; F11: the cell counts have the head n."""
+    fig, _ = f1.make_figure(rd)
+    strips = [ax for ax in fig.axes if ax.get_xscale() == "log"]
+    assert len(strips) == 2
+    for ax in strips:
+        for t, (_, _, regime, _) in zip(ax.get_yticklabels(), f1.STRIP_ROWS):
+            assert matplotlib.colors.same_color(t.get_color(), f1.GREY if regime == "R4" else f1.INK), t.get_text()
+    assert [t.get_text() for t in texts(fig)].count(f1.N_TITLE) == 1
+    import matplotlib.pyplot as plt
+    plt.close(fig)
+
+
+def test_row_title_clears_the_delta_ticks_at_print_size(rd):
+    """F6/T13: the second line of the rotated buy title ended beside the tick 90-100, under 1 pt from its 9."""
+    from derive_surface.figs_p2._print import to_print
+
+    fig, _ = f1.make_figure(rd)
+    to_print(fig)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    title = [t for t in fig.texts if t.get_text() == f1.SIDE_TITLE["buy"]][0].get_window_extent(r)
+    ticks = [t.get_window_extent(r) for ax in fig.axes for t in ax.get_yticklabels() if t.get_text() in f1.DELTA_TICKS]
+    gap_pt = min(e.x0 - title.x1 for e in ticks if e.y0 < title.y1 and title.y0 < e.y1) * 72.0 / fig.dpi
+    assert gap_pt >= 2.5
+    import matplotlib.pyplot as plt
+    plt.close(fig)
+
+
+def test_panel_letters_and_a_header_that_ends_before_b(rd):
+    """F15: the maps and the strips are panels a and b, as in every other figure with parts; the header ends at least
+    0.15 in before the letter b (F12 found "hatched = negative b" in F2)."""
+    from derive_surface.figs_p2._print import to_print
+
+    assert "Panel a is PM2 capital" in f1.CAPTION and "Panel b gives" in f1.CAPTION
+    fig, _ = f1.make_figure(rd)
+    to_print(fig)
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    letters = {t.get_text(): t for t in fig.texts if t.get_text() in ("a", "b")}
+    assert set(letters) == {"a", "b"} and all(t.get_fontweight() == "bold" for t in letters.values())
+    header = [t for t in fig.texts if t.get_text() == f1.HEADER][0].get_window_extent(r)
+    assert (letters["b"].get_window_extent(r).x0 - header.x1) / fig.dpi >= 0.15
+    import matplotlib.pyplot as plt
+    plt.close(fig)

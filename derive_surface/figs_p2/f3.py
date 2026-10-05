@@ -35,15 +35,16 @@ SENS = [("next contract", "ratio_unit"), ("maintenance margin", "ratio_mm"), ("t
 N_BINS = 62
 
 CAPTION = (
-    r"\textbf{A fill in a dominant maker's book (H2).} Panel a is the cumulative distribution of the "
-    r"marginal capital of a fill per contract over its stand-alone PM2 capital, $\Delta K / K_{\text{single}}$, "
-    r"for the \PH{h2-n} tested fills of the four PM2 subaccounts, which trade ETH and HYPE only; the numbers above "
-    r"the bands are the shares of fills in each band, and the shares beyond the axis are given at both ends. The "
-    r"dashed line is the registered threshold of one half, and the circle at height one half is the median; its 90 per "
-    r"cent day-cluster interval is narrower than the circle and printed at the top. Panel b repeats the registered "
-    r"row above the sensitivities and, on grey, "
-    r"exploratory rows per account and per parameter regime. A maker who starts from an empty book pays the "
-    r"stand-alone capital of Figure~\ref{fig:f1}."
+    r"\textbf{A fill in a dominant maker's book (H2).} Panel a is the cumulative distribution of the marginal "
+    r"capital of a fill per contract over its stand-alone PM2 capital, $\Delta K / K_{\text{single}}$, for the "
+    r"\PH{h2-n} tested fills of the four PM2 subaccounts, which trade ETH and HYPE only; the numbers above the "
+    r"bands are the shares of fills in each band, and the shares beyond the axis are given at both ends. The dashed "
+    r"line is the registered threshold of one half, and the circle at height one half is the median; its "
+    r"90~per~cent day-cluster interval is narrower than the circle and printed at the top. Panel b repeats the "
+    r"registered row above the sensitivities and, on grey, exploratory rows per subaccount and per parameter "
+    r"regime. The hatched stretch of the registered row, right of the threshold, is the rejection region: the rule "
+    r"rejects H2 if the interval reaches into it. A maker who starts from an empty book pays the stand-alone "
+    r"capital of Figure~\ref{fig:f1}."
 )
 
 
@@ -134,7 +135,7 @@ def forest_rows(h: dict, sens: pd.DataFrame) -> List[fr.Row]:
 
 def header_lines(h: dict) -> List[str]:
     ccys = sorted(h.get("fills_by_ccy", {}))
-    parts = [f"{len(h['accounts'])} PM2 accounts, {fr.list_words(ccys)} only",
+    parts = [f"{len(h['accounts'])} PM2 subaccounts, {fr.list_words(ccys)} only",
              f"{fr.fmt_int(h['n'])} of {fr.fmt_int(h['n_sample'])} sampled fills",
              f"{fr.fmt_int(h['n_days'])} day clusters"]
     return [fr.verdict_line(h)] + fr.wrap_parts(parts)
@@ -220,7 +221,7 @@ def _chk_sample(rd: Path):
     h, _, _ = load(rd)
     _, b = _fig(rd)
     text = " · ".join(b.loc[b["kind"] == "header", "printed"].iloc[1:])
-    want = [f"{len(h['accounts'])} PM2 accounts", fr.list_words(sorted(h["fills_by_ccy"])) + " only",
+    want = [f"{len(h['accounts'])} PM2 subaccounts", fr.list_words(sorted(h["fills_by_ccy"])) + " only",
             f"{fr.fmt_int(h['n'])} of {fr.fmt_int(h['n_sample'])} sampled fills",
             f"{fr.fmt_int(h['n_days'])} day clusters"]
     missing = [w for w in want if w not in text]

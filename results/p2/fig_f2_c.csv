@@ -2,6 +2,7 @@ label,source_key,kind,stat,lo,hi,n,n_days,printed
 registered,h1.json,registered,0.9029439440785052,0.8805637576426197,0.9074328677844167,173,463.0,173
 maintenance margin,sensitivity.json:b_mm.h1_pm2_mm,sensitivity,0.9025592056774409,0.8800135353750735,0.9069378068056979,173,463.0,173
 companion net edge,sensitivity.json:c_p1_net_edge.h1_pm2,sensitivity,0.912608758129337,0.8788206145616532,0.915367749651186,173,463.0,173
+RFQ fee over legs,sensitivity.json:c2_rfq_package.h1_pm2,sensitivity,0.9038687068617862,0.8804759167667141,0.907470878084281,173,463.0,173
 per day to expiry,sensitivity.json:f_time.to_expiry,exploratory,0.8058739819497429,0.7605543477757021,0.8131332539134385,173,463.0,173
 per holding time,sensitivity.json:f_time.holding,exploratory,0.8333781422234171,0.7953302955996124,0.8407519086269474,173,463.0,173
 SM capital,sensitivity.json:a_maps.sm_pm2_window,exploratory,0.8975274763478591,0.8734465607631726,0.9024620939966903,173,463.0,173

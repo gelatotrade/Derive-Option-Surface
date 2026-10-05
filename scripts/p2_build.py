@@ -17,7 +17,10 @@ behind a clean-looking console.  This builds ``paper2/main.tex`` with the full l
 * a section over its word budget (``p2_wordcount.py``);
 * a number, date or clock time in the text that ``p2_number_check.py`` finds without its declaration or
   that its declared source no longer covers, and a declaration that binds no number of its unit (every
-  number is declared in its unit, one entry per occurrence, in the order of the text).
+  number is declared in its unit, one entry per occurrence, in the order of the text);
+* a figure that prints more than one page away from its first callout in the running text, or a page that
+  holds figures and no running text (layout, read from the PDF).  A figure one page before its first callout
+  is printed as a note: in Section 4 every page carries a figure, and no order of the floats avoids it.
 
     python3 scripts/p2_build.py [--allow-caption-drift] [--no-numbers]
 
@@ -103,6 +106,75 @@ def pdf_text(pdf: Path) -> Tuple[int, str]:
 def pdf_problems(text: str, must: Sequence[str] = MUST_CONTAIN) -> Dict[str, List[str]]:
     return {"missing parts": [m for m in must if m not in text],
             "unresolved ?? in PDF": ["??"] if "??" in text else []}
+
+
+# Running text is set in STIX (cas-dc), captions in Latin Modern Sans and the labels inside the figures in DejaVu
+# Sans (matplotlib), so the font tells a callout in the text from one in a caption or a figure.
+BODY_FONT = re.compile(r"STIX|Charis")
+CAPTION_LABEL = re.compile(r"^\s*Figure (\d+):")
+CALLOUT = re.compile(r"Figures?\s+(\d+)((?:\s*(?:,|and)\s*\d+)*)")
+MARGIN_PT = 50          # header and footer lie within this distance of the top and bottom edge of the page
+MIN_BODY_CHARS = 100    # less running text than this on a page with figures: a page of figures only
+
+
+@dataclass
+class PageLayout:
+    figures: List[int]      # numbers of the figures whose caption is on the page
+    callouts: List[int]     # figures cited in the running text of the page
+    body_chars: int         # characters of running text, header and footer left out
+
+
+def pdf_layout(pdf: Path) -> List[PageLayout]:
+    """Per page: the figures printed on it, the figures its running text cites and the amount of running text."""
+    import pypdf
+    pages = []
+    for page in pypdf.PdfReader(str(pdf)).pages:
+        height = float(page.mediabox.height)
+        body: List[str] = []
+        figures: List[int] = []
+
+        def visit(text, cm, tm, font, size):
+            if not text.strip():
+                return
+            name = str(font.get("/BaseFont", "")) if font else ""
+            y = tm[4] * cm[1] + tm[5] * cm[3] + cm[5]
+            if BODY_FONT.search(name):
+                if MARGIN_PT < y < height - MARGIN_PT:
+                    body.append(text)
+            else:
+                m = CAPTION_LABEL.match(text)
+                if m:
+                    figures.append(int(m.group(1)))
+
+        page.extract_text(visitor_text=visit)
+        joined = " ".join(body)
+        callouts = []
+        for m in CALLOUT.finditer(joined):
+            callouts += [int(m.group(1))] + [int(n) for n in re.findall(r"\d+", m.group(2))]
+        pages.append(PageLayout(figures, sorted(set(callouts)), len(re.sub(r"\s", "", joined))))
+    return pages
+
+
+def layout_problems(pages: Sequence[PageLayout]) -> Tuple[Dict[str, List[str]], List[str]]:
+    """Problems of the float placement (PDF audit L2) and notes on figures one page before their first callout."""
+    first: Dict[int, int] = {}
+    for no, page in enumerate(pages, 1):
+        for n in page.callouts:
+            first.setdefault(n, no)
+    far, alone, notes = [], [], []
+    for no, page in enumerate(pages, 1):
+        for n in page.figures:
+            if n not in first:
+                continue
+            gap = no - first[n]
+            where = "Figure {} on page {}, first cited in the text on page {}".format(n, no, first[n])
+            if gap > 1 or gap < -1:
+                far.append(where)
+            elif gap == -1:
+                notes.append(where)
+        if page.figures and page.body_chars < MIN_BODY_CHARS:
+            alone.append("page {}: Figure {}".format(no, ", ".join(str(n) for n in page.figures)))
+    return {"figure far from its first callout": far, "page of figures only": alone}, notes
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -264,6 +336,7 @@ class Report:
     words: int = 0
     budget_rows: List[dict] = field(default_factory=list)
     numbers: int = 0
+    layout_notes: List[str] = field(default_factory=list)
 
     def failed(self) -> List[str]:
         return [k for k, v in self.problems.items() if v]
@@ -299,6 +372,7 @@ def check_sources(tex: str, paper: Path = PAPER, bib: str = "", literature: str 
 
 def build(paper: Path = PAPER, runner: Callable = subprocess.run, numbers: bool = True,
           allow_caption_drift: bool = False, read_pdf: Callable[[Path], Tuple[int, str]] = pdf_text,
+          read_layout: Callable[[Path], Sequence[PageLayout]] = pdf_layout,
           resolve_commit: Optional[Callable[[str], bool]] = None, results: Path = RESULTS,
           literature_path: Path = LITERATURE, figs: Path = FIGS, budget: Optional[Dict[str, int]] = None,
           slots: Sequence[str] = SLOTS, must: Sequence[str] = MUST_CONTAIN) -> Report:
@@ -320,6 +394,8 @@ def build(paper: Path = PAPER, runner: Callable = subprocess.run, numbers: bool 
         return rep
     rep.pages, text = read_pdf(compiled.pdf)
     rep.problems.update(pdf_problems(text, must))
+    layout, rep.layout_notes = layout_problems(read_layout(compiled.pdf))
+    rep.problems.update(layout)
     return rep
 
 
@@ -346,6 +422,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(render(rep))
     for slot, _, new, reason in CAPTION_EXCEPTIONS:
         print("\ncaption {} departs from its module on purpose: \"{}\" ({})".format(slot, new, reason))
+    for note in rep.layout_notes:
+        print("\nlayout note: {} (one page before its first callout)".format(note))
     if args.allow_caption_drift:
         drift = caption_drift((PAPER / "main.tex").read_text())
         if drift:

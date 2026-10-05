@@ -37,6 +37,7 @@ NAME = "f5"
 WIDTH, HEIGHT = 7.0, 5.15
 DAY = 86_400
 T0, T1 = pd.Timestamp("2024-01-01"), pd.Timestamp("2026-09-30")
+LABEL_MONTHS = (1, 7)         # quarter ticks labelled in January and July; April and October unlabelled
 RAILS: List[Tuple[str, str]] = [("BTC", "pm"), ("BTC", "pm2"), ("ETH", "pm"), ("ETH", "pm2"), ("HYPE", "pm2")]
 CCYS = ("BTC", "ETH", "HYPE")
 WINDOW_DAYS = p2events.WINDOW_DAYS
@@ -70,18 +71,19 @@ B_YLIM = (-0.62, 4.5)               # rows, top and bottom (rails at 0 .. 4)
 C_TOP, C_H = B_TOP + B_H + 0.24, 0.90
 
 CAPTION = (
-    r"\textbf{The engine over time.} Panel a is the share of option open interest per manager and underlying at "
-    r"the start of each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey "
-    r"tick and the registered H4 events as symbols: filled when they enter the panel, half filled when kept without a cell of 20 "
-    r"fills on each side, and hollow when dropped by the one per cent dose rule. The number is the change that the "
-    r"parameters alone make to the capital of the reference straddle of the underlying, in log per cent. Grey bars "
-    r"are the windows of 14 days on either side of each kept event; the windows of January and of May 2026 overlap, so "
-    r"\PH{h4-dup-fills} fills enter two events. Black dashes below each line are the days from which placebo dates "
-    r"may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the forward on the "
-    r"listed expiry nearest to 30 days, one contract per leg, in per cent of the forward; the small saw teeth come "
-    r"from rolling between expiries of 21 and 36 days, and the legacy line is thin in months in which the legacy "
-    r"manager held less than \PH{f5-legacy-thin} per cent of BTC open interest. Parameter changes of standard margin "
-    r"left the reference book unchanged."
+    r"\textbf{The engine over time.} Panel a is the share of option open interest per manager and underlying at the "
+    r"start of each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey tick and "
+    r"the registered H4 events as symbols: filled when they enter the H4 panel, half filled when kept without a "
+    r"cell of 20 fills on each side, and hollow when dropped by the one~per~cent dose rule. The number is the "
+    r"change that the parameters alone make to the capital of the reference straddle of the underlying, in log per "
+    r"cent. Grey bars are the windows of 14~days on either side of each kept event; the windows of January and of "
+    r"May 2026 overlap, so \PH{h4-dup-fills} fills enter two events. Black dashes below each line are the days from "
+    r"which placebo dates may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck "
+    r"at the forward on the listed expiry nearest to 30~days, one contract per leg, in per cent of the forward; the "
+    r"small saw teeth come from rolling between expiries of 21 and 36~days, and the legacy line is thin in months "
+    r"in which the legacy manager held less than \PH{f5-legacy-thin}~per~cent of BTC open interest. The grey "
+    r"vertical lines in panel c mark the kept BTC events of panel b. Parameter changes of standard margin left the "
+    r"reference book unchanged."
 )
 
 
@@ -279,12 +281,25 @@ def _end_labels(last) -> List[str]:
 # Figure
 # =====================================================================================================================
 
+def calendar_ticks() -> Tuple[List[pd.Timestamp], List[pd.Timestamp], List[str]]:
+    """The shared time axis: a tick at the start of every quarter, labelled ("Jan 2024", the month style of the
+    text) only in the months of ``LABEL_MONTHS``; the other quarters are short unlabelled ticks."""
+    quarters = pd.date_range(T0, T1, freq="QS")
+    major = [t for t in quarters if t.month in LABEL_MONTHS]
+    minor = [t for t in quarters if t.month not in LABEL_MONTHS]
+    return major, minor, [t.strftime("%b %Y") for t in major]
+
+
 def _calendar(ax, labels: bool) -> None:
     ax.set_xlim(mdates.date2num(T0), mdates.date2num(T1))
-    ticks = pd.date_range(T0, T1, freq="QS")
-    ax.set_xticks(mdates.date2num(ticks))
-    ax.set_xticklabels([t.strftime("%Y-%m") for t in ticks] if labels else [])
-    ax.tick_params(axis="x", length=2.5)
+    major, minor, printed = calendar_ticks()
+    ax.set_xticks(mdates.date2num(major))
+    ax.set_xticks(mdates.date2num(minor), minor=True)
+    texts = ax.set_xticklabels(printed if labels else [])
+    if texts and major[0] == T0:
+        texts[0].set_ha("left")                         # the label at the origin starts there, clear of the y axis
+    ax.tick_params(axis="x", which="major", length=2.5)
+    ax.tick_params(axis="x", which="minor", length=1.5, width=0.5)
 
 
 def _panel_a(fig, a: pd.DataFrame) -> None:

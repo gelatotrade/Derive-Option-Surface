@@ -138,17 +138,17 @@ def test_rows_labels_and_optional_groups(tmp_path):
     b = tables["b"]
     forest = b[b["kind"].isin(["registered", "sensitivity", "exploratory"])]
     assert forest["label"].tolist() == ["registered", "maintenance margin", "legacy PM / PM2",
-                                        "SM / PM2 same legs", "≤ 63 options", "> 63 options", "SM account (M2)",
-                                        "legacy PM accounts", "PM2 accounts", "R1 to 23 Jan", "R2 to 24 May",
+                                        "SM / PM2 same legs", "≤ 63 legs", "> 63 legs", "SM books (M2)",
+                                        "legacy PM books", "PM2 books", "R1 to 23 Jan", "R2 to 24 May",
                                         "R3 to 20 Aug", "R4 since 20 Aug"]
     assert forest["label"].str.len().max() <= 18
     assert forest["kind"].tolist()[:3] == ["registered", "sensitivity", "sensitivity"]
-    gt = forest[forest["label"] == "> 63 options"].iloc[0]
+    gt = forest[forest["label"] == "> 63 legs"].iloc[0]
     assert gt["arrow_hi"] and not gt["arrow_lo"]
     make_results(tmp_path, extra_groups=False)
     _, tables = f4.make(tmp_path)
     labels = tables["b"]["label"].astype(str).tolist()
-    assert "PM2 accounts" not in labels and "R1 to 23 Jan" not in labels and "SM / PM2 same legs" in labels
+    assert "PM2 books" not in labels and "R1 to 23 Jan" not in labels and "SM / PM2 same legs" in labels
 
 
 def test_verdict_must_match_rejected(tmp_path):
@@ -180,3 +180,12 @@ def test_checks_catch_a_wrong_figure_table(tmp_path):
 def test_caption_is_english_without_dashes():
     assert "—" not in f4.CAPTION and "–" not in f4.CAPTION and " - " not in f4.CAPTION
     assert f4.CAPTION.startswith("\\textbf{What netting is worth")
+
+
+def test_caption_explains_both_hatches_and_the_grey_counts():
+    """Audit C3 and C10: panel a hatches the counterfactual SM range and prints the maker-days per bin in grey; panel
+    b hatches the rejection region of the registered row. The caption names all three."""
+    assert "the grey numbers above the axis are the maker-days per bin" in f4.CAPTION
+    assert "$K_{\\mathrm{SM}}$ is counterfactual (hatched)" in f4.CAPTION
+    assert ("The hatched stretch of the registered row, left of the threshold, is the rejection region: the rule "
+            "rejects H3 if the interval reaches into it.") in f4.CAPTION

@@ -1,9 +1,10 @@
 """F6 of Paper 2 (the price of capital, H4): smoke test on synthetic mini data in a temporary results directory.
 
 Checks the canvas (7.0 x 4.2 in, PDF at print size), the type size (nothing under 7 pt), that every text stays on the
-canvas, the dose strip, the binned residuals with the slope beta, the check list of H4 rebuilt from ``criteria``
-(and the refusal when it disagrees with ``rejected``), the fallback without binned residuals, and the check list of
-the slot against the synthetic sources.
+canvas (also at print size), the dose strip and its date labels, the binned residuals with the slope beta and the
+labelled histogram strip, the check list of H4 rebuilt from ``criteria`` (and the refusal when it disagrees with
+``rejected``), the hatching of panel d up to max(0, placebo P95), the fallback without binned residuals, the caption
+and the check list of the slot against the synthetic sources.
 """
 from __future__ import annotations
 
@@ -19,9 +20,12 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 
+from matplotlib.patches import Rectangle  # noqa: E402
+
 from derive_surface import inference_p2_h4 as h4mod  # noqa: E402
 from derive_surface.figs_p2 import _kit_f5f6 as kit  # noqa: E402
 from derive_surface.figs_p2 import f6  # noqa: E402
+from derive_surface.figs_p2._print import to_print  # noqa: E402
 
 EVENTS = [  # event_id, ccy, manager, event_utc, cells
     ("BTC-pm-20250222", "BTC", "pm", "2025-02-22 19:52:37", 6),
@@ -114,6 +118,67 @@ def test_figure_size_type_size_and_canvas(setup):
     assert kit.small_texts(fig) == []
     assert kit.texts_off_canvas(fig) == []
     assert kit.overlapping_texts(fig) == []
+    to_print(fig)                                   # the saved canvas is 6.84 in wide; the type keeps its size
+    assert kit.texts_off_canvas(fig) == []
+    assert kit.overlapping_texts(fig) == []
+
+
+def test_event_labels_use_the_date_style_of_the_text(setup):
+    rd, pp = setup
+    assert f6.event_label("BTC-pm-20250222", "BTC", "pm", "2025-02-22") == "22 Feb 2025 BTC legacy"
+    assert f6.event_label("ETH-pm2-20260108", "ETH", "pm2", "2026-01-08") == "8 Jan 2026 ETH PM2"
+    a = f6.table_a(rd, pp)
+    labels = a.loc[a["mark"] == "median"].sort_values("row")["label"].tolist()
+    assert labels == ["22 Feb 2025 BTC legacy", "23 Jan 2026 BTC PM2", "23 Jan 2026 ETH PM2"]
+
+
+def _axes_with_xlabel(fig, text: str):
+    return next(ax for ax in fig.axes if ax.get_xlabel() == text)
+
+
+def _hatched(ax) -> list:
+    return [p for p in ax.patches if isinstance(p, Rectangle) and p.get_hatch()]
+
+
+def test_registered_row_is_hatched_up_to_the_placebo_p95(setup):
+    """Audit B3: H4 rejects every beta up to max(0, placebo P95) whatever the p-value; card S3 and panel d agree."""
+    rd, pp = setup
+    res = json.loads((rd / "h4.json").read_text())
+    p95 = float(res["placebo"]["p95"])
+    assert p95 > 0                                  # the synthetic placebo puts the P95 above zero
+    assert f6.reject_upto(res) == pytest.approx(p95)
+    d = f6.table_d(rd)
+    assert d.loc[d["kind"] == "registered", "reject_upto"].iloc[0] == pytest.approx(p95)
+    fig = f6.figure(rd, panel_path=pp)
+    ax = _axes_with_xlabel(fig, "β, bp of index per log unit of capital")
+    (hatch,) = _hatched(ax)
+    assert hatch.get_x() + hatch.get_width() == pytest.approx(p95)
+    assert hatch.get_x() == pytest.approx(ax.get_xlim()[0])
+    assert ax.get_xlim()[1] > p95                   # the end of the hatching stays inside the axes
+    assert [t.get_text() for t in ax.texts if t.get_text() == "P95"] == ["P95"]
+    dashed = [ln for ln in ax.lines if ln.get_linestyle() == "--" and np.allclose(ln.get_xdata(), p95)]
+    assert len(dashed) == 1
+
+
+def test_hatching_stops_at_zero_when_the_placebo_p95_is_negative(setup):
+    rd, pp = setup
+    assert f6.reject_upto({"placebo": {"p95": -3.0}}) == 0.0
+    d = f6.table_d(rd)
+    d.loc[d["kind"] == "registered", "reject_upto"] = 0.0
+    fig = kit.new_figure(f6.WIDTH, f6.HEIGHT)
+    f6._panel_d(fig, d)
+    ax = _axes_with_xlabel(fig, "β, bp of index per log unit of capital")
+    (hatch,) = _hatched(ax)
+    assert hatch.get_x() + hatch.get_width() == pytest.approx(0.0)
+    assert "P95" not in [t.get_text() for t in ax.texts]
+
+
+def test_histogram_strip_of_panel_b_is_labelled(setup):
+    rd, pp = setup
+    fig = f6.figure(rd, panel_path=pp)
+    strip = _axes_with_xlabel(fig, "post × dose, residualised, log-%")
+    assert [t.get_text() for t in strip.texts] == ["rows"]
+    assert len(strip.patches) == int((pd.read_csv(rd / "fig_h4_fwl_bins.csv")["kind"] == "hist").sum())
 
 
 def test_build_writes_pdf_png_and_tables(setup, tmp_path):
@@ -207,6 +272,18 @@ def test_checks_agree_on_synthetic_results(setup, tmp_path):
 def test_caption_has_no_dashes():
     assert "—" not in f6.CAPTION and "–" not in f6.CAPTION and " - " not in f6.CAPTION
     assert f6.CAPTION.startswith("\\textbf{The price of capital (H4).}")
+
+
+def test_caption_explains_strip_hatching_and_units():
+    """Audit findings F7/C10 (strip), C3 (hatching), C2 (log per cent against log units), C6 (the H4 panel)."""
+    cap = f6.CAPTION
+    assert "events in the H4 panel" in cap
+    assert "grey histogram of that dose over all rows" in cap
+    assert "hatching marks the values of $\\beta$ at which the rule rejects H4 whatever the p-value" in cap
+    assert "the placebo P95 or zero, whichever is larger" in cap
+    assert "log per cent, 100 times the change in log capital" in cap
+    assert "slope $\\beta/100$ per log per cent" in cap
+    assert "a dose of $-0.105$, or $-10.5$~log per~cent" in cap
 
 
 def test_checklist_keeps_criterion_and_value_apart():

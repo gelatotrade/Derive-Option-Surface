@@ -115,7 +115,7 @@ def test_rows_labels_and_regimes(tmp_path):
     assert m5["arrow_lo"] and m5["arrow_hi"]
     header = b[b["kind"] == "header"]["printed"].tolist()
     assert header[0].startswith("registered: ") and header[0].endswith("→ not rejected")
-    assert "3 PM2 accounts, ETH and HYPE only" in " ".join(header)
+    assert "3 PM2 subaccounts, ETH and HYPE only" in " ".join(header)
     assert "day clusters" in header[-1]
 
 
@@ -185,5 +185,11 @@ def test_caption_says_the_interval_hides_under_the_circle():
     """A50: the median's interval (about 0.4 pt long) is narrower than the circle; the caption must not promise a
     visible bar."""
     assert "the bar at height one half" not in f3.CAPTION
-    assert ("the circle at height one half is the median; its 90 per cent day-cluster interval is narrower than the "
+    assert ("the circle at height one half is the median; its 90~per~cent day-cluster interval is narrower than the "
             "circle and printed at the top") in f3.CAPTION
+
+
+def test_caption_explains_the_hatched_rejection_region():
+    """Audit C3: the hatched stretch of the registered row in panel b is the rejection region of the rule."""
+    assert ("The hatched stretch of the registered row, right of the threshold, is the rejection region: the rule "
+            "rejects H2 if the interval reaches into it.") in f3.CAPTION

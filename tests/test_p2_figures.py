@@ -475,11 +475,11 @@ def test_caption_elements_must_be_drawn(tmp_path):
     pd.DataFrame({"variant": ["ratio", "ratio"], "group": ["all", "label=M3"]}).to_csv(rd / "fig_f3_b.csv", index=False)
     tex = (r"\begin{figure}\includegraphics{figures/f2.pdf}\caption{Rows on grey; the grey band is the floor.}"
            r"\end{figure}" "\n"
-           r"\begin{figure}\includegraphics{figures/f3.pdf}\caption{Rows per account and per parameter regime.}"
+           r"\begin{figure}\includegraphics{figures/f3.pdf}\caption{Rows per subaccount and per parameter regime.}"
            r"\end{figure}")
     res = chk.element_checks(tex, rd)
     got = {r.check.split(":")[0]: r.ok for r in res.itertuples()}
-    assert got == {'caption "grey band"': False, 'caption "per account"': True, 'caption "per parameter regime"': False}
+    assert got == {'caption "grey band"': False, 'caption "per subaccount"': True, 'caption "per parameter regime"': False}
     pd.DataFrame({"kind": ["registered", "band"]}).to_csv(rd / "fig_f2_c.csv", index=False)
     assert chk.element_checks(tex, rd).set_index("check").loc[
         'caption "grey band": a row of kind band (h1_sign.sign_floor)', "ok"]

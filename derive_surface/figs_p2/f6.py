@@ -1,13 +1,16 @@
 """F6 of Paper 2: the price of capital, H4 (FIGURE_SELECTION section 7, F6; 7.0 x 4.2 in).
 
-a  dose strip: one row per event in the H4 panel, one symbol per cell and event pair at 100 x dose (log-%), sells
-   above and buys below the line, median as a bar, the band |dose| < 1 log-% with its share of pairs.
+a  dose strip: one row per event in the H4 panel (labelled "22 Feb 2025 BTC legacy", the date style of the text),
+   one symbol per cell and event pair at 100 x dose (log-%), sells above and buys below the line, median as a bar,
+   the band |dose| < 1 log-% with its share of pairs.
 b  binned residuals (Frisch-Waugh-Lovell): half spread against post x dose after both fixed effects, 20 equal-count
-   bins, line through the origin with slope beta, histogram of the residualised regressor below. Without
-   ``fig_h4_fwl_bins.csv`` the within-event contrasts of the dose terciles, without a line.
+   bins, line through the origin with slope beta / 100 per log-%, histogram of the residualised regressor below
+   (labelled "rows"). Without ``fig_h4_fwl_bins.csv`` the within-event contrasts of the dose terciles, without a line.
 c  beta among the placebo betas, with the two registered criteria rebuilt from ``criteria`` (the build refuses when
    they do not give ``rejected``).
-d  beta per underlying (exploratory) next to the registered beta; intervals descriptive.
+d  beta per underlying (exploratory) next to the registered beta; intervals descriptive. The registered row is
+   hatched up to max(0, placebo P95), the values of beta at which the rule rejects H4 whatever the p-value (as card
+   S3, audit B3); a dashed mark "P95" ends the hatching.
 
 Inputs: ``h4_panel.parquet`` (pairs event x cell), ``results_dir``: ``h4_doses.csv``, ``fig_h4_events.csv``,
 ``h4.json``, ``h4_placebo.csv``, ``sensitivity_h4.json``, ``fig_h4_fwl_bins.csv`` (optional). Tables:
@@ -39,7 +42,7 @@ BAR_GREY = "#BBBBBB"
 BAND_GREY = "#E3E3E3"
 
 # layout in inches
-AL, AR = 1.24, 2.98           # a and d
+AL, AR = 1.30, 2.98           # a and d (AL: room for the longest row label, "22 Feb 2025 BTC legacy", at print size)
 A_TOP, A_H = 0.52, 1.83
 D_TOP, D_H = 3.10, 0.70
 BL, BR = 4.12, 6.90           # b and c
@@ -49,20 +52,31 @@ C_TOP, C_H = 2.56, 1.02
 
 CAPTION = (
     r"\textbf{The price of capital (H4).} Panel a shows the dose, the change in log capital that a parameter change "
-    r"makes to a cell, for each of the \PH{h4-pairs} cell and event pairs of the \PH{h4-events} events in the panel, "
+    r"makes to a cell, for each of the \PH{h4-pairs} cell-event pairs of the \PH{h4-events} events in the H4 panel, "
     r"sells above and buys below each line, with the median as a bar. Panel b is the half spread against the "
-    r"post-event dose after removing the cell by event and the day by underlying effects, in 20 bins of equal size; "
-    r"the line has the slope $\beta$, whose interval is descriptive because the registered p-value comes from "
-    r"restricted residuals. Panel c places $\beta$ among the estimates at 100 placebo dates and lists both "
-    r"registered criteria. Panel d gives $\beta$ per underlying, for exploration. Most doses are close to zero or "
-    r"negative, so $\beta$ is identified from parameter changes that made capital cheaper. To read the slope: capital "
-    r"ten per cent cheaper is a dose of $-0.105$, which predicts a change in the half spread of $-0.105\,\beta$ basis "
-    r"points of the index."
+    r"post-event dose after removing the cell by event and the day by underlying effects, in 20 bins of equal size, "
+    r"above a grey histogram of that dose over all rows; the line shows the estimate $\beta$, whose interval is "
+    r"descriptive because the registered p-value comes from restricted residuals. Panel c places $\beta$ among the "
+    r"estimates at 100 placebo dates and lists both registered criteria. Panel d gives $\beta$ per underlying, for "
+    r"exploration; in the registered row, hatching marks the values of $\beta$ at which the rule rejects H4 "
+    r"whatever the p-value, up to the placebo P95 or zero, whichever is larger. Most doses are close to zero or "
+    r"negative, so $\beta$ is identified from parameter changes that made capital cheaper. Doses on the axes are in "
+    r"log per cent, 100 times the change in log capital, so the line in panel b has the slope $\beta/100$ per log "
+    r"per cent. To read the slope: capital ten~per~cent cheaper is a dose of $-0.105$, or $-10.5$~log per~cent, "
+    r"which predicts a change in the half spread of $-0.105\,\beta$ basis points of the index."
 )
 
 
 def event_label(event_id: str, ccy: str, manager: str, day: str) -> str:
-    return f"{day} {ccy} {'legacy' if manager == 'pm' else 'PM2'}"
+    """Row label of panel a, "22 Feb 2025 BTC legacy": the day in the order of the text, month abbreviated."""
+    t = pd.Timestamp(day)
+    return f"{t.day} {t:%b %Y} {ccy} {'legacy' if manager == 'pm' else 'PM2'}"
+
+
+def reject_upto(h4: dict) -> float:
+    """Upper end of the hatching in the registered row of panel d: H4 is rejected whatever the p-value for every
+    beta up to the larger of zero and the placebo 95th percentile (``placebo.p95``), as on card S3 (audit B3)."""
+    return max(0.0, float(h4["placebo"]["p95"]))
 
 
 def _load(rd: Path, name: str):
@@ -211,7 +225,7 @@ def table_d(results_dir: Path) -> pd.DataFrame:
     h4 = _load(rd, "h4.json")
     sens = _load(rd, "sensitivity_h4.json")
     rows = [{"label": "registered", "source_key": "h4.json", "kind": "registered", "stat": h4["stat"],
-             "lo": h4["lo"], "hi": h4["hi"], "n": h4["clusters"]}]
+             "lo": h4["lo"], "hi": h4["hi"], "n": h4["clusters"], "reject_upto": reject_upto(h4)}]
     for ccy in ("BTC", "ETH", "HYPE"):
         s = sens.get("by_ccy", {}).get(ccy)
         if s is None:
@@ -306,6 +320,8 @@ def _panel_b(fig, b: pd.DataFrame) -> None:
         strip.set_xlim(*xlim)
         strip.set_yticks([])
         strip.spines["left"].set_visible(False)
+        strip.text(0.0, 0.5, "rows", transform=strip.transAxes, ha="right", va="center", fontsize=kit.FS_MIN,
+                   color=kit.GREY)                          # the strip is the histogram of the rows (caption)
         strip.set_xlabel("post × dose, residualised, log-%")
         ax.set_xlim(*xlim)
     else:
@@ -390,16 +406,22 @@ def _panel_d(fig, d: pd.DataFrame) -> None:
     ax = kit.axes_at(fig, AL, D_TOP, AR - AL, D_H)
     n = len(d)
     reg = d[d["kind"] == "registered"].iloc[0]
-    span = max(float(reg["hi"]), 0.0) - min(float(reg["lo"]), 0.0)
+    edge = float(reg["reject_upto"])                            # max(0, placebo P95)
+    top = max(float(reg["hi"]), 0.0, edge)
+    span = top - min(float(reg["lo"]), 0.0)
     lo = min(float(reg["lo"]), 0.0) - 0.25 * span
-    hi = max(float(reg["hi"]), 0.0) + 0.25 * span
+    hi = top + 0.25 * span
     for i, r in enumerate(d.itertuples()):
         explo = r.kind == "exploratory"
         if explo:
             ax.axhspan(i - 0.5, i + 0.5, color=kit.LIGHT, linewidth=0, zorder=0)
         else:
-            ax.add_patch(Rectangle((lo, i - 0.4), 0.0 - lo, 0.8, facecolor="none", edgecolor=BAR_GREY, hatch="////",
+            ax.add_patch(Rectangle((lo, i - 0.4), edge - lo, 0.8, facecolor="none", edgecolor=BAR_GREY, hatch="////",
                                    linewidth=0, zorder=0.5))
+            if edge > 0.0:                                      # the hatching ends at the placebo P95
+                ax.plot([edge, edge], [i - 0.4, i + 0.4], color="black", linestyle="--", linewidth=0.8, zorder=1)
+                ax.annotate("P95", (edge, i), xytext=(3, 0), textcoords="offset points", ha="left", va="center",
+                            fontsize=kit.FS_MIN, path_effects=HALO, zorder=4)
         color = kit.GREY if explo else "black"
         lw = 1.0 if explo else 2.0
         a, b = max(float(r.lo), lo), min(float(r.hi), hi)
@@ -604,6 +626,10 @@ def checks(panel_path: Path = PANEL) -> list:
                   expected="placebo days: BTC 54 · ETH 10 · HYPE 67 · legacy 363 / 319"),
         kit.check("f6.d.rows", "forest rows = h4.json and sensitivity_h4.json by_ccy (stat, lo, hi, clusters)",
                   _fd, _src_d),
+        kit.check("f6.d.hatch", "hatching of the registered row ends at max(0, h4.json placebo.p95)",
+                  lambda rd: float(pd.read_csv(rd / "fig_f6_d.csv").query("kind == 'registered'")["reject_upto"]
+                                   .iloc[0]),
+                  lambda rd: max(0.0, float(_load(rd, "h4.json")["placebo"]["p95"]))),
     ]
 
 

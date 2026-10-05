@@ -129,8 +129,9 @@ def fake_tectonic(log: str, returncode: int = 0, pdf: bool = True):
     return run
 
 
-def _build(tmp_path, paper, runner, text="Introduction Conclusion References"):
+def _build(tmp_path, paper, runner, text="Introduction Conclusion References", layout=()):
     return pb.build(paper, runner=runner, numbers=False, read_pdf=lambda p: (3, text),
+                    read_layout=lambda p: list(layout),
                     literature_path=tmp_path / "LITERATURE.md", figs=tmp_path / "nofigs", budget=BUDGET,
                     slots=["f1"], must=["Introduction", "Conclusion", "References"])
 
@@ -191,3 +192,44 @@ def test_numbers_must_be_declared_and_every_declaration_must_bind(tmp_path):
     wrong = declared.replace("const:cell_min_fills", "const:placebo_dates")
     missing, unused, failed = numbers(wrong)
     assert len(missing) == 1 and missing[0].startswith("caption fig:f1: 200 (") and unused == []
+
+
+def _pages(*pages):
+    """PageLayout per page from (figures, callouts, characters of running text)."""
+    return [pb.PageLayout(list(f), list(c), n) for f, c, n in pages]
+
+
+def test_layout_problems_figure_far_from_its_callout_and_page_of_figures_only():
+    """PDF audit L2: Figure 2 two pages after its only callout, on a page with Figure 3 and no text."""
+    audited = _pages(([], [1, 2], 4800), ([1], [], 1600), ([2, 3], [], 18), ([4], [3, 4], 1350))
+    problems, notes = pb.layout_problems(audited)
+    assert problems == {"figure far from its first callout": ["Figure 2 on page 3, first cited in the text on page 1"],
+                        "page of figures only": ["page 3: Figure 2, 3"]}
+    assert notes == ["Figure 3 on page 3, first cited in the text on page 4"]
+    fixed = _pages(([1], [1, 2], 1800), ([2], [], 2400), ([3], [3], 2000), ([4], [3, 4], 1350))
+    assert pb.layout_problems(fixed) == ({"figure far from its first callout": [], "page of figures only": []}, [])
+    early = _pages(([5], [], 1500), ([], [], 4000), ([], [5], 4000))
+    assert pb.layout_problems(early)[0]["figure far from its first callout"] == [
+        "Figure 5 on page 1, first cited in the text on page 3"]
+
+
+def test_build_fails_on_the_layout(tmp_path):
+    paper = _paper(tmp_path)
+    bad = _pages(([], [1], 4000), ([], [], 4000), ([1], [], 10))
+    failed = _build(tmp_path, paper, fake_tectonic(LOG_CLEAN), layout=bad).failed()
+    assert failed == ["figure far from its first callout", "page of figures only"]
+    rep = _build(tmp_path, paper, fake_tectonic(LOG_CLEAN), layout=_pages(([1], [], 1500), ([], [1], 4000)))
+    assert rep.failed() == [] and rep.layout_notes == ["Figure 1 on page 1, first cited in the text on page 2"]
+
+
+def test_pdf_layout_reads_figures_and_callouts_of_the_manuscript():
+    """On the built manuscript every figure caption is found once, and the text cites every figure."""
+    pdf = Path(__file__).resolve().parents[1] / "paper2" / "main.pdf"
+    if not pdf.exists():
+        import pytest
+        pytest.skip("paper2/main.pdf not built")
+    pages = pb.pdf_layout(pdf)
+    printed = [n for p in pages for n in p.figures]
+    assert sorted(printed) == list(range(1, 10))
+    assert set(n for p in pages for n in p.callouts) == set(range(1, 10))
+    assert all(p.body_chars > pb.MIN_BODY_CHARS for p in pages)

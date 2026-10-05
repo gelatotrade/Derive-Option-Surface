@@ -21,7 +21,7 @@ import argparse
 import logging
 import math
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -62,6 +62,10 @@ TENOR_TITLE = "tenor, days"
 GREY_LO, GREY_HI = 0.08, 0.72          # section 6.4: Greys between 0.08 and 0.72
 WHITE_TEXT_BELOW = 0.45                # luminance under which a cell number is white
 HATCH_DARK = "#D0D0D0"                 # hatch on cells with white text: #666666 vanishes on Greys 0.6 to 0.72
+# Band about the centre of a hatched cell, in points below and above it, that the hatch leaves free for the number
+# (7 pt digits set va="center" span about -1.9 to +3.3 pt). It runs the full width of the cell, so a number never
+# sits on a box wider than its cell, and the white grid line is drawn again on top of it.
+NUMBER_BAND_PT = (-3.0, 4.4)
 
 # Section 6.6: R1 to 23 Jan 2026 04:24:05, R2 to 24 May 2026 04:05:07, R3 to 20 Aug 2026 22:09:25 UTC, R4 after.
 # The bounds are the PM2 events in results/p2/events.csv; a fill at the event second belongs to the later regime.
@@ -71,26 +75,28 @@ REGIME_LABELS = {"R1": "R1 to 23 Jan", "R2": "R2 to 24 May", "R3": "R3 to 20 Aug
 
 SIDE_TITLE = {"sell": "maker sells (short)",
               "buy": "maker buys (long):\ncapital ≈ premium OTM"}      # OTM: out of the money (caption)
-HEADER = ("number = PM2 capital per contract, % of notional, ratio of sums over the PM2 window,\n"
-          "pooled over four parameter regimes · × = under 200 fills")
+HEADER = ("number = PM2 capital per contract, % of notional, ratio of sums over the\n"     # ends left of the letter b
+          "PM2 window, pooled over four parameter regimes · × = under 200 fills")
 STRIP_ROWS = [("sm", "BTC", "pooled", "SM BTC"), ("sm", "BTC", "R4", "R4"),
               ("sm", "ETH", "pooled", "SM ETH"), ("sm", "ETH", "R4", "R4"),
               ("sm", "HYPE", "pooled", "SM HYPE"), ("sm", "HYPE", "R4", "R4"),
               ("pm", "BTC", "pooled", "legacy BTC"), ("pm", "ETH", "pooled", "legacy ETH")]
 MAP_OF = {"sm": "sm_pm2win", "pm": "pm_pm2win", "pm2": "pm2"}
+N_TITLE = "n"                          # head of the cell counts right of the strips (as in the forests of F3, F4)
 X_LIM = (0.6, 5.0)
 JITTER = 0.18
 
 CAPTION = (
-    "What one contract costs. PM2 capital per contract in per cent of notional over the absolute delta of the "
-    "traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums over the "
-    "fills of the PM2 window, which the parameter changes of 23 January, 24 May and 20 August 2026 split into four "
-    "regimes. Each row is shaded on one logarithmic grey scale, and an empty cross marks a cell with fewer than 200 "
-    "fills. The strips on the right give, for every occupied "
-    "cell, the capital of the same fills under standard margin (squares) and under the legacy manager (diamonds) "
-    "divided by PM2 capital, with the median cell as a bar; hollow squares use only the fills after the parameter "
-    "change of 20 August 2026. For a maker buy, standard margin charges the premium, and PM2 about the premium out "
-    "of the money (OTM) and less in the money.")
+    "What one contract costs. Panel a is PM2 capital per contract in per cent of notional over the absolute delta "
+    "of the traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums "
+    "over the fills of the PM2 window, which the parameter changes of 23~January, 24~May and 20~August 2026 split "
+    "into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and an empty cross marks a "
+    "cell with fewer than 200 fills. Panel b gives, for every occupied cell, the capital of the same fills under "
+    "standard margin (squares) and under the legacy manager (diamonds) divided by PM2 capital, with the median "
+    "cell as a bar and the number of cells under n; the hollow squares of the rows R4 use only the fills after the "
+    "parameter change of 20~August 2026. For a maker buy, standard margin charges the premium, and PM2 about the "
+    "premium out of the money (OTM) and less in the money."
+)
 
 
 # =====================================================================================================================
@@ -175,9 +181,12 @@ def draw_map(ax, occupied: np.ndarray, shade: np.ndarray, printed: np.ndarray, h
              *, ylabels: bool, xlabels: bool) -> None:
     """One map after section 6.4: one number per cell on grey, white text on dark cells, an empty grey cross for
     cells under 200 fills, hatched negative cells (hatch #666666, light grey on the dark cells that carry white
-    text, where #666666 would not show)."""
+    text, where #666666 would not show). In a hatched cell the hatch fills the strips above and below the number
+    (``NUMBER_BAND_PT``), so no hatch line crosses the minus and nothing covers the grid line to the next cell."""
     ax.set_xlim(-0.5, len(TENOR_LABELS) - 0.5)
     ax.set_ylim(len(DELTA_LABELS) - 0.5, -0.5)
+    cell_pt = ax.bbox.height / len(DELTA_LABELS) * 72.0 / ax.figure.dpi      # height of one cell in points
+    band_lo, band_hi = (v / cell_pt for v in NUMBER_BAND_PT)                 # in cells; the y axis runs downwards
     for i in range(len(DELTA_LABELS)):
         for j in range(len(TENOR_LABELS)):
             if not bool(occupied[i, j]):
@@ -186,15 +195,14 @@ def draw_map(ax, occupied: np.ndarray, shade: np.ndarray, printed: np.ndarray, h
             col = grey(shade[i, j])
             ax.add_patch(Rectangle((j - 0.5, i - 0.5), 1, 1, facecolor=col, edgecolor="white", lw=0.5, zorder=1))
             dark = luminance(col) < WHITE_TEXT_BELOW
-            neg = hatched is not None and bool(hatched[i, j])
-            if neg:
+            if hatched is not None and bool(hatched[i, j]):
                 ax.add_patch(Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, hatch="////",
                                        edgecolor=HATCH_DARK if dark else GREY, lw=0.0, zorder=2))
-            t = ax.text(j, i, str(printed[i, j]), ha="center", va="center", fontsize=7.0,
-                        color="white" if dark else INK, zorder=3)
-            if neg:   # a plain box in the cell grey behind the number: the hatch stays above and below it, and
-                # the minus is no longer crossed by a hatch line (a 1.2 pt halo left "-7.3" reading as "/-7.3")
-                t.set_bbox({"boxstyle": "square,pad=0.08", "facecolor": col, "edgecolor": "none", "linewidth": 0})
+                ax.add_patch(Rectangle((j - 0.5, i - band_hi), 1, band_hi - band_lo, facecolor=col, edgecolor="none",
+                                       lw=0.0, zorder=2.5))
+                ax.add_patch(Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, edgecolor="white", lw=0.5, zorder=2.6))
+            ax.text(j, i, str(printed[i, j]), ha="center", va="center", fontsize=7.0,
+                    color="white" if dark else INK, zorder=3)
     ax.set_xticks(range(len(TENOR_LABELS)))
     ax.set_yticks(range(len(DELTA_LABELS)))
     ax.set_xticklabels(TENOR_TICKS if xlabels else [], fontsize=7.0, rotation=40, ha="right",
@@ -390,14 +398,15 @@ def load_inputs(results_dir: Path) -> Dict[str, Optional[pd.DataFrame]]:
 # =====================================================================================================================
 
 # Layout in inches (canvas 7.0 x 3.9)
-L_MAP = 0.79          # left edge of the first map
+L_MAP = 0.85          # left edge of the first map: the two-line row title clears the tick label "90–100"
 MAP_W = 1.25          # width of one map (five tenor columns)
-MAP_GAP = 0.07
+MAP_GAP = 0.04
 TOP_MAP = 3.40        # top edge of the upper maps
 BOTTOM_MAP = 0.48     # bottom edge of the lower maps
 ROW_GAP = 0.13        # between the upper and the lower maps
 STRIP_L = 5.40        # left edge of the strips (labels sit to its left)
 STRIP_R = 6.74        # right edge of the strips (cell counts sit to its right)
+B_LETTER_X = 4.80     # panel letter b, above the left edge of the strip labels
 
 
 def _strip(ax, b: pd.DataFrame, side: str, top: bool) -> None:
@@ -430,6 +439,9 @@ def _strip(ax, b: pd.DataFrame, side: str, top: bool) -> None:
                 va="center")
     ax.set_yticks(range(len(STRIP_ROWS)))
     ax.set_yticklabels(labels, fontsize=7.0)
+    for t, (_, _, regime, _) in zip(ax.get_yticklabels(), STRIP_ROWS):
+        if regime != "pooled":            # the R4 rows are a part of the row above them: label in grey
+            t.set_color(GREY)
     ax.tick_params(axis="y", length=0, pad=3.0)
     ax.set_xticks([0.6, 1, 2, 4])
     ax.xaxis.set_minor_locator(NullLocator())
@@ -442,6 +454,8 @@ def _strip(ax, b: pd.DataFrame, side: str, top: bool) -> None:
                     ha="right", va="bottom", fontsize=7.0, color=INK)
         ax.annotate("PM2 cheaper →", xy=(1.0, 1.0), xycoords=tx, xytext=(3, 5), textcoords="offset points",
                     ha="left", va="bottom", fontsize=7.0, color=INK)
+        ax.annotate(N_TITLE, xy=(1.03, 1.0), xycoords="axes fraction", xytext=(0, 1), textcoords="offset points",
+                    ha="left", va="bottom", fontsize=7.0, color=GREY)      # head of the count column
     else:
         ax.set_xlabel("capital ÷ PM2 capital,\nsame fills (log)", fontsize=7.0, labelpad=2.0)
 
@@ -474,6 +488,8 @@ def make_figure(results_dir: Path = Path("results/p2")):
         fig.text(x, y, TENOR_TITLE, ha="center", va="bottom", fontsize=8.0)
         x, y = fig_xy(fig, L_MAP, HEIGHT - 0.04)
         fig.text(x, y, HEADER, ha="left", va="top", fontsize=7.0, color=HEAD, linespacing=1.25)
+        for letter, x_in in (("a", 0.02), ("b", B_LETTER_X)):
+            fig.text(*fig_xy(fig, x_in, HEIGHT - 0.04), letter, ha="left", va="top", fontsize=8.0, fontweight="bold")
     return fig, {"a": a, "b": b}
 
 
