@@ -2,12 +2,13 @@
 
 > **Translation, not part of the registration.** This English text was made on 25 September 2026, after all
 > registered results had been computed and after the audit of the paper (`docs/paper2/AUDIT.md`, finding A64);
-> Addendum 5 was translated on 27 September 2026 and Addendum 6 on 30 September 2026. It translates
-> `docs/paper2/PRAEREGISTRIERUNG.md` as it stands with Addenda 1 to 6, git blob `06a0004cda02936baf42db3101f2bd24e50f54a8`
+> Addendum 5 was translated on 27 September 2026, Addendum 6 on 30 September 2026 and Addendum 7 on 5 October
+> 2026. It translates `docs/paper2/PRAEREGISTRIERUNG.md` as it stands with Addenda 1 to 7, git blob `f492585cf4a3308154ba764ef4616e09d3d68621`
 > (`git hash-object docs/paper2/PRAEREGISTRIERUNG.md`). **The German original is binding**; where the two texts
-> differ, the German text applies. The registration itself is commit `cc0a29f`; the commits of Addenda 1 to 4 are
+> differ, the German text applies. The registration itself is commit `c9e9162`; the commits of Addenda 1 to 6 are
 > named in the section "Data, code and pre-registration" of `paper2/main.tex`. These are the hashes after the
-> history rewrite of 27 September 2026: the registration `1d13227` is now `cc0a29f`. Addendum 5 maps old to new, and
+> second history rewrite of 5 October 2026 (Addendum 7): the registration was `1d13227` until 27 September 2026
+> and `cc0a29f` until 5 October 2026. Addendum 5 maps old to new, and
 > `docs/paper2/HISTORY_REWRITE.md` shows that `PRAEREGISTRIERUNG.md` is byte-identical in each pair of old and
 > new commit. Until 27 September 2026 this translation was `docs/paper2/PREREGISTRATION_EN.md`.
 >
@@ -230,3 +231,33 @@ makes Addendum 2, point 1, precise and adds a sensitivity.
 4. **Size (pilot, from the finding on Paper 1):** The mean maker fee per contract over the RFQ fills is 0.3115 USDC
    leg by leg and 0.3177 USDC spread over the package (`results/p1_finding/fee_units.json`, `rfq_booking`); in
    Paper 1 the spreading changes no cell verdict.
+
+## Addendum 7 (5 October 2026): second rewrite of the history before publication
+
+This addendum is written after all results on the pilot cut and before the final data run. It changes no rule of the
+pre-registration or of Addenda 1 to 6, no test statistic and no result. It records why the commits of the
+pre-registration and of Addenda 1 to 6 carry new hashes once more:
+
+| Version | Commit after Addenda 5 and 6 | New commit | Author and committer time |
+|---|---|---|---|
+| Pre-registration | `cc0a29f655b50c7415e01583b25952e9831bbecd` | `c9e9162dd368ffd86867b205dc795c9af119a387` | 24 September 2026 22:33:50 +0200 |
+| Addendum 1 | `85bb0b7e17a3d32731a83de40ab88b8e012f3983` | `b5c905c33f918dfc069df1b06b2cb779d9cc9c31` | 25 September 2026 00:26:54 +0200 |
+| Addendum 2 | `6005d7c53ccf51d3df7d038025f546eb5d07a6ef` | `60896fe9f8b3aaa2f4c05f3f6abc6b634f083ccb` | 25 September 2026 00:29:29 +0200 |
+| Addendum 3 | `8778432b49f01532809517d592acda4727d7aaa8` | `2416902f883868adb5de6e13da40ebf48d62b57c` | 25 September 2026 00:29:56 +0200 |
+| Addendum 4 | `e492ba123c4c81ddc478c0c6ef2246867deeeaae` | `a02058a4ce292cd07cfc580d962a04b636b197b1` | 25 September 2026 01:29:58 +0200 |
+| Addendum 5 | `a3282d6474ebd4c0c5c81bb084ea3ce5e8f2afdd` | `8c066a767ded79e17290dfdb5ada577ebaac68f1` | 27 September 2026 14:23:27 +0200 |
+| Addendum 6 | `1b46e80fa5297144e8b830b6b64d2737db7da0e5` | `6f2436e2b91cb1529afff70637352a7086f7aee0` | 30 September 2026 12:42:41 +0200 |
+
+1. **Reason:** Before the first publication of Paper 2, the whole history of the repository was rewritten, including
+   the history of Paper 1, which had been public since 25 September 2026. The authorship records were made uniform:
+   some early commits named the AI coding tool that was used as their author, and most named it as co-author in a
+   "Co-Authored-By" line; now every commit names the author. German commit messages were translated into English,
+   and example lines of this kind in planning documents were removed. The paper discloses the use of generative
+   tools in its section "Use of generative tools".
+2. **Byte-identical texts:** In each new commit of the table this file is byte-identical to the version in the
+   corresponding old commit (same git blob). The full mapping of all commits and the blob hashes are in
+   `docs/paper2/HISTORY_REWRITE.md`.
+3. **Times:** Author, committer, date, time of day and time zone of every commit are kept.
+4. **Publication:** The commits of the left column were never pushed. The pre-registration of Paper 2 becomes public
+   for the first time with the push of 5 October 2026, after the results on the pilot cut and before the final data
+   run. There is still no public timestamp before the results.

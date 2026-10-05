@@ -210,3 +210,33 @@ Ergebnis; er präzisiert Nachtrag 2, Punkt 1, und fügt eine Sensitivität hinzu
 4. **Grössenordnung (Pilot, aus dem Befund zu Paper 1):** Die mittlere Maker-Gebühr je Kontrakt über die RFQ-Fills
    ist 0,3115 USDC Bein für Bein und 0,3177 USDC über das Paket verteilt
    (`results/p1_finding/fee_units.json`, `rfq_booking`); in Paper 1 ändert die Verteilung kein Zellurteil.
+
+## Nachtrag 7 (05.10.2026): zweites Umschreiben der Historie vor der Veröffentlichung
+
+Dieser Nachtrag entsteht nach allen Ergebnissen auf dem Pilotschnitt und vor dem finalen Datenlauf. Er ändert keine
+Regel der Präregistrierung oder der Nachträge 1 bis 6, keine Teststatistik und kein Ergebnis. Er hält fest, warum
+die Commits der Präregistrierung und der Nachträge 1 bis 6 erneut neue Hashes tragen:
+
+| Fassung | Commit nach Nachtrag 5 und 6 | Neuer Commit | Autor- und Committer-Zeit |
+|---|---|---|---|
+| Präregistrierung | `cc0a29f655b50c7415e01583b25952e9831bbecd` | `c9e9162dd368ffd86867b205dc795c9af119a387` | 24.09.2026 22:33:50 +0200 |
+| Nachtrag 1 | `85bb0b7e17a3d32731a83de40ab88b8e012f3983` | `b5c905c33f918dfc069df1b06b2cb779d9cc9c31` | 25.09.2026 00:26:54 +0200 |
+| Nachtrag 2 | `6005d7c53ccf51d3df7d038025f546eb5d07a6ef` | `60896fe9f8b3aaa2f4c05f3f6abc6b634f083ccb` | 25.09.2026 00:29:29 +0200 |
+| Nachtrag 3 | `8778432b49f01532809517d592acda4727d7aaa8` | `2416902f883868adb5de6e13da40ebf48d62b57c` | 25.09.2026 00:29:56 +0200 |
+| Nachtrag 4 | `e492ba123c4c81ddc478c0c6ef2246867deeeaae` | `a02058a4ce292cd07cfc580d962a04b636b197b1` | 25.09.2026 01:29:58 +0200 |
+| Nachtrag 5 | `a3282d6474ebd4c0c5c81bb084ea3ce5e8f2afdd` | `8c066a767ded79e17290dfdb5ada577ebaac68f1` | 27.09.2026 14:23:27 +0200 |
+| Nachtrag 6 | `1b46e80fa5297144e8b830b6b64d2737db7da0e5` | `6f2436e2b91cb1529afff70637352a7086f7aee0` | 30.09.2026 12:42:41 +0200 |
+
+1. **Grund:** Vor der ersten Veröffentlichung von Paper 2 wurde die ganze Historie des Repositorys umgeschrieben,
+   auch die seit dem 25.09.2026 öffentliche Historie von Paper 1. Die Autorenangaben wurden vereinheitlicht: Einige
+   frühe Commits nannten das verwendete KI-Codierwerkzeug als Autor, die meisten nannten es in einer Zeile
+   „Co-Authored-By“ als Mitautor; jetzt nennt jeder Commit den Autor. Deutsche Commit-Nachrichten wurden ins
+   Englische übersetzt, und Beispielzeilen dieser Art in Planungsdokumenten wurden entfernt. Die Nutzung generativer
+   Werkzeuge legt das Papier im Abschnitt „Use of generative tools“ offen.
+2. **Bytegleiche Texte:** In jedem neuen Commit der Tabelle ist diese Datei bytegleich mit der Fassung im
+   entsprechenden alten Commit (derselbe Git-Blob). Die vollständige Zuordnung aller Commits und die Blob-Hashes
+   stehen in `docs/paper2/HISTORY_REWRITE.md`.
+3. **Zeiten:** Autor, Committer, Datum, Uhrzeit und Zeitzone jedes Commits sind erhalten.
+4. **Öffentlichkeit:** Die Commits der linken Spalte wurden nie gepusht. Die Präregistrierung von Paper 2 wird mit
+   dem Push vom 05.10.2026 erstmals öffentlich, nach den Ergebnissen auf dem Pilotschnitt und vor dem finalen
+   Datenlauf. Einen öffentlichen Zeitstempel vor den Ergebnissen gibt es weiterhin nicht.
