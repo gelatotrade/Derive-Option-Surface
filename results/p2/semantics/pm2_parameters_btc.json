@@ -1,0 +1,466 @@
+[
+ [
+  "2023-12-04T16:36:11Z",
+  "ScenariosUpdated(PM legacy)",
+  {
+   "n": 23,
+   "grid": [
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    1.0,
+    1.05,
+    1.1,
+    1.15,
+    1.2
+   ]
+  }
+ ],
+ [
+  "2024-09-25T04:47:15Z",
+  "MaxExpiriesUpdated PMRM legacy BTC",
+  [
+   18
+  ]
+ ],
+ [
+  "2025-02-22T19:52:37Z",
+  "ScenariosUpdated(PM legacy)",
+  {
+   "n": 23,
+   "grid": [
+    0.82,
+    0.865,
+    0.91,
+    0.955,
+    1.0,
+    1.045,
+    1.09,
+    1.135,
+    1.18
+   ]
+  }
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "MaxExpiriesUpdated PM2 proxy BTC",
+  [
+   10
+  ]
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "BasisContingencyParamsUpdated",
+  {
+   "spotUp": 1.045,
+   "spotDown": 0.955,
+   "add": 0.5,
+   "mult": 2.0
+  }
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "OtherContingencyParamsUpdated",
+  {
+   "pegThr": 0.99,
+   "pegFac": 4.0,
+   "confThr": 0.55,
+   "confMargin": 1.0,
+   "MMPerp": 0.03,
+   "IMPerp": 0.01,
+   "MMOpt": 0.003,
+   "IMOpt": 0.002
+  }
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "MarginParamsUpdated",
+  {
+   "imF": 1.0,
+   "mmF": 0.8,
+   "sRMult": 0.0,
+   "lRMult": 0.0,
+   "sRAdd": 0.16,
+   "lRAdd": 0.16,
+   "sBase(neg)": 0.95,
+   "lBase(pos)": 1.05
+  }
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "VolShockParamsUpdated",
+  {
+   "up": 0.5,
+   "down": 0.3,
+   "stPow": 0.3,
+   "ltPow": 0.13,
+   "dteFloor": 86400,
+   "minVolUp": 0.4
+  }
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "SkewShockParamsUpdated",
+  {
+   "linCap": 0.25,
+   "absCap": 0.25,
+   "linC": -0.1,
+   "absC": -0.1,
+   "minK*": 0.01,
+   "width": 4.0,
+   "volStat": 0.6,
+   "volScale": 0.0
+  }
+ ],
+ [
+  "2025-06-09T05:18:03Z",
+  "ScenariosUpdated(PM2)",
+  {
+   "n": 33,
+   "grid": [
+    0.82,
+    0.865,
+    0.91,
+    0.955,
+    1.0,
+    1.045,
+    1.09,
+    1.135,
+    1.18
+   ],
+   "tails": [
+    [
+     0.34,
+     0.21
+    ],
+    [
+     0.67,
+     0.42
+    ],
+    [
+     1.5,
+     0.2772
+    ],
+    [
+     2.0,
+     0.1386
+    ],
+    [
+     3.0,
+     0.0693
+    ],
+    [
+     4.0,
+     0.0462
+    ],
+    [
+     5.0,
+     0.03465
+    ],
+    [
+     6.0,
+     0.02772
+    ]
+   ]
+  }
+ ],
+ [
+  "2025-06-09T08:21:45Z",
+  "MarginParamsUpdated",
+  {
+   "imF": 1.0,
+   "mmF": 0.8,
+   "sRMult": 0.1,
+   "lRMult": 0.1,
+   "sRAdd": 0.16,
+   "lRAdd": 0.16,
+   "sBase(neg)": 0.98,
+   "lBase(pos)": 1.02
+  }
+ ],
+ [
+  "2025-06-12T22:20:01Z",
+  "MarginParamsUpdated",
+  {
+   "imF": 1.0,
+   "mmF": 0.8,
+   "sRMult": 0.0,
+   "lRMult": 0.0,
+   "sRAdd": 0.1,
+   "lRAdd": 0.1,
+   "sBase(neg)": 0.98,
+   "lBase(pos)": 1.02
+  }
+ ],
+ [
+  "2025-09-17T21:41:49Z",
+  "MaxExpiriesUpdated PM2 proxy BTC",
+  [
+   14
+  ]
+ ],
+ [
+  "2025-10-10T22:55:31Z",
+  "OtherContingencyParamsUpdated",
+  {
+   "pegThr": 0.99,
+   "pegFac": 4.0,
+   "confThr": 0.55,
+   "confMargin": 0.4,
+   "MMPerp": 0.03,
+   "IMPerp": 0.01,
+   "MMOpt": 0.003,
+   "IMOpt": 0.002
+  }
+ ],
+ [
+  "2026-01-08T22:50:49Z",
+  "MarginParamsUpdated",
+  {
+   "imF": 1.0,
+   "mmF": 0.8,
+   "sRMult": 0.0,
+   "lRMult": 0.0,
+   "sRAdd": 0.1,
+   "lRAdd": 0.1,
+   "sBase(neg)": 1.02,
+   "lBase(pos)": 0.98
+  }
+ ],
+ [
+  "2026-01-23T04:24:05Z",
+  "ScenariosUpdated(PM2)",
+  {
+   "n": 33,
+   "grid": [
+    0.82,
+    0.865,
+    0.91,
+    0.955,
+    1.0,
+    1.045,
+    1.09,
+    1.135,
+    1.18
+   ],
+   "tails": [
+    [
+     0.34,
+     0.1575
+    ],
+    [
+     0.67,
+     0.315
+    ],
+    [
+     1.5,
+     0.2079
+    ],
+    [
+     2.0,
+     0.10395
+    ],
+    [
+     3.0,
+     0.051975
+    ],
+    [
+     4.0,
+     0.03465
+    ],
+    [
+     5.0,
+     0.025988
+    ],
+    [
+     6.0,
+     0.02079
+    ]
+   ]
+  }
+ ],
+ [
+  "2026-05-24T04:05:07Z",
+  "VolShockParamsUpdated",
+  {
+   "up": 0.45,
+   "down": 0.3,
+   "stPow": 0.3,
+   "ltPow": 0.13,
+   "dteFloor": 86400,
+   "minVolUp": 0.4
+  }
+ ],
+ [
+  "2026-05-24T04:05:07Z",
+  "OtherContingencyParamsUpdated",
+  {
+   "pegThr": 0.99,
+   "pegFac": 4.0,
+   "confThr": 0.55,
+   "confMargin": 0.4,
+   "MMPerp": 0.015,
+   "IMPerp": 0.015,
+   "MMOpt": 0.003,
+   "IMOpt": 0.002
+  }
+ ],
+ [
+  "2026-05-24T04:05:07Z",
+  "ScenariosUpdated(PM2)",
+  {
+   "n": 33,
+   "grid": [
+    0.83,
+    0.8725,
+    0.915,
+    0.9575,
+    1.0,
+    1.0425,
+    1.085,
+    1.1275,
+    1.17
+   ],
+   "tails": [
+    [
+     0.34,
+     0.1489
+    ],
+    [
+     0.67,
+     0.2975
+    ],
+    [
+     1.5,
+     0.1964
+    ],
+    [
+     2.0,
+     0.0982
+    ],
+    [
+     3.0,
+     0.0491
+    ],
+    [
+     4.0,
+     0.0327
+    ],
+    [
+     5.0,
+     0.0245
+    ],
+    [
+     6.0,
+     0.0196
+    ]
+   ]
+  }
+ ],
+ [
+  "2026-05-24T05:21:47Z",
+  "BasisContingencyParamsUpdated",
+  {
+   "spotUp": 1.0425,
+   "spotDown": 0.9575,
+   "add": 0.5,
+   "mult": 2.0
+  }
+ ],
+ [
+  "2026-08-13T02:50:39Z",
+  "MaxExpiriesUpdated PM2 proxy BTC",
+  [
+   16
+  ]
+ ],
+ [
+  "2026-08-20T22:09:25Z",
+  "BasisContingencyParamsUpdated",
+  {
+   "spotUp": 1.035,
+   "spotDown": 0.965,
+   "add": 0.5,
+   "mult": 2.0
+  }
+ ],
+ [
+  "2026-08-20T22:09:25Z",
+  "VolShockParamsUpdated",
+  {
+   "up": 0.4,
+   "down": 0.25,
+   "stPow": 0.3,
+   "ltPow": 0.13,
+   "dteFloor": 86400,
+   "minVolUp": 0.5
+  }
+ ],
+ [
+  "2026-08-20T22:09:25Z",
+  "OtherContingencyParamsUpdated",
+  {
+   "pegThr": 0.99,
+   "pegFac": 4.0,
+   "confThr": 0.55,
+   "confMargin": 0.4,
+   "MMPerp": 0.0075,
+   "IMPerp": 0.0075,
+   "MMOpt": 0.0015,
+   "IMOpt": 0.001
+  }
+ ],
+ [
+  "2026-08-20T22:09:25Z",
+  "ScenariosUpdated(PM2)",
+  {
+   "n": 33,
+   "grid": [
+    0.86,
+    0.895,
+    0.93,
+    0.965,
+    1.0,
+    1.035,
+    1.07,
+    1.105,
+    1.14
+   ],
+   "tails": [
+    [
+     0.34,
+     0.122624
+    ],
+    [
+     0.67,
+     0.245
+    ],
+    [
+     1.5,
+     0.161741
+    ],
+    [
+     2.0,
+     0.080871
+    ],
+    [
+     3.0,
+     0.020218
+    ],
+    [
+     4.0,
+     0.008976
+    ],
+    [
+     5.0,
+     0.005044
+    ],
+    [
+     6.0,
+     0.003228
+    ]
+   ]
+  }
+ ]
+]

@@ -1,0 +1,16 @@
+row,label,kind,printed,source,variant,group,stat,lo,hi,n,n_days,y,arrow_lo,arrow_hi,stat_drawn,printed_n
+-3,,header,"registered: 0.035 [0.031, 0.039] → not rejected",,,,,,,,,,,,,
+-2,,header,"4 PM2 subaccounts, ETH and HYPE only",,,,,,,,,,,,,
+-1,,header,19 999 of 20 000 sampled fills · 372 day clusters,,,,,,,,,,,,,
+0,registered,registered,registered,h2.json,ratio,all,0.034540122450644445,0.03070183757603388,0.03855716844133305,19999.0,372.0,-0.0,False,False,True,19 999
+1,next contract,sensitivity,next contract,sens_h2.csv,ratio_unit,all,0.03291189572634804,0.02949345964873583,0.036579753802405204,19999.0,372.0,-1.0,False,False,True,19 999
+2,maintenance margin,sensitivity,maintenance margin,sens_h2.csv,ratio_mm,all,0.029059983667578563,0.02514976517174013,0.03390387892824244,19693.0,372.0,-2.0,False,False,True,19 693
+3,tape book,sensitivity,tape book,sens_h2.csv,ratio_tape,all,0.03403281826875784,0.03051323609866975,0.03823650215751796,19999.0,372.0,-3.0,False,False,True,19 999
+4,M3 (HYPE),exploratory,M3 (HYPE),sens_h2.csv,ratio,label=M3,0.022980377063320977,0.012628417820251571,0.03555145198164489,6405.0,298.0,-4.0,False,False,True,6 405
+5,M5,exploratory,M5,sens_h2.csv,ratio,label=M5,0.05047197770153931,0.03867085582456129,0.07425846833148146,5957.0,359.0,-5.0,False,False,True,5 957
+6,M8,exploratory,M8,sens_h2.csv,ratio,label=M8,0.044850980771494686,0.0376005096600308,0.06253444950799883,4296.0,236.0,-6.0,False,False,True,4 296
+7,M10,exploratory,M10,sens_h2.csv,ratio,label=M10,0.025812590197147368,0.02204922161143332,0.029343218489386536,3341.0,247.0,-7.0,False,False,True,3 341
+8,R1 to 23 Jan,exploratory,R1 to 23 Jan,sens_h2.csv,ratio,regime=R1,0.05025113197757073,0.04107342599699319,0.06932360309527918,5137.0,135.0,-8.0,False,False,True,5 137
+9,R2 to 24 May,exploratory,R2 to 24 May,sens_h2.csv,ratio,regime=R2,0.037223624846812776,0.03054316992577493,0.04659073591697521,7906.0,122.0,-9.0,False,False,True,7 906
+10,R3 to 20 Aug,exploratory,R3 to 20 Aug,sens_h2.csv,ratio,regime=R3,0.01173816289188327,-0.0011627939603876135,0.02204922161143332,5593.0,89.0,-10.0,False,False,True,5 593
+11,R4 since 20 Aug,exploratory,R4 since 20 Aug,sens_h2.csv,ratio,regime=R4,0.08987554227246941,0.024148964367063354,0.16389790900029522,1363.0,29.0,-11.0,False,False,True,1 363

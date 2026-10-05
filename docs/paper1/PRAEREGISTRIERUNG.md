@@ -58,3 +58,28 @@ Festgelegt am 17.09.2026, bevor eine Markout-Zahl berechnet wurde. Der Git-Commi
 3. **RFQ-Pakete:** Bei mehrbeinigen RFQ bucht Derive die Maker-Gebühr des Pakets fast immer auf genau ein Bein (Pilot: von 4 996 Paketen mit mehr als einem Bein und Maker-Gebühr 4 511 auf genau einem Bein; Rebates gibt es bei RFQ nicht). Gebühr / Menge legt sie auf das Bein, auf dem sie gebucht ist. Die Verteilung über das Paket (Σ Gebühr / Σ Menge je `rfq_id` und Maker-Wallet) wird als Sensitivität berichtet: `results/p1_befund/gebuehreneinheit.csv`, Abschnitt `rfq_package`, und ein Satz in Abschnitt 3 des Manuskripts.
 4. **Entdeckung und Ursache:** Die Einheit fiel am 25.09.2026 beim Aufbau von Paper 2 auf, also nach der Erstfassung und in Kenntnis ihrer Pilotergebnisse. Der Test der Erstfassung prüfte den Netto-Edge nur mit Fills der Menge 1. Befund, Nachrechnung und Zahlen beider Formen: `docs/paper1/BEFUND_2026-09-25_GEBUEHRENEINHEIT.md`, `scripts/p1_befund_gebuehreneinheit.py`, `results/p1_befund/` (die alte Form als Variante `p1`, dort bleibt sie als Vergleich nachvollziehbar).
 5. **Unverändert:** Hypothesen H1 bis H4, Ablehnungsregeln und Schwellen, Stichprobe und Pilotschnitt (17.09.2026 12:00 UTC), Horizont, Hedge-Annahmen, Bootstrap (B = 9 999, Seed 20260917). Geändert ist nur die Einheit, in der die registrierte Definition umgesetzt ist. Referenz der Präregistrierung bleibt der Commit `3fd9caa`.
+
+## Nachtrag 4 (05.10.2026): Umschreiben der Historie des Repositorys
+
+Dieser Nachtrag ändert keine Regel der Präregistrierung oder der Nachträge 1 bis 3, keine Teststatistik und kein
+Ergebnis. Er hält fest, warum die Commits der Präregistrierung und der Nachträge 1 bis 3 neue Hashes tragen:
+
+| Fassung | Alter Commit | Neuer Commit | Autor- und Committer-Zeit |
+|---|---|---|---|
+| Präregistrierung | `3fd9caa6cbb5f530400df06941716568f3f3cf40` | `cf1f432de887566c596bff7286b1840f1054dbff` | 17.09.2026 15:47:09 +0200 |
+| Nachtrag 1 | `7f67eafec176ed9df9316ba95364cc110d641ac6` | `143f6959c1b0d5f860499d504602711e0dfd05ce` | 17.09.2026 16:43:24 +0200 |
+| Nachtrag 2 | `837595c254f0d6b0560ddc4bf6c3ea67ae8e2c69` | `634c27618160752e6bd6aefef6d6bad97d998513` | 18.09.2026 00:02:04 +0200 |
+| Nachtrag 3 | `faf6cea1a64b26c95c309dc9411a125d4a39cd0d` | `e4a3873924c2be29e74c3ee177fdda9d2c98a7d1` | 25.09.2026 09:10:18 +0200 |
+
+1. **Grund:** Am 05.10.2026, vor der ersten Veröffentlichung von Paper 2 im selben Repository, wurde die ganze
+   Historie umgeschrieben. Die Autorenangaben wurden vereinheitlicht: Einige frühe Commits nannten das verwendete
+   KI-Codierwerkzeug als Autor, die meisten nannten es in einer Zeile „Co-Authored-By“ als Mitautor; jetzt nennt
+   jeder Commit den Autor. Deutsche Commit-Nachrichten wurden ins Englische übersetzt, und Beispielzeilen dieser Art
+   in Planungsdokumenten wurden entfernt. Die Nutzung generativer Werkzeuge legt das Papier im Abschnitt „Use of
+   generative tools“ offen.
+2. **Bytegleiche Texte:** In jedem neuen Commit der Tabelle ist diese Datei bytegleich mit der Fassung im alten
+   Commit (derselbe Git-Blob). Die vollständige Zuordnung aller Commits steht in `docs/paper2/HISTORY_REWRITE.md`.
+3. **Zeiten:** Autor, Committer, Datum, Uhrzeit und Zeitzone jedes Commits sind erhalten.
+4. **Öffentlichkeit:** Die alten Commits waren seit dem 25.09.2026 auf GitHub öffentlich (Branch `main`), und die
+   Fassung des Papiers vom 25.09.2026 auf SSRN zitiert `3fd9caa`. Seit dem 05.10.2026 steht die
+   Präregistrierung unter `cf1f432`; dieser Commit ist die Referenz, die Nachtrag 3, Punkt 5, meint.

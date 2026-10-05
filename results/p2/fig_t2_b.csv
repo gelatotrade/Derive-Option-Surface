@@ -1,0 +1,5 @@
+row,label,book,case,block,F_Cnet,F_R_engine,printed_Cnet,printed_R,SM_Cnet,PM2_Cnet,SM_R_engine,PM2_R_engine,threshold,printed_threshold
+0,"17 Sep, mixed",b17_exact,B,44810149,11.86,10.76,11.86,10.76,186946.6,15759.94,188750.62,17536.4,2,"H3 threshold, set from these books"
+1,"24 Sep, mixed",b24,B,45110142,1.19,2.14,1.19,2.14,707937.75,595693.75,211023.47,98834.91,2,"H3 threshold, set from these books"
+2,"17 Sep, short",b17_exact,A,44810149,2.33,3.19,2.33,3.19,602911.34,258793.19,499550.2,156672.49,2,"H3 threshold, set from these books"
+3,"24 Sep, short",b24,A,45110142,1.46,3.61,1.46,3.61,1472610.37,1007209.4,643740.48,178452.73,2,"H3 threshold, set from these books"

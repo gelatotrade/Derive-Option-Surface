@@ -1,5 +1,8 @@
 # Handover: status on 2026-09-24 and start of paper 2
 
+> **Commit hashes.** This document was written before the history rewrite of 5 October 2026 (Addendum 7 of the Paper 2 pre-registration, Addendum 4 of the Paper 1 pre-registration). Its hashes refer to the history at the time of writing; `docs/paper2/HISTORY_REWRITE.md` maps every one of them to the current hash. Current hashes: Paper 1 pre-registration `cf1f432`; Paper 2 pre-registration `c9e9162`, Addenda 1 to 6 `b5c905c`, `60896fe`, `2416902`, `a02058a`, `8c066a7`, `6f2436e`, Addendum 7 `7c01e85`.
+
+
 This file is written for a new session that knows nothing about the work so far.
 Read it first, then start.
 
@@ -32,16 +35,16 @@ Core findings, all from the pilot cut of 2026-09-17 with 603,940 fills:
 
 ### What is still open on paper 1
 
-1. **Final data run** after 2026-10-01 with cut-off 2026-09-30, then check all numbers against the new numbers
-   sheet. Check `pmset -g batt` beforehand and ask the user for the power adapter, otherwise the Mac goes to sleep.
-2. **Push and pull request.** When merging, choose “Create a merge commit”, not “Squash”, otherwise
-   the pre-registration commit `3fd9caa` disappears from the history, and exactly this hash is cited in the manuscript.
-3. **Access:** the token in the keychain has no write permission, 403. An SSH key was generated on 2026-09-24
-   and is at `~/.ssh/id_ed25519`, but its public part is **not** yet registered with GitHub.
-   After that, switch the remote to SSH.
-4. **Open user decision:** `results/p1/h1_lorenz.csv` contains 1,388 wallet addresses sorted by gain against
-   makers. The manuscript names none. Clarify before the merge whether the column gets hashed.
-5. Proofreading by a human; so far only the model has read the text.
+State of 30 September 2026: the revision of 25 September 2026 is on `main` (merge commit, pre-registration commit
+`3fd9caa` kept), pushed over SSH, with the wallets of `results/p1/h1_lorenz.csv` pseudonymised; the revised PDF is
+on SSRN.
+
+1. **Final data run** of both papers from 2026-10-01 09:00 UTC: the sample ends at the registered cut-off of
+   2026-09-30 08:00 UTC, and tape and SVI history are loaded to cut-off + 25 h so that the last fills get every
+   markout horizon (Paper 1, Addendum 1, point 2). Then check all numbers against the new numbers sheets; run H4
+   of Paper 2 with `--fresh` (audit A32). Check `pmset -g batt` beforehand and ask the user for the power adapter,
+   otherwise the Mac goes to sleep.
+2. Proofreading by a human; so far only the model has read the text.
 
 ## Paper 2: margin polytope and capital-adjusted edge
 
@@ -91,7 +94,8 @@ and that belongs in the title.
   `docs/superpowers/plans/`, specifications under `docs/superpowers/specs/`.
 - **Test-driven.** First the failing test, then the code. The suite must stay green.
 - **Pre-registration** before every measurement, with dated addenda. Never change anything retroactively.
-- **Paper in English, project documentation in German.** No em or en dashes in running text.
+- **Paper and public documentation in English (since 25 September 2026); pre-registrations stay in German as
+  binding originals with English translations.** No em or en dashes in running text.
 - **Little text, many figures.** Hard word budgets per section, monitored by
   `scripts/p1_wordcount.py`. A section that exceeds its budget gets cut.
 - **Every number in the text must be traceable in `results/`.** Check scripts enforce this.
@@ -105,3 +109,37 @@ Clarify the semantics of `get_margin` before anything else happens. Specifically
 `pre_initial_margin` as opposed to `post_initial_margin`, how does that relate to `simulated_collaterals`, and
 how does one read from it a requirement that is comparable across portfolios. Only once this question
 is answered is an experimental design for the sampling worthwhile.
+
+## Addendum of 24 September 2026, afternoon: semantics clarified
+
+The first step is done; the result is in `docs/paper2/get_margin_semantics.md`. Several statements above are
+therefore out of date; section 9 of the note lists them. The most important:
+
+- `get_margin` returns net margin, `net = C + V − R`. "Capital minus `post_initial_margin`" is R − V and not a
+  requirement. The comparable quantity is the capital measure K_p(q) = Σ p·q − net_IM(q; C = 0).
+- The contradiction 11 versus 1.2 comes from two different books and from this reading. Parameters did not
+  change. On R the factor on 17 September was 10.8 (mixed book near the money).
+- Production is v2 (`api.lyra.finance`). There PM2 discounts at a flat 2 %, on-chain with the rate feed.
+  `api.derive.xyz/v3` is a shadow operation.
+- SM is not convex. PM2 is convex in natural books, not in constructed ones. There is no absolute breaking point in
+  size; R is homogeneous of degree 1.
+- Raw data are under `data/p2/semantik_20260924/` (not in git), small tables under `results/p2/semantics/`.
+  Since 27 September 2026 these tables carry English file names, column names and labels (`box_discount.json`,
+  `factors.csv`, `capital_measure_check.jsonl`, `pm2_parameters_btc.json`, `v_convention.json`); the values are
+  unchanged.
+
+Next step: make the decisions from section 10 of the note, then brainstorming, specification and pre-registration.
+
+## Addendum of 25 September 2026, morning: Paper 2 written and audited
+
+Status and open decisions are in `docs/paper2/REPORT_2026-09-25.md`. In short: manuscript `paper2/main.tex`
+(12 pages, built with `python3 scripts/p2_build.py`), branch `paper2-kapital` (local, not pushed), pre-registration
+`1d13227` (now `cc0a29f`) with four addenda, audit `docs/paper2/AUDIT.md`. Before any push, read
+`docs/paper2/HISTORY_CLEANUP.md` first. Paper 1 has a unit error in fee and rebate
+(`docs/paper1/FINDING_2026-09-25_FEE_UNITS.md`), which must be corrected before the final data run.
+
+> Translated on 27 September 2026. Both points of this addendum are settled since: Paper 1 was corrected in its
+> revision of 25 September 2026 (`docs/paper1/REVISION_2026-09-25.md`), and the history was cleaned on
+> 27 September 2026. The branch is now `paper2-capital` and the pre-registration commit `cc0a29f`
+> (`docs/paper2/HISTORY_REWRITE.md`); Addendum 5 of the pre-registration (27 September 2026) records the mapping
+> from the old to the new commits.

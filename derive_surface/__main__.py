@@ -17,6 +17,13 @@ def main(argv: list[str] | None = None) -> None:
 
         p1_main(argv[1:])
         return
+    if argv and argv[0] == "p2":
+        from .p2cli import main as p2_main
+
+        rc = p2_main(argv[1:])
+        if rc:
+            raise SystemExit(rc)
+        return
     p = argparse.ArgumentParser(prog="derive_surface", description=__doc__)
     p.add_argument("--data", type=Path, default=Path("data"))
     p.add_argument("--media", type=Path, default=Path("docs/media"))

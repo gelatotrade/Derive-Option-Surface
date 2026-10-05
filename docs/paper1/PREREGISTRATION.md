@@ -1,6 +1,6 @@
 # Pre-registration, Paper 1: Adverse Selection on Derive
 
-> English translation of docs/paper1/PRAEREGISTRIERUNG.md, made on 25 September 2026. The German original is binding; its history, including commit 3fd9caa, is the record. Files renamed on 25 September 2026 appear here under their new names; the German original keeps the old ones.
+> English translation of docs/paper1/PRAEREGISTRIERUNG.md, made on 25 September 2026; Addendum 4 was translated on 5 October 2026. The German original is binding; its history, including commit cf1f432 (`3fd9caa` before the rewrite of 5 October 2026, Addendum 4), is the record. Files renamed on 25 September 2026 appear here under their new names; the German original keeps the old ones.
 
 Fixed on 17 September 2026, before any markout number was computed. The Git commit of this file is the timestamp. Changes after that only as a dated addendum at the end, never by overwriting.
 
@@ -60,3 +60,27 @@ Fixed on 17 September 2026, before any markout number was computed. The Git comm
 3. **RFQ packages:** In multi-leg RFQs, Derive almost always books the maker fee of the package on exactly one leg (pilot: of 4,996 packages with more than one leg and a maker fee, 4,511 on exactly one leg; there are no rebates in RFQ). Fee / amount places it on the leg on which it is booked. The distribution across the package (Σ fee / Σ amount per `rfq_id` and maker wallet) is reported as a sensitivity: `results/p1_finding/fee_units.csv`, section `rfq_package`, and a sentence in section 3 of the manuscript.
 4. **Discovery and cause:** The unit issue came to light on 25 September 2026 while Paper 2 was being built, that is, after the first version and with knowledge of its pilot results. The test of the first version checked the net edge only with fills of amount 1. Finding, recomputation and the numbers of both forms: `docs/paper1/FINDING_2026-09-25_FEE_UNITS.md`, `scripts/p1_fee_units_finding.py`, `results/p1_finding/` (the old form as variant `p1`, where it remains traceable as a comparison).
 5. **Unchanged:** hypotheses H1 to H4, rejection rules and thresholds, sample and pilot cut (17 September 2026 12:00 UTC), horizon, hedging assumptions, bootstrap (B = 9,999, seed 20260917). Only the unit in which the registered definition is implemented has changed. The reference of the pre-registration remains commit `3fd9caa`.
+
+## Addendum 4 (5 October 2026): rewrite of the repository history
+
+This addendum changes no rule of the pre-registration or of Addenda 1 to 3, no test statistic and no result. It
+records why the commits of the pre-registration and of Addenda 1 to 3 carry new hashes:
+
+| Version | Old commit | New commit | Author and committer time |
+|---|---|---|---|
+| Pre-registration | `3fd9caa6cbb5f530400df06941716568f3f3cf40` | `cf1f432de887566c596bff7286b1840f1054dbff` | 17 September 2026 15:47:09 +0200 |
+| Addendum 1 | `7f67eafec176ed9df9316ba95364cc110d641ac6` | `143f6959c1b0d5f860499d504602711e0dfd05ce` | 17 September 2026 16:43:24 +0200 |
+| Addendum 2 | `837595c254f0d6b0560ddc4bf6c3ea67ae8e2c69` | `634c27618160752e6bd6aefef6d6bad97d998513` | 18 September 2026 00:02:04 +0200 |
+| Addendum 3 | `faf6cea1a64b26c95c309dc9411a125d4a39cd0d` | `e4a3873924c2be29e74c3ee177fdda9d2c98a7d1` | 25 September 2026 09:10:18 +0200 |
+
+1. **Reason:** On 5 October 2026, before the first publication of Paper 2 in the same repository, the whole history
+   was rewritten. The authorship records were made uniform: some early commits named the AI coding tool that was used
+   as their author, and most named it as co-author in a "Co-Authored-By" line; now every commit names the author.
+   German commit messages were translated into English, and example lines of this kind in planning documents were
+   removed. The paper discloses the use of generative tools in its section "Use of generative tools".
+2. **Byte-identical texts:** In each new commit of the table this file is byte-identical to the version in the old
+   commit (same git blob). The full mapping of all commits is in `docs/paper2/HISTORY_REWRITE.md`.
+3. **Times:** Author, committer, date, time of day and time zone of every commit are kept.
+4. **Publication:** The old commits had been public on GitHub since 25 September 2026 (branch `main`), and the
+   version of the paper of 25 September 2026 on SSRN cites `3fd9caa`. Since 5 October 2026 the
+   pre-registration is `cf1f432`; this commit is the reference that Addendum 3, point 5, means.

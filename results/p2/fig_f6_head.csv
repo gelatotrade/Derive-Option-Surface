@@ -1,0 +1,10 @@
+key,value,printed
+events,13.0,
+pairs,475.0,
+rows,91446.0,
+fills,84919.0,
+fills_in_two_windows,6527.0,
+day_clusters,141.0,
+day_ccy_effects,322.0,
+line1,,13 events · 475 cell-event pairs · 91 446 rows from 84 919 fills (6 527 in two windows)
+line2,,141 day clusters · 322 day × underlying effects

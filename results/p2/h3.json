@@ -1,0 +1,41 @@
+{
+ "hypothesis": "H3",
+ "claim": "median > 2.0",
+ "numerator": "K_sm",
+ "denominator": "K_pm2",
+ "stat": 4.7467261022171625,
+ "lo": 4.661926808686567,
+ "hi": 4.823628547372672,
+ "rejected": false,
+ "rule": "rejected if the lower bound of the 90% day-cluster bootstrap percentile interval of the median of K_sm / K_pm2 over maker days is <= 2; days with K_pm2 <= 0 excluded and counted",
+ "threshold": 2.0,
+ "n": 1943,
+ "n_days": 462,
+ "n_rows": 1968,
+ "n_not_ok": 25,
+ "status_counts": {
+  "no_options": 24,
+  "no_snapshot": 1,
+  "ok": 1943
+ },
+ "n_not_applicable": 0,
+ "n_excluded": 0,
+ "b": 9999,
+ "seed": 20260924,
+ "level": 0.9,
+ "share_days_over_63_options": 0.7364899639732373,
+ "days_over_63_options": 1431,
+ "accounts": {
+  "M1": 120,
+  "M10": 247,
+  "M2": 328,
+  "M3": 303,
+  "M4": 203,
+  "M5": 374,
+  "M6": 119,
+  "M7": 10,
+  "M8": 239
+ },
+ "first_day": "2025-06-13",
+ "last_day": "2026-09-17"
+}

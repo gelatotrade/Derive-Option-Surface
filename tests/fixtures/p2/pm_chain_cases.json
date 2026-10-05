@@ -1,0 +1,3045 @@
+{
+ "source": "legacy PMRMLib.addPrecomputes + getMarginAndMarkToMarket per eth_call at the block on portfolios arranged like PMRM._arrangePortfolio from the legacy manager's feeds",
+ "cases": [
+  {
+   "ccy": "BTC",
+   "day": "2024-03-01",
+   "block": 4636392,
+   "ts": 1709294399,
+   "manager": "0x45DA02B9cCF384d7DbDD7b2b13e705BADB43Db0D",
+   "lib": "0xfa7f1a242b819a8ec97fd92674c3f0868395b0d3",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.05,
+     "scenarioSpotDown": 0.95,
+     "basisContAddFactor": 1.0,
+     "basisContMultFactor": 1.2
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.6,
+     "volRangeDown": 0.3,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.02
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.2,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.8,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 11
+   },
+   "spot": 61902.53999999999,
+   "spot_conf": 1.0,
+   "stable": 0.9996465757372466,
+   "perp_price": 61921.22702222222,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1709884800": {
+     "fixed": 0.0,
+     "var": 62208.00662278664,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "50000.0": [
+       0.8087586173354427,
+       0.95
+      ],
+      "59000.0": [
+       0.6161349316436907,
+       0.95
+      ],
+      "62000.0": [
+       0.6205480992415964,
+       0.95
+      ],
+      "65000.0": [
+       0.6467662832233269,
+       0.95
+      ]
+     }
+    },
+    "1714118400": {
+     "fixed": 0.0,
+     "var": 63656.24087594842,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "57000.0": [
+       0.6212217520550258,
+       0.95
+      ],
+      "60000.0": [
+       0.6204571667686154,
+       0.95
+      ],
+      "64000.0": [
+       0.6237893942111135,
+       0.95
+      ],
+      "70000.0": [
+       0.6354545133859913,
+       0.95
+      ],
+      "80000.0": [
+       0.6650003403040087,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1709884800,
+       65000.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -15092.44293051876,
+      "mtm": -1119.2569568224903,
+      "worst": 0
+     },
+     "MM": {
+      "net": -12297.805735779506,
+      "mtm": -1119.2569568224903,
+      "worst": 0
+     },
+     "staticContingency": 1238.0508,
+     "basisContingency": -1373.2731554122847,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1714118400,
+       60000.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -421.78524198113905,
+      "mtm": 8636.853175052069,
+      "worst": 3
+     },
+     "MM": {
+      "net": 1389.9424414255025,
+      "mtm": 8636.853175052069,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -2416.4197115301267,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1709884800,
+       50000.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -6997.688439121029,
+      "mtm": -56.073865214931764,
+      "worst": 22
+     },
+     "MM": {
+      "net": -5609.365524339809,
+      "mtm": -56.073865214931764,
+      "worst": 22
+     },
+     "staticContingency": 1238.0508,
+     "basisContingency": -118.39258655999382,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1709884800,
+       62000.0,
+       true,
+       -1.0
+      ],
+      [
+       1709884800,
+       65000.0,
+       true,
+       1.0
+      ],
+      [
+       1709884800,
+       59000.0,
+       false,
+       -1.0
+      ],
+      [
+       1709884800,
+       50000.0,
+       false,
+       2.0
+      ],
+      [
+       1714118400,
+       64000.0,
+       true,
+       1.0
+      ],
+      [
+       1714118400,
+       64000.0,
+       false,
+       -1.5
+      ],
+      [
+       1714118400,
+       80000.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -29199.95774937407,
+      "mtm": -6678.3916989215495,
+      "worst": 22
+     },
+     "MM": {
+      "net": -24695.644539283563,
+      "mtm": -6678.3916989215495,
+      "worst": 22
+     },
+     "staticContingency": 4518.88542,
+     "basisContingency": -4510.587896668108,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1709884800,
+       62000.0,
+       true,
+       -1.0
+      ],
+      [
+       1709884800,
+       62000.0,
+       false,
+       -1.0
+      ],
+      [
+       1714118400,
+       70000.0,
+       true,
+       -2.0
+      ],
+      [
+       1714118400,
+       57000.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -29053.449538415774,
+      "mtm": 6543.240662849031,
+      "worst": 0
+     },
+     "MM": {
+      "net": -21934.111498162812,
+      "mtm": 6543.240662849031,
+      "worst": 0
+     },
+     "staticContingency": 6345.01035,
+     "basisContingency": -5141.285551751519,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "BTC",
+   "day": "2024-10-01",
+   "block": 13881192,
+   "ts": 1727783999,
+   "manager": "0x45DA02B9cCF384d7DbDD7b2b13e705BADB43Db0D",
+   "lib": "0xfa7f1a242b819a8ec97fd92674c3f0868395b0d3",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.05,
+     "scenarioSpotDown": 0.95,
+     "basisContAddFactor": 0.5,
+     "basisContMultFactor": 2.0
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.6,
+     "volRangeDown": 0.3,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.02
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.2,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.8,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 18
+   },
+   "spot": 63746.13040331522,
+   "spot_conf": 1.0,
+   "stable": 1.000225318523786,
+   "perp_price": 63732.464248025346,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1728633600": {
+     "fixed": 0.0,
+     "var": 63856.76461853796,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "51000.0": [
+       0.6740724403529665,
+       0.95
+      ],
+      "61000.0": [
+       0.44764372988973145,
+       0.95
+      ],
+      "64000.0": [
+       0.4401251736434203,
+       0.95
+      ],
+      "67000.0": [
+       0.45882499080941586,
+       0.95
+      ]
+     }
+    },
+    "1732867200": {
+     "fixed": 0.0,
+     "var": 64463.022529895854,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "58000.0": [
+       0.5569062642257977,
+       0.95
+      ],
+      "61000.0": [
+       0.5576123370209585,
+       0.95
+      ],
+      "64000.0": [
+       0.5621263560405719,
+       0.95
+      ],
+      "71000.0": [
+       0.5787720928830293,
+       0.95
+      ],
+      "81000.0": [
+       0.6054920602401137,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1728633600,
+       67000.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -14526.033836400116,
+      "mtm": -780.3709433388187,
+      "worst": 0
+     },
+     "MM": {
+      "net": -11776.901257787857,
+      "mtm": -780.3709433388187,
+      "worst": 0
+     },
+     "staticContingency": 1274.9226080663043,
+     "basisContingency": -696.6506900415101,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1732867200,
+       61000.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -593.4853718590977,
+      "mtm": 8055.826094518077,
+      "worst": 3
+     },
+     "MM": {
+      "net": 1136.3769214163374,
+      "mtm": 8055.826094518077,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -1696.7527910324109,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1728633600,
+       51000.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -6696.707425204102,
+      "mtm": -49.12800009628621,
+      "worst": 22
+     },
+     "MM": {
+      "net": -5367.191540182539,
+      "mtm": -49.12800009628621,
+      "worst": 22
+     },
+     "staticContingency": 1274.9226080663043,
+     "basisContingency": -58.01722432541775,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1728633600,
+       64000.0,
+       true,
+       -1.0
+      ],
+      [
+       1728633600,
+       67000.0,
+       true,
+       1.0
+      ],
+      [
+       1728633600,
+       61000.0,
+       false,
+       -1.0
+      ],
+      [
+       1728633600,
+       51000.0,
+       false,
+       2.0
+      ],
+      [
+       1732867200,
+       64000.0,
+       true,
+       1.0
+      ],
+      [
+       1732867200,
+       64000.0,
+       false,
+       -1.5
+      ],
+      [
+       1732867200,
+       81000.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -28954.74121537045,
+      "mtm": -5088.55421283993,
+      "worst": 22
+     },
+     "MM": {
+      "net": -24181.503814864347,
+      "mtm": -5088.55421283993,
+      "worst": 22
+     },
+     "staticContingency": 4653.4675194420115,
+     "basisContingency": -3186.6633805157853,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1728633600,
+       64000.0,
+       true,
+       -1.0
+      ],
+      [
+       1728633600,
+       64000.0,
+       false,
+       -1.0
+      ],
+      [
+       1732867200,
+       71000.0,
+       true,
+       -2.0
+      ],
+      [
+       1732867200,
+       58000.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -26935.65188539539,
+      "mtm": 8006.645659578521,
+      "worst": 0
+     },
+     "MM": {
+      "net": -19947.192376400606,
+      "mtm": 8006.645659578521,
+      "worst": 0
+     },
+     "staticContingency": 6533.97836633981,
+     "basisContingency": -3361.869891442833,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "BTC",
+   "day": "2025-06-01",
+   "block": 24378792,
+   "ts": 1748779199,
+   "manager": "0x45DA02B9cCF384d7DbDD7b2b13e705BADB43Db0D",
+   "lib": "0xfa7f1a242b819a8ec97fd92674c3f0868395b0d3",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.045,
+     "scenarioSpotDown": 0.955,
+     "basisContAddFactor": 0.5,
+     "basisContMultFactor": 2.0
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.5,
+     "volRangeDown": 0.275,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.015
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.18,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.82,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 18
+   },
+   "spot": 104133.59033734708,
+   "spot_conf": 1.0,
+   "stable": 0.99976245035,
+   "perp_price": 104097.01199418606,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1749196800": {
+     "fixed": 0.0,
+     "var": 104137.79149788532,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "83000.0": [
+       0.68296643939715,
+       0.95
+      ],
+      "99000.0": [
+       0.45264162930536356,
+       0.95
+      ],
+      "104000.0": [
+       0.3922026650015189,
+       0.95
+      ],
+      "109000.0": [
+       0.4132156353837353,
+       0.95
+      ]
+     }
+    },
+    "1753430400": {
+     "fixed": 0.0,
+     "var": 105156.75915888097,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "95000.0": [
+       0.4683399356972832,
+       0.95
+      ],
+      "100000.0": [
+       0.4616953633371808,
+       0.95
+      ],
+      "105000.0": [
+       0.4613518112729597,
+       0.95
+      ],
+      "116000.0": [
+       0.4729380082602557,
+       0.95
+      ],
+      "131000.0": [
+       0.49805031405044153,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1749196800,
+       109000.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -19713.74999128048,
+      "mtm": -455.42335640251963,
+      "worst": 0
+     },
+     "MM": {
+      "net": -15862.08466430489,
+      "mtm": -455.42335640251963,
+      "worst": 0
+     },
+     "staticContingency": 1562.0038550602062,
+     "basisContingency": -802.1600165777938,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1753430400,
+       100000.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -1070.197844973611,
+      "mtm": 9913.582120368625,
+      "worst": 3
+     },
+     "MM": {
+      "net": 1126.558148094836,
+      "mtm": 9913.582120368625,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -2331.9708649279432,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1749196800,
+       83000.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -6718.369515600712,
+      "mtm": -4.139654170664332,
+      "worst": 22
+     },
+     "MM": {
+      "net": -5375.523543314702,
+      "mtm": -4.139654170664332,
+      "worst": 22
+     },
+     "staticContingency": 1562.0038550602062,
+     "basisContingency": -11.541320045521362,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1749196800,
+       104000.0,
+       true,
+       -1.0
+      ],
+      [
+       1749196800,
+       109000.0,
+       true,
+       1.0
+      ],
+      [
+       1749196800,
+       99000.0,
+       false,
+       -1.0
+      ],
+      [
+       1749196800,
+       83000.0,
+       false,
+       2.0
+      ],
+      [
+       1753430400,
+       105000.0,
+       true,
+       1.0
+      ],
+      [
+       1753430400,
+       105000.0,
+       false,
+       -1.5
+      ],
+      [
+       1753430400,
+       131000.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -44536.54009871848,
+      "mtm": -6432.954223879068,
+      "worst": 22
+     },
+     "MM": {
+      "net": -36915.822923750595,
+      "mtm": -6432.954223879068,
+      "worst": 22
+     },
+     "staticContingency": 5935.6146492287835,
+     "basisContingency": -5128.605619649332,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1749196800,
+       104000.0,
+       true,
+       -1.0
+      ],
+      [
+       1749196800,
+       104000.0,
+       false,
+       -1.0
+      ],
+      [
+       1753430400,
+       116000.0,
+       true,
+       -2.0
+      ],
+      [
+       1753430400,
+       95000.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -28914.676180902283,
+      "mtm": 18061.866315380135,
+      "worst": 0
+     },
+     "MM": {
+      "net": -19519.3676816458,
+      "mtm": 18061.866315380135,
+      "worst": 0
+     },
+     "staticContingency": 8591.021202831134,
+     "basisContingency": -4605.47328396783,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "BTC",
+   "day": "2026-01-15",
+   "block": 34228392,
+   "ts": 1768478399,
+   "manager": "0x45DA02B9cCF384d7DbDD7b2b13e705BADB43Db0D",
+   "lib": "0xfa7f1a242b819a8ec97fd92674c3f0868395b0d3",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.045,
+     "scenarioSpotDown": 0.955,
+     "basisContAddFactor": 0.5,
+     "basisContMultFactor": 2.0
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.5,
+     "volRangeDown": 0.275,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.015
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.18,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.82,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 18
+   },
+   "spot": 96562.00807117528,
+   "spot_conf": 1.0,
+   "stable": 0.999615041741998,
+   "perp_price": 96627.76510446769,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1769155200": {
+     "fixed": 0.0,
+     "var": 96673.50317740825,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "77000.0": [
+       0.6042359237788099,
+       0.95
+      ],
+      "92000.0": [
+       0.3940261794821436,
+       0.95
+      ],
+      "97000.0": [
+       0.36816937568700553,
+       0.95
+      ],
+      "102000.0": [
+       0.3860528709476791,
+       0.95
+      ]
+     }
+    },
+    "1774598400": {
+     "fixed": 0.0,
+     "var": 97468.55312632899,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "88000.0": [
+       0.41934945700380183,
+       0.95
+      ],
+      "93000.0": [
+       0.40510672832764655,
+       0.95
+      ],
+      "97000.0": [
+       0.39755709410043466,
+       0.95
+      ],
+      "107000.0": [
+       0.39253615368987405,
+       0.95
+      ],
+      "122000.0": [
+       0.4100466129288314,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1769155200,
+       102000.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -17633.156604132095,
+      "mtm": -515.6505869887994,
+      "worst": 0
+     },
+     "MM": {
+      "net": -14209.655400703437,
+      "mtm": -515.6505869887994,
+      "worst": 0
+     },
+     "staticContingency": 1448.4301210676292,
+     "basisContingency": -716.28437484174,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1774598400,
+       93000.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -913.2244951134626,
+      "mtm": 9538.203947111926,
+      "worst": 3
+     },
+     "MM": {
+      "net": 1177.0611933316152,
+      "mtm": 9538.203947111926,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -2472.118796227673,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1769155200,
+       77000.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -6516.297446756347,
+      "mtm": -12.267495051411744,
+      "worst": 22
+     },
+     "MM": {
+      "net": -5215.49145641536,
+      "mtm": -12.267495051411744,
+      "worst": 22
+     },
+     "staticContingency": 1448.4301210676292,
+     "basisContingency": -23.35117356448461,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1769155200,
+       97000.0,
+       true,
+       -1.0
+      ],
+      [
+       1769155200,
+       102000.0,
+       true,
+       1.0
+      ],
+      [
+       1769155200,
+       92000.0,
+       false,
+       -1.0
+      ],
+      [
+       1769155200,
+       77000.0,
+       false,
+       2.0
+      ],
+      [
+       1774598400,
+       97000.0,
+       true,
+       1.0
+      ],
+      [
+       1774598400,
+       97000.0,
+       false,
+       -1.5
+      ],
+      [
+       1774598400,
+       122000.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -40146.05050996035,
+      "mtm": -5487.743394455289,
+      "worst": 22
+     },
+     "MM": {
+      "net": -33214.38908685934,
+      "mtm": -5487.743394455289,
+      "worst": 22
+     },
+     "staticContingency": 5504.034460056991,
+     "basisContingency": -5164.50287467348,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1769155200,
+       97000.0,
+       true,
+       -1.0
+      ],
+      [
+       1769155200,
+       97000.0,
+       false,
+       -1.0
+      ],
+      [
+       1774598400,
+       107000.0,
+       true,
+       -2.0
+      ],
+      [
+       1774598400,
+       88000.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -25381.185624925,
+      "mtm": 16527.73607142265,
+      "worst": 0
+     },
+     "MM": {
+      "net": -16999.401285655473,
+      "mtm": 16527.73607142265,
+      "worst": 0
+     },
+     "staticContingency": 7966.365665871961,
+     "basisContingency": -4585.12285235028,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "ETH",
+   "day": "2024-05-01",
+   "block": 7271592,
+   "ts": 1714564799,
+   "manager": "0xe7cD9370CdE6C9b5eAbCe8f86d01822d3de205A0",
+   "lib": "0x81ed5dc90f708dd908dccffd5128b5c3405f74c5",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.05,
+     "scenarioSpotDown": 0.95,
+     "basisContAddFactor": 1.0,
+     "basisContMultFactor": 1.2
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.6,
+     "volRangeDown": 0.3,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.02
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.2,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.8,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 11
+   },
+   "spot": 2900.960883963328,
+   "spot_conf": 1.0,
+   "stable": 1.0004736797034575,
+   "perp_price": 2900.695210490797,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1715328000": {
+     "fixed": 0.0,
+     "var": 2901.4578504867227,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "2300.0": [
+       1.132994493157167,
+       0.95
+      ],
+      "2750.0": [
+       0.7806499267983924,
+       0.95
+      ],
+      "2900.0": [
+       0.6801457217331965,
+       0.95
+      ],
+      "3050.0": [
+       0.6440890439255215,
+       0.95
+      ]
+     }
+    },
+    "1719561600": {
+     "fixed": 0.0,
+     "var": 2930.121994233423,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "2650.0": [
+       0.6240430684305364,
+       0.95
+      ],
+      "2800.0": [
+       0.6018343817896676,
+       0.95
+      ],
+      "2950.0": [
+       0.590063406731872,
+       0.95
+      ],
+      "3200.0": [
+       0.591425882238247,
+       0.95
+      ],
+      "3650.0": [
+       0.6325532521281935,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1715328000,
+       3050.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -704.4929793401077,
+      "mtm": -59.076863775013564,
+      "worst": 0
+     },
+     "MM": {
+      "net": -575.4097562270889,
+      "mtm": -59.076863775013564,
+      "worst": 0
+     },
+     "staticContingency": 58.01921767926656,
+     "basisContingency": -62.766600807040014,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1719561600,
+       2800.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -15.731428285140945,
+      "mtm": 425.9525278110642,
+      "worst": 3
+     },
+     "MM": {
+      "net": 72.60536293410009,
+      "mtm": 425.9525278110642,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -118.70925330312046,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1715328000,
+       2300.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -431.701420692106,
+      "mtm": -19.895533758521932,
+      "worst": 22
+     },
+     "MM": {
+      "net": -349.3402433053892,
+      "mtm": -19.895533758521932,
+      "worst": 22
+     },
+     "staticContingency": 58.01921767926656,
+     "basisContingency": -15.570571802745551,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1715328000,
+       2900.0,
+       true,
+       -1.0
+      ],
+      [
+       1715328000,
+       3050.0,
+       true,
+       1.0
+      ],
+      [
+       1715328000,
+       2750.0,
+       false,
+       -1.0
+      ],
+      [
+       1715328000,
+       2300.0,
+       false,
+       2.0
+      ],
+      [
+       1719561600,
+       2950.0,
+       true,
+       1.0
+      ],
+      [
+       1719561600,
+       2950.0,
+       false,
+       -1.5
+      ],
+      [
+       1719561600,
+       3650.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -1188.4881053078313,
+      "mtm": -321.3472285509158,
+      "worst": 22
+     },
+     "MM": {
+      "net": -1015.0599299564482,
+      "mtm": -321.3472285509158,
+      "worst": 22
+     },
+     "staticContingency": 211.77014452932295,
+     "basisContingency": -205.44089819838177,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1715328000,
+       2900.0,
+       true,
+       -1.0
+      ],
+      [
+       1715328000,
+       2900.0,
+       false,
+       -1.0
+      ],
+      [
+       1719561600,
+       3200.0,
+       true,
+       -2.0
+      ],
+      [
+       1719561600,
+       2650.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -1327.0684630079315,
+      "mtm": 293.88738944588994,
+      "worst": 0
+     },
+     "MM": {
+      "net": -1002.8772925171672,
+      "mtm": 293.88738944588994,
+      "worst": 0
+     },
+     "staticContingency": 297.3484906062411,
+     "basisContingency": -233.3874893818639,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "ETH",
+   "day": "2024-12-01",
+   "block": 16516392,
+   "ts": 1733054399,
+   "manager": "0xe7cD9370CdE6C9b5eAbCe8f86d01822d3de205A0",
+   "lib": "0x81ed5dc90f708dd908dccffd5128b5c3405f74c5",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.05,
+     "scenarioSpotDown": 0.95,
+     "basisContAddFactor": 0.5,
+     "basisContMultFactor": 2.0
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.6,
+     "volRangeDown": 0.3,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.02
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.2,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.15,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.1,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.05,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.95,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.9,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.85,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.8,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 18
+   },
+   "spot": 3695.6023328,
+   "spot_conf": 1.0,
+   "stable": 1.000072741,
+   "perp_price": 3695.7300805327222,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1733472000": {
+     "fixed": 0.0,
+     "var": 3708.5105011334003,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "2950.0": [
+       1.03095806002952,
+       0.95
+      ],
+      "3500.0": [
+       0.6754571920960026,
+       0.95
+      ],
+      "3700.0": [
+       0.7287840032608109,
+       0.95
+      ],
+      "3900.0": [
+       0.7823942823150397,
+       0.95
+      ]
+     }
+    },
+    "1738310400": {
+     "fixed": 0.0,
+     "var": 3803.740084760267,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "3400.0": [
+       0.6940790996053227,
+       0.95
+      ],
+      "3600.0": [
+       0.7024812761385308,
+       0.95
+      ],
+      "3800.0": [
+       0.7123620431982872,
+       0.95
+      ],
+      "4200.0": [
+       0.7331854286317695,
+       0.95
+      ],
+      "4750.0": [
+       0.7606315191062465,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1733472000,
+       3900.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -896.490480355967,
+      "mtm": -61.64825258599206,
+      "worst": 0
+     },
+     "MM": {
+      "net": -729.5220348019719,
+      "mtm": -61.64825258599206,
+      "worst": 0
+     },
+     "staticContingency": 73.912046656,
+     "basisContingency": -39.62583428456538,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1738310400,
+       3600.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": 16.53415105320645,
+      "mtm": 655.8327530997007,
+      "worst": 3
+     },
+     "MM": {
+      "net": 144.3938714625053,
+      "mtm": 655.8327530997007,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -106.82925264524042,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1733472000,
+       2950.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -436.73231006128657,
+      "mtm": -4.018267884768666,
+      "worst": 22
+     },
+     "MM": {
+      "net": -350.189501625983,
+      "mtm": -4.018267884768666,
+      "worst": 22
+     },
+     "staticContingency": 73.912046656,
+     "basisContingency": -3.826271121266359,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1733472000,
+       3700.0,
+       true,
+       -1.0
+      ],
+      [
+       1733472000,
+       3900.0,
+       true,
+       1.0
+      ],
+      [
+       1733472000,
+       3500.0,
+       false,
+       -1.0
+      ],
+      [
+       1733472000,
+       2950.0,
+       false,
+       2.0
+      ],
+      [
+       1738310400,
+       3800.0,
+       true,
+       1.0
+      ],
+      [
+       1738310400,
+       3800.0,
+       false,
+       -1.5
+      ],
+      [
+       1738310400,
+       4750.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -1742.4983785056909,
+      "mtm": -438.3985602200926,
+      "worst": 22
+     },
+     "MM": {
+      "net": -1481.6784148485713,
+      "mtm": -438.3985602200926,
+      "worst": 22
+     },
+     "staticContingency": 269.77897029440004,
+     "basisContingency": -179.30260398905395,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1733472000,
+       3700.0,
+       true,
+       -1.0
+      ],
+      [
+       1733472000,
+       3700.0,
+       false,
+       -1.0
+      ],
+      [
+       1738310400,
+       4200.0,
+       true,
+       -2.0
+      ],
+      [
+       1738310400,
+       3400.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -1937.264218685386,
+      "mtm": 303.83822244930104,
+      "worst": 0
+     },
+     "MM": {
+      "net": -1489.0437304584486,
+      "mtm": 303.83822244930104,
+      "worst": 0
+     },
+     "staticContingency": 378.799239112,
+     "basisContingency": -215.46333109121383,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "ETH",
+   "day": "2025-04-01",
+   "block": 21743592,
+   "ts": 1743508799,
+   "manager": "0xe7cD9370CdE6C9b5eAbCe8f86d01822d3de205A0",
+   "lib": "0x81ed5dc90f708dd908dccffd5128b5c3405f74c5",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.045,
+     "scenarioSpotDown": 0.955,
+     "basisContAddFactor": 0.5,
+     "basisContMultFactor": 2.0
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.5,
+     "volRangeDown": 0.275,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.015
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.18,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.82,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 18
+   },
+   "spot": 1862.7480449,
+   "spot_conf": 1.0,
+   "stable": 0.9999753336,
+   "perp_price": 1862.3449933886388,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1744358400": {
+     "fixed": 0.0,
+     "var": 1863.750319737549,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "1500.0": [
+       0.8917459363253113,
+       0.95
+      ],
+      "1750.0": [
+       0.7119791182167153,
+       0.95
+      ],
+      "1850.0": [
+       0.6671076583898113,
+       0.95
+      ],
+      "1950.0": [
+       0.6491378768946463,
+       0.95
+      ]
+     }
+    },
+    "1748592000": {
+     "fixed": 0.0,
+     "var": 1873.633112900058,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "1700.0": [
+       0.6320231131103783,
+       0.95
+      ],
+      "1800.0": [
+       0.6156104831255795,
+       0.95
+      ],
+      "1850.0": [
+       0.609519571643758,
+       0.95
+      ],
+      "2050.0": [
+       0.5992469845781131,
+       0.95
+      ],
+      "2350.0": [
+       0.6175426966296167,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1744358400,
+       1950.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -406.0814771040514,
+      "mtm": -45.07711039692642,
+      "worst": 0
+     },
+     "MM": {
+      "net": -333.8806037626264,
+      "mtm": -45.07711039692642,
+      "worst": 0
+     },
+     "staticContingency": 27.9412206735,
+     "basisContingency": -20.23604911111743,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1748592000,
+       1800.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": 11.03483497316159,
+      "mtm": 292.3894289241871,
+      "worst": 3
+     },
+     "MM": {
+      "net": 67.3057537633667,
+      "mtm": 292.3894289241871,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -49.06729559267296,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1744358400,
+       1500.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -203.17581055644854,
+      "mtm": -7.433228673688142,
+      "worst": 22
+     },
+     "MM": {
+      "net": -164.02729417989647,
+      "mtm": -7.433228673688142,
+      "worst": 22
+     },
+     "staticContingency": 27.9412206735,
+     "basisContingency": -3.787839189827189,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1744358400,
+       1850.0,
+       true,
+       -1.0
+      ],
+      [
+       1744358400,
+       1950.0,
+       true,
+       1.0
+      ],
+      [
+       1744358400,
+       1750.0,
+       false,
+       -1.0
+      ],
+      [
+       1744358400,
+       1500.0,
+       false,
+       2.0
+      ],
+      [
+       1748592000,
+       1850.0,
+       true,
+       1.0
+      ],
+      [
+       1748592000,
+       1850.0,
+       false,
+       -1.5
+      ],
+      [
+       1748592000,
+       2350.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -671.7725814802334,
+      "mtm": -164.153760184996,
+      "worst": 22
+     },
+     "MM": {
+      "net": -570.2488172211858,
+      "mtm": -164.153760184996,
+      "worst": 22
+     },
+     "staticContingency": 106.1766385593,
+     "basisContingency": -79.28420274209992,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1744358400,
+       1850.0,
+       true,
+       -1.0
+      ],
+      [
+       1744358400,
+       1850.0,
+       false,
+       -1.0
+      ],
+      [
+       1748592000,
+       2050.0,
+       true,
+       -2.0
+      ],
+      [
+       1748592000,
+       1700.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -702.2536528297202,
+      "mtm": 184.63449890400847,
+      "worst": 0
+     },
+     "MM": {
+      "net": -524.8760224829745,
+      "mtm": 184.63449890400847,
+      "worst": 0
+     },
+     "staticContingency": 153.67671370425,
+     "basisContingency": -91.30120821270702,
+     "confidenceContingency": 0.0
+    }
+   ]
+  },
+  {
+   "ccy": "ETH",
+   "day": "2026-03-01",
+   "block": 36172392,
+   "ts": 1772366399,
+   "manager": "0xe7cD9370CdE6C9b5eAbCe8f86d01822d3de205A0",
+   "lib": "0x81ed5dc90f708dd908dccffd5128b5c3405f74c5",
+   "params": {
+    "BasisContingencyParameters": {
+     "scenarioSpotUp": 1.045,
+     "scenarioSpotDown": 0.955,
+     "basisContAddFactor": 0.5,
+     "basisContMultFactor": 2.0
+    },
+    "VolShockParameters": {
+     "volRangeUp": 0.5,
+     "volRangeDown": 0.275,
+     "shortTermPower": 0.3,
+     "longTermPower": 0.13,
+     "dteFloor": 86400.0
+    },
+    "MarginParameters": {
+     "imFactor": 1.25,
+     "rateMultScale": 1.0,
+     "rateAddScale": 0.12,
+     "baseStaticDiscount": 0.95
+    },
+    "OtherContingencyParameters": {
+     "pegLossThreshold": 0.99,
+     "pegLossFactor": 4.0,
+     "confThreshold": 0.55,
+     "confMargin": 1.0,
+     "basePercent": 0.03,
+     "perpPercent": 0.03,
+     "optionPercent": 0.015
+    },
+    "scenarios": [
+     {
+      "spotShock": 1.18,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.135,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.09,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.045,
+      "volShock": 2
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 1
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 0
+     },
+     {
+      "spotShock": 1.0,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.955,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.91,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 1
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 0
+     },
+     {
+      "spotShock": 0.865,
+      "volShock": 2
+     },
+     {
+      "spotShock": 0.82,
+      "volShock": 1
+     }
+    ],
+    "maxExpiries": 18
+   },
+   "spot": 1983.7512186189647,
+   "spot_conf": 1.0,
+   "stable": 1.0003803554743533,
+   "perp_price": 1982.4963722839627,
+   "perp_conf": 1.0,
+   "expiries": {
+    "1772784000": {
+     "fixed": 0.0,
+     "var": 1983.862689831459,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "1600.0": [
+       1.1690035551642424,
+       0.95
+      ],
+      "1900.0": [
+       0.8005026936656537,
+       0.95
+      ],
+      "2000.0": [
+       0.7361353271764931,
+       0.95
+      ],
+      "2100.0": [
+       0.7338659358839128,
+       0.95
+      ]
+     }
+    },
+    "1777017600": {
+     "fixed": 0.0,
+     "var": 1990.7604802975975,
+     "fwd_conf": 1.0,
+     "rate": 0.0,
+     "rate_conf": 1.0,
+     "vols": {
+      "1800.0": [
+       0.6982246228638957,
+       0.95
+      ],
+      "1900.0": [
+       0.6815741029272963,
+       0.95
+      ],
+      "2000.0": [
+       0.6701469877272889,
+       0.95
+      ],
+      "2200.0": [
+       0.6614982978069112,
+       0.95
+      ],
+      "2500.0": [
+       0.6742016414391591,
+       0.95
+      ]
+     }
+    }
+   },
+   "books": [
+    {
+     "name": "short_otm_call",
+     "legs": [
+      [
+       1772784000,
+       2100.0,
+       true,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -395.2871544391054,
+      "mtm": -25.73168681551016,
+      "worst": 0
+     },
+     "MM": {
+      "net": -321.37606091438636,
+      "mtm": -25.73168681551016,
+      "worst": 0
+     },
+     "staticContingency": 29.75626827928447,
+     "basisContingency": -16.809223625046116,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "long_puts",
+     "legs": [
+      [
+       1777017600,
+       1900.0,
+       false,
+       2.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": 16.241621161627467,
+      "mtm": 320.7559436520621,
+      "worst": 3
+     },
+     "MM": {
+      "net": 77.1444856597144,
+      "mtm": 320.7559436520621,
+      "worst": 3
+     },
+     "staticContingency": 0.0,
+     "basisContingency": -49.4275857000797,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "short_deep_otm_put",
+     "legs": [
+      [
+       1772784000,
+       1600.0,
+       false,
+       -1.0
+      ]
+     ],
+     "perp": 0.0,
+     "base": 0.0,
+     "IM": {
+      "net": -220.79160226029913,
+      "mtm": -5.579902815700594,
+      "worst": 22
+     },
+     "MM": {
+      "net": -177.74926237137942,
+      "mtm": -5.579902815700594,
+      "worst": 22
+     },
+     "staticContingency": 29.75626827928447,
+     "basisContingency": -3.2091290048466936,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_with_perp",
+     "legs": [
+      [
+       1772784000,
+       2000.0,
+       true,
+       -1.0
+      ],
+      [
+       1772784000,
+       2100.0,
+       true,
+       1.0
+      ],
+      [
+       1772784000,
+       1900.0,
+       false,
+       -1.0
+      ],
+      [
+       1772784000,
+       1600.0,
+       false,
+       2.0
+      ],
+      [
+       1777017600,
+       2000.0,
+       true,
+       1.0
+      ],
+      [
+       1777017600,
+       2000.0,
+       false,
+       -1.5
+      ],
+      [
+       1777017600,
+       2500.0,
+       true,
+       -0.7
+      ]
+     ],
+     "perp": -0.3,
+     "base": 0.0,
+     "IM": {
+      "net": -781.4934605084959,
+      "mtm": -215.39341737526064,
+      "worst": 22
+     },
+     "MM": {
+      "net": -668.2734518818489,
+      "mtm": -215.39341737526064,
+      "worst": 22
+     },
+     "staticContingency": 113.07381946128099,
+     "basisContingency": -82.0126592786997,
+     "confidenceContingency": 0.0
+    },
+    {
+     "name": "mixed_perp_base",
+     "legs": [
+      [
+       1772784000,
+       2000.0,
+       true,
+       -1.0
+      ],
+      [
+       1772784000,
+       2000.0,
+       false,
+       -1.0
+      ],
+      [
+       1777017600,
+       2200.0,
+       true,
+       -2.0
+      ],
+      [
+       1777017600,
+       1800.0,
+       false,
+       1.0
+      ]
+     ],
+     "perp": 0.5,
+     "base": 0.25,
+     "IM": {
+      "net": -696.6507272215551,
+      "mtm": 234.81080154643058,
+      "worst": 0
+     },
+     "MM": {
+      "net": -510.358421467958,
+      "mtm": 234.81080154643058,
+      "worst": 0
+     },
+     "staticContingency": 163.65947553606458,
+     "basisContingency": -92.59885149335666,
+     "confidenceContingency": 0.0
+    }
+   ]
+  }
+ ]
+}

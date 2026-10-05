@@ -1,0 +1,30 @@
+{
+ "gif": "docs/media/p2_btc_capital_surface.gif",
+ "bytes": 5439597,
+ "max_bytes": 8388608,
+ "frames": 80,
+ "skipped": 0,
+ "step": "weekly",
+ "start": "2025-06-13",
+ "end": "2026-09-17",
+ "clim_pct": [
+  3.0,
+  19.0
+ ],
+ "extend": "neither",
+ "nodes_outside_scale": 0,
+ "zlim": [
+  10.0,
+  105.0
+ ],
+ "poster": "docs/media/p2_btc_capital_surface_end.png",
+ "mp4": "docs/media/p2_btc_capital_surface.mp4",
+ "steps": {
+  "BTC-pm2-20260108": "+1.6 %",
+  "BTC-pm2-20260123": "\u221210 %",
+  "BTC-pm2-20260524": "\u22127.5 %",
+  "BTC-pm2-20260820": "\u221223 %"
+ },
+ "last_frame_nodes_matched_t1": 740,
+ "last_frame_max_abs_diff_usdc_t1": 1.8189894035458565e-12
+}
