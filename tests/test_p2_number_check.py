@@ -486,7 +486,7 @@ def _section(text: str, heading: str) -> str:
 
 # How the binding German original words a constant where the value alone does not identify it; verbatim quotes.
 ALIASES = {"bp_factor": ["10⁴"], "q_sell": ["−1"], "q_buy": ["+1"], "managers": ["SM", "Legacy-PM", "PM2"],
-           "hypotheses": ["H1", "H2", "H3", "H4"], "addenda": ["## Nachtrag 4"], "addenda_total": ["## Nachtrag 6"],
+           "hypotheses": ["H1", "H2", "H3", "H4"], "addenda": ["## Nachtrag 4"], "addenda_total": ["## Nachtrag 7"],
            "cash_zero": ["cash = 0"], "dominant_makers": ["zehn"], "seed": ["20260924"],
            "interval_lower_percentile": ["5. und"],
            "interval_upper_percentile": ["95. Perzentil"], "api_discount_pct": ["mit 2 %"],

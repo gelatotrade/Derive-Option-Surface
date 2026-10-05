@@ -211,3 +211,154 @@ The other commits have the same diff as their originals.
   The rewrite removes the raw ids and the reversible hashes, not these routes.
 - **Before the push.** Push only `paper2-capital`. Integrate it with a merge commit (A02), and anchor the new
   hashes externally (OpenTimestamps or OSF).
+
+## Second rewrite (5 October 2026)
+
+Before the first push of Paper 2 the whole history of the repository was rewritten once more, also the history of
+Paper 1 on `main`, which had been public since 25 September 2026. Rules:
+
+1. **Authorship.** Every commit names the author, gregor_284. Some early commits (3 September 2026) had named the AI
+   coding tool that was used as their author, and most commits named it as co-author in a "Co-Authored-By" line;
+   those lines are removed, as are the tool's session links and its branch name in four merge messages. The
+   paper discloses the use of generative tools in "Use of generative tools".
+2. **Language.** The 20 remaining German commit messages are translated into English.
+3. **Files.** Example commit lines of this kind are removed from the planning documents under
+   `docs/superpowers/plans/`, and two mentions of the tool's branch name in `docs/paper1/REVISION_2026-09-25.md`
+   and `docs/paper2/AUDIT.md` are reworded. No other file changes. Both pre-registrations are byte-identical in every
+   commit (same git blob, table below).
+4. **Times.** Author and committer, date, time of day and time zone of every commit are kept.
+5. **Refs.** `main`, `paper1-revision` and `paper2-capital` are rewritten; the tool's side branch is not
+   carried over. The pull requests #1 to #5 on GitHub keep their original commits on their pages.
+
+Done with git-filter-repo in a fresh clone; the state before is kept as a bundle outside the repository. Addendum 7
+(`7c01e85`) of the Paper 2 pre-registration and Addendum 4 (`9d37c19`) of the Paper 1 pre-registration record the
+rewrite.
+
+### Pre-registration commits (hash before 5 October 2026, new hash, blob of the pre-registration file)
+
+| Commit | Before | New | Blob (identical before and after) |
+|---|---|---|---|
+| p1_prereg | `3fd9caa` | `cf1f432` | `0376d559bba2fb626377cffc4b85b01ef34a0bc0` |
+| p1_add1 | `7f67eaf` | `143f695` | `5103b6edb1109cac08e863bdaf624df7cf595c99` |
+| p1_add2 | `837595c` | `634c276` | `fc02ab9959756dec32bcfff326881861c795f2f3` |
+| p1_add3 | `faf6cea` | `e4a3873` | `6da6185be44a127180d6a9173b2e5fc921aed783` |
+| p2_prereg | `cc0a29f` | `c9e9162` | `f251a0c5493e81a9dca98b1aecab54d2bde4349b` |
+| p2_add1 | `85bb0b7` | `b5c905c` | `83693818948078d9f308e1083541056cd2924ac4` |
+| p2_add2 | `6005d7c` | `60896fe` | `461a9af11090c853e2bbf0495c8f1b42c760f434` |
+| p2_add3 | `8778432` | `2416902` | `55ea5cc2868ae7244fa693af5718171aef78673f` |
+| p2_add4 | `e492ba1` | `a02058a` | `96986c732c85408daa4e704c519601bb531fdc4b` |
+| p2_add5 | `a3282d6` | `8c066a7` | `c2d7378bfa0d51ac63d819ec9ded8571535ab4a6` |
+| p2_add6 | `1b46e80` | `6f2436e` | `06a0004cda02936baf42db3101f2bd24e50f54a8` |
+
+### Every commit (author date, hash before 5 October 2026, new hash, message)
+
+| Date | Before | New | Message |
+|---|---|---|---|
+| 2026-09-03 08:04 | `fd01b5c` | `9d9dbe6` | Derive option surface: data pipeline, Black-76/SVI surface engine, animations |
+| 2026-09-03 09:18 | `7a845f1` | `6beafe7` | Initial commit |
+| 2026-09-03 10:19 | `823e834` | `f21e900` | Merge pull request #1 from gelatotrade/option-surface-orderbook |
+| 2026-09-03 12:04 | `00cc50e` | `e4741ca` | Review fixes, panel-driven surface upgrades, live recording and depth snapshot |
+| 2026-09-03 12:20 | `0dcd0cb` | `2ee365f` | README: measured figures (basis, greek noise, skew-stickiness), frame cosmetics, even MP4 frame size |
+| 2026-09-03 12:21 | `d20277c` | `35d19d6` | README: decimal commas in the greek-noise table |
+| 2026-09-03 12:40 | `b05e9d1` | `8e356d4` | README in English; publish the finished animations; English frame labels |
+| 2026-09-03 13:07 | `0b0e3b1` | `229d5a6` | Animations with English frame labels: HYPE tape and shock (same data, same parameters) |
+| 2026-09-03 13:07 | `68f05cc` | `b594256` | Animations with English frame labels: BTC, ETH, HYPE live (same data, same parameters) |
+| 2026-09-03 13:08 | `946b63d` | `fd365c2` | Remove stale German-labelled still (unreferenced) |
+| 2026-09-03 13:12 | `6373cc3` | `db9407a` | Rename animations to *_en so GitHub's image cache serves the English frames |
+| 2026-09-03 13:12 | `d67de4c` | `e54fbe6` | Reproduce commands write the *_en media names |
+| 2026-09-03 14:34 | `0c07b52` | `6759512` | Merge pull request #2 from gelatotrade/option-surface-orderbook |
+| 2026-09-03 15:02 | `8370284` | `ab70741` | Merge pull request #3 from gelatotrade/option-surface-orderbook |
+| 2026-09-03 15:09 | `7308914` | `4699368` | Merge pull request #4 from gelatotrade/option-surface-orderbook |
+| 2026-09-17 15:47 | `02e2c25` | `0829308` | paper1: full-field option tape in single-page windows |
+| 2026-09-17 15:47 | `3fd9caa` | `cf1f432` | paper1: spec, plan, pre-registration (before any markout is computed) |
+| 2026-09-17 15:47 | `81259a2` | `ae9ba56` | paper1: vol-feed (SVI) history from Derive Chain |
+| 2026-09-17 15:48 | `13ccad7` | `8da0424` | paper1: reference data (settlements, liquidations, maker programmes, vaults, fees, funding) |
+| 2026-09-17 15:48 | `7a69919` | `4ee1cab` | paper1: pair maker/taker rows and classify takers |
+| 2026-09-17 15:48 | `d155d48` | `e7a6868` | paper1: p1 CLI and vol-feed check script |
+| 2026-09-17 15:53 | `c890b83` | `fe5c541` | api: retry unparseable responses; paper1: walk liquidation history in 7-day windows |
+| 2026-09-17 15:58 | `5763306` | `aa543d3` | paper1: liquidation history in daily windows with page-size fallback, halving and explicit gaps |
+| 2026-09-17 16:07 | `52bb5a6` | `5b67761` | paper1: fixes from adversarial review |
+| 2026-09-17 16:11 | `6ce8155` | `ea99f98` | paper1: record probe findings and execution deviations in spec and plan |
+| 2026-09-17 16:23 | `00090e3` | `9d85cbc` | paper1: curated vault wallet list with sources (8 of 10 seen on the option tape; the two basis-trade vaults trade no options) |
+| 2026-09-17 16:24 | `2499721` | `efe2481` | paper1: settle window 60 min (RFQ maker rows stamped up to 28 min before the fill) |
+| 2026-09-17 16:26 | `2c7cf5d` | `be6c037` | paper1: script that writes the data status document from data/p1 (counts only, no markouts) |
+| 2026-09-17 16:28 | `90663d2` | `c7666bd` | paper1: mark path (b) — attach latest on-chain SVI by push or signing time and price with Black-76 |
+| 2026-09-17 16:43 | `3cc2ca6` | `e0fea45` | paper1: p1 markouts command |
+| 2026-09-17 16:43 | `7f67eaf` | `143f695` | paper1: pre-registration addendum 1 (before any markout is computed); plan 2 |
+| 2026-09-17 16:43 | `a4a24ca` | `b36e511` | paper1: markouts (paths a/b/c, three units, cells, sweeps, size) |
+| 2026-09-17 16:51 | `8f8c70e` | `3663ad2` | paper1: feed check verifies svi_vol against the freshest signed curve (exact to 1e-5) and measures the on-chain push lag |
+| 2026-09-17 17:13 | `df2a3ec` | `ab59856` | paper1: data status compares the rebuilt mark with the tape by clock, forward and quarter |
+| 2026-09-17 18:19 | `fea9488` | `114d6d9` | paper1: fetch liquidation windows in parallel with progress logging |
+| 2026-09-17 18:43 | `fad0dc4` | `234fe8d` | paper1: liquidations use the largest working page size (same auctions for every size, more bids for larger pages) |
+| 2026-09-17 22:07 | `2690cdf` | `b903a0b` | paper1: ref can reuse existing liquidation files; maker scores survive network give-ups |
+| 2026-09-17 22:13 | `b9c7b12` | `61e04ce` | paper1: pilot data status and vol-feed check (no markouts) |
+| 2026-09-18 00:02 | `837595c` | `634c276` | paper1: pre-registration addendum 2 (H3 event date, net-edge decomposition, H1 metric); plan 3 |
+| 2026-09-18 00:03 | `09b7ad4` | `f945ec7` | paper1: inference (wild cluster bootstrap, DiD with placebos, net edge per cell) |
+| 2026-09-18 00:06 | `b7ed5bc` | `fb108c6` | paper1: p1 inference command, pilot results and figure sheet |
+| 2026-09-18 00:09 | `b560a1e` | `04b5221` | paper1: decompose the markout into half spread and adverse selection per counterparty class |
+| 2026-09-18 08:34 | `a473b25` | `c6bdb11` | paper1: figure style (CAS column widths, Okabe-Ito palette, PDF+PNG, robust limits) |
+| 2026-09-18 08:35 | `de7be49` | `34d13d5` | paper1: CAS manuscript skeleton that builds with tectonic and embeds a styled figure |
+| 2026-09-18 08:37 | `fef7fe9` | `c1d1129` | paper1: robustness of the two mark paths (agreement rises to 0.90 correlation when path a is measured near the target time) |
+| 2026-09-18 08:38 | `c0931cf` | `0a889c8` | paper1: figure aggregations (horizon curves, delta-tenor matrix, weekly series, waterfall, example fill) |
+| 2026-09-18 08:39 | `69aea60` | `c7bf089` | paper1: exact, fast cluster bootstrap of the median for figures (weighted median over a single sort) |
+| 2026-09-18 09:07 | `818b56d` | `e17065a` | chore(p1): Path comparison in the results, plan 4 created, numpy warning contained |
+| 2026-09-18 09:09 | `b72ef19` | `a7286e2` | feat(p1): Curve reconstruction for the mechanism figure, example fill corrected |
+| 2026-09-18 09:10 | `16ce42a` | `ac0df45` | feat(p1): Result loader and cell matrix for the figures |
+| 2026-09-18 09:11 | `c655a12` | `df8f628` | docs(p1): Findings from building the figures recorded |
+| 2026-09-18 09:15 | `9c98663` | `cb02f29` | fix(p1): One bootstrap size per run, otherwise the sensitivity contradicts the headline number |
+| 2026-09-18 09:17 | `6319b51` | `a408bfe` | data(p1): Inference recomputed with one bootstrap size |
+| 2026-09-18 09:20 | `24f9a23` | `1d59cbd` | docs(p1): Figure selection and jury reasoning recorded |
+| 2026-09-18 09:23 | `9772ee9` | `76ab684` | plan(p1): Nine figures specified |
+| 2026-09-18 09:34 | `3cf54a8` | `8b0af87` | feat(p1): Nine figures, CLI subcommand and placebo estimators |
+| 2026-09-18 09:44 | `4ce1bec` | `3dffd82` | fix(p1): Figures revised after review |
+| 2026-09-18 09:48 | `494d952` | `223dc94` | feat(p1): Figures in the manuscript, check script and figure sheet |
+| 2026-09-18 09:48 | `83d2e1f` | `7437272` | docs(p1): Numbers updated after the rerun |
+| 2026-09-18 09:49 | `1680a4b` | `c4c633b` | plan(p1): Plan 4 abgeschlossen |
+| 2026-09-18 11:30 | `714ecbe` | `3d62bea` | feat(p1): Manuscript written |
+| 2026-09-18 12:21 | `fcdfde3` | `48b4377` | feat(p1): Cards and article for X |
+| 2026-09-18 12:22 | `30ce2fe` | `071383c` | fix(p1): Pin the card style completely, otherwise the print style changes the image size |
+| 2026-09-19 15:45 | `81d89dc` | `2139e62` | feat(p1): Statements for SSRN and a guard for the build |
+| 2026-09-24 12:42 | `01857a4` | `de3291e` | docs(p2): Handover for the next session |
+| 2026-09-24 22:29 | `b2dd70e` | `6642ff8` | docs(p2): semantics of get_margin clarified, contradiction 11 vs 1.2 resolved |
+| 2026-09-24 22:33 | `cc0a29f` | `c9e9162` | prereg(p2): specification and pre-registration before the first capital figure |
+| 2026-09-24 22:37 | `0968031` | `cc714b8` | plan(p2): overall plan in seven stages |
+| 2026-09-24 22:38 | `fca1aea` | `2748b13` | feat(p2): throttled chain client with block clock |
+| 2026-09-24 22:59 | `d1bdd69` | `55629ff` | docs(p2): literature checked and manuscript skeleton |
+| 2026-09-25 00:26 | `78566f1` | `c8ab517` | feat(p2): Stage A - feed history, parameter timelines, SM/PM/PM2 replication, maker holdings |
+| 2026-09-25 00:26 | `85bb0b7` | `b5c905c` | prereg(p2): Addendum 1 before the first capital figure (exact on-chain book for H2) |
+| 2026-09-25 00:27 | `a59f2b9` | `b8c676a` | chore(p2): machine-wide lock for memory-heavy jobs |
+| 2026-09-25 00:29 | `6005d7c` | `60896fe` | prereg(p2): Addendum 2 - fee and rebate are totals per fill |
+| 2026-09-25 00:29 | `8778432` | `2416902` | prereg(p2): Addendum 3 - bootstrap and placebo made precise before the inference |
+| 2026-09-25 01:29 | `e492ba1` | `a02058a` | prereg(p2): Addendum 4 - readings of H2 to H4 before the first test statistic |
+| 2026-09-25 01:30 | `58551d6` | `f97a117` | feat(p2): Stage B - validation, capital per fill, marginal cost, netting, doses, surface |
+| 2026-09-25 02:16 | `f7ba923` | `c55d47b` | feat(p2): Stage C - inference H1 to H4 with independent recomputation |
+| 2026-09-25 02:49 | `ae90485` | `743d403` | feat(p2): MM sensitivity H2 with one lib per ratio, API snapshot, CLI |
+| 2026-09-25 03:49 | `ae87357` | `74a89c5` | feat(p2): Stage D - nine figures, GIF of the capital surface, social cards |
+| 2026-09-25 04:05 | `1894bad` | `5e256d8` | feat(p2): Stage E - manuscript, check chain, referee and numbers round |
+| 2026-09-25 05:02 | `1c29ba8` | `89ab2d4` | docs(p2): audit of the whole paper (69 findings) |
+| 2026-09-25 07:40 | `f94bc53` | `afb3006` | fix(p2): audit findings fixed (57 fixed, 9 with a remainder, 3 for the author) |
+| 2026-09-25 07:41 | `fe331b0` | `e8b5b2c` | docs(p2): morning report and handover addendum |
+| 2026-09-25 08:04 | `33993e7` | `fd5abd6` | plan(p1): Correction of the fee unit for the SSRN revision |
+| 2026-09-25 09:10 | `faf6cea` | `e4a3873` | fix(p1): Fee and rebate per contract, map per notional consistent (revision of 25 September 2026) |
+| 2026-09-25 10:49 | `d2e0181` | `4b4b8a4` | fix(p1): Lorenz file with salted wallet pseudonyms only |
+| 2026-09-25 12:03 | `22191be` | `356a1f9` | Merge pull request #5 from gelatotrade/paper 1 correction |
+| 2026-09-25 12:37 | `1fa723d` | `9c3828c` | docs(p1): English documentation, file names and generators |
+| 2026-09-25 12:37 | `d2a2b43` | `42b529f` | Merge branch 'paper1-revision': English documentation for Paper 1 |
+| 2026-09-27 12:31 | `b637822` | `c5c36ba` | fix(p2): keep Paper 2 working on the revised Paper 1 code |
+| 2026-09-27 12:34 | `13795ac` | `b36daec` | docs(p2): record of the history rewrite (new base main, account ids removed) |
+| 2026-09-27 13:38 | `19cfab8` | `2ce6d18` | docs(p2): English documentation, generators and manuscript update |
+| 2026-09-27 13:38 | `8edae28` | `61bf971` | docs(p2): rename Paper 2 documents to English file names |
+| 2026-09-27 14:23 | `a3282d6` | `8c066a7` | docs(p2): Addendum 5 on the history rewrite, English data labels, guards |
+| 2026-09-27 14:23 | `ce7c843` | `124f0e9` | chore(p2): English names for the semantics result files |
+| 2026-09-29 18:33 | `c5bad21` | `f36477d` | docs(p2): layout and readability pass, readable Figure 7 panel b |
+| 2026-09-30 12:42 | `1b46e80` | `6f2436e` | prereg(p2): Addendum 6, fee of multi-leg RFQ packages (audit A67) |
+| 2026-09-30 12:51 | `01700df` | `0ee0ac0` | fix(p2): number check binds direction words; manuscript and audit status of 30 September (audit B2) |
+| 2026-09-30 12:51 | `4659457` | `dab0ac9` | docs: DOI for burlig2018 in both bibliographies (audit A61) |
+| 2026-09-30 12:51 | `4f132c1` | `5474f8e` | feat(p2): H2 by maker side, H1 without RFQ fills, RFQ package sensitivity (audit A10, A12, A67) |
+| 2026-09-30 12:51 | `9660659` | `f067389` | fix(p2): placebo cache knows panel rules and code, run has --out, --parts-dir, --fresh (audit A31, A32) |
+| 2026-09-30 12:51 | `ef23ab0` | `fc74275` | fix(p2): H4 card hatches up to the placebo P95; figure docs updated (audit B3, B7) |
+| 2026-10-05 09:03 | `4e36d9e` | `6e011fb` | results(p2): Addendum 6 sensitivity on the pilot cut (H1 with the RFQ package fee spread over its legs) |
+| 2026-10-05 12:24 | `340502d` | `f9ed321` | docs(p2): reader audit of the PDF, round 1 (65 of 71 findings fixed, 6 in part) |
+| 2026-10-05 13:02 | `1e23993` | `ee4a3bb` | docs(p2): reader audit of the PDF, round 2 |
+| 2026-10-05 13:28 | `9052fae` | `32d2ba5` | docs(p2): reader audit of the PDF, round 3 (final review) |
+| 2026-10-05 13:34 | `18ecdbb` | `ad897e4` | docs(p2): SSRN number and DOI of the companion paper (reader audit B5) |

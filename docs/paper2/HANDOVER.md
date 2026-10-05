@@ -1,5 +1,8 @@
 # Handover: status on 2026-09-24 and start of paper 2
 
+> **Commit hashes.** This document was written before the history rewrite of 5 October 2026 (Addendum 7 of the Paper 2 pre-registration, Addendum 4 of the Paper 1 pre-registration). Its hashes refer to the history at the time of writing; `docs/paper2/HISTORY_REWRITE.md` maps every one of them to the current hash. Current hashes: Paper 1 pre-registration `cf1f432`; Paper 2 pre-registration `c9e9162`, Addenda 1 to 6 `b5c905c`, `60896fe`, `2416902`, `a02058a`, `8c066a7`, `6f2436e`, Addendum 7 `7c01e85`.
+
+
 This file is written for a new session that knows nothing about the work so far.
 Read it first, then start.
 

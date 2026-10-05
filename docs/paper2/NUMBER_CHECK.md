@@ -1,17 +1,17 @@
 # Number check Paper 2
 
-Generated 2026-10-05 11:33 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-10-05 21:56 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 
 ## Result
 
-- Numbers, dates and commits in the text: 386
+- Numbers, dates and commits in the text: 389
 - Result: 275
 - Constant: 77
-- Commit date: 6
+- Commit date: 8
 - Text count: 21
-- Commit: 7
+- Commit: 8
 
 **Errors: 0** (none)
 
@@ -123,7 +123,7 @@ Text counts (without a data source, for review):
 | Data and measurement | `11 January 2024` | Constant | const:sample_start | start of the sample 11 January 2024 00:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data and measurement | `17 September 2026` | Constant | const:pilot_cut | pilot cut 17 September 2026 12:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data and measurement | `thirty` | Constant | const:markout_minutes | net edge after 30 minutes (docs/paper2/PRAEREGISTRIERUNG.md, Semantics and capital) |
-| Data and measurement | `25 September 2026` | Commit date | git:faf6cea | = 2026-09-25 |
+| Data and measurement | `25 September 2026` | Commit date | git:e4a3873 | = 2026-09-25 |
 | Data and measurement | `11 November 2025` | Constant | const:window_hype | SM and PM2 for HYPE from 11 November 2025 00:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data and measurement | `six` | Result | summary.json:fills_outside_every_window | = 6 |
 | Data and measurement | `12 June 2025` | Constant | const:pm2_window_btc_eth | PM2 window for BTC and ETH from 12 June 2025 23:00 UTC (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
@@ -325,22 +325,25 @@ Text counts (without a data source, for review):
 | Conclusion | `Four` | Result | derived:n_hypotheses | = 4 |
 | Data, code and pre-registration | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
 | Data, code and pre-registration | `four` | Result | derived:n_hypotheses | = 4 |
-| Data, code and pre-registration | `24 September 2026` | Commit date | git:cc0a29f | = 2026-09-24 |
-| Data, code and pre-registration | `22:33` | Commit date | git:cc0a29f | = 22:33 |
-| Data, code and pre-registration | `Six` | Constant | const:addenda_total | six dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September 2026 (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 6) |
+| Data, code and pre-registration | `24 September 2026` | Commit date | git:c9e9162 | = 2026-09-24 |
+| Data, code and pre-registration | `22:33` | Commit date | git:c9e9162 | = 22:33 |
+| Data, code and pre-registration | `Seven` | Constant | const:addenda_total | seven dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September and 7 of 5 October 2026 (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 7) |
 | Data, code and pre-registration | `four` | Constant | const:addenda | four dated addenda (docs/paper2/PRAEREGISTRIERUNG.md, Addendum 4) |
-| Data, code and pre-registration | `25 September 2026` | Commit date | git:e492ba1 | = 2026-09-25 |
+| Data, code and pre-registration | `25 September 2026` | Commit date | git:a02058a | = 2026-09-25 |
 | Data, code and pre-registration | `three` | Constant | const:managers | three managers: SM, legacy PM, PM2 (docs/paper2/PRAEREGISTRIERUNG.md, Sample) |
-| Data, code and pre-registration | `27 September 2026` | Commit date | git:a3282d6 | = 2026-09-27 |
-| Data, code and pre-registration | `30 September 2026` | Commit date | git:1b46e80 | = 2026-09-30 |
+| Data, code and pre-registration | `27 September 2026` | Commit date | git:8c066a7 | = 2026-09-27 |
+| Data, code and pre-registration | `5 October 2026` | Commit date | git:7c01e85 | = 2026-10-05 |
+| Data, code and pre-registration | `30 September 2026` | Commit date | git:6f2436e | = 2026-09-30 |
 | Data, code and pre-registration | `0.904` | Result | sensitivity.json:c2_rfq_package.h1_pm2.stat | = 0.903869 |
-| Data, code and pre-registration | `cc0a29f` | Commit | git: commit present |  |
-| Data, code and pre-registration | `85bb0b7` | Commit | git: commit present |  |
-| Data, code and pre-registration | `6005d7c` | Commit | git: commit present |  |
-| Data, code and pre-registration | `8778432` | Commit | git: commit present |  |
-| Data, code and pre-registration | `e492ba1` | Commit | git: commit present |  |
-| Data, code and pre-registration | `a3282d6` | Commit | git: commit present |  |
-| Data, code and pre-registration | `1b46e80` | Commit | git: commit present |  |
+| Data, code and pre-registration | `5 October 2026` | Commit date | git:7c01e85 | = 2026-10-05 |
+| Data, code and pre-registration | `c9e9162` | Commit | git: commit present |  |
+| Data, code and pre-registration | `b5c905c` | Commit | git: commit present |  |
+| Data, code and pre-registration | `60896fe` | Commit | git: commit present |  |
+| Data, code and pre-registration | `2416902` | Commit | git: commit present |  |
+| Data, code and pre-registration | `a02058a` | Commit | git: commit present |  |
+| Data, code and pre-registration | `8c066a7` | Commit | git: commit present |  |
+| Data, code and pre-registration | `7c01e85` | Commit | git: commit present |  |
+| Data, code and pre-registration | `6f2436e` | Commit | git: commit present |  |
 | caption fig:a1 | `20` | Result | validation.csv:book@kind=book~distinct | = 20 |
 | caption fig:a1 | `1e-13` | Result | fig_a1_meta.csv:value@key=x_lo | = 1e-13 |
 | caption fig:a1 | `95th` | Constant | const:validation_percentile | 95th percentile of the absolute relative deviation (docs/paper2/PRAEREGISTRIERUNG.md, Validation before measurement) |
@@ -432,7 +435,7 @@ Text counts (without a data source, for review):
 
 ## Constants of the pre-registration
 
-Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) with Addenda 1 to 4 of 25 September 2026 and Addendum 5 of 27 September 2026; the bucket edges from `docs/paper1/PRAEREGISTRIERUNG.md`. In the manuscript as `const:name`. Sections are named as in the English translations, with the heading of the binding German original in quotation marks.
+Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `c9e9162`) with Addenda 1 to 4 of 25 September 2026, Addendum 5 of 27 September, Addendum 6 of 30 September and Addendum 7 of 5 October 2026; the bucket edges from `docs/paper1/PRAEREGISTRIERUNG.md`. In the manuscript as `const:name`. Sections are named as in the English translations, with the heading of the binding German original in quotation marks.
 
 | Name | Value | Meaning | Section |
 |---|---|---|---|
@@ -478,7 +481,7 @@ Source: `docs/paper2/PRAEREGISTRIERUNG.md` (commit `cc0a29f`) with Addenda 1 to 
 | `interval_lower_percentile` | 5 | interval from the 5th percentile of the replications | Addendum 3 ("Nachtrag 3") |
 | `interval_upper_percentile` | 95 | to the 95th percentile of the replications | Addendum 3 ("Nachtrag 3") |
 | `addenda` | 4 | four dated addenda | Addendum 4 ("Nachtrag 4") |
-| `addenda_total` | 6 | six dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September 2026 | Addendum 6 ("Nachtrag 6") |
+| `addenda_total` | 7 | seven dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September and 7 of 5 October 2026 | Addendum 7 ("Nachtrag 7") |
 | `addendum5_day` | 2026-09-27 | Addendum 5, dated 27 September 2026 (history rewrite, after all results) | Addendum 5 ("Nachtrag 5") |
 | `sm_max_options` | 63 | 63 options that an SM account on v2 can hold | Addendum 4 ("Nachtrag 4") |
 | `delta_edge_10` | 10 | \|Δ\| bucket edge 10 % | Cells and classes ("Zellen und Klassen") (Paper 1) |

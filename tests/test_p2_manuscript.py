@@ -153,10 +153,12 @@ def missing_disclosures(tex: str) -> list:
         ("A40 validation fixtures read maker margins", back, r"validation fixtures .* maker (?:sub)?accounts"),
         ("A18 correction of the companion paper", data, r"companion paper was corrected on 25[ ~]September 2026"),
         ("A18 same unit as the companion paper", data, r"uses the same unit per contract"),
-        ("A01 history rewrite disclosed", back, r"history was rewritten to remove account identifiers"),
+        ("A01 history rewrite disclosed", back, r"history was rewritten twice, first\s+to remove account identifiers"),
+        ("second rewrite disclosed", back, r"to make the authorship records uniform and the\s+commit messages English"),
         ("A01 map of old and new hashes", back, r"HISTORY_REWRITE\.md\} maps the old commit hashes"),
-        ("A01 Addendum 5 records the rewrite", back,
-         r"Addendum[ ~]5 of 27[ ~]September 2026 \(\\texttt\{[0-9a-f]{7,40}\}\), written after all results"),
+        ("A01 Addenda 5 and 7 record the rewrites", back,
+         r"Addendum[ ~]5 of 27[ ~]September 2026 \(\\texttt\{[0-9a-f]{7,40}\}\) and Addendum[ ~]7 of 5[ ~]October 2026 "
+         r"\(\\texttt\{[0-9a-f]{7,40}\}\), both\s+written after all results"),
         ("A09 wallets of the subaccounts", data, r"share a wallet"),
         ("A05 power of H4", flat, r"The test has little power"),
         ("A05 placebo-calibrated range", flat, r"Calibrated on those placebo statistics"),
@@ -229,12 +231,12 @@ def test_typesetting_check_names_a_character_lost_from_the_url_lists():
 
 
 def test_checks_catch_the_version_before_the_audit():
-    """The checks are not vacuous: the manuscript as audited (commit 1894bad, 3ec74f4 before the history rewrite,
-    same blob) fails each of them."""
+    """The checks are not vacuous: the manuscript as audited (commit 5e256d8; 1894bad until 5 October and
+    3ec74f4 until 27 September 2026, same blob) fails each of them."""
     import subprocess
-    old = subprocess.run(["git", "show", "1894bad:paper2/main.tex"], cwd=REPO, capture_output=True, text=True)
+    old = subprocess.run(["git", "show", "5e256d8:paper2/main.tex"], cwd=REPO, capture_output=True, text=True)
     if old.returncode != 0:
-        pytest.skip("commit 1894bad not available")
+        pytest.skip("commit 5e256d8 not available")
     assert len(retracted_found(old.stdout)) == len(RETRACTED)
     assert len(missing_disclosures(old.stdout)) >= 10
     assert float_order_problems(old.stdout)
@@ -242,11 +244,11 @@ def test_checks_catch_the_version_before_the_audit():
 
 
 def test_checks_catch_the_version_before_the_pdf_audit():
-    """The manuscript as committed before the fixes of the PDF audit of 5 October 2026 (commit 4e36d9e) holds every
+    """The manuscript as committed before the fixes of the PDF audit of 5 October 2026 (commit 6e011fb, 4e36d9e until the rewrite of 5 October 2026) holds every
     withdrawn wording and fails every typesetting check."""
     import subprocess
-    old = subprocess.run(["git", "show", "4e36d9e:paper2/main.tex"], cwd=REPO, capture_output=True, text=True)
+    old = subprocess.run(["git", "show", "6e011fb:paper2/main.tex"], cwd=REPO, capture_output=True, text=True)
     if old.returncode != 0:
-        pytest.skip("commit 4e36d9e not available")
+        pytest.skip("commit 6e011fb not available")
     assert len(withdrawn_found(old.stdout)) == len(WITHDRAWN)
     assert len(typesetting_problems(old.stdout)) == 7

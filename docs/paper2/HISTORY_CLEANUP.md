@@ -1,5 +1,8 @@
 # Cleaning the history (audit A01)
 
+> **Commit hashes.** This document was written before the history rewrite of 5 October 2026 (Addendum 7 of the Paper 2 pre-registration, Addendum 4 of the Paper 1 pre-registration). Its hashes refer to the history at the time of writing; `docs/paper2/HISTORY_REWRITE.md` maps every one of them to the current hash. Current hashes: Paper 1 pre-registration `cf1f432`; Paper 2 pre-registration `c9e9162`, Addenda 1 to 6 `b5c905c`, `60896fe`, `2416902`, `a02058a`, `8c066a7`, `6f2436e`, Addendum 7 `7c01e85`.
+
+
 > **Historical guide.** The cleanup was carried out on 27 September 2026; `docs/paper2/HISTORY_REWRITE.md` records
 > it, together with the follow-up steps that are still open. It did not follow section 4 to the letter. The Paper 2
 > commits were replayed onto `main` as the new branch `paper2-capital` and scrubbed there with

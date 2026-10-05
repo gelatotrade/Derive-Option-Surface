@@ -1,5 +1,8 @@
 # Figures for Paper 2: selection and build instructions
 
+> **Commit hashes.** This document was written before the history rewrite of 5 October 2026 (Addendum 7 of the Paper 2 pre-registration, Addendum 4 of the Paper 1 pre-registration). Its hashes refer to the history at the time of writing; `docs/paper2/HISTORY_REWRITE.md` maps every one of them to the current hash. Current hashes: Paper 1 pre-registration `cf1f432`; Paper 2 pre-registration `c9e9162`, Addenda 1 to 6 `b5c905c`, `60896fe`, `2416902`, `a02058a`, `8c066a7`, `6f2436e`, Addendum 7 `7c01e85`.
+
+
 2026-09-25. Three independent draft sets of nine slots each (lenses: mechanism, empirics, practitioner; under
 `docs/paper2/drafts/`, prototypes under `data/p2/fig_proto/`), then two judges with different lenses: a
 referee who recomputed the claims against the data (`jury_referee.md`), and a design review that measured width and
@@ -895,7 +898,7 @@ Shared: `figures_social` style (fixed size without `bbox tight`), font at least 
 (test on `tightbbox`), every number in the title readable in the image, colour double-coded as in the paper, simple per cent.
 Footer “Derive, chain 957 · replica of the deployed margin contracts · pre-registration commit c4fcb59”
 (`c4fcb59` is now `e492ba1`; since review round 1 the footer names the pre-registration commit itself, now
-`cc0a29f`, see `docs/paper2/MANUSCRIPT.md` section 7.2). Output `paper2/social/s1_three_engines.png`,
+`c9e9162` (`cc0a29f` before the rewrite of 5 October 2026), see `docs/paper2/MANUSCRIPT.md` section 7.2). Output `paper2/social/s1_three_engines.png`,
 `s2_straddle_vs_call.png`, `s3_verdicts.png`, tables `results/p2/fig_s{1,2,3}.csv`.
 
 1. **“One short BTC straddle. Three margin engines.”** Left two thirds: time series from F5 c (2024-01 to 2026-09,

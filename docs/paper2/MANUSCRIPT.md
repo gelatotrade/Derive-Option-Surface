@@ -1,5 +1,8 @@
 # Manuscript of Paper 2: outline, word budget and placeholders
 
+> **Commit hashes.** This document was written before the history rewrite of 5 October 2026 (Addendum 7 of the Paper 2 pre-registration, Addendum 4 of the Paper 1 pre-registration). Its hashes refer to the history at the time of writing; `docs/paper2/HISTORY_REWRITE.md` maps every one of them to the current hash. Current hashes: Paper 1 pre-registration `cf1f432`; Paper 2 pre-registration `c9e9162`, Addenda 1 to 6 `b5c905c`, `60896fe`, `2416902`, `a02058a`, `8c066a7`, `6f2436e`, Addendum 7 `7c01e85`.
+
+
 Status: 24 September 2026, 23:00 UTC+2. Belongs to `paper2/main.tex` (draft before the first capital figure).
 
 **Addendum 25 September 2026 (pilot cut 17 September 2026):** all placeholders are filled; abstract, results,
@@ -28,7 +31,7 @@ pipeline overwrites them later. `paper2/thumbnails/cas-email.jpeg` is a copy fro
 needs the file for the e-mail symbol; without it the build fails.
 
 **Rules for the text:** English, concise, no dashes (em or en dash) in running text, only keys from
-`paper2/refs.bib`. Every number comes from `results/p2/` or from the pre-registration (commit `cc0a29f`);
+`paper2/refs.bib`. Every number comes from `results/p2/` or from the pre-registration (commit `c9e9162`, `cc0a29f` before 5 October 2026);
 otherwise a `\PH{…}` stands there. The macro is `\newcommand{\PH}[1]{\textbf{[#1]}}`, so in the PDF the
 placeholders appear in bold in square brackets. Before submission, `grep -c '\\PH{' paper2/main.tex` may return
 only 1 (the definition).

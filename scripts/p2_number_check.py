@@ -98,7 +98,8 @@ PREREG = "docs/paper2/PRAEREGISTRIERUNG.md"
 PREREG_P1 = "docs/paper1/PRAEREGISTRIERUNG.md"
 
 # ---------------------------------------------------------------------------------------------------------------
-# Constants of the pre-registration (commit cc0a29f, 1d13227 before the history rewrite) and its dated addenda:
+# Constants of the pre-registration (commit c9e9162; cc0a29f until 5 October 2026, 1d13227 until 27 September 2026)
+# and its dated addenda:
 # name -> (value, meaning, file, section).
 # A value that means two things has two names.  Dates and clock times are ISO strings.  The section is named as in
 # the English translations (docs/paper2/PREREGISTRATION.md, docs/paper1/PREREGISTRATION.md); SECTION_ORIGINAL gives
@@ -161,8 +162,8 @@ CONSTANTS: Dict[str, Tuple[object, str, str, str]] = {
     "interval_lower_percentile": (5, "interval from the 5th percentile of the replications", PREREG, "Addendum 3"),
     "interval_upper_percentile": (95, "to the 95th percentile of the replications", PREREG, "Addendum 3"),
     "addenda": (4, "four dated addenda", PREREG, "Addendum 4"),
-    "addenda_total": (6, "six dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September 2026",
-                      PREREG, "Addendum 6"),
+    "addenda_total": (7, "seven dated addenda: 1 to 4 of 25 September, 5 of 27 September, 6 of 30 September and 7 "
+                         "of 5 October 2026", PREREG, "Addendum 7"),
     "addendum5_day": ("2026-09-27", "Addendum 5, dated 27 September 2026 (history rewrite, after all results)",
                       PREREG, "Addendum 5"),
     "sm_max_options": (63, "63 options that an SM account on v2 can hold", PREREG, "Addendum 4"),
@@ -184,7 +185,7 @@ SECTION_ORIGINAL: Dict[str, str] = {
     "Sample": "Stichprobe", "Semantics and capital": "Semantik und Kapital", "Maker books": "Maker-Bücher",
     "Hypotheses and rejection rules": "Hypothesen und Ablehnungsregeln", "Inference": "Inferenz",
     "Validation before measurement": "Validierung vor der Messung", "Addendum 1": "Nachtrag 1",
-    "Addendum 3": "Nachtrag 3", "Addendum 4": "Nachtrag 4", "Addendum 5": "Nachtrag 5", "Addendum 6": "Nachtrag 6",
+    "Addendum 3": "Nachtrag 3", "Addendum 4": "Nachtrag 4", "Addendum 5": "Nachtrag 5", "Addendum 6": "Nachtrag 6", "Addendum 7": "Nachtrag 7",
     "Cells and classes": "Zellen und Klassen"}
 # Arithmetic identities used to read a result; they are not results.
 IDENTITIES: Dict[str, Tuple[float, str]] = {
@@ -1100,8 +1101,8 @@ def render(verdicts: Sequence[Verdict], tex_path: str, results_path: str,
         lines.append("| {} | `{}` | {} | {} | {} |".format(_md(v.unit), _md((v.token.rel + v.token.raw).strip()),
                                                          HOW[v.how], _md(v.source), _md(v.detail)))
     lines += ["", "## Constants of the pre-registration", "",
-              "Source: `{}` (commit `cc0a29f`) with Addenda 1 to 4 of 25 September 2026 and Addendum 5 of 27 September "
-              "2026; the bucket edges from "
+              "Source: `{}` (commit `c9e9162`) with Addenda 1 to 4 of 25 September 2026, Addendum 5 of 27 September, "
+              "Addendum 6 of 30 September and Addendum 7 of 5 October 2026; the bucket edges from "
               "`{}`. In the manuscript as `const:name`. Sections are named as in the English translations, with the "
               "heading of the binding German original in quotation marks.".format(PREREG, PREREG_P1), "",
               "| Name | Value | Meaning | Section |", "|---|---|---|---|"]

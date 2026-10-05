@@ -228,7 +228,7 @@ Four hypotheses were registered before any capital figure of the registered anal
 notional and edge per unit of PM2 capital rank the cells differently (H1); that a fill in the book of a
 dominant subaccount under PM2 binds less than half its stand-alone capital per contract (H2); that PM2 saves
 more than half the capital standard margin requires for the same books (H3); and that the half spread falls
-when a parameter change makes capital cheaper (H4). Addenda~1 to~6 of the pre-registration are described
+when a parameter change makes capital cheaper (H4). Addenda~1 to~7 of the pre-registration are described
 before the appendices.
 
 H1 and H4 are rejected; H2 and H3 are not. The capital denominator does not reorder the map in the registered
@@ -456,7 +456,7 @@ first results post hoc.
 % src const:sample_start 11 January 2024
 % src const:pilot_cut 17 September 2026
 % src const:markout_minutes thirty
-% src git:faf6cea 25 September 2026
+% src git:e4a3873 25 September 2026
 % src const:window_hype 11 November 2025
 % src summary.json:fills_outside_every_window six
 % src const:pm2_window_btc_eth 12 June 2025 23:00
@@ -893,14 +893,14 @@ publication, an internal audit found errors in the code, the inference, the figu
 none changes a registered verdict.
 
 The four hypotheses, their rejection rules and the inference were committed in
-\path{docs/paper2/PRAEREGISTRIERUNG.md} on 24~September 2026 at 22:33~UTC+2, in commit \texttt{cc0a29f}, before
+\path{docs/paper2/PRAEREGISTRIERUNG.md} on 24~September 2026 at 22:33~UTC+2, in commit \texttt{c9e9162}, before
 any capital figure of the registered analysis had been computed \citep{burlig2018}. The pre-registration is
 written in German, and its addenda are headed \emph{Nachtrag}; an English translation made after the analysis is
-in \path{docs/paper2/PREREGISTRATION.md}, and the German original is binding. Six dated addenda follow in the same
-file; the first four are of 25~September 2026 (UTC+2). Addendum~1 (\texttt{85bb0b7}) fixes the exact on-chain book
-for H2, with zero cash, before the first capital figure of the registered form. Addendum~2 (\texttt{6005d7c})
-fixes the unit of fee and rebate, and Addendum~3 (\texttt{8778432}) the details of bootstrap and placebo, both
-before the first inference. Addendum~4 (\texttt{e492ba1}) records the readings of H2 to H4. Addenda~1 to~3 were
+in \path{docs/paper2/PREREGISTRATION.md}, and the German original is binding. Seven dated addenda follow in the same
+file; the first four are of 25~September 2026 (UTC+2). Addendum~1 (\texttt{b5c905c}) fixes the exact on-chain book
+for H2, with zero cash, before the first capital figure of the registered form. Addendum~2 (\texttt{60896fe})
+fixes the unit of fee and rebate, and Addendum~3 (\texttt{2416902}) the details of bootstrap and placebo, both
+before the first inference. Addendum~4 (\texttt{a02058a}) records the readings of H2 to H4. Addenda~1 to~3 were
 each committed before the step they govern. Addendum~4 was written after stand-alone capital, marginal costs, netting
 ratios, the doses and the H4 panel with its half spreads had been computed; it records readings already
 implemented, but precedes any test statistic. The validation fixtures committed just before Addendum~1 had already
@@ -912,26 +912,30 @@ already be read for SM; and margin histories of at-the-money contracts under the
 registration does not list. The half spreads that enter H4 were known from the companion
 paper before registration; the registration fixes the doses, the events and the test.
 
-All commit times are local times of the author's machine. Before publication the local history was rewritten to
-remove account identifiers. The registered texts are byte-identical to those of the original commits and the
-commit times are unchanged; \path{docs/paper2/HISTORY_REWRITE.md} maps the old commit hashes to the new ones.
-Addendum~5 of 27~September 2026 (\texttt{a3282d6}), written after all results, records the rewrite and changes no
-rule, test statistic or result. Addendum~6 of 30~September 2026 (\texttt{1b46e80}), written after the results on
+All commit times are local times of the author's machine. Before publication the history was rewritten twice, first
+to remove account identifiers and then, for the whole repository, to make the authorship records uniform and the
+commit messages English. The registered texts are byte-identical to those of the original commits and the commit
+times are unchanged; \path{docs/paper2/HISTORY_REWRITE.md} maps the old commit hashes to the new ones.
+Addendum~5 of 27~September 2026 (\texttt{8c066a7}) and Addendum~7 of 5~October 2026 (\texttt{7c01e85}), both
+written after all results, record the rewrites and change no rule, test statistic or result. Addendum~6 of
+30~September 2026 (\texttt{6f2436e}), written after the results on
 the pilot cut and before the final data run, keeps the fee of a multi-leg RFQ package on the leg on which the
 venue books it, as the companion paper does, and adds the fee spread over the package as a sensitivity of H1,
-under which $\rho$ is 0.904 (Figure~\ref{fig:f2}, panel c). The pre-registration becomes public with the push of
-this history, after the results existed, so no public timestamp precedes the results. The history shows the order
+under which $\rho$ is 0.904 (Figure~\ref{fig:f2}, panel c). The pre-registration became public with the push of
+this history on 5~October 2026, after the results on the pilot cut, so no public timestamp precedes the results. The history shows the order
 of the commits, not what was computed locally between them.
 % src const:managers three
 % src derived:n_hypotheses four
-% src git:cc0a29f 24 September 2026 22:33
-% src const:addenda_total Six
+% src git:c9e9162 24 September 2026 22:33
+% src const:addenda_total Seven
 % src const:addenda four
-% src git:e492ba1 25 September 2026
+% src git:a02058a 25 September 2026
 % src const:managers three
-% src git:a3282d6 27 September 2026
-% src git:1b46e80 30 September 2026
+% src git:8c066a7 27 September 2026
+% src git:7c01e85 5 October 2026
+% src git:6f2436e 30 September 2026
 % src sensitivity.json:c2_rfq_package.h1_pm2.stat 0.904
+% src git:7c01e85 5 October 2026
 
 \section*{Competing interest}
 \phantomsection\addcontentsline{toc}{section}{Competing interest}
