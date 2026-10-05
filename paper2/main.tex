@@ -118,16 +118,16 @@
 \begin{abstract}
 A market maker quotes against a budget of capital, not contracts, yet its edge is reported per contract. On
 Derive, a crypto options exchange, the margin rules are public smart contracts, and its off-chain engine quotes
-margin for any book. Capital is what its three margin managers require for positions, not account balances: one
-contract per option fill of a companion paper and the actual books of dominant maker subaccounts. Four
-hypotheses were registered before any capital figure of the registered analysis existed. Contrary to H1, capital
+margin for any book. Capital is what its three margin managers require for positions, not account balances; it is
+measured on one contract per option fill of a companion paper and on the actual books of dominant maker
+subaccounts. Four hypotheses were registered before any registered capital figure existed. Contrary to H1, capital
 does not reorder the moneyness-by-tenor map of the edge (rank correlation 0.903); post hoc, much of that
 correlation comes from the sign of the edge. In the books of the four subaccounts under the second-generation
-portfolio manager (PM2), which trade ETH and HYPE only, the median fill binds 3.5~per~cent of its stand-alone
+portfolio manager (PM2), trading only ETH and HYPE, the median fill binds 3.5~per~cent of its stand-alone
 capital (H2 not rejected). On the opening books of nine dominant subaccounts, standard margin needs 4.75 times
 the PM2 capital (H3 not rejected), mostly for books too large for a standard-margin subaccount. Contrary to H4,
 cheaper capital did not detectably narrow the half spread; the test has little power. All numbers use pilot data
-up to 17~September 2026.
+to 17~September 2026.
 % src const:managers three
 % src derived:n_hypotheses Four
 % src summary.json:h1_stat 0.903
@@ -229,7 +229,7 @@ notional and edge per unit of PM2 capital rank the cells differently (H1); that 
 dominant subaccount under PM2 binds less than half its stand-alone capital per contract (H2); that PM2 saves
 more than half the capital standard margin requires for the same books (H3); and that the half spread falls
 when a parameter change makes capital cheaper (H4). Addenda~1 to~6 of the pre-registration are described
-in the data statement.
+before the appendices.
 
 H1 and H4 are rejected; H2 and H3 are not. The capital denominator does not reorder the map in the registered
 sense: the rank correlation is 0.903, with an interval from 0.881 to 0.907 against a threshold of 0.5 (H1).
@@ -237,7 +237,7 @@ Post hoc, much of this correlation comes from the sign of the edge: among profit
 to 0.702). In the books of the four subaccounts under PM2, which trade ETH and HYPE only, the median fill binds
 3.5~per~cent of its stand-alone capital (H2); maker buys there mostly release capital and sells mostly bind it.
 Standard margin needs 4.75 times the PM2 capital for the opening books of nine dominant subaccounts (H3), most
-of them larger than a standard-margin subaccount accepts. I find no evidence that the half spread fell when
+of these books larger than a standard-margin subaccount accepts. I find no evidence that the half spread fell when
 capital got cheaper (H4): the estimate has the wrong sign and a one-sided $p$ of 0.62, but the test cannot
 exclude a sizeable narrowing.
 % src const:managers three
@@ -308,8 +308,8 @@ presumably admits a book whose initial net margin is non-negative; the chain enf
 binding initial margin is an assumption. The fields \texttt{pre} and \texttt{post} evaluate the book as given
 and after simulated changes at one price state within one request, which makes a marginal cost measurable.
 
-As the requirement, $C - \mathrm{net}$, which equals ${R - V}$, would mix the value $V$ into the margin. Before
-the registration, this reading gave ratios of standard to PM2 margin of 11.86 and 1.19 for the mixed probe books
+Treating ${C - \mathrm{net}}$, which equals ${R - V}$, as the requirement would mix the value $V$ into the
+margin. Before the registration, this gave ratios of standard to PM2 margin of 11.86 and 1.19 for the mixed probe books
 of 17~September and 24~September 2026; on $R$ the ratios are 10.76 and 2.14 (Figure~\ref{fig:t2}). The second book's PM2 value of
 $-496\,859$~USDC adds almost the same amount to numerator and denominator, pulling the ratio towards one. Netting
 factors are properties of books, so this paper measures them on real ones.
@@ -378,14 +378,14 @@ books, probed at random, showed larger gaps.
 The fills are those of \citet{albiez2026}: all 603\,940 BTC, ETH and HYPE option fills from 11~January 2024 to the
 pilot cut of 17~September 2026. Each carries the maker's side, price, size and net edge in USDC per contract: the
 markout against the mark thirty~minutes after the fill, less fee net of rebate and a hedging cost. Fee and rebate,
-reported per fill, are divided by its size (Addendum~2). On a multi-leg request for quote (RFQ) the
+reported per fill, are divided by the fill's size (Addendum~2). On a multi-leg request for quote (RFQ) the
 venue books the package fee on one leg, where it stays (Addendum~6). The companion paper was corrected on
 25~September 2026 and uses the same unit per contract. SM covers the whole sample (HYPE from 11~November 2025; six
 earlier HYPE fills have no manager), the legacy manager BTC and ETH throughout. The PM2 window is the span in
 which PM2 covers an underlying: BTC and ETH from 12~June 2025 23:00~UTC, HYPE from 11~November 2025. Only H4 uses
 events before it.
 
-A fill's market state is rebuilt from the parameter timelines and the last feed values pushed at or before its
+A fill's market state is rebuilt from the parameter timelines and the last feed values pushed by its
 block. The fill's stand-alone capital is that of a book holding only the fill, at its price, under every
 manager available at the block: ${q = +1}$ for a maker buy and ${q = -1}$ for a sell (Figure~\ref{fig:f1}). A
 cell combines an underlying, a maker side and one absolute delta and one tenor bucket of \citet{albiez2026}; a
@@ -411,17 +411,17 @@ underlyings, with positions at the companion paper's mark.
   \caption{\textbf{The map in two denominators (H1).} Panel a is net edge per unit of PM2 capital, per fill, for
   every cell of the PM2 window by underlying and maker side, in basis points for maker sells and in per cent for
   maker buys; negative cells are hatched and an empty cross marks fewer than 200 fills. For a maker buy the
-  denominator is about the premium when the option is out of the money and less in the money; the lower row is
-  shaded on its own scale. The map per notional is not drawn; its ranks enter panel b. Panel b ranks the 173
-  occupied cells by edge per notional and by edge per PM2 capital; because capital is positive in every cell, the
-  99 cells with positive edge come first in both rankings, and the dotted lines mark that boundary. Crosses give
-  the 90~per~cent rank intervals of the ten largest moves. Panel c is the registered test: Spearman's $\rho$ with
-  its 90~per~cent day-cluster interval, which is narrower than its circle and printed above the panel, set against
-  the threshold of 0.5. The hatched stretch of the registered row, right of the threshold, is the rejection
-  region: the rule rejects H1 if the interval reaches into it. Sensitivities follow and then, on grey, exploratory
-  rows; n is the number of cells in a row, and in the rows by the sign of the edge the cells are chosen again in
-  every replicate. The grey band is the $\rho$ of the sign pattern alone, with ranks shuffled within each sign
-  group.}
+  denominator is about the premium when the option is out of the money and less in the money. Darker grey marks a
+  larger absolute value on a log scale, each row on its own. The map per notional is not drawn; its ranks enter
+  panel b. Panel b ranks the 173 occupied cells by edge per notional and by edge per PM2 capital; because capital
+  is positive in every cell, the 99 cells with positive edge come first in both rankings, and the dotted lines
+  mark that boundary. Crosses give the 90~per~cent rank intervals of the ten largest moves. Panel c is the
+  registered test: Spearman's $\rho$ with its 90~per~cent day-cluster interval (bar, also printed above the
+  panel), set against the threshold of 0.5. The hatched stretch of the registered row, right of the threshold, is
+  the rejection region: the rule rejects H1 if the interval reaches into it. Sensitivities follow and then, on
+  grey, exploratory rows; n is the number of cells in a row, and in the rows by the sign of the edge the cells are
+  chosen again in every replicate. The grey band is the $\rho$ of the sign pattern alone, with ranks shuffled
+  within each sign group.}
   \label{fig:f2}
 % src text:denominators two
 % src const:cell_min_fills 200
@@ -435,7 +435,7 @@ underlyings, with positions at the companion paper's mark.
 
 For H4 each parameter change $j$ becomes a dose $d_{c,j}$: the mean of $\log(K^{+}/K^{-})$ over the fills of cell
 $c$ in the fourteen~days before the event, where $K^{+}$ and $K^{-}$ are the capital of a fill after and before it
-in the same market state. Doses are in log per cent, 100 times the log change; events whose largest absolute
+in the same market state. Doses are shown in log per cent, 100 times the log change; events whose largest absolute
 dose is below one log per~cent are dropped. Over fourteen~days on either side of the event, excluding its day, the half
 spread (the markout at the fill) in basis points of the index follows
 \begin{equation}
@@ -554,9 +554,8 @@ sells.
 \end{figure*}
 
 In the PM2 window 173 cells are occupied, out of 210 with any fill (Figure~\ref{fig:f2}). Across them,
-Spearman's rank correlation $\rho$ between edge per notional and edge per unit of PM2 capital is 0.903, with a
-90~per~cent interval from 0.881 to 0.907. Since the upper bound exceeds 0.5, the registered rule
-rejects H1.
+Spearman's rank correlation $\rho$ between edge per notional and edge per unit of PM2 capital is 0.903
+(90~per~cent interval 0.881 to 0.907); the upper bound exceeds 0.5, so the registered rule rejects H1.
 
 The rejection says less than its margin suggests (post hoc, Appendix~\ref{app:inference}): capital is
 positive in every cell, so a cell keeps the sign of its edge, and the 99 profitable cells rank first in both
@@ -704,19 +703,24 @@ operators split books across managers, is not examined.
   change makes to a cell, for each of the 475 cell-event pairs of the 13 events in the H4 panel, sells above and
   buys below each line, with the median as a bar. Panel b is the half spread against the post-event dose after
   removing the cell by event and the day by underlying effects, in 20 bins of equal size, above a grey histogram
-  of that dose over all observations of the H4 panel; the line shows the estimate $\beta$, whose interval is
-  descriptive because the registered $p$ comes from restricted residuals. Panel c places $\beta$ among the
-  estimates at 100 placebo dates and lists both registered criteria. Panel d gives $\beta$ per underlying, for
-  exploration; in the registered row, hatching marks the values of $\beta$ at which the rule rejects H4 whatever
-  its $p$, up to the 95th placebo percentile (P95) or zero, whichever is larger. Most doses are close to zero or
-  negative, so $\beta$ is identified from parameter changes that made capital cheaper. Doses on the axes are in
-  log per cent, 100 times the change in log capital, so the line in panel b has the slope $\beta/100$ per log per
-  cent. To read the slope: capital ten~per~cent cheaper is a dose of $-0.105$, or $-10.5$~log per~cent, which
-  predicts a change in the half spread of $-0.105\,\beta$ basis points of the index.}
+  of that dose over the rows of the H4 panel, one per fill and event; the line shows the estimate $\beta$, whose
+  interval is descriptive because the registered $p$ comes from restricted residuals. That day-cluster interval is
+  too narrow, as the placebo dates show; calibrated on them, the 90~per~cent range runs from $-41.6$ to 29.7
+  (Section~\ref{sec:h4}). Panel c places $\beta$ among the estimates at 100 placebo dates and lists both
+  registered criteria. Panel d gives $\beta$ per underlying, for exploration; in the registered row, hatching
+  marks the values of $\beta$ at which the rule rejects H4 whatever its $p$, up to the 95th placebo percentile
+  (P95) or zero, whichever is larger. Most doses are close to zero or negative, so $\beta$ is identified from
+  parameter changes that made capital cheaper. Doses on the axes are in log per cent, 100 times the change in log
+  capital, so the line in panel b has the slope $\beta/100$ per log per cent. To read the slope: capital
+  ten~per~cent cheaper is a dose of $-0.105$, or $-10.5$~log per~cent, which predicts a change in the half spread
+  of $-0.105\,\beta$ basis points of the index.}
   \label{fig:f6}
 % src summary.json:h4_cell_events 475
 % src summary.json:events_with_cells 13
 % src fig_f6_b.csv:bin@mode=bins,kind=bin~count 20
+% src const:interval_pct 90
+% src summary.json:h4_cal_lo -41.6
+% src summary.json:h4_cal_hi 29.7
 % src const:placebo_dates 100
 % src const:placebo_percentile 95th
 % src text:log_pct_factor 100 100
@@ -822,12 +826,12 @@ order of the map largely intact (H1), but from an empty or small book the side m
 long option far out of the money binds about its premium, and a short one binds scenario capital. The same
 edge per notional is therefore a large edge per unit of capital when the maker buys a cheap wing and a small
 one when it sells. The top cells per unit of capital owe their edge mostly to RFQ legs and to the SVI mark
-extrapolated in the far wing (post hoc). In the dominant PM2 books buys mostly release capital, so there
+extrapolated in the far wing (post hoc). Buys mostly release capital in the dominant PM2 books, where
 marginal capital orders the sides differently from stand-alone capital.
 
 Second, the book, not the contract, decides the cost of a quote. In four large PM2 books the median fill binds
 3.5~per~cent of its stand-alone capital (H2), so stand-alone capital (Figure~\ref{fig:f1}) overstates the
-median cost of a quote many times. The endpoint instead returns the marginal capital
+median cost of a quote many times over. The endpoint instead returns the marginal capital
 against the maker's own book in one request.
 
 Third, netting pays for books of a few dozen legs or more held under the portfolio managers (H3). The one

@@ -102,7 +102,7 @@ placebo,99.0,5.598212281830697,,
 estimate,,-4.599234789460463,,estimate
 p95,,23.40989788852172,,placebo P95
 p,,0.6224,,
-criterion_1,,,False,β > 0 and one-sided wild p ≤ 0.05 (p = 0.622): not met
+criterion_1,,,False,β > 0 and one-sided wild $p$ ≤ 0.05 ($p$ = 0.622): not met
 criterion_2,,,False,β above placebo P95 (23.4): not met
 verdict,,,True,H4: rejected
 placebo_days,,,,placebo days: BTC 54 · ETH 10 · HYPE 67 · legacy 363 / 319

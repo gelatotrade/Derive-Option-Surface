@@ -1,14 +1,14 @@
 # Number check Paper 2
 
-Generated 2026-10-05 11:00 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-10-05 11:26 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 
 ## Result
 
-- Numbers, dates and commits in the text: 383
-- Result: 273
-- Constant: 76
+- Numbers, dates and commits in the text: 386
+- Result: 275
+- Constant: 77
 - Commit date: 6
 - Text count: 21
 - Commit: 7
@@ -23,7 +23,7 @@ Text counts (without a data source, for review):
 - The engine and what it returns: `two` (text:two_engines_compared) … e contracts on 25 September 2026, the two engines differed in   capital by a me …
 - caption fig:f2: `two` (text:denominators) … The map in two denominators ( ). Panel a is net edge …
 - caption fig:f2: `ten` (text:largest_moves) … the 90 per cent rank intervals of the ten largest moves. Panel c is the registe …
-- Data and measurement: `100` (text:log_pct_factor) … ket state. Doses are in log per cent, 100 times the log change; events whose la …
+- Data and measurement: `100` (text:log_pct_factor) … ate. Doses are shown in log per cent, 100 times the log change; events whose la …
 - caption fig:f5: `two` (text:two_events) … May 2026 overlap, so 6527 fills enter two events. Black dashes below each line …
 - caption fig:f5: `30` (text:refbook_target_days) … rward on the listed expiry nearest to 30 days, one contract per leg, in per ce …
 - Results / A fill in a maker's book (H2): `95th` (text:quantile_level) … r bind more than 0.63 of it. From the 95th percentile on, a fill binds about its …
@@ -221,6 +221,9 @@ Text counts (without a data source, for review):
 | caption fig:f6 | `475` | Result | summary.json:h4_cell_events | = 475 |
 | caption fig:f6 | `13` | Result | summary.json:events_with_cells | = 13 |
 | caption fig:f6 | `20` | Result | fig_f6_b.csv:bin@mode=bins,kind=bin~count | = 20 |
+| caption fig:f6 | `90` | Constant | const:interval_pct | 90 % interval (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| caption fig:f6 | `-41.6` | Result | summary.json:h4_cal_lo | = -41.6364 |
+| caption fig:f6 | `29.7` | Result | summary.json:h4_cal_hi | = 29.6968 |
 | caption fig:f6 | `100` | Constant | const:placebo_dates | 100 placebo dates (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | caption fig:f6 | `95th` | Constant | const:placebo_percentile | β above the 95th percentile of the placebo β (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | caption fig:f6 | `100` | Text count | text:log_pct_factor | count word from the sentence |

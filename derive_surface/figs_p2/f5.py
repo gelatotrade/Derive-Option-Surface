@@ -1,4 +1,4 @@
-"""F5 of Paper 2: the engine over time (FIGURE_SELECTION section 7, F5; 7.0 x 4.79 in).
+"""F5 of Paper 2: the engine over time (FIGURE_SELECTION section 7, F5; 7.0 x 4.47 in).
 
 a  share of option open interest per manager at the start of each month (``manager_oi_share.csv`` samples
    00:00:01 UTC on the 1st), one strip per underlying (PM2 at the bottom).
@@ -34,7 +34,7 @@ from .. import p2events
 from . import _kit_f5f6 as kit
 
 NAME = "f5"
-WIDTH, HEIGHT = 7.0, 4.79
+WIDTH, HEIGHT = 7.0, 4.47
 DAY = 86_400
 T0, T1 = pd.Timestamp("2024-01-01"), pd.Timestamp("2026-09-30")
 LABEL_MONTHS = (1, 7)         # quarter ticks labelled in January and July; April and October unlabelled
@@ -64,9 +64,9 @@ HALO = [patheffects.withStroke(linewidth=2.0, foreground="white")]   # numbers s
 
 # layout in inches
 L, R = 0.95, 5.88
-A_TOP, A_H, A_GAP = 0.25, 0.42, 0.05
-B_TITLE, B_LEGEND = 1.68, 1.84       # top of the title and of the symbol legend of b
-B_TOP, B_H = 2.15, 1.32
+A_TOP, A_H, A_GAP = 0.25, 0.34, 0.05
+B_TITLE, B_LEGEND = 1.44, 1.60       # top of the title and of the symbol legend of b
+B_TOP, B_H = 1.91, 1.32
 B_YLIM = (-0.62, 4.5)               # rows, top and bottom (rails at 0 .. 4)
 C_TOP, C_H = B_TOP + B_H + 0.24, 0.80
 

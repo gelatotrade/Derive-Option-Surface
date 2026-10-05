@@ -423,10 +423,11 @@ def test_sign_lines_are_dotted_and_the_rank_intervals_carry_end_ticks(rd):
 
 
 def test_caption_names_the_selection_per_replicate_and_the_hidden_interval():
-    """A04: the sign rows choose their cells again in every replicate; A50: the registered interval is narrower
-    than its circle and printed above the panel."""
+    """A04: the sign rows choose their cells again in every replicate; A50: the registered interval is printed above
+    the panel. On the axis from 0.4 (review round 3) the interval is a visible bar, no longer hidden by its circle."""
     assert "the cells are chosen again in every replicate" in f2.CAPTION
-    assert "narrower than its circle" in f2.CAPTION
+    assert "interval (bar, also printed above the panel)" in f2.CAPTION and "narrower than its circle" not in f2.CAPTION
+    assert "Darker grey marks a larger absolute value on a log scale" in f2.CAPTION
 
 
 def test_rho_axis_spans_what_the_rows_need():

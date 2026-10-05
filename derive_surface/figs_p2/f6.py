@@ -55,8 +55,10 @@ CAPTION = (
     r"makes to a cell, for each of the \PH{h4-pairs} cell-event pairs of the \PH{h4-events} events in the H4 panel, "
     r"sells above and buys below each line, with the median as a bar. Panel b is the half spread against the "
     r"post-event dose after removing the cell by event and the day by underlying effects, in 20 bins of equal size, "
-    r"above a grey histogram of that dose over all observations of the H4 panel; the line shows the estimate "
-    r"$\beta$, whose interval is descriptive because the registered $p$ comes from restricted residuals. Panel c "
+    r"above a grey histogram of that dose over the rows of the H4 panel, one per fill and event; the line shows the "
+    r"estimate $\beta$, whose interval is descriptive because the registered $p$ comes from restricted residuals. "
+    r"That day-cluster interval is too narrow, as the placebo dates show; calibrated on them, the 90~per~cent range "
+    r"runs from \PH{h4-cal-lo} to \PH{h4-cal-hi} (Section~\ref{sec:h4}). Panel c "
     r"places $\beta$ among the estimates at 100 placebo dates and lists both registered criteria. Panel d gives "
     r"$\beta$ per underlying, for exploration; in the registered row, hatching marks the values of $\beta$ at which "
     r"the rule rejects H4 whatever its $p$, up to the 95th placebo percentile (P95) or zero, whichever is larger. "
@@ -200,7 +202,7 @@ def checklist(h4: dict) -> List[Tuple[str, bool]]:
     if rejected != bool(h4["rejected"]):
         raise ValueError(f"H4 check list gives rejected={rejected}, h4.json says rejected={h4['rejected']}")
     met = {True: "met", False: "not met"}
-    return [(f"β > 0 and one-sided wild p ≤ 0.05 (p = {p:.3f}): {met[c1]}", c1),
+    return [(f"β > 0 and one-sided wild $p$ ≤ 0.05 ($p$ = {p:.3f}): {met[c1]}", c1),
             (f"β above placebo P95 ({kit.num(p95, 1)}): {met[c2]}", c2),
             ("H4: rejected" if rejected else "H4: not rejected", rejected)]
 
@@ -344,7 +346,8 @@ def _panel_c(fig, c: pd.DataFrame) -> None:
     kit.letter(fig, 3.50, C_TOP - 0.45, "c")
     lines = c[c["kind"].isin(["criterion_1", "criterion_2", "verdict"])]
     for k, r in enumerate(lines.itertuples()):
-        kit.fig_text(fig, BL - 0.25, C_TOP - 0.44 + 0.125 * k, r.printed, ha="left",
+        # 0.135 in apart: the italic $p$ of mathtext sets a deeper box than plain text (review round 3)
+        kit.fig_text(fig, BL - 0.25, C_TOP - 0.45 + 0.135 * k, r.printed, ha="left",
                      fontweight="bold" if r.kind == "verdict" else "normal")
     ax = kit.axes_at(fig, BL, C_TOP, BR - BL, C_H)
     pl = c.loc[c["kind"] == "placebo", "beta"].to_numpy(float)

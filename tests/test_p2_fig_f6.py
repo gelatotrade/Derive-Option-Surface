@@ -279,7 +279,8 @@ def test_caption_explains_strip_hatching_and_units():
     cap = f6.CAPTION
     assert "events in the H4 panel" in cap
     # "rows" are the rows of the figure; the histogram runs over the observations of the regression
-    assert "grey histogram of that dose over all observations of the H4 panel" in cap and "all rows" not in cap
+    assert "grey histogram of that dose over the rows of the H4 panel, one per fill and event" in cap
+    assert "calibrated on them, the 90~per~cent range" in cap
     assert "hatching marks the values of $\\beta$ at which the rule rejects H4 whatever its $p$" in cap
     assert "the registered $p$ comes from restricted residuals" in cap and "p-value" not in cap
     # P95 is spelled out where it first appears
@@ -295,5 +296,5 @@ def test_checklist_keeps_criterion_and_value_apart():
     h4 = {"stat": -4.6, "p": 0.6224, "rejected": True, "placebo": {"p95": 23.4},
           "criteria": {"beta_positive": False, "p_le_alpha": False, "beta_gt_placebo_p95": False}}
     first = f6.checklist(h4)[0][0]
-    assert first == "β > 0 and one-sided wild p ≤ 0.05 (p = 0.622): not met"
+    assert first == "β > 0 and one-sided wild $p$ ≤ 0.05 ($p$ = 0.622): not met"     # italic p, as in the text
     assert "= 0.622 ≤" not in first

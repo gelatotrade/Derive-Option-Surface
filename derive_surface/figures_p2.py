@@ -38,7 +38,7 @@ FIGURES: Dict[str, ModuleType] = {s: importlib.import_module(f"derive_surface.fi
 CAPTIONS: Dict[str, str] = {s: m.CAPTION for s, m in FIGURES.items()}
 # print size of the saved PDF: laid out at 7.0 or 3.4 in, saved at the width main.tex sets it (``figs_p2._print``)
 SIZES: Dict[str, tuple] = {"t1": (6.84, 4.2), "t2": (6.84, 2.6), "f1": (6.84, 3.9), "f2": (6.84, 6.2),
-                           "f3": (3.29, 4.0), "f4": (3.29, 4.0), "f5": (6.84, 4.79), "f6": (6.84, 4.2), "a1": (6.84, 2.5)}
+                           "f3": (3.29, 4.0), "f4": (3.29, 4.0), "f5": (6.84, 4.47), "f6": (6.84, 4.2), "a1": (6.84, 2.5)}
 FS_MIN = 7.0
 OUT_DIR = Path("paper2/figures")
 RESULTS_DIR = Path("results/p2")
