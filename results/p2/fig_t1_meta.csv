@@ -1,5 +1,5 @@
 key,manager,rule,value,printed
-header,,,,"BTC · 17 Sep 2026, 08:00 UTC · 15 live expiries · PM2 spot grid ±14 % since 20 Aug 2026 · chain semantics"
+header,,,,"BTC · 17 Sep 2026, 08:00 UTC · 15 live expiries · PM2 spot grid ±14 % since 20 Aug 2026 · on-chain engine"
 ts,,,1789632000.0,"17 Sep 2026, 08:00 UTC"
 block,,,44805192.0,
 n_expiries,,,15.0,15 live expiries
@@ -65,7 +65,7 @@ K_pct_min,sm,,12.37407104946571,
 K_pct_median,sm,,12.978999882525677,
 K_pct_max,sm,,15.006539483575773,
 max_rel_decomposition_gap,sm,,3.4816339455988024e-15,
-n_class,sm,otm,231.0,15 % − OTM
+n_class,sm,otm,231.0,15 % − OTM amount
 n_class,sm,floor,509.0,13 % floor
 n_class,sm,mm_put,0.0,
 n_class,sm,max_loss,0.0,

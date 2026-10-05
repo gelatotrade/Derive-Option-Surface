@@ -33,8 +33,9 @@ def row(stat, lo, hi, n, n_days=40):
 
 
 def synth(results_dir: Path, seed: int = 1, sign: bool = True, rejected=None, rfq: bool = True,
-          package: bool = True, h1_stat=(0.83, 0.78, 0.87)) -> None:
-    """h1_cells.csv, h1.json and sensitivity.json with the keys F2 reads."""
+          package: bool = True, h1_stat=(0.83, 0.78, 0.87), nonpos=(-0.3, -0.45, 0.1)) -> None:
+    """h1_cells.csv, h1.json and sensitivity.json with the keys F2 reads; ``nonpos`` is (stat, lo, hi) of the row
+    "edge <= 0 only" (the default reaches below the range 0.4 to 1.0 of the pilot)."""
     rng = np.random.default_rng(seed)
     rows = []
     for ccy in CCYS:
@@ -85,7 +86,7 @@ def synth(results_dir: Path, seed: int = 1, sign: bool = True, rejected=None, rf
         sens["c2_rfq_package"] = {"h1_pm2": row(0.84, 0.79, 0.88, n)}
     if sign:
         npos = int((h.loc[occ, "A_bp"] > 0).sum())
-        sens["h1_sign"] = {"within_pos": row(0.6, 0.45, 0.7, npos), "within_nonpos": row(-0.3, -0.45, 0.1, n - npos),
+        sens["h1_sign"] = {"within_pos": row(0.6, 0.45, 0.7, npos), "within_nonpos": row(*nonpos, n - npos),
                            "sign_floor": {"mean": 0.7, "p05": 0.66, "p95": 0.74, "draws": 4000,
                                           "seed": 20260924}}
     (results_dir / "sensitivity.json").write_text(json.dumps(sens))
@@ -132,23 +133,90 @@ def _print_canvas(fig):
     return fig.canvas.get_renderer()
 
 
+def _maps(fig):
+    return [ax for ax in fig.axes if len(ax.get_xticks()) == len(TENOR_LABELS) and ax.get_ylim()[0] > 6]
+
+
 def test_neighbouring_cell_numbers_keep_a_gap_at_print_size(rd):
-    """F1/T9: the widest pairs that the formats allow, side by side in two cells of a map, keep at least 2.3 pt of
-    white between their ink, with the true minus at 7 pt: sells "−8.8" next to "−888", buys "−8.8" next to
-    "−8.8"."""
+    """F1/T9 and round 2 of the PDF review: the widest pairs that the formats allow, side by side in two cells of a
+    map, keep at least 2.5 pt between their advance boxes (the measure of the review, wider than the ink), with the
+    true minus at 7 pt: sells "−8.8" next to "−888", buys "−8.8" next to "−8.8". At 19.3 pt cells "−7.3" next
+    to "−126" kept 1.2 pt."""
     fig, _ = f2.make_figure(rd)
     r = _print_canvas(fig)
-    maps = [ax for ax in fig.axes if len(ax.get_xticks()) == len(TENOR_LABELS) and ax.get_ylim()[0] > 6]
+    maps = _maps(fig)
     assert len(maps) == 6
     cell_pt = maps[0].get_window_extent(r).width / len(TENOR_LABELS) * 72.0 / fig.dpi
+    assert cell_pt >= 1.33 * 19.3                           # a third wider than in round 1
+
+    def advance_pt(s):
+        t = fig.text(0, 0, s, fontsize=7.0)
+        w = t.get_window_extent(r).width * 72.0 / fig.dpi
+        t.remove()
+        return w
 
     def ink_pt(s):                                          # width of the glyph outlines, not of the advance
         return TextPath((0, 0), s, size=7.0, prop=FontProperties(family="DejaVu Sans")).get_extents().width
 
-    assert cell_pt - (ink_pt("−8.8") + ink_pt("−888")) / 2 >= 2.3
-    assert cell_pt - ink_pt("−8.8") >= 3.4
-    assert cell_pt - ink_pt("−888") >= 1.0                  # alone, the widest number stays inside its cell
+    assert cell_pt - (advance_pt("−8.8") + advance_pt("−888")) / 2 >= 2.5
+    assert cell_pt - (advance_pt("−7.3") + advance_pt("−126")) / 2 >= 2.5
+    assert cell_pt - advance_pt("−8.8") >= 2.5
+    assert cell_pt - ink_pt("−888") >= 2.5                  # alone, the widest number stays well inside its cell
     plt.close(fig)
+
+
+def test_drawn_cell_numbers_stand_apart_at_print_size(rd):
+    """Every pair of numbers side by side in a row of the maps, across the border of two maps too, keeps at least
+    2.5 pt between the boxes of its text at print size."""
+    fig, _ = f2.make_figure(rd)
+    r = _print_canvas(fig)
+    boxes = []
+    for ax in _maps(fig):
+        for t in ax.texts:
+            if t.get_text().strip():
+                e = t.get_window_extent(r)
+                boxes.append((round((e.y0 + e.y1) / 2, 1), e.x0, e.x1, t.get_text()))
+    rows = {}
+    for yc, x0, x1, s in boxes:
+        rows.setdefault(yc, []).append((x0, x1, s))
+    assert len(rows) == 2 * len(DELTA_LABELS)
+    pt = 72.0 / fig.dpi
+    gaps = []
+    for cells in rows.values():
+        cells.sort()
+        assert len(cells) == len(CCYS) * len(TENOR_LABELS)
+        gaps += [((b[0] - a[1]) * pt, a[2], b[2]) for a, b in zip(cells, cells[1:])]
+    assert min(gaps)[0] >= 2.5, min(gaps)
+    plt.close(fig)
+
+
+def test_cell_numbers_stand_apart_in_the_pdf(rd, tmp_path):
+    """The same measure read back from the saved PDF (PyMuPDF): the boxes of neighbouring numbers in a map row
+    keep at least 2.5 pt."""
+    fitz = pytest.importorskip("fitz")
+    f2.build(out_dir=tmp_path / "fig", results_dir=rd)
+    page = fitz.open(str(tmp_path / "fig" / "f2.pdf"))[0]
+    top_of_b = (f2.HEIGHT - f2.BOTTOM_MAP) * 72.0          # the maps lie above this, in points from the top
+    num = re.compile(r"^[\u2212]?\d+(\.\d)?k?$")
+    spans = []
+    for block in page.get_text("rawdict")["blocks"]:
+        for line in block.get("lines", []):
+            for sp in line["spans"]:
+                txt = "".join(c["c"] for c in sp["chars"])
+                yc = (sp["bbox"][1] + sp["bbox"][3]) / 2
+                if num.match(txt) and abs(sp["size"] - 7.0) < 0.05 and yc < top_of_b:
+                    spans.append((yc, min(c["bbox"][0] for c in sp["chars"]), max(c["bbox"][2] for c in sp["chars"])))
+    spans.sort()
+    rows, cur = [], []
+    for sp in spans:
+        if cur and sp[0] - cur[0][0] > 2.0:
+            rows.append(cur)
+            cur = []
+        cur.append(sp)
+    rows.append(cur)
+    gaps = [b[1] - a[2] for row_ in rows for a, b in zip(sorted(row_, key=lambda s: s[1]),
+                                                         sorted(row_, key=lambda s: s[1])[1:])]
+    assert len(spans) >= 100 and gaps and min(gaps) >= 2.5, min(gaps)
 
 
 def test_hatched_cells_leave_the_number_free_and_keep_the_grid_line(rd):
@@ -195,7 +263,7 @@ def test_smoke_build_writes_figures_and_tables(rd, tmp_path):
     names = {p.name for p in paths}
     assert {"f2.pdf", "f2.png", "fig_f2_a.csv", "fig_f2_b.csv", "fig_f2_c.csv", "fig_f2_shift.csv"} <= names
     w, h = pdf_size_in(out / "f2.pdf")
-    assert w == pytest.approx(6.84, abs=0.005) and h == pytest.approx(4.4, abs=0.02)
+    assert w == pytest.approx(6.84, abs=0.005) and h == pytest.approx(f2.HEIGHT, abs=0.02)
     cells = pd.read_csv(rd / "h1_cells.csv")
     b = pd.read_csv(rd / "fig_f2_b.csv")
     assert len(b) == int(cells["occupied"].sum()) and int(b["top10"].sum()) == 10
@@ -271,8 +339,9 @@ def test_forest_rows_are_set_with_leading(rd):
 
 @pytest.mark.parametrize("h1_stat", [(0.83, 0.78, 0.87), (0.3, 0.2, 0.45)])
 def test_no_text_runs_into_another_at_print_size(tmp_path, h1_stat):
-    """F12/C7 (header against the letter b), F6/T13 (row title against the tick 90-100), the verdict of c against
-    the axis title of b, also when the verdict reads "not rejected" (a longer line)."""
+    """F12/C7 (header of a), F6/T13 (row title against the tick 90-100), the upright tenor ticks against the tenor
+    title, the tenor title against the letters, legend of b and verdict of c below it, the y title of b against its
+    ticks, also when the verdict reads "not rejected" (a longer line)."""
     d = tmp_path / "r"
     synth(d, h1_stat=h1_stat, rejected=bool(h1_stat[2] >= 0.5))
     fig, _ = f2.make_figure(d)
@@ -293,7 +362,7 @@ def test_no_text_runs_into_another_at_print_size(tmp_path, h1_stat):
 
 def test_type_size_canvas_and_extent(rd):
     fig, _ = f2.make_figure(rd)
-    assert tuple(fig.get_size_inches()) == pytest.approx((7.0, 4.4))
+    assert tuple(fig.get_size_inches()) == pytest.approx((7.0, f2.HEIGHT))
     r = fig.canvas.get_renderer()
     canvas = fig.bbox
     for t in texts(fig):
@@ -358,3 +427,68 @@ def test_caption_names_the_selection_per_replicate_and_the_hidden_interval():
     than its circle and printed above the panel."""
     assert "the cells are chosen again in every replicate" in f2.CAPTION
     assert "narrower than its circle" in f2.CAPTION
+
+
+def test_rho_axis_spans_what_the_rows_need():
+    """Round 2 of the PDF review: on -0.2 to 1.0 the estimates 0.46 to 0.93 crowded into a few millimetres. The axis
+    runs from 0.4 while every row, the band and the threshold lie in it, and drops only as far as a row needs."""
+    def table(lows):
+        return pd.DataFrame({"kind": ["registered"] + ["exploratory"] * len(lows) + ["band", "header"],
+                             "stat": [0.9] + [lo + 0.1 for lo in lows] + [0.73, 0.9],
+                             "lo": [0.88] + list(lows) + [0.70, -5.0],          # the header row does not count
+                             "hi": [0.91] + [0.95] * len(lows) + [0.77, 0.91]})
+
+    assert f2.rho_axis(table([0.46, 0.57]), 0.5) == ((0.4, 1.0), [0.5, 0.75, 1.0])
+    assert f2.rho_axis(table([0.42]), 0.5) == ((0.4, 1.0), [0.5, 0.75, 1.0])
+    assert f2.rho_axis(table([0.41]), 0.5) == ((0.3, 1.0), [0.5, 1.0])
+    assert f2.rho_axis(table([-0.45]), 0.5) == ((-0.5, 1.0), [-0.5, 0.0, 0.5, 1.0])
+    assert f2.rho_axis(table([-0.99]), 0.5) == ((-1.0, 1.0), [-1.0, -0.5, 0.0, 0.5, 1.0])
+    assert [f2.fmt_rho_tick(t) for t in (0.5, 0.75, 1.0, 0.0, -0.5)] == ["0.5", "0.75", "1.0", "0.0", "−0.5"]
+
+
+def _forest(fig):
+    return [a for a in fig.axes if a.get_xlabel() == "Spearman's ρ"][0]
+
+
+def test_forest_on_the_narrow_axis_keeps_threshold_hatch_and_band(tmp_path):
+    """With the rows of the pilot (lowest bound 0.46) panel c runs from 0.4 to 1.0 with ticks 0.5, 0.75, 1.0; the
+    threshold, the hatched stretch of the registered row and the band of the sign pattern stay inside it."""
+    d = tmp_path / "r"
+    synth(d, nonpos=(0.64, 0.46, 0.68))
+    fig, t = f2.make_figure(d)
+    ax = _forest(fig)
+    assert ax.get_xlim() == pytest.approx((0.4, 1.0))
+    assert list(ax.get_xticks()) == pytest.approx([0.5, 0.75, 1.0])
+    assert [x.get_text() for x in ax.get_xticklabels()] == ["0.5", "0.75", "1.0"]
+    hatch = [p for p in ax.patches if p.get_hatch()]
+    assert len(hatch) == 1 and hatch[0].get_x() == pytest.approx(0.5) and hatch[0].get_width() == pytest.approx(0.5)
+    band = t["c"].set_index("kind").loc["band"]
+    shaded = [p for p in ax.patches if not p.get_hatch() and p.get_x() == pytest.approx(band["lo"])]
+    assert len(shaded) == 1 and shaded[0].get_width() == pytest.approx(band["hi"] - band["lo"])
+    threshold = [seg for coll in ax.collections for seg in coll.get_segments() if np.allclose(seg[:, 0], 0.5)]
+    assert len(threshold) == 1                              # the dashed threshold at 0.5
+    rows = t["c"][t["c"]["kind"].isin(["registered", "sensitivity", "exploratory"])]
+    assert (rows["lo"] > 0.4).all() and (rows["hi"] < 1.0).all()
+    plt.close(fig)
+
+
+def test_maps_span_the_width_and_b_and_c_share_the_row_below(rd):
+    """Round 2 of the PDF review: panel a takes the full width on top, panels b and c sit side by side below it,
+    each about half the width; the data area of c is far wider than the 0.64 in of round 1."""
+    fig, _ = f2.make_figure(rd)
+    r = _print_canvas(fig)
+    W = fig.bbox.width
+    maps = _maps(fig)
+    b = [a for a in fig.axes if a.get_xlabel().startswith("rank by edge per notional")][0]
+    c = _forest(fig)
+    left = min(a.get_window_extent(r).x0 for a in maps)
+    right = max(a.get_window_extent(r).x1 for a in maps)
+    assert left < 0.13 * W and right > 0.98 * W
+    floor = min(a.get_window_extent(r).y0 for a in maps)
+    eb, ec = b.get_tightbbox(r), c.get_tightbbox(r)
+    assert eb.y1 < floor and ec.y1 < floor                  # b and c below the maps
+    assert eb.x1 < ec.x0                                    # side by side, b on the left
+    assert 0.40 * W < eb.x1 < 0.55 * W and 0.45 * W < ec.x0 < 0.55 * W
+    inch = fig.dpi
+    assert c.get_window_extent(r).width / inch >= 1.8 and b.get_window_extent(r).width / inch >= 2.4
+    plt.close(fig)

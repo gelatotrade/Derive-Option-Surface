@@ -28,7 +28,7 @@ label depends on the outcome of a test.
 | T1 | What capital does a short bind at each point of the surface, and which rule sets it? | P-T1 a/b ⊕ M-T1 c/d | 7.0 × 4.2 | |
 | T2 | What does `get_margin` return, and how does PM2 value a book? | P-T2 a/b ⊕ M-T2 c (redone on the reference straddle) | 7.0 × 2.6 | |
 | F1 | What does one contract cost per cell, and what do the same fills cost under SM and legacy PM? | P-F1 with the numbers of E and the referee's regime split | 7.0 × 3.9 | |
-| F2 | Does the capital denominator reorder the map? | P-F2 (maps, rank against rank) in the grey coding of the design review, verdict bar from E, sign lines from the referee | 7.0 × 4.4 | H1 |
+| F2 | Does the capital denominator reorder the map? | P-F2 (maps, rank against rank) in the grey coding of the design review, verdict bar from E, sign lines from the referee | 7.0 × 6.2 | H1 |
 | F3 | What does the next contract cost in the book of a dominant maker? | P-F3 a ⊕ E-F3 b | 3.4 × 4.0 | H2 |
 | F4 | What is netting worth? | P-F4 b binned ⊕ E-F4 b | 3.4 × 4.0 | H3 |
 | F5 | How has the engine moved over time, and which events carry H4? | P-F5 ⊕ status grammar E ⊕ placebo band of the referee | 7.0 × 5.15 | |
@@ -348,7 +348,7 @@ manager)` (template `_pm2_binding`, `_sm_branch` in `proto_mechanismus.py`): PM2
 from `margin_pm2` with (spotShock, volShock, dampeningFactor), mapped to the classes “spot +14 %, vol up”, “spot
 −14 %, vol up”, “core, other vol” (core, dampening 1, any other vol state), “spot ×{s} (dampened)” for s > 1,
 “spot ×{s} (dampened)” for s < 1, “basis/skew/other”; the grid width ±14 % is read from the parameters and not fixed
-in the code. SM = branch of `OptionMarginParams`: “15 % − OTM”, “13 % floor”, “put: 1.05 × MM”. Test: the decomposition
+in the code. SM = branch of `OptionMarginParams`: “15 % − OTM amount”, “13 % floor”, “put: 1.05 × MM”. Test: the decomposition
 adds up to the grid capital at each of the 1,480 nodes (relative ≤ 1e−9), and every class is covered.
 
 **Layout.** Header, below it row 1 with a (PM2) and b (SM) in 3D and the colour bar on the right (width 0.10 in),
@@ -366,7 +366,7 @@ row 2 with c (PM2) and d (SM) as 2D maps directly below a and b, and below that 
   iso levels as black cross strokes over the full width of the bar.
 - **c, d:** `pcolormesh` of the classes; fixed fills: “spot +14 %, vol up” `#E0E0E0`; “spot −14 %, vol up” `#A8A8A8`;
   “core, other vol” `#C8C8C8` with `--`; tail upward white with `..`; tail downward white with `\\\\`; “basis/skew/other”
-  white with `xx`; SM “15 % − OTM” white, “13 % floor” `#E0E0E0` with `///`, “put: 1.05 × MM” white with `..`. Only
+  white with `xx`; SM “15 % − OTM amount” white, “13 % floor” `#E0E0E0` with `///`, “put: 1.05 × MM” white with `..`. Only
   classes that occur go into the legend, all classes with their node count into the CSV. x 0.05 to 0.95 with ticks at 0.10, 0.25,
   0.40, 0.60, 0.75, 0.90; y log 1 to 365 days with ticks 1, 2, 7, 30, 90, 365. Grid lines **only** at the ticks 0.10 …
   0.90 and 2, 7, 30, 90 (0.4 pt, `#808080`): these are the bucket edges of Paper 1, built from its `DELTA_EDGES`
@@ -511,7 +511,7 @@ of the sell cells BTC 0.943, ETH 0.902, HYPE 0.875. q_PM 0.946 to 1.736 over 128
 sell cells 1.398 (BTC, 6 cells), 1.140 (ETH, 18), 1.444 (HYPE, 1). κ = 100·`sum_K`/`sum_index` from `h1_cells.csv`
 (identity, deviation 0). Sums over R1 to R4 = sums of the map (relative ≤ 1e−9).
 
-### F2 · The map in two denominators (H1) · 7.0 × 4.4 in
+### F2 · The map in two denominators (H1) · 7.0 × 6.2 in
 
 **Why:** The capital map is contribution 1 of the specification and belongs in the figure; the grey coding makes it
 print-proof. The rank-rank picture shows the quantity that H1 tests, and the sign lines show the structural
@@ -527,17 +527,20 @@ new entries `sign_floor`, `within_pos`, `within_nonpos` (section 10).
 **Computation.** Only counting and sorting: number of cells with A_bp > 0 (position of the sign lines), the ten largest
 |rank_shift| (ties broken by cell ID).
 
-**Layout.** On the left a (maps, right edge at 4.94 in, full height; cells 19.3 pt wide in print), at top right b
-(rank against rank, axes 1.38 × 1.07 in), at bottom right c (forest, axis 0.66 in wide). Revision of 5 October 2026
-(audit F1, F3, F4, F12, T9): the minus sign U+2212 needs the wider cells, which panel c gave up.
+**Layout.** a on top across the full width (maps from 0.79 to 6.97 in on the 7.0 in canvas, 0.08 in between the
+underlyings; cells 28.2 pt wide and 15 pt high in print, tenor ticks upright), below it b on the left (rank axes
+2.6 × 1.85 in, side legend in one line right of the letter b, x title in one line) and c on the right (forest axes
+2.08 in wide, rows at 8.0 pt). Revision of 5 October 2026 (audit F1, F3, F4, F12, T9): the minus sign U+2212 needs
+wide cells. Round 2 of the same day (review of the PDF): with a ending at 4.94 in, b had shrunk to 1.38 × 1.07 in and
+c to 0.66 in, and neighbours such as “−7.3” and “−126” kept 1.2 pt; now they keep 10.1 pt.
 
 - **a** Six maps as in F1 (sell on top, buy below; BTC, ETH, HYPE). Number = edge per PM2 capital with at most four
   characters, in bp (B_bp) for maker sells and in per cent of capital (B_bp / 100; 5k bp prints as 50) for maker
   buys, since four-character bp negatives with U+2212 do not fit side by side at 7 pt: |v| < 10 with one decimal
   (“3.4”, “−0.8”), 10 ≤ |v| < 1,000 as an integer (“240”, “−35”), |v| ≥ 1,000 in whole thousands (“3k”, “−12k”). Grey
   by log|B| per row (lower bound 1 bp), negative cells hatched as in 6.4, crosses as in F1. Row titles “maker sells
-  (short)”, “maker buys (long): capital ≈ premium OTM”. No colour bar. Header in two lines that end 0.5 in left of the
-  letter b: “number = net edge per unit of PM2 capital, per fill: bp for sells, % for buys / hatched = negative · × =
+  (short)”, “maker buys (long): capital ≈ premium OTM”. No colour bar. Header in two lines above the maps, starting at their
+  left edge: “number = net edge per unit of PM2 capital, per fill: bp for sells, % for buys / hatched = negative · × =
   under 200 fills · pooled over four regimes”.
 - **b** x = rank_A (“rank by edge per notional”), y = rank_B (“rank by edge per PM2 capital”), both 1 to 173 with
   rank 1 at top right (axes inverted), ticks 1, 50, 100, 173, and the addition “1 = highest edge” in both
@@ -545,8 +548,8 @@ new entries `sign_floor`, `within_pos`, `within_nonpos` (section 10).
   “↓ edge ≤ 0” under the horizontal line at the right. Symbols: sell ▼ filled black 3 pt, buy
   ▲ hollow black 3 pt. For the ten largest |rank_shift| the rank intervals as a grey cross (0.6 pt, solid, with end
   ticks) from rank_A_lo/hi and rank_B_lo/hi.
-- **c** Forest as in 6.5, x = Spearman ρ from −0.2 to 1.0, threshold 0.5, hatching ρ ≥ 0.5 behind the registered
-  row; the bold verdict line breaks before the arrow (two lines), rows at 8 pt pitch or more. Grey band across all
+- **c** Forest as in 6.5, x = Spearman ρ from 0.4 to 1.0, ticks 0.5, 0.75, 1.0 (the lower edge drops by tenths only if an interval reaches below 0.42), threshold 0.5, hatching ρ ≥ 0.5 behind the registered
+  row; the bold verdict line in one line (it breaks before the arrow only if it is wider than the column), rows at 8 pt pitch or more. Grey band across all
   rows from `sign_floor.p05` to `sign_floor.p95`, labelled “sign pattern alone”.
   Rows: “registered” (h1.json); sensitivities “maintenance margin” (`b_mm.h1_pm2_mm`), “net edge, Paper 1”
   (`c_p1_net_edge.h1_pm2`), “RFQ fee over legs” (`c2_rfq_package.h1_pm2`, Addendum 6, the fee of an RFQ package

@@ -1,6 +1,6 @@
 """F5 of Paper 2 (the engine over time): smoke test on synthetic mini data in a temporary results directory.
 
-Checks the canvas (7.0 x 5.15 in, PDF at print size), the type size (nothing under 7 pt), that every text stays on the
+Checks the canvas (7.0 x 4.79 in, PDF at print size), the type size (nothing under 7 pt), that every text stays on the
 canvas, the status grammar of the event symbols, that no event number touches another number or a symbol in panel b,
 the pure parameter jumps and the check list against the sources.
 """
@@ -145,7 +145,7 @@ def _pdf_width_in(path: Path) -> float:
 
 def test_figure_size_type_size_and_canvas(results):
     fig = f5.figure(results)
-    assert tuple(np.round(fig.get_size_inches(), 3)) == (7.0, 5.15)
+    assert tuple(np.round(fig.get_size_inches(), 3)) == (7.0, f5.HEIGHT) == (7.0, 4.79)
     assert kit.small_texts(fig) == []
     assert kit.texts_off_canvas(fig) == []
     assert kit.overlapping_texts(fig) == []
@@ -158,7 +158,7 @@ def test_build_writes_pdf_png_and_tables(results, tmp_path):
     assert _pdf_width_in(out / "f5.pdf") == pytest.approx(6.84, abs=0.005)
     from PIL import Image
     with Image.open(out / "f5.png") as im:
-        assert im.size == (2736, 2060)
+        assert im.size == (2736, 1916)
     for name in ("fig_f5_a.csv", "fig_f5_b.csv", "fig_f5_c.csv"):
         assert (results / name).exists()
 
@@ -322,5 +322,7 @@ def test_caption_names_the_h4_panel_and_the_event_lines_of_c():
     """Audit C6 and C10: "the panel" of the H4 regression is the H4 panel (as in the key of b), and the grey vertical
     lines of panel c are explained."""
     assert "filled when they enter the H4 panel" in f5.CAPTION
+    # the dose is in log per cent everywhere (Figure 8 prints "1 log-%")
+    assert "dropped by the one~log per~cent dose rule" in f5.CAPTION and "one~per~cent dose" not in f5.CAPTION
     assert "enter the panel," not in f5.CAPTION
     assert "The grey vertical lines in panel c mark the kept BTC events of panel b." in f5.CAPTION

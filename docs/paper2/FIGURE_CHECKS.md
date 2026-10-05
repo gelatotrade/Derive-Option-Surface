@@ -1,6 +1,6 @@
 # Figures of Paper 2: check list
 
-Generated 2026-10-05 10:03 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
+Generated 2026-10-05 11:00 UTC with `scripts/p2_figure_check.py` from `results/p2`. Every row compares the value that the figure prints (its table `results/p2/fig_<slot>_*.csv`) with the file in `results/p2` it comes from, never with itself. Column *Build instruction*: the same number against the check number in `docs/paper2/FIGURE_SELECTION.md` (pilot cut 17 September 2026), where the slot has one.
 
 **Result:** 233 of 233 checks yes; build instruction 108 of 108 yes; shape 22 of 22 yes; captions 9 of 9 equal.
 
@@ -174,7 +174,7 @@ Generated 2026-10-05 10:03 UTC with `scripts/p2_figure_check.py` from `results/p
 | A1 | a_largest_single: a: largest single IM deviation drawn | 8.88151e-08 | 8.88151e-08 | yes | yes |
 | A1 | a_largest_single_cell: a: the largest single IM deviation is ETH PM2 | ETH pm2 | ETH pm2 | yes | yes |
 | A1 | a_threshold_median: median bound (registered) | 0.001 | 0.001 | yes | yes |
-| A1 | a_threshold_p95: p95 bound (registered) | 0.01 | 0.01 | yes | yes |
+| A1 | a_threshold_p95: P95 bound (registered) | 0.01 | 0.01 | yes | yes |
 | A1 | a_revert_cases: reverting cases left out (caption) | 1 | 1 | yes | yes |
 | A1 | a_revert_rows: reverting rows (IM and MM) | 2 | 2 | yes | yes |
 | A1 | b_points: b: IM book points drawn | 77 | 77 | yes | yes |
@@ -249,10 +249,10 @@ Generated 2026-10-05 10:03 UTC with `scripts/p2_figure_check.py` from `results/p
 | `t1.pdf` | 6.840 × 4.200 in | 6.84 × 4.2 in | yes |
 | `t2.pdf` | 6.840 × 2.600 in | 6.84 × 2.6 in | yes |
 | `f1.pdf` | 6.840 × 3.900 in | 6.84 × 3.9 in | yes |
-| `f2.pdf` | 6.840 × 4.400 in | 6.84 × 4.4 in | yes |
+| `f2.pdf` | 6.840 × 6.200 in | 6.84 × 6.2 in | yes |
 | `f3.pdf` | 3.290 × 4.000 in | 3.29 × 4.0 in | yes |
 | `f4.pdf` | 3.290 × 4.000 in | 3.29 × 4.0 in | yes |
-| `f5.pdf` | 6.840 × 5.150 in | 6.84 × 5.15 in | yes |
+| `f5.pdf` | 6.840 × 4.790 in | 6.84 × 4.79 in | yes |
 | `f6.pdf` | 6.840 × 4.200 in | 6.84 × 4.2 in | yes |
 | `a1.pdf` | 6.840 × 2.500 in | 6.84 × 2.5 in | yes |
 | `docs/media/p2_btc_capital_surface.gif` | 5.19 MB | ≤ 8 MB | yes |

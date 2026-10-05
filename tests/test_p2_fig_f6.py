@@ -278,9 +278,13 @@ def test_caption_explains_strip_hatching_and_units():
     """Audit findings F7/C10 (strip), C3 (hatching), C2 (log per cent against log units), C6 (the H4 panel)."""
     cap = f6.CAPTION
     assert "events in the H4 panel" in cap
-    assert "grey histogram of that dose over all rows" in cap
-    assert "hatching marks the values of $\\beta$ at which the rule rejects H4 whatever the p-value" in cap
-    assert "the placebo P95 or zero, whichever is larger" in cap
+    # "rows" are the rows of the figure; the histogram runs over the observations of the regression
+    assert "grey histogram of that dose over all observations of the H4 panel" in cap and "all rows" not in cap
+    assert "hatching marks the values of $\\beta$ at which the rule rejects H4 whatever its $p$" in cap
+    assert "the registered $p$ comes from restricted residuals" in cap and "p-value" not in cap
+    # P95 is spelled out where it first appears
+    assert "up to the 95th placebo percentile (P95) or zero, whichever is larger" in cap
+    assert cap.index("(P95)") == cap.index("P95") - 1
     assert "log per cent, 100 times the change in log capital" in cap
     assert "slope $\\beta/100$ per log per cent" in cap
     assert "a dose of $-0.105$, or $-10.5$~log per~cent" in cap

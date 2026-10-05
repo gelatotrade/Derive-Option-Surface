@@ -5,7 +5,8 @@ managers, from ``results/p2/validation.csv`` (``status == "ok"``, ``is_initial``
 tables) and the registered bounds of ``validation_summary.json``.
 
 * a: single contracts, one row per underlying and manager (``kind == "single"``), points jittered by row, median as a
-  thick tick, 95th percentile as a thin tick, n on the right.
+  thick tick, 95th percentile (P95) as a thin tick, the counts on the right in a column headed once by a grey "n"
+  (as the forests of Figures 3 to 6).
 * b: the opening books of the maker-days (``kind == "book"``) against their number of legs.
 
 x (a) and y (b) are logarithmic from 1e-13 to 1e-1, labelled as powers of ten (``_kit_t2a1.power_ticks``). Exact
@@ -56,13 +57,26 @@ STRIP_SPREAD = 0.6          # horizontal spread of exact zeros inside the strip 
 SEED = 20260924
 STRIP_BG = "#E6E6E6"
 MS_SINGLE, MS_BOOK = 2.0, 3.0
+N_RIGHT_PT = 17.5           # right edge of the n column of panel a, points right of the axis
 
-FEED_SENTENCE = "In the PM2 window no fill uses a vol or forward feed older than the limits of the validation blocks"
+FEED_SENTENCE = ("In the PM2 window no fill uses a volatility feed older than {vol}~seconds or a forward feed older "
+                 "than {fwd}~seconds, the feed ages the validation allows")
 SPOT_CLAUSE = ("; {n} fills use a spot price older than the heartbeat of the spot feed ({hb} seconds) and stay in the "
                "sample.")
 SPOT_NONE = (", and none uses a spot price older than the heartbeat of the spot feed ({hb} seconds).")
 # the sentence of Appendix A with placeholders for its two numbers
-APPENDIX_SENTENCE = FEED_SENTENCE + SPOT_CLAUSE.format(n=r"\PH{a1-spot-stale}", hb=r"\PH{a1-spot-heartbeat}")
+APPENDIX_SENTENCE = (FEED_SENTENCE.format(vol=r"\PH{a1-vol-limit}", fwd=r"\PH{a1-fwd-limit}")
+                     + SPOT_CLAUSE.format(n=r"\PH{a1-spot-stale}", hb=r"\PH{a1-spot-heartbeat}"))
+
+
+def _seconds(v: float) -> str:
+    """Whole seconds as printed in the text, thousands with a thin space (1\\,200)."""
+    return f"{v:,.0f}".replace(",", r"\,")
+
+
+def feed_prefix(fa: dict) -> str:
+    """The first part of the feed-age sentence with the vol and forward limits of the validation filled in."""
+    return FEED_SENTENCE.format(vol=_seconds(fa["vol_limit_s"]), fwd=_seconds(fa["fwd_limit_s"]))
 # says what is drawn and how to read it (FIGURE_SELECTION 6.8); the off-chain discount is said in Figure 1 and
 # Section 2, the feed ages in the text of Appendix A
 CAPTION = (
@@ -70,9 +84,9 @@ CAPTION = (
     r"offline replica and \texttt{eth\_call} on the deployed smart contracts, for single contracts per underlying "
     r"and manager (panel a) and for the opening books of 20 maker-days against their number of legs (panel b). "
     r"Exact matches sit in the strip on the left of panel a and at the bottom of panel b; deviations below "
-    r"$10^{-13}$ sit on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile. "
-    r"The lines are the registered bounds for the median (0.1~per~cent) and the 95th percentile (1~per~cent). One "
-    r"single HYPE contract under PM2 hit a reverting call and is left out."
+    r"$10^{-13}$ sit on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile "
+    r"(P95). The lines are the registered bounds for the median (0.1~per~cent) and the 95th percentile "
+    r"(1~per~cent). One single HYPE contract under PM2 hit a reverting call and is left out."
 )
 
 
@@ -82,7 +96,7 @@ def feed_sentence(fa: dict) -> str:
     if fa["holds"] is not True:
         return ""
     n, hb = int(fa["spot_stale_fills"]), f"{fa['spot_limit_s']:g}"
-    return FEED_SENTENCE + (SPOT_CLAUSE.format(n=n, hb=hb) if n > 0 else SPOT_NONE.format(hb=hb))
+    return feed_prefix(fa) + (SPOT_CLAUSE.format(n=n, hb=hb) if n > 0 else SPOT_NONE.format(hb=hb))
 
 
 # ---------------------------------------------------------------------------------------------------- data
@@ -171,7 +185,7 @@ def load(results_dir: Path = Path("results/p2"), capital_path: Optional[Path] = 
 # ---------------------------------------------------------------------------------------------------- printed text
 
 def _bound(kind: str, value: float) -> str:
-    return f"{'median' if kind == 'median' else 'p95'} bound {100 * value:g}{kit.THIN}%"
+    return f"{'median' if kind == 'median' else 'P95'} bound {100 * value:g}{kit.THIN}%"
 
 
 def book_texts(data: dict) -> Dict[str, str]:
@@ -196,7 +210,7 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
     for _, r in data["stats"].iterrows():
         base = {"kind": "single", "ccy": r["ccy"], "manager": r["manager"], "row": int(r["row"]),
                 "is_initial": bool(r["is_initial"]), "drawn": bool(r["is_initial"])}
-        st += [dict(base, item="n", value=float(r["n"]), printed=f"n {int(r['n'])}"),
+        st += [dict(base, item="n", value=float(r["n"]), printed=f"{int(r['n'])}"),
                dict(base, item="median", value=r["median"], printed=""),
                dict(base, item="p95", value=r["p95"], printed=""),
                dict(base, item="max", value=r["max"], printed="", drawn=False),
@@ -276,16 +290,19 @@ def _panel_a(fig, data: dict) -> None:
                 continue
             target, x = (strip, 0.0) if val == 0.0 else (ax, max(val, X_LO))
             target.plot([x, x], [y - 0.3, y + 0.3], color="black", lw=lw, solid_capstyle="butt", zorder=4)
-        ax.annotate(f"n {int(r['n'])}", xy=(1.0, y), xycoords=mtransforms.blended_transform_factory(
-            ax.transAxes, ax.transData), xytext=(4, 0), textcoords="offset points", ha="left", va="center",
-                    fontsize=kit.FS_MIN, color=kit.GREY)
+        ax.annotate(f"{int(r['n'])}", xy=(1.0, y), xycoords=mtransforms.blended_transform_factory(
+            ax.transAxes, ax.transData), xytext=(N_RIGHT_PT, 0), textcoords="offset points", ha="right",
+                    va="center", fontsize=kit.FS_MIN, color=kit.GREY)
+    # the count column is headed once, level with "exact" (Figures 3 to 6 head their n column the same way)
+    ax.annotate("n", xy=(1.0, 1.0), xycoords="axes fraction", xytext=(N_RIGHT_PT, 2), textcoords="offset points",
+                ha="right", va="bottom", fontsize=kit.FS_MIN, color=kit.GREY)
     th = data["thresholds"]
     ax.axvline(th["median"], color="black", lw=0.8, ls="--", zorder=1)
     ax.axvline(th["p95"], color="black", lw=0.8, ls="-.", zorder=1)
     tr = mtransforms.blended_transform_factory(ax.transData, ax.transAxes)
     ax.annotate(_bound("median", th["median"]), xy=(th["median"], 1.0), xycoords=tr, xytext=(-2, 2),
                 textcoords="offset points", ha="right", va="bottom", fontsize=kit.FS_MIN)
-    lift = 0.155 / height                                  # the p95 label sits one line higher
+    lift = 0.155 / height                                  # the P95 label sits one line higher
     ax.plot([th["p95"], th["p95"]], [1.0, 1.0 + lift], transform=tr, color="black", lw=0.8, ls="-.", clip_on=False)
     ax.annotate(_bound("p95", th["p95"]), xy=(th["p95"], 1.0 + lift), xycoords=tr, xytext=(-2, 0),
                 textcoords="offset points", ha="right", va="bottom", fontsize=kit.FS_MIN)
@@ -304,7 +321,7 @@ def _panel_a(fig, data: dict) -> None:
     ax.spines["left"].set_visible(False)
     ax.grid(axis="x", which="major", color="#DDDDDD", lw=0.4, zorder=0)
     key = [Line2D([], [], ls="none", marker="|", ms=7, mew=1.2, color="black", label="median"),
-           Line2D([], [], ls="none", marker="|", ms=7, mew=0.6, color="black", label="p95")]
+           Line2D([], [], ls="none", marker="|", ms=7, mew=0.6, color="black", label="P95")]
     ax.legend(handles=key, loc="lower right", bbox_to_anchor=(0.80, 0.0), frameon=False, handlelength=0.8,
               handletextpad=0.4, borderaxespad=0.2, labelspacing=0.2)
 
@@ -508,7 +525,7 @@ CHECKS: List[dict] = (
                  _src_largest_single_mgr, expected="ETH pm2"),
        kit.check("a_threshold_median", "median bound (registered)", _fig_threshold("median"),
                  lambda rd: float(json.loads((rd / SUMMARY).read_text())["thresholds"]["median"]), expected=0.001),
-       kit.check("a_threshold_p95", "p95 bound (registered)", _fig_threshold("p95"),
+       kit.check("a_threshold_p95", "P95 bound (registered)", _fig_threshold("p95"),
                  lambda rd: float(json.loads((rd / SUMMARY).read_text())["thresholds"]["p95"]), expected=0.01),
        kit.check("a_revert_cases", "reverting cases left out (caption)", lambda rd: float(_fmeta(rd)["revert_cases"]),
                  lambda rd: float(len(_src_v(rd).query("status == 'revert'")[["ccy", "manager", "kind", "block",

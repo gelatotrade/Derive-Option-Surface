@@ -48,8 +48,7 @@ CAPTION = (
     r"the registered median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC "
     r"and ETH legs, and, on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by "
     r"the manager of the subaccount and by parameter regime. The hatched stretch of the registered row, left of the "
-    r"threshold, is the rejection region: the rule rejects H3 if the interval reaches into it. Clusters are UTC "
-    r"days, not subaccounts."
+    r"threshold, is the rejection region: the rule rejects H3 if the interval reaches into it."
 )
 
 

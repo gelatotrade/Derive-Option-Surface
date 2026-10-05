@@ -10,6 +10,15 @@
 % overfull boxes of a few points without visibly loosening the type.
 \emergencystretch=1em
 
+% Space between a float and the text: 14 pt instead of LaTeX's 20 pt, so that Results keeps each figure on the
+% page of its first callout or next to it (scripts/p2_build.py checks this).
+\setlength{\textfloatsep}{14pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{14pt plus 2pt minus 2pt}
+
+% Author names and the words of a cross-reference are not hyphenated: "(Brunner-|meier and Pedersen, 2009)"
+% and "(Fig-|ure 3)" read badly.
+\hyphenation{Brunnermeier Pedersen Poteshman Gelbach Kokholm Muravyev Figure Figures Section Appendix Addendum}
+
 % url.sty may break a URL, a \path or a DOI after a dot, so a line could end in "github." or "doi:10." and read
 % as the end of a sentence. The dot moves from the break characters to the ordinary ones; every other default
 % stays. (A character in neither list keeps its math code and prints in the wrong font: ")" came out as "/".)
@@ -79,7 +88,7 @@
   \else
     \__short_authors: :~
   \fi
-  { \rmfamily \itshape Working~paper,~30~September~2026 }
+  { \rmfamily \itshape Working~paper,~5~October~2026 }
   \group_end:
 }
 % cas-common sets "Page 1 of n" on the first page outside the \sffamily\small of every later page, so only
@@ -182,8 +191,8 @@ balances, which mix what a book needs with what a trader deposits.
   under PM2 (panel a) and under standard margin (panel b) as colour on a common scale in per cent of the forward.
   Height is volatility, colour is capital, and black lines join points of equal capital. ATM marks the
   at-the-money node at 30~days to expiry. Panels c and d name the rule that sets the capital at each point: the
-  worst scenario of the PM2 grid, and the branch of the standard margin formula, in which OTM is the amount by
-  which the option is out of the money. Their grid lines are the tenor and absolute delta bucket edges of
+  worst scenario of the PM2 grid, and the branch of the standard margin formula, a share of spot less the
+  out-of-the-money (OTM) amount or a floor. Their grid lines are the tenor and absolute delta bucket edges of
   Figures~\ref{fig:f1} and~\ref{fig:f2}, and the ticks on their right edge mark the listed expiries. For puts the
   delta edges are mirrored: the lines at 0.60, 0.75 and 0.90 are the put edges of 40, 25 and 10~per~cent. The
   surface holds out-of-the-money options only, so the buckets from 60~per~cent absolute delta up have no
@@ -219,8 +228,8 @@ Four hypotheses were registered before any capital figure of the registered anal
 notional and edge per unit of PM2 capital rank the cells differently (H1); that a fill in the book of a
 dominant subaccount under PM2 binds less than half its stand-alone capital per contract (H2); that PM2 saves
 more than half the capital standard margin requires for the same books (H3); and that the half spread falls
-when a parameter change makes capital cheaper (H4). The pre-registration's dated addenda, Addendum~1 to~6,
-are described at the end.
+when a parameter change makes capital cheaper (H4). Addenda~1 to~6 of the pre-registration are described
+in the data statement.
 
 H1 and H4 are rejected; H2 and H3 are not. The capital denominator does not reorder the map in the registered
 sense: the rank correlation is 0.903, with an interval from 0.881 to 0.907 against a threshold of 0.5 (H1).
@@ -299,9 +308,9 @@ presumably admits a book whose initial net margin is non-negative; the chain enf
 binding initial margin is an assumption. The fields \texttt{pre} and \texttt{post} evaluate the book as given
 and after simulated changes at one price state within one request, which makes a marginal cost measurable.
 
-As a requirement, ${C - \mathrm{net} = R - V}$ would mix the value $V$ into the margin. Before the registration,
-it gave ratios of standard to PM2 margin of 11.86 and 1.19 for the mixed probe books of 17~September and
-24~September 2026; on $R$ the ratios are 10.76 and 2.14 (Figure~\ref{fig:t2}). The second book's PM2 value of
+As the requirement, $C - \mathrm{net}$, which equals ${R - V}$, would mix the value $V$ into the margin. Before
+the registration, this reading gave ratios of standard to PM2 margin of 11.86 and 1.19 for the mixed probe books
+of 17~September and 24~September 2026; on $R$ the ratios are 10.76 and 2.14 (Figure~\ref{fig:t2}). The second book's PM2 value of
 $-496\,859$~USDC adds almost the same amount to numerator and denominator, pulling the ratio towards one. Netting
 factors are properties of books, so this paper measures them on real ones.
 
@@ -321,10 +330,10 @@ Two engines implement the managers. The off-chain engine behind the endpoint, on
 fresh ticker marks and discounts PM2 at an undocumented flat rate; a box spread in each of the fourteen listed BTC
 expiries on 24~September 2026 puts that rate at 2.0000~per~cent. The on-chain engine settles and liquidates, reads
 feeds that lag the ticker, and discounts with the rate feed, which ranged from 3.64 to 3.82~per~cent across the
-same expiries. Only the on-chain engine can be rebuilt for past blocks, so past fills are priced with offline
-replicas of its smart contracts, at the fill's block. On 195 single contracts on 25~September 2026, the two
+same expiries. Only the on-chain engine can be rebuilt for past blocks, so past fills are priced at their block with
+offline replicas of its smart contracts. On 195 single contracts on 25~September 2026, the two
 engines differed in PM2 capital by a median of 0.08~per~cent and at most 2.4~per~cent, at the longest tenor; whole
-books were only probed at random, with larger gaps.
+books, probed at random, showed larger gaps.
 % src fig_t2_b.csv:F_Cnet@row=0 11.86
 % src fig_t2_b.csv:F_Cnet@row=1 1.19
 % src semantics/factors.csv:measurement@book=b17_exact,case=B,F_Cnet=11.86 17 September
@@ -368,8 +377,8 @@ books were only probed at random, with larger gaps.
 \section{Data and measurement}\label{sec:data}
 The fills are those of \citet{albiez2026}: all 603\,940 BTC, ETH and HYPE option fills from 11~January 2024 to the
 pilot cut of 17~September 2026. Each carries the maker's side, price, size and net edge in USDC per contract: the
-markout against the mark thirty~minutes after the fill, less fee net of rebate and a hedging cost. Fee and rebate
-are reported per fill and divided by the fill's size (Addendum~2). On a multi-leg request for quote (RFQ) the
+markout against the mark thirty~minutes after the fill, less fee net of rebate and a hedging cost. Fee and rebate,
+reported per fill, are divided by its size (Addendum~2). On a multi-leg request for quote (RFQ) the
 venue books the package fee on one leg, where it stays (Addendum~6). The companion paper was corrected on
 25~September 2026 and uses the same unit per contract. SM covers the whole sample (HYPE from 11~November 2025; six
 earlier HYPE fills have no manager), the legacy manager BTC and ETH throughout. The PM2 window is the span in
@@ -377,7 +386,7 @@ which PM2 covers an underlying: BTC and ETH from 12~June 2025 23:00~UTC, HYPE fr
 events before it.
 
 A fill's market state is rebuilt from the parameter timelines and the last feed values pushed at or before its
-block. The fill's stand-alone capital is that of a book holding only the fill, at the fill price and under every
+block. The fill's stand-alone capital is that of a book holding only the fill, at its price, under every
 manager available at the block: ${q = +1}$ for a maker buy and ${q = -1}$ for a sell (Figure~\ref{fig:f1}). A
 cell combines an underlying, a maker side and one absolute delta and one tenor bucket of \citet{albiez2026}; a
 cell with at least 200 fills is occupied. Its edge per unit of capital is a ratio of sums in basis points,
@@ -390,9 +399,11 @@ $K$.
 The maker books are those of the ten subaccounts with the most maker fills, M1 to M10 by rank. Their opening books
 are read on chain, with their manager, at the first block of each UTC day. Some share a wallet: M3 with M5, M4
 with M10, and M2, the one SM subaccount, with M1, M6 and M8. The book before a fill is the opening book plus the
-subaccount's balance changes up to the fill's transaction (Addendum~1). The marginal cost of a fill is ${\Delta K = K(\text{after}) - K(\text{before})}$ per contract under the subaccount's manager, relative to its stand-alone capital.
+subaccount's balance changes up to the fill's transaction (Addendum~1). The marginal cost of a fill is
+${\Delta K = K(\text{after}) - K(\text{before})}$ per contract under the subaccount's manager, relative to its
+stand-alone capital.
 The netting value of a maker-day is the SM capital of its opening book over its PM2 capital, each summed over
-underlyings, with positions valued at the companion paper's mark.
+underlyings, with positions at the companion paper's mark.
 
 \begin{figure*}[t]
   \centering
@@ -409,9 +420,8 @@ underlyings, with positions valued at the companion paper's mark.
   the threshold of 0.5. The hatched stretch of the registered row, right of the threshold, is the rejection
   region: the rule rejects H1 if the interval reaches into it. Sensitivities follow and then, on grey, exploratory
   rows; n is the number of cells in a row, and in the rows by the sign of the edge the cells are chosen again in
-  every replicate. The grey band is the $\rho$ that the sign pattern alone produces when ranks are shuffled within
-  each sign group. Edge is a flow per fill and capital a stock, so a cell's value is not a return per unit of
-  time.}
+  every replicate. The grey band is the $\rho$ of the sign pattern alone, with ranks shuffled within each sign
+  group.}
   \label{fig:f2}
 % src text:denominators two
 % src const:cell_min_fills 200
@@ -425,8 +435,8 @@ underlyings, with positions valued at the companion paper's mark.
 
 For H4 each parameter change $j$ becomes a dose $d_{c,j}$: the mean of $\log(K^{+}/K^{-})$ over the fills of cell
 $c$ in the fourteen~days before the event, where $K^{+}$ and $K^{-}$ are the capital of a fill after and before it
-in the same market state. In log per cent, log changes are multiplied by 100. Events whose largest absolute dose
-is below one~per~cent are dropped. Over fourteen~days on either side of the event, excluding its day, the half
+in the same market state. Doses are in log per cent, 100 times the log change; events whose largest absolute
+dose is below one log per~cent are dropped. Over fourteen~days on either side of the event, excluding its day, the half
 spread (the markout at the fill) in basis points of the index follows
 \begin{equation}
   y_i = \alpha_{c,j} + \gamma_{t,u} + \beta\,\mathrm{post}_i\,d_{c,j} + \varepsilon_i,
@@ -437,8 +447,9 @@ fills on each side.
 Intervals are 90~per~cent percentile intervals of a cluster bootstrap over UTC days with 9\,999 draws
 \citep{cameron2008}. H4 uses a wild cluster bootstrap with Rademacher weights and restricted residuals
 \citep{mackinnon2017,roodman2019}. It uses 100 placebo dates, each at least 28~days from every change of the
-underlying's legacy-manager parameters and default PM2 parameter set (Addendum~4). The replicas were validated
-against the chain's own evaluation (\texttt{eth\_call}) before any capital entered a test
+underlying's legacy-manager parameters and default PM2 parameter set (subaccounts may carry their own;
+Addendum~4). Replicas were validated
+against the chain's evaluation (\texttt{eth\_call}) before any capital entered a test
 (Appendix~\ref{app:validation}). Analyses not named in the registration are exploratory, those added after the
 first results post hoc.
 % src summary.json:fills_total 603\,940
@@ -505,7 +516,7 @@ sells.
   median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC and ETH legs, and,
   on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by the manager of the
   subaccount and by parameter regime. The hatched stretch of the registered row, left of the threshold, is the
-  rejection region: the rule rejects H3 if the interval reaches into it. Clusters are UTC days, not subaccounts.}
+  rejection region: the rule rejects H3 if the interval reaches into it.}
   \label{fig:f4}
 % src summary.json:h3_n 1\,943
 % src const:sm_max_options 63
@@ -514,6 +525,33 @@ sells.
 % src const:h3_threshold two
 % src const:interval_pct 90
 \end{figure}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/f5.pdf}
+  \caption{\textbf{The engine over time.} Panel a is the share of option open interest per manager and underlying
+  at the start of each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey tick
+  and the registered H4 events as symbols: filled when they enter the H4 panel, half filled when kept without a
+  cell of 20 fills on each side, and hollow when dropped by the one~log per~cent dose rule. The number is the
+  change that the parameters alone make to the capital of the reference straddle of the underlying, in log per
+  cent. Grey bars are the windows of 14~days on either side of each kept event; the windows of January and of May
+  2026 overlap, so 6\,527 fills enter two events. Black dashes below each line are the days from which placebo
+  dates may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the forward on
+  the listed expiry nearest to 30~days, one contract per leg, in per cent of the forward; the small saw teeth come
+  from rolling between expiries of 21 and 36~days, and the legacy line is thin in months in which the legacy
+  manager held less than 5~per~cent of BTC open interest. The grey vertical lines in panel c mark the kept BTC
+  events of panel b. Parameter changes of standard margin left the reference book unchanged.}
+  \label{fig:f5}
+% src const:h4_min_fills_side 20
+% src const:regression_window_days 14
+% src events.csv:event_day@event_id=BTC-pm2-20260524 May 2026
+% src fig_f6_head.csv:value@key=fills_in_two_windows 6\,527
+% src text:two_events two
+% src text:refbook_target_days 30
+% src reference_book.csv:tenor_days@ccy=BTC~min 21
+% src reference_book.csv:tenor_days@ccy=BTC~max 36
+% src fig_f5_c.csv:legacy_thin_below~max~pct 5
+\end{figure*}
 
 In the PM2 window 173 cells are occupied, out of 210 with any fill (Figure~\ref{fig:f2}). Across them,
 Spearman's rank correlation $\rho$ between edge per notional and edge per unit of PM2 capital is 0.903, with a
@@ -608,33 +646,6 @@ single HYPE subaccount to 0.0505.
 % src summary.json:sens_d_h2_by_label_m3_stat,sens_d_h2_by_label_m5_stat,sens_d_h2_by_label_m8_stat,sens_d_h2_by_label_m10_stat~min 0.0230
 % src summary.json:sens_d_h2_by_label_m3_stat,sens_d_h2_by_label_m5_stat,sens_d_h2_by_label_m8_stat,sens_d_h2_by_label_m10_stat~max 0.0505
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\linewidth]{figures/f5.pdf}
-  \caption{\textbf{The engine over time.} Panel a is the share of option open interest per manager and underlying
-  at the start of each month. Panel b marks every parameter change of the legacy manager and of PM2 as a grey tick
-  and the registered H4 events as symbols: filled when they enter the H4 panel, half filled when kept without a
-  cell of 20 fills on each side, and hollow when dropped by the one~per~cent dose rule. The number is the change
-  that the parameters alone make to the capital of the reference straddle of the underlying, in log per cent. Grey
-  bars are the windows of 14~days on either side of each kept event; the windows of January and of May 2026
-  overlap, so 6\,527 fills enter two events. Black dashes below each line are the days from which placebo dates
-  may be drawn. Panel c is the capital of the BTC reference book, a short straddle struck at the forward on the
-  listed expiry nearest to 30~days, one contract per leg, in per cent of the forward; the small saw teeth come
-  from rolling between expiries of 21 and 36~days, and the legacy line is thin in months in which the legacy
-  manager held less than 5~per~cent of BTC open interest. The grey vertical lines in panel c mark the kept BTC
-  events of panel b. Parameter changes of standard margin left the reference book unchanged.}
-  \label{fig:f5}
-% src const:h4_min_fills_side 20
-% src const:regression_window_days 14
-% src events.csv:event_day@event_id=BTC-pm2-20260524 May 2026
-% src fig_f6_head.csv:value@key=fills_in_two_windows 6\,527
-% src text:two_events two
-% src text:refbook_target_days 30
-% src reference_book.csv:tenor_days@ccy=BTC~min 21
-% src reference_book.csv:tenor_days@ccy=BTC~max 36
-% src fig_f5_c.csv:legacy_thin_below~max~pct 5
-\end{figure*}
-
 \subsection{What netting is worth (H3)}
 Figure~\ref{fig:f4} reports the capital of the same opening books under SM and PM2. It covers 1\,943
 maker-days in the PM2 window with at least one option position, from nine subaccounts: four under PM2, four
@@ -693,20 +704,21 @@ operators split books across managers, is not examined.
   change makes to a cell, for each of the 475 cell-event pairs of the 13 events in the H4 panel, sells above and
   buys below each line, with the median as a bar. Panel b is the half spread against the post-event dose after
   removing the cell by event and the day by underlying effects, in 20 bins of equal size, above a grey histogram
-  of that dose over all rows; the line shows the estimate $\beta$, whose interval is descriptive because the
-  registered p-value comes from restricted residuals. Panel c places $\beta$ among the estimates at 100 placebo
-  dates and lists both registered criteria. Panel d gives $\beta$ per underlying, for exploration; in the
-  registered row, hatching marks the values of $\beta$ at which the rule rejects H4 whatever the p-value, up to
-  the placebo P95 or zero, whichever is larger. Most doses are close to zero or negative, so $\beta$ is identified
-  from parameter changes that made capital cheaper. Doses on the axes are in log per cent, 100 times the change in
-  log capital, so the line in panel b has the slope $\beta/100$ per log per cent. To read the slope: capital
-  ten~per~cent cheaper is a dose of $-0.105$, or $-10.5$~log per~cent, which predicts a change in the half spread
-  of $-0.105\,\beta$ basis points of the index.}
+  of that dose over all observations of the H4 panel; the line shows the estimate $\beta$, whose interval is
+  descriptive because the registered $p$ comes from restricted residuals. Panel c places $\beta$ among the
+  estimates at 100 placebo dates and lists both registered criteria. Panel d gives $\beta$ per underlying, for
+  exploration; in the registered row, hatching marks the values of $\beta$ at which the rule rejects H4 whatever
+  its $p$, up to the 95th placebo percentile (P95) or zero, whichever is larger. Most doses are close to zero or
+  negative, so $\beta$ is identified from parameter changes that made capital cheaper. Doses on the axes are in
+  log per cent, 100 times the change in log capital, so the line in panel b has the slope $\beta/100$ per log per
+  cent. To read the slope: capital ten~per~cent cheaper is a dose of $-0.105$, or $-10.5$~log per~cent, which
+  predicts a change in the half spread of $-0.105\,\beta$ basis points of the index.}
   \label{fig:f6}
 % src summary.json:h4_cell_events 475
 % src summary.json:events_with_cells 13
 % src fig_f6_b.csv:bin@mode=bins,kind=bin~count 20
 % src const:placebo_dates 100
+% src const:placebo_percentile 95th
 % src text:log_pct_factor 100 100
 % src text:reading_aid_pct ten
 % src summary.json:h4_review_ten_pct_dose -0.105
@@ -716,10 +728,10 @@ operators split books across managers, is not examined.
 
 \subsection{The price of capital (H4)}\label{sec:h4}
 Figure~\ref{fig:f5} places the parameter changes next to the capital of a fixed reference book, a short
-straddle at the forward of each underlying (BTC in panel c). The registered set holds 18 events once changes of
-the same day are merged, without changes that touch only collateral parameters or the number of expiries
+straddle at the forward of each underlying (BTC in panel c). The registered set holds 18 events once same-day changes
+are merged, without changes that touch only collateral parameters or the number of expiries
 (Addendum~4); 14 pass the dose filter, and 13 have cells with at least 20 fills on each side, 475 cell-event
-pairs in all. The legacy-manager changes of 22~February 2025 for BTC and ETH, before the PM2
+pairs: the H4 panel. The legacy-manager changes of 22~February 2025 for BTC and ETH, before the PM2
 window, supply 75 of them. Of the 14 kept events, 11 made the reference book cheaper, by between 3.4 and
 37.4~log per~cent across underlyings and between 7.8 and 26.0 for BTC. The largest BTC step, on 20~August 2026,
 cut the PM2 capital of the straddle by 26.0~log per~cent (22.9~per~cent). Only the events of 8~January 2026
@@ -790,8 +802,8 @@ No sensitivity named in the pre-registration or its addenda changes a verdict. U
 is 0.903 and the netting ratio 5.614. The median marginal cost is then 0.0291 on 19\,693 fills with each
 subaccount's own PM2 parameter set (some carry a lower maintenance factor) and 0.0278 with the default set; using
 one set for both capitals of a ratio was decided after the first results. With the net edge as defined in the
-companion paper's first version, $\rho$ is 0.913, and 0.904 with the fee of an RFQ package spread over its
-legs. With the book rebuilt from the trade tape, the median marginal cost is 0.0340, and for the next single
+companion paper's first version, $\rho$ is 0.913; with the fee of an RFQ package spread over its legs, it is
+0.904. With the book rebuilt from the trade tape, the median marginal cost is 0.0340, and for the next single
 contract, which the registered wording also covers, 0.0329; Addendum~4 chose the whole fill once both measures
 existed, before any median was computed.
 % src summary.json:sens_b_mm_h1_pm2_mm_stat 0.903
@@ -885,7 +897,7 @@ file; the first four are of 25~September 2026 (UTC+2). Addendum~1 (\texttt{85bb0
 for H2, with zero cash, before the first capital figure of the registered form. Addendum~2 (\texttt{6005d7c})
 fixes the unit of fee and rebate, and Addendum~3 (\texttt{8778432}) the details of bootstrap and placebo, both
 before the first inference. Addendum~4 (\texttt{e492ba1}) records the readings of H2 to H4. Addenda~1 to~3 were
-each committed before the step they govern. Addendum~4 was written after capital per fill, marginal costs, netting
+each committed before the step they govern. Addendum~4 was written after stand-alone capital, marginal costs, netting
 ratios, the doses and the H4 panel with its half spreads had been computed; it records readings already
 implemented, but precedes any test statistic. The validation fixtures committed just before Addendum~1 had already
 read the on-chain margins of individual maker subaccounts, cash included.
@@ -942,8 +954,9 @@ with 2 to 245 legs, the median is ${2.2\times10^{-9}}$ and the largest absolute 
 maker-days hold more legs than the largest validated book, up to 317; for these the replica is extrapolated
 in size but not in rule. For HYPE a single maker-day is validated. H2 also prices books larger than any
 validated one. No validation case falls in the settlement window before an expiry, when part of the forward is
-already fixed. In the PM2 window no fill uses a vol or forward feed older than the limits of the validation
-blocks; 17 fills use a spot price older than the heartbeat of the spot feed (180~seconds) and stay in the sample.
+already fixed. In the PM2 window no fill uses a volatility feed older than 1\,200~seconds or a forward feed older
+than 3\,600~seconds, the feed ages the validation allows; 17 fills use a spot price older than the heartbeat of the
+spot feed (180~seconds) and stay in the sample.
 
 \begin{figure*}[t]
   \centering
@@ -952,9 +965,9 @@ blocks; 17 fills use a spot price older than the heartbeat of the spot feed (180
   between each offline replica and \texttt{eth\_call} on the deployed smart contracts, for single contracts per
   underlying and manager (panel a) and for the opening books of 20 maker-days against their number of legs (panel
   b). Exact matches sit in the strip on the left of panel a and at the bottom of panel b; deviations below
-  $10^{-13}$ sit on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile.
-  The lines are the registered bounds for the median (0.1~per~cent) and the 95th percentile (1~per~cent). One
-  single HYPE contract under PM2 hit a reverting call and is left out.}
+  $10^{-13}$ sit on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile
+  (P95). The lines are the registered bounds for the median (0.1~per~cent) and the 95th percentile (1~per~cent).
+  One single HYPE contract under PM2 hit a reverting call and is left out.}
   \label{fig:a1}
 % src validation.csv:book@kind=book~distinct 20
 % src fig_a1_meta.csv:value@key=x_lo 10^{-13}
@@ -983,6 +996,8 @@ blocks; 17 fills use a spot price older than the heartbeat of the spot feed (180
 % src summary.json:validation_book_max_abs_usd 0.050
 % src summary.json:h3_days_over_validated_legs 127
 % src summary.json:h3_legs_max 317
+% src fig_a1_meta.csv:value@key=vol_limit_s 1\,200
+% src fig_a1_meta.csv:value@key=fwd_limit_s 3\,600
 % src fig_a1_meta.csv:value@key=spot_stale_fills 17
 % src fig_a1_meta.csv:value@key=spot_limit_s 180
 

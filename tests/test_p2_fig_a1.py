@@ -133,7 +133,8 @@ def test_checks_agree_on_synthetic_data(res, tmp_path):
 
 
 def test_feed_age_sentence_only_when_it_holds(res, tmp_path):
-    assert a1.feed_sentence(_load(res)["feed_age"]).startswith(a1.FEED_SENTENCE)
+    fa = _load(res)["feed_age"]
+    assert a1.feed_sentence(fa).startswith(a1.feed_prefix(fa))
     _capital(vol_max=p2validate.MAX_VOL_AGE + 1).to_parquet(res.parent / "capital.parquet")
     data = _load(res)
     assert data["feed_age"]["holds"] is False
@@ -167,7 +168,7 @@ def test_spot_feed_age_is_counted_and_named_in_the_appendix_sentence(res, tmp_pa
     data = _load(res)
     assert data["feed_age"]["spot_stale_fills"] == 0 and data["feed_age"]["spot_limit_s"] == hb
     sentence = a1.feed_sentence(data["feed_age"])
-    assert sentence.startswith(a1.FEED_SENTENCE)
+    assert sentence.startswith(a1.feed_prefix(data["feed_age"]))
     assert f"none uses a spot price older than the heartbeat of the spot feed ({hb} seconds)" in sentence
     _capital(spot=(5000.0, hb + 6.0, 20.0, 1161.0)).to_parquet(res.parent / "capital.parquet")
     data = _load(res)
@@ -185,23 +186,80 @@ def test_spot_feed_age_is_counted_and_named_in_the_appendix_sentence(res, tmp_pa
 def test_caption_says_what_is_drawn_and_the_feed_ages_go_to_appendix_a():
     """C11: the caption says what is drawn and how to read it (FIGURE_SELECTION 6.8). The feed ages describe nothing
     drawn and stand in the text of Appendix A; the off-chain discount is said in Figure 1 and Section 2."""
-    assert a1.FEED_SENTENCE not in a1.CAPTION and "heartbeat" not in a1.CAPTION
+    assert "feed older" not in a1.CAPTION and "heartbeat" not in a1.CAPTION
     assert "off-chain" not in a1.CAPTION and "discount" not in a1.CAPTION
     assert "\\PH" not in a1.CAPTION
 
 
 def test_appendix_sentence_names_vol_and_forward_and_the_spot_count():
+    """The limits are printed as numbers (reader audit, round 2: "the limits of the validation blocks" said none)."""
     assert a1.APPENDIX_SENTENCE.startswith(
-        "In the PM2 window no fill uses a vol or forward feed older than the limits of the validation blocks")
-    assert a1.APPENDIX_SENTENCE == a1.FEED_SENTENCE + a1.SPOT_CLAUSE.format(n="\\PH{a1-spot-stale}",
-                                                                          hb="\\PH{a1-spot-heartbeat}")
+        "In the PM2 window no fill uses a volatility feed older than \\PH{a1-vol-limit}~seconds or a forward feed "
+        "older than \\PH{a1-fwd-limit}~seconds, the feed ages the validation allows")
+    assert a1.APPENDIX_SENTENCE.endswith(a1.SPOT_CLAUSE.format(n="\\PH{a1-spot-stale}", hb="\\PH{a1-spot-heartbeat}"))
+    fa = {"vol_limit_s": float(p2validate.MAX_VOL_AGE), "fwd_limit_s": float(p2validate.MAX_FWD_AGE)}
+    assert a1.feed_prefix(fa) == ("In the PM2 window no fill uses a volatility feed older than 1\\,200~seconds or a "
+                                  "forward feed older than 3\\,600~seconds, the feed ages the validation allows")
 
 
 def _panel_b_bounds(fig):
-    """The main axes of panel b and its two bound labels with the y of their lines (pixels)."""
+    """The main axes of panel b and its two bound labels, keyed "median" and "p95" as the thresholds."""
     ax = next(a for a in fig.axes if a.get_ylabel() == "|relative deviation of K|")
-    labels = {t.get_text().split()[0]: t for t in ax.texts if "bound" in t.get_text()}
+    labels = {t.get_text().split()[0].lower(): t for t in ax.texts if "bound" in t.get_text()}
     return ax, labels
+
+
+def _panel_a(fig):
+    """The main axes of panel a (the log axis right of the strip of exact zeros)."""
+    return next(a for a in fig.axes if a.get_xlabel().startswith("|relative deviation of K|, replica"))
+
+
+def test_bound_labels_and_key_write_p95_as_figure_8_does(res):
+    """F9 against F8: the 95th percentile is "P95" in the bound labels of both panels and in the key of panel a."""
+    data = _load(res)
+    fig = a1.draw(data)
+    try:
+        txt = [t.get_text() for t in kit.texts(fig)]
+        assert txt.count(f"P95 bound 1{kit.THIN}%") == 2 and txt.count(f"median bound 0.1{kit.THIN}%") == 2
+        assert not [t for t in txt if "p95" in t]
+        key = _panel_a(fig).get_legend()
+        assert [t.get_text() for t in key.get_texts()] == ["median", "P95"]
+    finally:
+        matplotlib.pyplot.close(fig)
+    tab = a1.tables(data)
+    for name in ("fig_a1_a.csv", "fig_a1_b.csv"):
+        thr = tab[name][tab[name]["item"] == "threshold"]
+        assert set(thr["printed"]) == {f"P95 bound 1{kit.THIN}%", f"median bound 0.1{kit.THIN}%"}
+    assert "thin ticks its 95th percentile (P95)" in a1.CAPTION and "p95" not in a1.CAPTION
+
+
+def test_count_column_is_headed_once_by_a_grey_n(res):
+    """F9 as F3 to F6: one grey "n" heads the counts, which print bare and right-aligned, one per row."""
+    data = _load(res)
+    fig = a1.draw(data)
+    try:
+        fig.canvas.draw()
+        r = fig.canvas.get_renderer()
+        ax = _panel_a(fig)
+        stats = data["stats"][data["stats"]["is_initial"]].sort_values("row")
+        # the counts are the grey numbers right of the axis (the tick labels of the log axis are texts, too)
+        x_axis = ax.get_window_extent(r).x1
+        counts = [t for t in ax.texts if t.get_text().isdigit() and t.get_window_extent(r).x0 > x_axis]
+        assert [t.get_text() for t in sorted(counts, key=lambda t: -t.get_window_extent(r).y0)] == \
+            [str(int(n)) for n in stats["n"]]
+        assert not [t.get_text() for t in kit.texts(fig) if t.get_text().startswith("n ")]
+        head = [t for t in ax.texts if t.get_text() == "n"]
+        assert len(head) == 1 and head[0].get_color() == kit.GREY and all(t.get_color() == kit.GREY for t in counts)
+        rights = {round(t.get_window_extent(r).x1, 1) for t in counts + head}
+        assert max(rights) - min(rights) < 0.5                                  # one right edge for the column
+        assert head[0].get_window_extent(r).y0 > max(t.get_window_extent(r).y1 for t in counts)   # above the rows
+        assert head[0].get_window_extent(r).x0 > x_axis                          # right of the axis
+        assert kit.overlapping_texts(fig) == []
+    finally:
+        matplotlib.pyplot.close(fig)
+    a = a1.tables(data)["fig_a1_a.csv"]
+    n = a[a["item"] == "n"]
+    assert (n["printed"] == n["value"].astype(int).astype(str)).all()
 
 
 def test_bound_labels_of_panel_b_sit_on_their_own_lines(res):

@@ -83,8 +83,8 @@ CAPTION = (
     "(panel a) and under standard margin (panel b) as colour on a common scale in per cent of the forward. Height "
     "is volatility, colour is capital, and black lines join points of equal capital. ATM marks the at-the-money "
     "node at 30~days to expiry. Panels c and d name the rule that sets the capital at each point: the worst "
-    "scenario of the PM2 grid, and the branch of the standard margin formula, in which OTM is the amount by which "
-    "the option is out of the money. Their grid lines are the tenor and absolute delta bucket edges of "
+    "scenario of the PM2 grid, and the branch of the standard margin formula, a share of spot less the "
+    "out-of-the-money (OTM) amount or a floor. Their grid lines are the tenor and absolute delta bucket edges of "
     "Figures~\\ref{fig:f1} and~\\ref{fig:f2}, and the ticks on their right edge mark the listed expiries. For puts "
     "the delta edges are mirrored: the lines at 0.60, 0.75 and 0.90 are the put edges of 40, 25 and 10~per~cent. "
     "The surface holds out-of-the-money options only, so the buckets from 60~per~cent absolute delta up have no "
@@ -245,7 +245,8 @@ def class_labels(mgr: str, P, worst: Optional[np.ndarray] = None, keys: Optional
     """Legend text per class key; PM2 reads the grid width and the tail shocks from the parameters."""
     if mgr == "sm":
         om = P["OptionMarginParams"]
-        return {"otm": f"{_pct(float(om['maxSpotReq']))} % − OTM", "floor": f"{_pct(float(om['minSpotReq']))} % floor",
+        return {"otm": f"{_pct(float(om['maxSpotReq']))} % − OTM amount",
+                "floor": f"{_pct(float(om['minSpotReq']))} % floor",
                 "mm_put": f"put: {float(om['mmOffsetScale']):g} × MM", "max_loss": "max loss"}
     up, down = grid_width(P)
     out = {"up": f"spot +{_pct(up)} %, vol up", "down": f"spot −{_pct(down)} %, vol up",
@@ -419,7 +420,7 @@ def header(data: dict) -> str:
     w = data["grid_up"] if np.isclose(data["grid_up"], data["grid_down"]) else None
     grid = f"±{_pct(w)} %" if w is not None else f"+{_pct(data['grid_up'])} %/−{_pct(data['grid_down'])} %"
     return (f"{data['ccy']} · {_day(data['ts'])}, {d.strftime('%H:%M')} UTC · {len(data['expiries'])} live "
-            f"expiries · PM2 spot grid {grid} since {_day(data['grid_since'])} · chain semantics")
+            f"expiries · PM2 spot grid {grid} since {_day(data['grid_since'])} · on-chain engine")
 
 
 def letter(mgr: str, row: int) -> str:

@@ -1,14 +1,14 @@
 # Number check Paper 2
 
-Generated 2026-10-05 10:03 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-10-05 11:00 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 
 ## Result
 
-- Numbers, dates and commits in the text: 380
-- Result: 271
-- Constant: 75
+- Numbers, dates and commits in the text: 383
+- Result: 273
+- Constant: 76
 - Commit date: 6
 - Text count: 21
 - Commit: 7
@@ -23,7 +23,7 @@ Text counts (without a data source, for review):
 - The engine and what it returns: `two` (text:two_engines_compared) … e contracts on 25 September 2026, the two engines differed in   capital by a me …
 - caption fig:f2: `two` (text:denominators) … The map in two denominators ( ). Panel a is net edge …
 - caption fig:f2: `ten` (text:largest_moves) … the 90 per cent rank intervals of the ten largest moves. Panel c is the registe …
-- Data and measurement: `100` (text:log_pct_factor) … r cent, log changes are multiplied by 100. Events whose largest absolute dose i …
+- Data and measurement: `100` (text:log_pct_factor) … ket state. Doses are in log per cent, 100 times the log change; events whose la …
 - caption fig:f5: `two` (text:two_events) … May 2026 overlap, so 6527 fills enter two events. Black dashes below each line …
 - caption fig:f5: `30` (text:refbook_target_days) … rward on the listed expiry nearest to 30 days, one contract per leg, in per ce …
 - Results / A fill in a maker's book (H2): `95th` (text:quantile_level) … r bind more than 0.63 of it. From the 95th percentile on, a fill binds about its …
@@ -150,6 +150,15 @@ Text counts (without a data source, for review):
 | caption fig:f4 | `1431` | Result | summary.json:h3_days_over_63_options | = 1431 |
 | caption fig:f4 | `two` | Constant | const:h3_threshold | H3: median of K_SM / K_PM2 greater than 2 (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | caption fig:f4 | `90` | Constant | const:interval_pct | 90 % interval (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| caption fig:f5 | `20` | Constant | const:h4_min_fills_side | cells need at least 20 fills before and 20 after the event (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| caption fig:f5 | `14` | Constant | const:regression_window_days | regression window [e − 14 days, e + 14 days] (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| caption fig:f5 | `May 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260524 | = 2026-05 |
+| caption fig:f5 | `6527` | Result | fig_f6_head.csv:value@key=fills_in_two_windows | = 6527 |
+| caption fig:f5 | `two` | Text count | text:two_events | count word from the sentence |
+| caption fig:f5 | `30` | Text count | text:refbook_target_days | count word from the sentence |
+| caption fig:f5 | `21` | Result | reference_book.csv:tenor_days@ccy=BTC~min | = 21 |
+| caption fig:f5 | `36` | Result | reference_book.csv:tenor_days@ccy=BTC~max | = 36 |
+| caption fig:f5 | `5` | Result | fig_f5_c.csv:legacy_thin_below~max~pct | = 5 |
 | Results / The capital denominator and the map (H1) | `7.8` | Result | fig_f1_a.csv:kappa_pm2@ccy=BTC,side=sell,occupied=True~min | = 7.79838 |
 | Results / The capital denominator and the map (H1) | `17.7` | Result | fig_f1_a.csv:kappa_pm2@ccy=BTC,side=sell,occupied=True~max | = 17.6902 |
 | Results / The capital denominator and the map (H1) | `7.1` | Result | fig_f1_a.csv:kappa_pm2@ccy=ETH,side=sell,occupied=True~min | = 7.06574 |
@@ -192,15 +201,6 @@ Text counts (without a data source, for review):
 | Results / The capital denominator and the map (H1) | `173` | Result | h1_cells.csv:rank_B@BTC\|buy\|00-10\|<=2d | = 173 |
 | Results / The capital denominator and the map (H1) | `53rd` | Result | h1_cells.csv:rank_B@side=sell,occupied=True~min | = 53 |
 | Results / The capital denominator and the map (H1) | `20` | Result | summary.json:h1_n_fills_k_le_0 | = 20 |
-| caption fig:f5 | `20` | Constant | const:h4_min_fills_side | cells need at least 20 fills before and 20 after the event (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
-| caption fig:f5 | `14` | Constant | const:regression_window_days | regression window [e − 14 days, e + 14 days] (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
-| caption fig:f5 | `May 2026` | Result | events.csv:event_day@event_id=BTC-pm2-20260524 | = 2026-05 |
-| caption fig:f5 | `6527` | Result | fig_f6_head.csv:value@key=fills_in_two_windows | = 6527 |
-| caption fig:f5 | `two` | Text count | text:two_events | count word from the sentence |
-| caption fig:f5 | `30` | Text count | text:refbook_target_days | count word from the sentence |
-| caption fig:f5 | `21` | Result | reference_book.csv:tenor_days@ccy=BTC~min | = 21 |
-| caption fig:f5 | `36` | Result | reference_book.csv:tenor_days@ccy=BTC~max | = 36 |
-| caption fig:f5 | `5` | Result | fig_f5_c.csv:legacy_thin_below~max~pct | = 5 |
 | Results / A fill in a maker's book (H2) | `ten` | Constant | const:dominant_makers | the ten dominant maker subaccounts (docs/paper2/PRAEREGISTRIERUNG.md, Maker books) |
 | Results / A fill in a maker's book (H2) | `four` | Result | summary.json:h2_n_accounts | = 4 |
 | Results / A fill in a maker's book (H2) | `20000` | Constant | const:h2_sample | simple random sample of 20 000 fills (H2) (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
@@ -222,6 +222,7 @@ Text counts (without a data source, for review):
 | caption fig:f6 | `13` | Result | summary.json:events_with_cells | = 13 |
 | caption fig:f6 | `20` | Result | fig_f6_b.csv:bin@mode=bins,kind=bin~count | = 20 |
 | caption fig:f6 | `100` | Constant | const:placebo_dates | 100 placebo dates (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
+| caption fig:f6 | `95th` | Constant | const:placebo_percentile | β above the 95th percentile of the placebo β (docs/paper2/PRAEREGISTRIERUNG.md, Hypotheses and rejection rules) |
 | caption fig:f6 | `100` | Text count | text:log_pct_factor | count word from the sentence |
 | caption fig:f6 | `100` | Text count | text:log_pct_factor | count word from the sentence |
 | caption fig:f6 | `ten` | Text count | text:reading_aid_pct | count word from the sentence |
@@ -363,6 +364,8 @@ Text counts (without a data source, for review):
 | Validation of the replica | `0.050` | Result | summary.json:validation_book_max_abs_usd | = 0.0502857 |
 | Validation of the replica | `127` | Result | summary.json:h3_days_over_validated_legs | = 127 |
 | Validation of the replica | `317` | Result | summary.json:h3_legs_max | = 317 |
+| Validation of the replica | `1200` | Result | fig_a1_meta.csv:value@key=vol_limit_s | = 1200 |
+| Validation of the replica | `3600` | Result | fig_a1_meta.csv:value@key=fwd_limit_s | = 3600 |
 | Validation of the replica | `17` | Result | fig_a1_meta.csv:value@key=spot_stale_fills | = 17 |
 | Validation of the replica | `180` | Result | fig_a1_meta.csv:value@key=spot_limit_s | = 180 |
 | Post hoc and exploratory results | `0.734` | Result | summary.json:h1_sign_floor_mean | = 0.734164 |

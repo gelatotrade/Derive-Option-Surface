@@ -177,7 +177,7 @@ def test_sm_branches_cover_every_class():
     g = grid_for("sm", sm_params(), base)
     r = t1.binding_rule(g.reset_index(drop=True), "BTC", TS, "sm", params=sm_params())
     assert list(r["rule_key"]) == ["floor", "otm", "floor"]
-    assert r.loc[1, "rule"] == "15 % − OTM" and r.loc[0, "rule"] == "13 % floor"
+    assert r.loc[1, "rule"] == "15 % − OTM amount" and r.loc[0, "rule"] == "13 % floor"
     strict = sm_params(mmPutSpotReq=0.2)     # the MM put branch binds once its spot charge exceeds the IM charge
     g2 = grid_for("sm", strict, base)
     r2 = t1.binding_rule(g2.reset_index(drop=True), "BTC", TS, "sm", params=strict)
@@ -206,7 +206,8 @@ def test_build_writes_tables_and_figures(tmp_path, results_dir):
     assert n_exp == 8
     head = meta.loc[meta["key"] == "header", "printed"].iloc[0]
     assert head == ("BTC · 17 Sep 2026, 08:00 UTC · 8 live expiries · PM2 spot grid ±14 % since "
-                    "20 Aug 2026 · chain semantics")
+                    "20 Aug 2026 · on-chain engine")
+    assert "semantics" not in head
     classes = meta[meta["key"] == "n_class"]
     for mgr in ("pm2", "sm"):
         assert classes.loc[classes["manager"] == mgr, "value"].sum() == 35
@@ -371,4 +372,6 @@ def test_delta_grid_lines_are_the_bucket_edges_mirrored_for_puts(results_dir):
         assert row["printed"] == f"{row['value']:.2f}"
     assert list(meta.loc[meta["key"] == "grid_line_days", "value"]) == [2, 7, 30, 90]
     assert "the lines at 0.60, 0.75 and 0.90 are the put edges of 40, 25 and 10~per~cent" in t1.CAPTION
-    assert "ATM marks the at-the-money node" in t1.CAPTION and "OTM is the amount" in t1.CAPTION
+    assert "ATM marks the at-the-money node" in t1.CAPTION
+    # OTM is the state "out of the money" (as in Figures 3 and 4); the SM legend names the amount
+    assert "less the out-of-the-money (OTM) amount" in t1.CAPTION and "OTM is the amount" not in t1.CAPTION

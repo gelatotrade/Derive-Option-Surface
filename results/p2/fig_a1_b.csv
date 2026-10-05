@@ -168,4 +168,4 @@ on K up to 19.5 M USDC"
 K_chain_max_usdc,book,,,,,True,,,,,,,,,,,,,,19494689.97,"largest miss 0.05 USDC
 on K up to 19.5 M USDC"
 threshold,,,median,,,True,,,,,,,,,,,,,,0.001,median bound 0.1 %
-threshold,,,p95,,,True,,,,,,,,,,,,,,0.01,p95 bound 1 %
+threshold,,,p95,,,True,,,,,,,,,,,,,,0.01,P95 bound 1 %
