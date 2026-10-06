@@ -5,7 +5,7 @@ interquartile band, read from the maker-day series that the inference wrote (``f
 ``status == ok``).  The bins double in width from [1, 4) to [256, 512), so the SM subaccount limit of 63 legs is a
 real position on the axis; right of it K_SM is counterfactual and the region is hatched.  Panel b is the verdict
 forest (``f34_frame.ruler``) with the registered median, the sensitivities including the legacy manager on BTC
-and ETH legs, and exploratory rows by book size, manager of the subaccount and parameter regime.
+and ETH legs, and exploratory rows by book size, manager of the subaccount and regime.
 
 No test statistic is computed here; the figure only bins, counts and takes quantiles of a descriptive column.
 """
@@ -47,7 +47,7 @@ CAPTION = (
     r"this is the case on \PH{h3-over63} maker-days. The dashed line is the registered threshold of two. Panel b is "
     r"the registered median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC "
     r"and ETH legs, and, on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by "
-    r"the manager of the subaccount and by parameter regime. The hatched stretch of the registered row, left of the "
+    r"the manager of the subaccount and by regime. The hatched stretch of the registered row, left of the "
     r"threshold, is the rejection region: the rule rejects H3 if the interval reaches into it."
 )
 

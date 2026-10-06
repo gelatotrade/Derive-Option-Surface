@@ -163,6 +163,18 @@ def horizon_numbers(frame: pd.DataFrame) -> Dict[str, object]:
     return out
 
 
+def settlement_numbers(frame: pd.DataFrame, b: int, seed: int) -> Dict[str, object]:
+    """Section 3: the registered settlement horizon (robustness path c) over the fills settled inside the loaded data
+    (a fill whose expiry has no settlement price has no settlement markout), with a cluster pairs bootstrap interval
+    over taker wallets."""
+    y = frame["mo_set"].to_numpy(float)
+    ok = np.isfinite(y)
+    ci = cluster_mean_ci(y[ok], frame["cluster"].to_numpy()[ok], b=b, seed=seed, level=INTERVAL_LEVEL)
+    return {"settlement_fills": int(ok.sum()), "settlement_mean": float(y[ok].mean()),
+            "settlement_lo95": float(ci["lo"]), "settlement_hi95": float(ci["hi"]),
+            "settlement_interval_pct": 100.0 * INTERVAL_LEVEL}
+
+
 def concentration_numbers(frame: pd.DataFrame, lorenz: pd.DataFrame) -> Dict[str, object]:
     """Figure 3c and section 5.4: the ten loss wallets in the professional classes, the single largest wallet and
     the raw differences of size and sweep (Figure 4b)."""
@@ -177,6 +189,13 @@ def concentration_numbers(frame: pd.DataFrame, lorenz: pd.DataFrame) -> Dict[str
     for name in PROFESSIONAL_SHARE_CLASSES:
         sel = frame["taker_class"] == name
         out[f"top10_share_of_{name}_fills_pct"] = float(100.0 * member[sel].mean()) if sel.any() else None
+    # the ten loss wallets that ever trade in the two professional classes, and their share of the loss
+    wallets = (pd.Series(wallet_pseudonym(frame["taker_wallet"], load_salt()), index=frame.index)
+               if top10 and all(str(w).startswith("W") for w in top10) else frame["taker_wallet"])
+    professional = set(wallets[frame["taker_class"].isin(PROFESSIONAL_SHARE_CLASSES)]) & top10
+    out["top10_in_professional_classes"] = int(len(professional))
+    out["top10_professional_loss_share_pct"] = float(
+        100.0 * worst.loc[worst["wallet"].isin(professional), "loss"].sum() / lorenz["loss"].sum())
     out["raw_size_difference_dn"] = float(frame.loc[frame["size_above_p90"], "y_dn"].mean()
                                           - frame.loc[~frame["size_above_p90"], "y_dn"].mean())
     out["raw_sweep_difference_dn"] = float(frame.loc[frame["is_sweep"], "y_dn"].mean()
@@ -283,6 +302,7 @@ def build(root: Path, results: Path, b: int = B, seed: int = SEED) -> Dict[str, 
     out.update(sample_numbers(frame))
     out.update(markout_numbers(frame, b, seed))
     out.update(horizon_numbers(frame))
+    out.update(settlement_numbers(frame, b, seed))
     out.update(concentration_numbers(frame, lorenz))
     out.update(cell_numbers(frame, cells, markouts, funding, b, seed))
     out.update(curve_age_numbers(frame))
@@ -290,6 +310,12 @@ def build(root: Path, results: Path, b: int = B, seed: int = SEED) -> Dict[str, 
     summary = json.loads((results / "summary.json").read_text())
     beta = np.asarray(summary["H3"]["did"].get("placebo_beta", []), dtype=float)
     out["h3_placebo_beta_sd"] = float(np.std(beta, ddof=1)) if len(beta) > 1 else None
+    # the placebo estimates are not centred on zero: their centre, how many lie below zero, and the span of their dates
+    out["h3_placebo_beta_mean"] = float(np.mean(beta)) if len(beta) else None
+    out["h3_placebo_negative"] = int((beta < 0).sum())
+    did = summary["H3"]["did"]
+    for key, name in (("placebo_first_ms", "h3_placebo_first_day"), ("placebo_last_ms", "h3_placebo_last_day")):
+        out[name] = pd.Timestamp(did[key], unit="ms", tz="UTC").strftime("%Y-%m-%d") if did.get(key) else None
     return out
 
 

@@ -148,7 +148,7 @@ def card_s3(inputs: dict, out_dir: Path) -> List[Path]:
 
     fig = _card("Ten wallets take 90% of it",
                 "Cumulative share of the maker's aggregate loss, by loss-making taker wallet. "
-                "One address alone carries 39%.")
+                "One address alone carries {:.0f}%.".format(100 * float(loss[0])))
     ax = _axes(fig)
     ax.plot(share, loss, color=figstyle.PALETTE[0])
     ax.set_xscale("log")
@@ -178,7 +178,7 @@ def card_s4(inputs: dict, out_dir: Path) -> List[Path]:
 
     fig = _card("Big orders aren't the problem",
                 "Difference in the maker's result. Hollow: raw comparison. Solid: same instrument, same day. "
-                "Neither coefficient is distinguishable from zero.")
+                "Once hedged, neither coefficient is distinguishable from zero.")
     ax = _axes(fig, (0.19, 0.31, 0.78, 0.50))
     for i, (name, raw, ctrl, t) in enumerate(rows):
         ax.plot([raw, ctrl], [i, i], color=MUTED, lw=2.0)
@@ -193,7 +193,7 @@ def card_s4(inputs: dict, out_dir: Path) -> List[Path]:
     ax.set_yticks(range(len(rows)))
     ax.set_yticklabels([r[0] for r in rows])
     ax.set_ylim(-0.6, len(rows) - 0.25)
-    ax.set_xlabel("difference in markout, USDC per contract")
+    ax.set_xlabel("difference in delta-neutral markout, USDC per contract")
     ax.legend(handles=[Line2D([], [], marker="o", mfc="white", mec=figstyle.PALETTE[1], mew=2.6, ls="none",
                               label="raw"),
                        Line2D([], [], marker="o", color=figstyle.PALETTE[0], ls="none",

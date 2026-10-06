@@ -76,7 +76,7 @@ REGIME_LABELS = {"R1": "R1 to 23 Jan", "R2": "R2 to 24 May", "R3": "R3 to 20 Aug
 SIDE_TITLE = {"sell": "maker sells (short)",
               "buy": "maker buys (long):\ncapital ≈ premium OTM"}      # OTM: out of the money (caption)
 HEADER = ("number = PM2 capital per contract, % of notional, ratio of sums over the\n"     # ends left of the letter b
-          "PM2 window, pooled over four parameter regimes · × = under 200 fills")
+          "PM2 window, pooled over four regimes · × = under 200 fills")
 STRIP_ROWS = [("sm", "BTC", "pooled", "SM BTC"), ("sm", "BTC", "R4", "R4"),
               ("sm", "ETH", "pooled", "SM ETH"), ("sm", "ETH", "R4", "R4"),
               ("sm", "HYPE", "pooled", "SM HYPE"), ("sm", "HYPE", "R4", "R4"),
@@ -89,8 +89,9 @@ JITTER = 0.18
 CAPTION = (
     "What one contract costs. Panel a is PM2 capital per contract in per cent of notional over the absolute delta "
     "of the traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums "
-    "over the fills of the PM2 window, which the parameter changes of 23~January, 24~May and 20~August 2026 split "
-    "into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and a cross marks a "
+    "over the fills of the PM2 window, which the BTC parameter changes of 23~January, 24~May and 20~August 2026 split "
+    "into four regimes, R1 to R4; the changes of 8~January 2026 and, for HYPE, 8~May 2026 fall inside R1 and R2. "
+    "Each row is shaded on one logarithmic grey scale, and a cross marks a "
     "cell with fewer than 200 fills. Panel b gives, for every occupied cell, the capital of the same fills under "
     "standard margin (squares) and under the legacy manager (diamonds) divided by PM2 capital, with the median "
     "cell as a bar and the number of cells under n; the hollow squares of the rows R4 use only the fills after the "

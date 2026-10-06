@@ -373,8 +373,9 @@ books, probed at random, showed larger gaps.
   \includegraphics[width=\linewidth]{figures/f1.pdf}
   \caption{\textbf{What one contract costs.} Panel a is PM2 capital per contract in per cent of notional over the
   absolute delta of the traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a
-  ratio of sums over the fills of the PM2 window, which the parameter changes of 23~January, 24~May and 20~August
-  2026 split into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and a cross
+  ratio of sums over the fills of the PM2 window, which the BTC parameter changes of 23~January, 24~May and 20~August
+  2026 split into four regimes, R1 to R4; the changes of 8~January 2026 and, for HYPE, 8~May 2026 fall inside
+  R1 and R2. Each row is shaded on one logarithmic grey scale, and a cross
   marks a cell with fewer than 200 fills. Panel b gives, for every occupied cell, the capital of the same fills
   under standard margin (squares) and under the legacy manager (diamonds) divided by PM2 capital, with the median
   cell as a bar and the number of cells under n; the hollow squares of the rows R4 use only the fills after the
@@ -385,6 +386,8 @@ books, probed at random, showed larger gaps.
 % src events.csv:event_day@event_id=BTC-pm2-20260524 24 May
 % src events.csv:event_day@event_id=BTC-pm2-20260820 20 August 2026
 % src fig_f1_regimes.csv:regime~distinct four
+% src events.csv:event_day@event_id=BTC-pm2-20260108 8 January 2026
+% src events.csv:event_day@event_id=HYPE-pm2-20260508 8 May 2026
 % src const:cell_min_fills 200
 % src events.csv:event_day@event_id=BTC-pm2-20260820 20 August 2026
 \end{figure*}
@@ -394,9 +397,9 @@ The fills are those of \citet{albiez2026}: all 621\,508 BTC, ETH and HYPE option
 cut-off of 30~September 2026. Each carries the maker's side, price, size and net edge in USDC per contract: the
 markout against the mark thirty~minutes after the fill, less fee net of rebate and a hedging cost. Fee and rebate,
 booked per fill, are divided by its size (Addendum~2). On a multi-leg request for quote (RFQ) the
-venue books the package fee on one leg, where it stays (Addendum~6). The companion paper was corrected on
+venue almost always books the package fee on one leg, where it stays (Addendum~6). The companion paper was corrected on
 25~September 2026 and uses the same unit per contract. SM covers the whole sample (HYPE from 11~November 2025; six
-earlier HYPE fills have no manager), the legacy manager BTC and ETH throughout. The PM2 window is where
+earlier HYPE fills fall outside every registered window), the legacy manager BTC and ETH throughout. The PM2 window is where
 PM2 covers an underlying: BTC and ETH from 12~June 2025 23:00~UTC, HYPE from 11~November 2025. Only H4 uses
 events before it.
 
@@ -512,7 +515,7 @@ sells.
   shares of fills in each band, and the shares beyond the axis are given at both ends. The dashed line is the
   registered threshold of one half, and the circle at height one half is the median; its 90~per~cent day-cluster
   interval is narrower than the circle and printed at the top. Panel b repeats the registered row above the
-  sensitivities and, on grey, exploratory rows per subaccount and per parameter regime. The hatched stretch of the
+  sensitivities and, on grey, exploratory rows per subaccount and per regime (R1 to R4). The hatched stretch of the
   registered row, right of the threshold, is the rejection region: the rule rejects H2 if the interval reaches
   into it. A maker who starts from an empty book pays the stand-alone capital of Figure~\ref{fig:f1}.}
   \label{fig:f3}
@@ -531,7 +534,7 @@ sells.
   the case on 1\,470 maker-days. The dashed line is the registered threshold of two. Panel b is the registered
   median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC and ETH legs, and,
   on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by the manager of the
-  subaccount and by parameter regime. The hatched stretch of the registered row, left of the threshold, is the
+  subaccount and by regime. The hatched stretch of the registered row, left of the threshold, is the
   rejection region: the rule rejects H3 if the interval reaches into it.}
   \label{fig:f4}
 % src summary.json:h3_n 1\,982
@@ -720,7 +723,7 @@ Without M2, the small books give 3.780 (post hoc); books of 32 to 63 legs, M2 in
   removing the cell by event and the day by underlying effects, in 20 bins of equal size, above a grey histogram
   of that dose over the rows of the H4 panel, one per fill and event; the line shows the estimate $\beta$, whose
   interval is descriptive because the registered $p$ comes from restricted residuals. That day-cluster interval is
-  too narrow, as the placebo dates show; calibrated on them, the 90~per~cent range runs from $-41.6$ to 29.7
+  too narrow, as the placebo replications show; calibrated on them, the 90~per~cent range runs from $-41.6$ to 29.7
   (Section~\ref{sec:h4}). Panel c places $\beta$ among the estimates of 100 placebo replications and lists both
   registered criteria. Panel d gives $\beta$ per underlying, for exploration; in the registered row, hatching
   marks the values of $\beta$ at which the rule rejects H4 whatever its $p$, up to the 95th placebo percentile
@@ -1036,8 +1039,8 @@ to expiry or by the empirical holding period give 0.780 and 0.803 (Figure~\ref{f
 Without RFQ fills $\rho$ is 0.899 (0.889 to 0.913) over 157 cells. In the ten best cells per unit of PM2
 capital, RFQ fills carry 93.4~per~cent of the edge with 39.3~per~cent of the fills.
 
-For H2, the median runs from 0.0178 to 0.1172 over the parameter regimes R1 to R4, which the BTC changes of
-Figure~\ref{fig:f1} bound. By maker side the median is 0.074 (0.062 to 0.094) for sells and $-0.128$ ($-0.202$ to
+For H2, the median runs from 0.0178 to 0.1172 over the regimes R1 to R4 of
+Figure~\ref{fig:f1}. By maker side the median is 0.074 (0.062 to 0.094) for sells and $-0.128$ ($-0.202$ to
 $-0.062$) for buys. Weighted by stand-alone capital, as the sum of $\Delta K$ over the sum of stand-alone capital
 times size, all fills bind 0.137 of their stand-alone capital, sells 0.279, and buys release 0.464. Each leg of a
 multi-leg RFQ package is measured against the book before the whole package (Addendum~1), without the other legs.
@@ -1048,7 +1051,7 @@ PM2 capital.
 For H4 the estimate is $-3.42$ for BTC, $-1.90$ for ETH and $-10.12$ for HYPE. It is $-3.81$ on sell cells alone
 and $-5.13$ with the dose weighted by the open-interest share of the changed manager. All of these estimates have
 a one-sided $p$ above 0.5. On buy cells, whose doses are near zero, it is 128 with a $p$ of 0.13. These $p$ rest
-on the day-cluster standard error, which the placebo dates show to be too small. A wider reading of Addendum~4
+on the day-cluster standard error, which the placebo replications show to be too small. A wider reading of Addendum~4
 keeps placebo dates at least 28~days from every parameter change of the underlying under any manager, including SM
 and the subaccounts' own PM2 parameter sets. It gives a 95th placebo percentile of 21.57, and 88~per~cent of the
 placebo estimates are at least as large as $\beta$. The placebo panels hold one event more than the real panel,

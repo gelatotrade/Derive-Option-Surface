@@ -41,8 +41,8 @@ CAPTION = (
     r"bands are the shares of fills in each band, and the shares beyond the axis are given at both ends. The dashed "
     r"line is the registered threshold of one half, and the circle at height one half is the median; its "
     r"90~per~cent day-cluster interval is narrower than the circle and printed at the top. Panel b repeats the "
-    r"registered row above the sensitivities and, on grey, exploratory rows per subaccount and per parameter "
-    r"regime. The hatched stretch of the registered row, right of the threshold, is the rejection region: the rule "
+    r"registered row above the sensitivities and, on grey, exploratory rows per subaccount and per regime "
+    r"(R1 to R4). The hatched stretch of the registered row, right of the threshold, is the rejection region: the rule "
     r"rejects H2 if the interval reaches into it. A maker who starts from an empty book pays the stand-alone "
     r"capital of Figure~\ref{fig:f1}."
 )

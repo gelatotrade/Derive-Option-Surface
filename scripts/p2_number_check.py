@@ -226,6 +226,8 @@ CONSTANTS_P1: Dict[str, Tuple[object, str, str, str]] = {
     "perp_half_spread_bp": (1, "perp half spread 1 bp in the hedging cost", PREREG_P1, "Addendum 2"),
     "perp_half_spread_low_bp": (0, "sensitivity at 0 bp", PREREG_P1, "Addendum 2"),
     "perp_half_spread_high_bp": (3, "sensitivity at 3 bp", PREREG_P1, "Addendum 2"),
+    "perp_taker_fee_pct": (0.03, "perp taker fee 0.03 % in the hedging cost", PREREG_P1, "Addendum 2"),
+    "funding_days": (30, "funding rate: median absolute hourly value of the last 30 days", PREREG_P1, "Addendum 2"),
     "definition_addenda": (2, "two addenda before the first inference (Addenda 1 and 2)", PREREG_P1, "Addendum 2"),
     "addenda": (4, "four dated addenda", PREREG_P1, "Addendum 4"),
 }

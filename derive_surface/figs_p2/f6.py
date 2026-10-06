@@ -57,7 +57,7 @@ CAPTION = (
     r"post-event dose after removing the cell by event and the day by underlying effects, in 20 bins of equal size, "
     r"above a grey histogram of that dose over the rows of the H4 panel, one per fill and event; the line shows the "
     r"estimate $\beta$, whose interval is descriptive because the registered $p$ comes from restricted residuals. "
-    r"That day-cluster interval is too narrow, as the placebo dates show; calibrated on them, the 90~per~cent range "
+    r"That day-cluster interval is too narrow, as the placebo replications show; calibrated on them, the 90~per~cent range "
     r"runs from \PH{h4-cal-lo} to \PH{h4-cal-hi} (Section~\ref{sec:h4}). Panel c "
     r"places $\beta$ among the estimates of 100 placebo replications and lists both registered criteria. Panel d gives "
     r"$\beta$ per underlying, for exploration; in the registered row, hatching marks the values of $\beta$ at which "
@@ -386,7 +386,7 @@ def _panel_c(fig, c: pd.DataFrame) -> None:
         ax.annotate(text, (x, y), xytext=(3 if right else -3, 0), textcoords="offset points",
                     ha="left" if right else "right", va="center", fontsize=kit.FS_MIN, linespacing=1.0,
                     path_effects=HALO, zorder=4)
-    ax.set_ylabel("placebo dates")
+    ax.set_ylabel("replications")
     ax.set_xlabel("β over 100 placebo replications, bp of index per log unit")
     days = c.loc[c["kind"] == "placebo_days", "printed"].iloc[0]
     kit.fig_text(fig, BL - 0.25, C_TOP + C_H + 0.30, days, ha="left", color=kit.GREY)

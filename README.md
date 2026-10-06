@@ -82,11 +82,11 @@ PDF in this repository: [`paper/Derive Orderbook Adverse Selection.pdf`](paper/D
 > an anonymous venue the two can only be told apart by proxy. Derive settles on chain, so its public tape names both
 > wallets. On 621,508 fills in BTC, ETH and HYPE options between January 2024 and September 2026, the maker's mean
 > markout thirty minutes after the fill is +12.79 USDC per contract: a half spread of +15.45 plus adverse selection of
-> −2.66. Fees, rebates and a modelled hedge cost leave a net edge of +9.34. The loss is extremely concentrated: ten
-> taker wallets, almost the entirety of the two professional counterparty classes, carry 90.1 per cent of it. Trade
-> size, the standard proxy for toxic flow, explains none of it once instrument-by-day fixed effects are included, and
-> sweeps predict only the move of the underlying, which hedging removes. Four hypotheses were registered before any
-> markout was computed; three are rejected.
+> −2.66. Fees, rebates and a modelled hedge cost leave a net edge of +9.34. The loss is concentrated: ten taker wallets
+> carry 90.1 per cent of it, four of them nearly all fills of the two professional counterparty classes. Trade size, the
+> standard proxy for toxic flow, explains none of it under instrument-by-day fixed effects, and sweeps predict only the
+> move of the underlying, which hedging removes. Four hypotheses were registered before any markout was computed; three
+> are rejected.
 
 Pre-registration: [`docs/paper1/PRAEREGISTRIERUNG.md`](docs/paper1/PRAEREGISTRIERUNG.md) (binding) ·
 [English translation](docs/paper1/PREREGISTRATION.md) · manuscript: [`paper/main.tex`](paper/main.tex) · code:

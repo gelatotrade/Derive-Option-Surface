@@ -89,7 +89,7 @@ def _side_note(ax, text: str, y: float, align: str = "left", box: bool = False) 
 
 
 CAPTIONS = {
-    "T1": "Panels a and b stop at the registered 30 minute horizon, panel c carries every horizon. The "
+    "T1": "Panels a and b stop at the registered 30 minute horizon, panel c carries every horizon to one day. The "
           "shaded band is the interquartile range of the 100 nearest fills in the same cell, so the example "
           "can be read against its neighbours rather than on its own.",
     "T2": "Error bars in panel a are 95 per cent cluster bootstrap intervals over taker wallets with 999 draws. "
@@ -100,7 +100,7 @@ CAPTIONS = {
           "decade. Panel b sets the aggregate dollar gain against the average index price, which is what "
           "makes a per-contract average a statement about contract size. Panel c divides the markout per "
           "contract by the price per contract.",
-    "F2": "The subsample is restricted to fills that have every horizon, so a falling line cannot be a "
+    "F2": "The subsample is restricted to fills that have all five horizons, so a falling line cannot be a "
           "shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. "
           "The share of the premium in panel c is taken per contract. Professional flow is that of dominant makers, "
           "the MM programme and large wallets (the dashed line).",
@@ -110,11 +110,11 @@ CAPTIONS = {
           "are read from the implied vols of the mark and the fill.",
     "F4": "The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the "
           "loss. Panel b sets the raw difference of the delta-neutral markout against its coefficient under "
-          "instrument by day fixed effects, the registered test, which is where the hypothesis fails.",
+          "instrument by day fixed effects, the coded test, which is where the hypothesis fails.",
     "F5": "The upper row is the median net edge in basis points of notional, the edge of a fill over its "
           "notional and the unit a quoting decision uses, shaded within each panel only, between its 5th and "
           "95th percentile. The lower row is the registered quantity in USDC and its verdict per "
-          "cell, with an empty cross where a cell has fewer than 200 fills.",
+          "cell, with a cross where a cell has fewer than 200 fills.",
     "F6": "Panels a and b share a calendar axis; hollow markers mark months with fewer than 1000 fills. "
           "Panel c is the distribution of the 100 placebo estimates with the estimated effect marked.",
     "A1": "Panel a puts the age of the curve and the distance of the next fill on one axis, which is why "
@@ -416,7 +416,7 @@ def fig_f2(inputs: dict, out_dir: Path) -> List[Path]:
         ax.set_xlabel("horizon")
     handles, labels = axes[0].get_legend_handles_labels()    # above the panels: inside, every corner holds data
     fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3, fontsize=6.5)
-    _side_note(axes[2], "{:,} fills carry every horizon".format(len(balanced)).replace(",", " "), 0.06,
+    _side_note(axes[2], "{:,} fills carry all five horizons".format(len(balanced)).replace(",", " "), 0.06,
                align="right")
     for ax, letter in zip(axes, "abc"):
         _panel_tag(ax, letter)
@@ -748,8 +748,9 @@ def fig_f6(inputs: dict, out_dir: Path) -> List[Path]:
     placebo = [float(x) for x in did.get("placebo_beta", []) if np.isfinite(x)]
     beta = float(did["beta"])
     if placebo:
-        c.hist(placebo, bins=min(20, max(6, len(placebo) // 4)), color=figstyle.GREY, alpha=0.45,
-               label="{} placebo windows".format(len(placebo)))
+        counts, _, _ = c.hist(placebo, bins=min(20, max(6, len(placebo) // 4)), color=figstyle.GREY, alpha=0.45,
+                              label="{} placebo windows".format(len(placebo)))
+        c.set_ylim(0, float(np.max(counts)) / 0.78)    # headroom: the note at the top never sits on a bar
         c.axvline(beta, color=figstyle.PALETTE[1], lw=1.4, label=minus("estimate {:+.3f}".format(beta)))
         c.set_xlabel("difference in differences, vol points")
         c.set_ylabel("placebo windows")
