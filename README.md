@@ -12,6 +12,10 @@ Three views, each as a GIF (MP4 next to it in `docs/media/`):
 | **Tape** | How the surface travelled over the last 60 days (BTC +23 %, ETH +37 % in August) | Every fill of the trade tape (= a crossed quote) + the spot feed |
 | **Shock** | The mechanics in isolation: forward ±6 %, smile shape frozen, ladder re-priced with Black-76 | The last live snapshot |
 
+Two pre-registered working papers use the same data: one asks who trades against the option maker, the other what
+the maker's edge costs in capital. Abstracts, PDFs and pre-registrations are in [Papers](#papers-built-on-these-data)
+below the animations.
+
 ---
 
 ## 1 · Live: orderbook mid → surface
@@ -56,6 +60,66 @@ because of the skew (section 6): blue where the skew lowers the delta, red where
 ![HYPE shock](docs/media/HYPE_shock_sticky_delta.gif)
 
 `--regime sticky_strike` renders the counterpart (vol per strike frozen, smile slides in moneyness).
+
+---
+
+## Papers built on these data
+
+Two working papers use the trade tape behind these surfaces. Both were pre-registered in this repository before their
+main numbers existed. The binding pre-registrations (in German, with English translations), the manuscripts, the code
+and tests, and every number in the papers are in the repository. The numbers come from a pilot cut of the data to
+17 September 2026; a final run on the registered sample to 30 September 2026 follows.
+
+### Paper 1 · Who trades against the maker? Adverse selection with counterparty identity on an on-chain options order book
+
+Working paper, revised 25 September 2026 ·
+[SSRN 7496818](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7496818) (doi:10.2139/ssrn.7496818) ·
+PDF in this repository: [`paper/Derive Orderbook Adverse Selection.pdf`](paper/Derive%20Orderbook%20Adverse%20Selection.pdf)
+
+![Where an options maker's edge goes](paper/social/s1_decomposition.png)
+
+> A market maker on an options book loses to counterparties who know something and earns from those who do not, but
+> on an anonymous venue the two can only be told apart by proxy. Derive settles on chain, so its public tape names
+> both wallets. On 603,940 fills in BTC, ETH and HYPE options between January 2024 and September 2026, the maker's
+> mean markout thirty minutes after the fill is +13.05 USDC per contract: a half spread of +15.70 plus adverse
+> selection of −2.65. Fees, rebates and delta hedging leave a net edge of +9.58. The loss is extremely concentrated,
+> with ten taker wallets carrying 90.5 per cent of it, and those ten are almost the entirety of the two professional
+> counterparty classes. Trade size and sweeps, the standard proxies for toxic flow, explain none of it once
+> instrument-by-day fixed effects are included. Four hypotheses were registered before any markout was computed;
+> three are rejected.
+
+Pre-registration: [`docs/paper1/PRAEREGISTRIERUNG.md`](docs/paper1/PRAEREGISTRIERUNG.md) (binding) ·
+[English translation](docs/paper1/PREREGISTRATION.md) · manuscript: [`paper/main.tex`](paper/main.tex) · code:
+`derive_surface/` (`fulltape`, `classify`, `markpath`, `markouts`, `inference_p1`, `figures_p1`) and `scripts/p1_*`.
+
+### Paper 2 · What does the edge cost? Capital-adjusted market making under a public portfolio-margin engine
+
+Working paper, 5 October 2026 ·
+PDF in this repository: [`paper2/Derive Capital-Adjusted Market Making.pdf`](paper2/Derive%20Capital-Adjusted%20Market%20Making.pdf)
+
+![BTC: capital of one short contract under PM2 over the surface, weekly from June 2025](docs/media/p2_btc_capital_surface.gif)
+
+*The capital that one short BTC contract needs under the portfolio manager PM2, over the surface (delta, tenor), week
+by week from June 2025 to September 2026; below, the capital of a short straddle under the three margin managers and
+the parameter changes that moved it.*
+
+> A market maker quotes against a budget of capital, not contracts, yet its edge is reported per contract. On Derive,
+> a crypto options exchange, the margin rules are public smart contracts, and its off-chain engine quotes margin for
+> any book. Capital is what its three margin managers require for positions, not account balances; it is measured on
+> one contract per option fill of a companion paper and on the actual books of dominant maker subaccounts. Four
+> hypotheses were registered before any registered capital figure existed. Contrary to H1, capital does not reorder
+> the moneyness-by-tenor map of the edge (rank correlation 0.903); post hoc, much of that correlation comes from the
+> sign of the edge. In the books of the four subaccounts under the second-generation portfolio manager (PM2), trading
+> only ETH and HYPE, the median fill binds 3.5 per cent of its stand-alone capital (H2 not rejected). On the opening
+> books of nine dominant subaccounts, standard margin needs 4.75 times the PM2 capital (H3 not rejected), mostly for
+> books too large for a standard-margin subaccount. Contrary to H4, cheaper capital did not detectably narrow the
+> half spread; the test has little power. All numbers use pilot data to 17 September 2026.
+
+Pre-registration: [`docs/paper2/PRAEREGISTRIERUNG.md`](docs/paper2/PRAEREGISTRIERUNG.md) (binding, Addenda 1 to 7) ·
+[English translation](docs/paper2/PREREGISTRATION.md) · audit of the paper: [`docs/paper2/AUDIT.md`](docs/paper2/AUDIT.md) ·
+manuscript: [`paper2/main.tex`](paper2/main.tex) · code: margin replicas `derive_surface/margin_sm.py`, `margin_pm.py`,
+`margin_pm2.py`, capital and books `capital.py`, `books.py`, inference `inference_p2.py`, `inference_p2_h4.py`,
+figures `derive_surface/figs_p2/`, scripts `scripts/p2_*`.
 
 ---
 
@@ -210,10 +274,15 @@ derive_surface/
   analysis.py   greek noise measure (bid vs. ask surface), skew-stickiness ratio
   animate.py    frames (index · ladder/smile · 3D surface with quote tracers) → GIF/MP4
   shock.py      spot-shock scenario (sticky-delta / sticky-strike)
-tests/          28 tests
+  fulltape.py, classify.py, markpath.py, markouts.py, inference_p1.py, figures_p1.py        Paper 1
+  margin_*.py, capital.py, books.py, p2*.py, inference_p2*.py, figs_p2/, figures_p2.py      Paper 2
+paper/          Paper 1: manuscript, figures, cards, PDF
+paper2/         Paper 2: manuscript, figures, cards, PDF
+results/        p1/, p2/: every number of the two papers (JSON, CSV)
+tests/          1090 tests (surface, Paper 1, Paper 2)
 data/           trade tape, spot, live recording, depth snapshot (parquet; schema in data/README.md)
-docs/           API findings, media
-scripts/        render_media.sh, readme_numbers.py
+docs/           API findings, media; paper1/ and paper2/: pre-registrations, findings, audit, checks
+scripts/        render_media.sh, readme_numbers.py; p1_* and p2_*: builds, number and figure checks
 ```
 
 ## 9 · Limitations
