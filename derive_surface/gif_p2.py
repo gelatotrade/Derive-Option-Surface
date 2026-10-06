@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 
 CCY = "BTC"
 MANAGER = "pm2"
-START, END = "2025-06-13", "2026-09-17"
+START, END = "2025-06-13", "2026-09-17"   # ends at the T1 block (17 Sep 2026 08:00 UTC, day of the probes)
 HOUR = p2surface.REF_HOUR
 DAY = 86_400
 WEEKDAY = 2                               # Wednesday

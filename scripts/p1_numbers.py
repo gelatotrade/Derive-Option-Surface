@@ -82,10 +82,12 @@ def main() -> None:
     horizons = pd.read_csv(RESULTS / "horizon_means.csv")
     sens = pd.read_csv(RESULTS / "h4_sensitivity.csv")
     h1, h2, h3, h4 = s["H1"], s["H2"], s["H3"], s["H4"]
+    tn = RESULTS / "text_numbers.json"            # scripts/p1_text_numbers.py; the last fill of the sample
+    cut = (json.loads(tn.read_text()).get("last_fill_day", "?") + " (last fill)") if tn.is_file() else "?"
     lines = [
         "# Numbers for paper 1", "",
         f"Generated {dt.datetime.now(dt.timezone.utc):%Y-%m-%d %H:%M UTC} from `results/p1` with `scripts/p1_numbers.py`. "
-        f"Pilot data up to 2026-09-17 12:00 UTC. Primary horizon {s['horizon']}, mark path (b) by push time, "
+        f"Sample to {cut}. Primary horizon {s['horizon']}, mark path (b) by push time, "
         f"clusters by taker wallet, B = {s['b']}, seed {s['seed']}, perp half spread {num(s['half_spread_bp'], 1)} bp. "
         f"{di(s['fills'])} fills; without a fill IV (only the vol unit is affected): {di(s['missing_vol_unit'])}. "
         f"Fee and rebate enter per contract (the sum of the fill divided by its amount, addendum 3 of 2026-09-25).", "",
@@ -151,9 +153,8 @@ def main() -> None:
                      f"{num(r.lo, 3)} to {num(r.hi, 3)} |")
     lines += finding_lines()
     lines += ["", "## Limitations of these numbers", "",
-              f"- Pilot state: sample up to 2026-09-17 12:00 UTC. The first version of the manuscript (2026-09-19) "
-              f"and the revision (2026-09-25) rest on this state; the final data run with the registered cut-off "
-              f"2026-09-30 08:00 UTC is still outstanding.",
+              f"- Sample to {cut}. The first version of the manuscript (2026-09-19) and the revision (2026-09-25) "
+              f"rest on the pilot cut 2026-09-17 12:00 UTC; the registered cut-off is 2026-09-30 08:00 UTC.",
               f"- The first version subtracted fee and rebate as sums over the fill from the per-contract markout "
               f"(addendum 3, `docs/paper1/FINDING_2026-09-25_FEE_UNITS.md`); all numbers here are corrected.",
               f"- H2 rests on {h2['markout_30m']['clusters']} vault wallets; with so few clusters the wild cluster "

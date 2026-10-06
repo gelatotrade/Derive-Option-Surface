@@ -92,7 +92,7 @@ def card_s1(inputs: dict, out_dir: Path) -> List[Path]:
     labels = ["half\nspread", "adverse\nselection", "maker\nfee", "maker\nrebate", "hedge\ncost", "NET\nEDGE"]
 
     fig = _card("Where an options maker's edge goes",
-                "Mean per contract, 603,940 Derive fills, BTC / ETH / HYPE, Jan 2024 to Sep 2026.")
+                "Mean per contract, {:,} Derive fills, BTC / ETH / HYPE, Jan 2024 to Sep 2026.".format(len(frame)))
     ax = _axes(fig)
     running = 0.0
     for i, (key, label) in enumerate(zip(order, labels)):

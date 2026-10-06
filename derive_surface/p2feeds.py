@@ -47,8 +47,9 @@ RAW_DIR = FEEDS_DIR / "raw"
 VOLFEED_DIR = Path("data/p1/volfeed")
 LOG_PATH = Path("data/p2/logs/A1.jsonl")
 
-# 2026-09-17 12:00:00 UTC (pilot cut of Paper 1) is block 44 812 392; the load runs to 13:26:55 UTC as a buffer.
-TO_BLOCK = 44_815_000
+# The load runs to the end of the Paper 1 load, 2026-10-01 09:00:00 UTC (registered cut-off 2026-09-30 08:00 UTC plus
+# 25 h, Paper 1 Addendum 1, point 2), block 45 411 792. The pilot load ran to block 44 815 000 (2026-09-17 13:26:55 UTC).
+TO_BLOCK = 45_411_792
 FILL_START_BLOCK = ANCHOR_BLOCK  # 2024-01-11 00:00:01 UTC, first day of the Paper 1 sample
 
 # keccak256 of the event signatures (computed once with eth_hash, confirmed on real logs in tests/fixtures/p2)

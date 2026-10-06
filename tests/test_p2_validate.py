@@ -163,7 +163,7 @@ def test_capital_and_relative_error():
 # ---------------------------------------------------------------- windows and draws
 
 def test_windows_follow_the_preregistration():
-    start, end = _ts("2024-01-11 00:00"), _ts("2026-09-17 12:00")
+    start, end = _ts("2024-01-11 00:00"), _ts("2026-09-30 08:00")   # registered cut-off
     assert pv.WINDOWS[("BTC", "sm")] == (start, end)
     assert pv.WINDOWS[("ETH", "pm")] == (start, end)
     assert pv.WINDOWS[("BTC", "pm2")] == (_ts("2025-06-12 23:00"), end)

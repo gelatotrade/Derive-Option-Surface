@@ -46,7 +46,7 @@ LOG_PATH = Path("data/p2/logs/A5.jsonl")
 EVENTS_DIR = BOOKS_DIR / "events"
 
 START_DAY = "2024-01-11"
-END_DAY = "2026-09-17"
+END_DAY = "2026-09-30"
 SAMPLE_CCYS = ("BTC", "ETH", "HYPE")
 
 SUBACCOUNTS = "0xE7603DF191D699d8BD9891b821347dbAb889E5a5"  # SubAccounts (ERC721), = manager.subAccounts()
@@ -1090,7 +1090,7 @@ PM2_WINDOW_START = {"BTC": 1_749_769_200, "ETH": 1_749_769_200, "HYPE": 1_762_81
 LEGACY_PM_CCYS = ("BTC", "ETH")
 H2_N = 20_000
 H2_SEED = 20260924
-PILOT_END_MS = 1_789_646_400_000  # 2026-09-17 12:00 UTC (pilot cut of Paper 1)
+SAMPLE_END_MS = 1_790_755_200_000  # 2026-09-30 08:00 UTC (registered cut-off of Paper 1; pilot 2026-09-17 12:00)
 DERIVED_DIR = Path("data/p2/derived")
 
 
@@ -1941,7 +1941,7 @@ def combine_maker_days(parts_dir: Path = MAKER_DAY_PARTS, out: Path = DERIVED_DI
 
 
 def run_holding(out_csv: Path = Path("results/p2/holding_time.csv"),
-                out_fills: Path = DERIVED_DIR / "holding_fills.parquet", end_ms: int = PILOT_END_MS) -> dict:
+                out_fills: Path = DERIVED_DIR / "holding_fills.parquet", end_ms: int = SAMPLE_END_MS) -> dict:
     """FIFO holding time of the maker fills of the ten dominant subaccounts, median per Paper-1 cell."""
     top = json.loads((BOOKS_DIR / "top_makers.json").read_text())["subaccounts"]
     snaps = pd.read_parquet(BOOKS_DIR / "snapshots.parquet",

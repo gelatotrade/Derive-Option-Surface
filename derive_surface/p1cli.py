@@ -44,7 +44,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     s = sub.add_parser("fills", help="pair rows into fills and classify takers")
     s.add_argument("--vaults", type=Path, default=VAULTS)
     s = sub.add_parser("markouts", help="markouts of the pre-registered sample (paths a/b/c)")
-    s.add_argument("--cutoff", default="2026-09-17T12:00:00Z", help="sample cut-off (taker time), ISO")
+    s.add_argument("--cutoff", default="2026-09-30T08:00:00Z",
+                   help="sample cut-off (taker time), ISO; registered 2026-09-30 08:00 UTC, pilot 2026-09-17 12:00 UTC")
     s = sub.add_parser("figures", help="draw the manuscript figures")
     s.add_argument("--results", type=Path, default=Path("results/p1"))
     s.add_argument("--out", type=Path, default=Path("paper/figures"))

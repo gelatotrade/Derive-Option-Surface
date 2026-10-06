@@ -59,7 +59,7 @@ ENGINES = {"sm": margin_sm, "pm": margin_pm, "pm2": margin_pm2}
 SIDES = {"short": -1.0, "sell": -1.0, "long": 1.0, "buy": 1.0}
 REF_HOUR = 8            # daily construction time of the reference book (UTC)
 REF_TARGET_DAYS = 30.0  # the reference straddle uses the expiry closest to 30 days
-END_DAY = "2026-09-17"  # pilot cut 2026-09-17 12:00 UTC (the 08:00 book of that day is inside)
+END_DAY = "2026-09-30"  # registered cut-off 2026-09-30 08:00 UTC, inclusive (the 08:00 book of that day is inside)
 REF_START = {"BTC": "2024-01-11", "ETH": "2024-01-11", "HYPE": "2025-11-11"}
 SURFACE_DIR = Path("data/p2/surface")
 PARTS_DIR = SURFACE_DIR / "refbook"
@@ -301,7 +301,7 @@ def capital_grid(ccy: str, ts: int, manager: str, side, *, hist: Optional[FeedHi
 # ---------------------------------------------------------------------------------------------------- reference book
 
 def reference_days(ccy: str, start: Optional[str] = None, end: str = END_DAY) -> List[str]:
-    """UTC days of the reference series of ``ccy`` (from its start in the sample to the pilot cut)."""
+    """UTC days of the reference series of ``ccy`` (from its start in the sample to the cut-off)."""
     lo = pd.Timestamp(start or REF_START[ccy])
     return [d.strftime("%Y-%m-%d") for d in pd.date_range(lo, pd.Timestamp(end), freq="D")]
 

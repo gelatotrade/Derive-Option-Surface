@@ -46,7 +46,7 @@ LEGACY_THICK_SHARE = 0.05     # legacy line thin (0.5 pt) in months where the le
 PANEL_A_TITLE = "share of option open interest at the start of each month"
 PANEL_B_TITLE = "parameter changes · number = effect of the parameters alone on the reference straddle, log-%"
 MAX_JUMP_LAG_DAYS = 1
-REF_DAY = "2026-09-17"
+REF_DAY = "2026-09-30"
 
 # panel b: three lanes per rail, numbers above the rail, symbols on it, placebo days below it
 PLACEBO_OFFSET = 0.30         # rows below the rail (instruction: 0.3 rows)

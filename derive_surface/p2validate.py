@@ -76,16 +76,16 @@ def _utc(text: str) -> int:
 
 
 SAMPLE_START_TS = _utc("2024-01-11 00:00")
-PILOT_END_TS = _utc("2026-09-17 12:00")
+SAMPLE_END_TS = _utc("2026-09-30 08:00")   # registered cut-off (pilot: 2026-09-17 12:00)
 PM2_START_TS = {"BTC": _utc("2025-06-12 23:00"), "ETH": _utc("2025-06-12 23:00"), "HYPE": _utc("2025-11-11 00:00")}
 HYPE_SM_START_TS = _utc("2025-11-11 00:00")
 
 WINDOWS: Dict[Tuple[str, str], Tuple[int, int]] = {
-    ("BTC", "sm"): (SAMPLE_START_TS, PILOT_END_TS), ("BTC", "pm"): (SAMPLE_START_TS, PILOT_END_TS),
-    ("BTC", "pm2"): (PM2_START_TS["BTC"], PILOT_END_TS),
-    ("ETH", "sm"): (SAMPLE_START_TS, PILOT_END_TS), ("ETH", "pm"): (SAMPLE_START_TS, PILOT_END_TS),
-    ("ETH", "pm2"): (PM2_START_TS["ETH"], PILOT_END_TS),
-    ("HYPE", "sm"): (HYPE_SM_START_TS, PILOT_END_TS), ("HYPE", "pm2"): (PM2_START_TS["HYPE"], PILOT_END_TS),
+    ("BTC", "sm"): (SAMPLE_START_TS, SAMPLE_END_TS), ("BTC", "pm"): (SAMPLE_START_TS, SAMPLE_END_TS),
+    ("BTC", "pm2"): (PM2_START_TS["BTC"], SAMPLE_END_TS),
+    ("ETH", "sm"): (SAMPLE_START_TS, SAMPLE_END_TS), ("ETH", "pm"): (SAMPLE_START_TS, SAMPLE_END_TS),
+    ("ETH", "pm2"): (PM2_START_TS["ETH"], SAMPLE_END_TS),
+    ("HYPE", "sm"): (HYPE_SM_START_TS, SAMPLE_END_TS), ("HYPE", "pm2"): (PM2_START_TS["HYPE"], SAMPLE_END_TS),
 }
 CELLS: List[Tuple[str, str]] = [("BTC", "sm"), ("BTC", "pm"), ("BTC", "pm2"), ("ETH", "sm"), ("ETH", "pm"),
                                 ("ETH", "pm2"), ("HYPE", "sm"), ("HYPE", "pm2")]

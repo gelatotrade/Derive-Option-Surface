@@ -298,7 +298,7 @@ def test_outcome_is_half_spread_in_bp_of_index():
                        "amount": [1.0, 1.0]})  # Paper 1's revised analysis frame reads the amount of each fill
     funding = pd.DataFrame({"instrument_name": ["BTC-PERP", "ETH-PERP"], "timestamp": [0, 0],
                             "funding_rate": [1e-5, 2e-5]})
-    f = p2events.outcome_frame(mk, funding)
+    f = p2events.outcome_frame(mk[p2events.MARKOUT_COLUMNS], funding)   # exactly the columns load_frame reads
     assert list(f["fill_key"]) == ["t1", "t2"]
     assert f["y_hs_bp"].tolist() == pytest.approx([1e4 * 20.0 / 95_000.0, 1e4 * 2.0 / 3_100.0])
     assert list(f["cell"]) == ["BTC|sell|25-40|7-30d", "ETH|buy|10-25|7-30d"]

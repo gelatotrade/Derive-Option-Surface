@@ -69,7 +69,7 @@ EVENTS_CSV_COLUMNS = ["ccy", "manager", "event_ts", "kinds", "max_abs_dose", "ke
                       "panel_cells", "panel_fills_pre", "panel_fills_post"]
 MARKOUT_COLUMNS = ["trade_id", "ts", "currency", "instrument_name", "expiry", "strike", "option_type", "price",
                    "index_price", "maker_side", "delta_bucket", "tenor_bucket", "mark_b_t", "delta_t", "fwd_t",
-                   "fee_maker", "rebate_maker", "taker_wallet", "mo_usd_30m", "mo_dn_30m", "mo_vol_30m"]
+                   "fee_maker", "rebate_maker", "amount", "taker_wallet", "mo_usd_30m", "mo_dn_30m", "mo_vol_30m"]
 ENGINES = {"pm2": margin_pm2.single, "pm": margin_pm.single}
 
 

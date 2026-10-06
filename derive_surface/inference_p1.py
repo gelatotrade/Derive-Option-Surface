@@ -31,6 +31,7 @@ HYPE_EVENT_MS = 1_782_205_200_000  # 2026-06-23 09:00 UTC, Deribit HYPE_USDC opt
 MIN_CELL_FILLS = 200
 SALT_PATH = Path("data/p1/secret_salt.txt")  # git-ignored; the Lorenz file stores wallets only as pseudonyms
 PERP_HALF_SPREAD_BP = (0.0, 1.0, 3.0)
+NEAR_LAG_S = 300  # path agreement where the next fill comes within this many seconds
 PERP_TAKER_FEE = 3e-4
 CLASSES = ["vault", "rfq", "dominant_maker", "mm_programme", "large", "other"]
 
@@ -333,7 +334,7 @@ def path_agreement(rows: pd.DataFrame, horizon: str = HORIZON) -> pd.DataFrame:
     frame = frame[np.isfinite(frame[b_col]) & np.isfinite(frame[a_col])]
     lag_col = "lag_a_{}_s".format(horizon)
     groups = [("all", frame),
-              ("lag_a <= 300 s", frame[frame[lag_col] <= 300]),
+              ("lag_a <= {} s".format(NEAR_LAG_S), frame[frame[lag_col] <= NEAR_LAG_S]),
               ("lag_a <= 3600 s", frame[frame[lag_col] <= 3600])]
     if "svi_age_s_t" in frame:
         groups.append(("svi_age <= 60 s", frame[frame["svi_age_s_t"] <= 60]))

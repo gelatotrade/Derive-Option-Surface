@@ -1178,6 +1178,6 @@ def test_combine_marginal_mm_ratios_use_one_lib(tmp_path, monkeypatch):
 def test_maker_day_list_uses_maker_rows_of_top_accounts_in_the_pm2_window():
     d = _day_ts("2025-06-13") * 1000
     m = pd.DataFrame(dict(maker_sub=[1, 1, 1, 2, 9, 1],
-                          ts_maker=[d + 5, d + 9, d - 3_600_000, d + 86_400_000 * 2, d + 5, _day_ts("2026-09-18") * 1000]))
+                          ts_maker=[d + 5, d + 9, d - 3_600_000, d + 86_400_000 * 2, d + 5, _day_ts("2026-10-01") * 1000]))
     out = books.maker_day_list(m, top=[1, 2])
     assert list(zip(out["subaccount"], out["day"].dt.strftime("%Y-%m-%d"))) == [(1, "2025-06-13"), (2, "2025-06-15")]

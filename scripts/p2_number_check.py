@@ -179,6 +179,53 @@ CONSTANTS: Dict[str, Tuple[object, str, str, str]] = {
     "tenor_edge_30d": (30, "tenor bucket edge 30 days", PREREG_P1, "Cells and classes"),
     "tenor_edge_90d": (90, "tenor bucket edge 90 days", PREREG_P1, "Cells and classes"),
 }
+# Constants of the Paper 1 pre-registration (commit cf1f432; 3fd9caa until 5 October 2026) and its addenda, used with
+# ``--paper 1``.  Same layout as CONSTANTS.
+CONSTANTS_P1: Dict[str, Tuple[object, str, str, str]] = {
+    "prereg_day": ("2026-09-17", "pre-registration fixed on 17 September 2026", PREREG_P1, "Header"),
+    "sample_start": ("2024-01-11 00:00", "start of the sample 11 January 2024 00:00 UTC", PREREG_P1, "Sample"),
+    "sample_end": ("2026-09-30 08:00", "end of the sample 30 September 2026 08:00 UTC", PREREG_P1, "Sample"),
+    "pilot_cut": ("2026-09-17 12:00", "pilot data up to 17 September 2026 12:00 UTC", PREREG_P1,
+                  "Data status before this commit"),
+    "underlyings": (3, "BTC, ETH and HYPE options", PREREG_P1, "Sample"),
+    "expiry_buffer_minutes": (30, "fills in the last 30 minutes before expiry are excluded", PREREG_P1, "Sample"),
+    "s_maker_buys": (1, "maker direction s = +1 if the maker buys", PREREG_P1, "Markout"),
+    "s_maker_sells": (-1, "maker direction s = -1 otherwise", PREREG_P1, "Markout"),
+    "horizons": (5, "horizons 1 min, 5 min, 30 min, 4 h, 24 h (and settlement)", PREREG_P1, "Markout"),
+    "markout_minutes": (30, "primary horizon 30 min", PREREG_P1, "Markout"),
+    "delta_edge_10": (10, "|Δ| bucket edge 10 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_25": (25, "|Δ| bucket edge 25 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_40": (40, "|Δ| bucket edge 40 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_60": (60, "|Δ| bucket edge 60 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_75": (75, "|Δ| bucket edge 75 %", PREREG_P1, "Cells and classes"),
+    "delta_edge_90": (90, "|Δ| bucket edge 90 %", PREREG_P1, "Cells and classes"),
+    "tenor_edge_2d": (2, "tenor bucket edge 2 days", PREREG_P1, "Cells and classes"),
+    "tenor_edge_7d": (7, "tenor bucket edge 7 days", PREREG_P1, "Cells and classes"),
+    "tenor_edge_30d": (30, "tenor bucket edge 30 days", PREREG_P1, "Cells and classes"),
+    "tenor_edge_90d": (90, "tenor bucket edge 90 days", PREREG_P1, "Cells and classes"),
+    "classes": (7, "seven taker classes in order of precedence, liquidation first", PREREG_P1, "Cells and classes"),
+    "top_wallets": (10, "the 10 taker wallets with the largest aggregate negative markout", PREREG_P1,
+                    "Hypotheses and rejection rules"),
+    "size_percentile": (90, "fills above the 90th percentile of size", PREREG_P1, "Hypotheses and rejection rules"),
+    "interval_pct": (90, "90 % bootstrap interval (H1, H4)", PREREG_P1, "Hypotheses and rejection rules"),
+    "h2_interval_pct": (95, "95 % wild cluster bootstrap interval (H2)", PREREG_P1, "Hypotheses and rejection rules"),
+    "h3_tail_pct": (5, "outermost 5 % among the placebo dates (H3)", PREREG_P1, "Hypotheses and rejection rules"),
+    "significance_pct": (5, "|t| ≥ 1.96, the two-sided 5 % level (H1, H3)", PREREG_P1,
+                         "Hypotheses and rejection rules"),
+    "placebo_dates": (100, "100 random placebo dates (H3)", PREREG_P1, "Hypotheses and rejection rules"),
+    "cell_min_fills": (200, "occupied cells with at least 200 fills (H4)", PREREG_P1, "Hypotheses and rejection rules"),
+    "hypotheses": (4, "four hypotheses H1 to H4", PREREG_P1, "Hypotheses and rejection rules"),
+    "bootstrap_draws": (9_999, "B = 9 999 draws", PREREG_P1, "Inference"),
+    "seed": (20_260_917, "seed 20260917", PREREG_P1, "Inference"),
+    "hype_event": ("2026-06-23 09:00", "Deribit HYPE_USDC options from 23 June 2026 09:00 UTC (H3)", PREREG_P1,
+                   "Addendum 2"),
+    "tau_zero": (0, "the half spread is the markout at horizon 0", PREREG_P1, "Addendum 2"),
+    "perp_half_spread_bp": (1, "perp half spread 1 bp in the hedging cost", PREREG_P1, "Addendum 2"),
+    "perp_half_spread_low_bp": (0, "sensitivity at 0 bp", PREREG_P1, "Addendum 2"),
+    "perp_half_spread_high_bp": (3, "sensitivity at 3 bp", PREREG_P1, "Addendum 2"),
+    "definition_addenda": (2, "two addenda before the first inference (Addenda 1 and 2)", PREREG_P1, "Addendum 2"),
+    "addenda": (4, "four dated addenda", PREREG_P1, "Addendum 4"),
+}
 # The heading of each section in the binding German original, quoted verbatim ("Header" is the text before the
 # first section and has no heading).
 SECTION_ORIGINAL: Dict[str, str] = {
@@ -186,7 +233,8 @@ SECTION_ORIGINAL: Dict[str, str] = {
     "Hypotheses and rejection rules": "Hypothesen und Ablehnungsregeln", "Inference": "Inferenz",
     "Validation before measurement": "Validierung vor der Messung", "Addendum 1": "Nachtrag 1",
     "Addendum 3": "Nachtrag 3", "Addendum 4": "Nachtrag 4", "Addendum 5": "Nachtrag 5", "Addendum 6": "Nachtrag 6", "Addendum 7": "Nachtrag 7",
-    "Cells and classes": "Zellen und Klassen"}
+    "Cells and classes": "Zellen und Klassen", "Markout": "Markout",
+    "Data status before this commit": "Datenstand vor diesem Commit", "Addendum 2": "Nachtrag 2"}
 # Arithmetic identities used to read a result; they are not results.
 IDENTITIES: Dict[str, Tuple[float, str]] = {
     "ln_0_9": (math.log(0.9), "ln 0.9: the dose when capital becomes ten per cent cheaper (reading aid for β, "
@@ -401,6 +449,10 @@ class Sources:
                 path = self.results / name
                 if path.is_file():
                     flags.append(json.loads(path.read_text()).get("rejected"))
+            summary = self.results / "summary.json"
+            if not flags and summary.is_file():          # Paper 1: the verdicts sit in summary.json
+                s = json.loads(summary.read_text())
+                flags = [s[h].get("rejected") for h in ("H1", "H2", "H3", "H4") if isinstance(s.get(h), dict)]
             if flags and all(isinstance(f, bool) for f in flags):
                 out["n_rejected"] = float(sum(flags))
                 out["n_not_rejected"] = float(len(flags) - sum(flags))
@@ -1100,11 +1152,14 @@ def render(verdicts: Sequence[Verdict], tex_path: str, results_path: str,
     for v in verdicts:
         lines.append("| {} | `{}` | {} | {} | {} |".format(_md(v.unit), _md((v.token.rel + v.token.raw).strip()),
                                                          HOW[v.how], _md(v.source), _md(v.detail)))
-    lines += ["", "## Constants of the pre-registration", "",
+    source = ("Source: `{}` (commit `cf1f432`) with Addenda 1 and 2 of 17 and 18 September, Addendum 3 of 25 September "
+              "and Addendum 4 of 5 October 2026.".format(PREREG_P1) if PREREG == PREREG_P1 else
               "Source: `{}` (commit `c9e9162`) with Addenda 1 to 4 of 25 September 2026, Addendum 5 of 27 September, "
               "Addendum 6 of 30 September and Addendum 7 of 5 October 2026; the bucket edges from "
-              "`{}`. In the manuscript as `const:name`. Sections are named as in the English translations, with the "
-              "heading of the binding German original in quotation marks.".format(PREREG, PREREG_P1), "",
+              "`{}`.".format(PREREG, PREREG_P1))
+    lines += ["", "## Constants of the pre-registration", "",
+              source + " In the manuscript as `const:name`. Sections are named as in the English translations, with "
+              "the heading of the binding German original in quotation marks.", "",
               "| Name | Value | Meaning | Section |", "|---|---|---|---|"]
     for name, (v, w, path, s) in CONSTANTS.items():
         shown = v if isinstance(v, str) else ("{:,}".format(int(v)).replace(",", " ") if float(v).is_integer()
@@ -1117,15 +1172,31 @@ def render(verdicts: Sequence[Verdict], tex_path: str, results_path: str,
     return "\n".join(lines) + "\n"
 
 
+PAPER_DEFAULTS = {1: ("paper/main.tex", "results/p1", "docs/paper1/NUMBER_CHECK.md"),
+                  2: (str(TEX), str(RESULTS), str(REPORT))}
+
+
+def use_paper(paper: int) -> None:
+    """Select the constants of the paper's own pre-registration (Paper 2 is the default)."""
+    global CONSTANTS, PREREG
+    if paper == 1:
+        CONSTANTS, PREREG = CONSTANTS_P1, PREREG_P1
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--tex", default=str(TEX))
-    ap.add_argument("--results", default=str(RESULTS))
-    ap.add_argument("--report", default=str(REPORT))
+    ap.add_argument("--paper", type=int, choices=(1, 2), default=2,
+                    help="1: paper/main.tex against results/p1 with the constants of the Paper 1 pre-registration")
+    ap.add_argument("--tex", default=None)
+    ap.add_argument("--results", default=None)
+    ap.add_argument("--report", default=None)
     ap.add_argument("--no-report", action="store_true", help="print only, do not write the report")
     ap.add_argument("--template", action="store_true",
                     help="print every number in the order of the text with its binding or candidates")
     args = ap.parse_args(argv)
+    use_paper(args.paper)
+    d_tex, d_results, d_report = PAPER_DEFAULTS[args.paper]
+    args.tex, args.results, args.report = args.tex or d_tex, args.results or d_results, args.report or d_report
     tex = Path(args.tex).read_text()
     if args.template:
         print(template(tex, Path(args.results)), end="")

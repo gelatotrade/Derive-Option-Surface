@@ -35,6 +35,10 @@ CASCADE = ["vault", "rfq", "dominant_maker", "mm_programme", "large", "other"]  
 AGE_EDGES = [0, 5, 10, 20, 40, 60, 120, 300, np.inf]
 AGE_LABELS = ["0-5", "5-10", "10-20", "20-40", "40-60", "60-120", "120-300", ">300"]
 BOOTSTRAP = 999                      # figures only draw intervals; the registered ones come from results/p1
+NEIGHBOURS = 100                     # T1: the band is the interquartile range of the nearest fills of the cell
+FEW_WALLETS = 40                     # F3: rows of classes with fewer taker wallets are shaded
+SHADE_PERCENTILES = (5, 95)          # F5: shading of each panel between these percentiles
+THIN_MONTH_FILLS = 1000              # F6: hollow markers for months with fewer fills
 HEADROOM = 1.75                      # histograms: y axis to this multiple of the tallest bar, legend above it
 LINE_TOP = 0.62                      # reference lines on those histograms stop here, below the legend
 SEED = 20260917
@@ -141,7 +145,7 @@ def fig_t1(inputs: dict, out_dir: Path) -> List[Path]:
 
     near = frame[(frame["currency"] == row["currency"]) & (frame["delta_bucket"] == row["delta_bucket"])
                  & (frame["tenor_bucket"] == row["tenor_bucket"])]
-    near = near.reindex((near["ts"] - row["ts"]).abs().sort_values().index[:100])
+    near = near.reindex((near["ts"] - row["ts"]).abs().sort_values().index[:NEIGHBOURS])
     band_lo = [0.0] + [float(np.nanpercentile(near["mo_usd_{}".format(h)], 25)) for h in HORIZONS]
     band_hi = [0.0] + [float(np.nanpercentile(near["mo_usd_{}".format(h)], 75)) for h in HORIZONS]
 
@@ -175,7 +179,7 @@ def fig_t1(inputs: dict, out_dir: Path) -> List[Path]:
     b.set_ylabel("implied volatility")
     _panel_tag(b, "b")
 
-    c.fill_between(xl, band_lo, band_hi, color=figstyle.GREY, alpha=0.20, lw=0, label="p25-p75, 100 nearest fills")
+    c.fill_between(xl, band_lo, band_hi, color=figstyle.GREY, alpha=0.20, lw=0, label="p25-p75, {} nearest fills".format(NEIGHBOURS))
     c.plot(xl, raw, "-o", color=figstyle.PALETTE[0], ms=3, label="markout")
     c.plot(xl, neutral, "--s", color=figstyle.PALETTE[2], ms=3, mfc="none", label="delta neutral")
     c.fill_between(xl, raw, neutral, hatch="///", facecolor="none", edgecolor=figstyle.PALETTE[2], lw=0.0, alpha=0.6)
@@ -454,7 +458,7 @@ def fig_f3(inputs: dict, out_dir: Path) -> List[Path]:
         name = r["class"]
         hs = float(stats.loc[name, "hs_vol"]) if name in stats.index else np.nan
         adverse = float(stats.loc[name, "as_vol"]) if name in stats.index else np.nan
-        if int(r["clusters"]) < 40:
+        if int(r["clusters"]) < FEW_WALLETS:
             b.axhspan(i - 0.45, i + 0.45, color=figstyle.GREY, alpha=0.13, lw=0, zorder=0)
         b.barh(i, hs, color=figstyle.CLASS_COLORS[name], edgecolor="black", lw=0.5)
         b.barh(i, adverse, left=hs, color=figstyle.CLASS_COLORS[name], alpha=0.45, hatch="///",
@@ -589,7 +593,7 @@ def fig_f5(inputs: dict, out_dir: Path) -> List[Path]:
         ax = fig.add_subplot(gs[0, col])
         # shade between the 5th and 95th percentile of the panel: one extreme cell (ETH, deep ITM, over
         # 90 days) would otherwise paint every other cell of its panel the same grey
-        lo_s, hi_s = np.nanpercentile(grid, [5, 95]) if np.isfinite(grid).any() else (0.0, 1.0)
+        lo_s, hi_s = np.nanpercentile(grid, list(SHADE_PERCENTILES)) if np.isfinite(grid).any() else (0.0, 1.0)
         ax.imshow(grid, cmap="Greys", aspect="auto", vmin=lo_s, vmax=hi_s)
         cut = lo_s + 0.55 * (hi_s - lo_s)
         for i in range(grid.shape[0]):
@@ -698,7 +702,7 @@ def fig_f6(inputs: dict, out_dir: Path) -> List[Path]:
         series, counts = sub.groupby("month")["y_vol"].median(), sub.groupby("month")["y_vol"].size()
         xs = [index[m] for m in series.index]
         a.plot(xs, series.to_numpy(float), style, color=figstyle.PALETTE[k], marker="o", ms=2.5, label=ccy)
-        thin = [(index[m], series[m]) for m in series.index if counts.get(m, 0) < 1000]
+        thin = [(index[m], series[m]) for m in series.index if counts.get(m, 0) < THIN_MONTH_FILLS]
         if thin:
             a.plot([t[0] for t in thin], [t[1] for t in thin], "o", color="white", mec=figstyle.GREY, ms=3.5,
                    zorder=5)

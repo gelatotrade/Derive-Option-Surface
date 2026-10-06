@@ -289,9 +289,9 @@ def test_reference_book_skips_days_without_a_live_expiry(hist):
 
 def test_reference_days_start_per_currency():
     d = p2surface.reference_days("HYPE")
-    assert d[0] == "2025-11-11" and d[-1] == "2026-09-17"
+    assert d[0] == "2025-11-11" and d[-1] == "2026-09-30"
     d = p2surface.reference_days("ETH")
-    assert d[0] == "2024-01-11" and len(d) == (pd.Timestamp("2026-09-17") - pd.Timestamp("2024-01-11")).days + 1
+    assert d[0] == "2024-01-11" and len(d) == (pd.Timestamp("2026-09-30") - pd.Timestamp("2024-01-11")).days + 1
 
 
 def test_combine_parts_sorts_by_currency_and_day(tmp_path):
