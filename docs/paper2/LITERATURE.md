@@ -1,5 +1,9 @@
 # Literature, Paper 2: checked sources
 
+> **Working documents.** Plans, drafts, status notes and number sheets named here were removed from the current
+> tree on 6 October 2026; they remain in the git history. The scripts write the number sheets and check reports
+> again when they run.
+
 Status: 25 September 2026. Record for `paper2/refs.bib` (30 entries). The first 20 entries were checked on
 24 September 2026, the seven articles added after the audit (section "Audit addendum" below) on 25 September 2026.
 For each entry, authors, year, title, journal, volume, issue, pages and DOI were compared with the DOI record at

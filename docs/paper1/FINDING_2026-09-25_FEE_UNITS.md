@@ -1,5 +1,9 @@
 # Finding of 25 September 2026: unit of fee and rebate in the net edge of Paper 1
 
+> **Working documents.** Plans, drafts, status notes and number sheets named here were removed from the current
+> tree on 6 October 2026; they remain in the git history. The scripts write the number sheets and check reports
+> again when they run.
+
 Status: correction implemented on 25 September 2026 (addendum 3 to the pre-registration, `REVISION_2026-09-25.md`). When this finding was written, nothing in Paper 1 had been changed yet. Pilot cut 17 September 2026 12:00 UTC, 603,940 fills, horizon 30 min.
 
 Computation: `scripts/p1_fee_units_finding.py` (a copy of the Paper 1 logic with a selectable fee unit),

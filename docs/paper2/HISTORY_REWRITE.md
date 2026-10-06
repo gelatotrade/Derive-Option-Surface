@@ -1,5 +1,9 @@
 # Paper 2 history rewrite
 
+> **Working documents.** Plans, drafts, status notes and number sheets named here were removed from the current
+> tree on 6 October 2026; they remain in the git history. The scripts write the number sheets and check reports
+> again when they run.
+
 Date: 27 September 2026. Branch `paper2-capital`, local and not pushed. It replaces the local branch
 `paper2-kapital` (tip `469cc8e`), which was never pushed. That branch and its backup
 `backup/paper2-kapital-vor-integration` still hold the unscrubbed history. Neither may be pushed (no

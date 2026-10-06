@@ -20,7 +20,6 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import List, NamedTuple, Optional, Sequence
 
-PLAN = "docs/superpowers/plans/2026-09-24-p2-master-plan.md"
 REPO = Path(__file__).resolve().parents[1]
 
 
@@ -54,7 +53,7 @@ def _load_script(cmd: str, spec: Command):
     reused, e.g. when a test imported it already)."""
     path = (REPO / spec.script).resolve()
     if not path.is_file():
-        raise SystemExit(f"p2 {cmd}: script {spec.script} is missing (task {spec.task} of {PLAN})")
+        raise SystemExit(f"p2 {cmd}: script {spec.script} is missing (task {spec.task})")
     mod = sys.modules.get(spec.module)
     if mod is not None and Path(getattr(mod, "__file__", "") or "").resolve() == path:
         return mod
@@ -83,7 +82,7 @@ def _module_main(cmd: str):
     except ModuleNotFoundError as exc:
         if exc.name != name:  # the module exists but one of its imports is missing: do not hide that
             raise
-        raise SystemExit(f"p2 {cmd}: module {name} is not implemented yet (task {spec.task} of {PLAN})") from None
+        raise SystemExit(f"p2 {cmd}: module {name} is not implemented yet (task {spec.task})") from None
     fn = getattr(module, "main", None)
     if not callable(fn):
         raise SystemExit(f"p2 {cmd}: module {name} has no main(argv)")

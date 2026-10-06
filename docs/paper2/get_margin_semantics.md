@@ -1,9 +1,8 @@
 # Semantics of `public/get_margin`
 
 Status 24 September 2026, 10:49 to 12:21 UTC. Applies to BTC on the production v2 host `api.lyra.finance`.
-It rests on five investigating agents and six adversarial reviewers with about 9,800 logged requests to the API
-and to chain 957 in total, plus the contract code `derivexyz/v2-core` at commit `96796a6` and the documentation at
-docs.derive.xyz. Raw data are under `data/p2/semantik_20260924/` (not in git), small tables under
+It rests on about 9,800 logged requests to the API and to chain 957 in total, plus the contract code
+`derivexyz/v2-core` at commit `96796a6` and the documentation at docs.derive.xyz. Raw data are under `data/p2/semantik_20260924/` (not in git), small tables under
 `results/p2/semantics/`.
 
 All numbers are exploration, not a pre-registered measurement. For the paper they are collected again with tested

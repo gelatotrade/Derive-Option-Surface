@@ -116,7 +116,7 @@ the parameter changes that moved it.*
 > half spread; the test has little power. All numbers use pilot data to 17 September 2026.
 
 Pre-registration: [`docs/paper2/PRAEREGISTRIERUNG.md`](docs/paper2/PRAEREGISTRIERUNG.md) (binding, Addenda 1 to 7) ·
-[English translation](docs/paper2/PREREGISTRATION.md) · audit of the paper: [`docs/paper2/AUDIT.md`](docs/paper2/AUDIT.md) ·
+[English translation](docs/paper2/PREREGISTRATION.md) ·
 manuscript: [`paper2/main.tex`](paper2/main.tex) · code: margin replicas `derive_surface/margin_sm.py`, `margin_pm.py`,
 `margin_pm2.py`, capital and books `capital.py`, `books.py`, inference `inference_p2.py`, `inference_p2_h4.py`,
 figures `derive_surface/figs_p2/`, scripts `scripts/p2_*`.
@@ -281,7 +281,7 @@ paper2/         Paper 2: manuscript, figures, cards, PDF
 results/        p1/, p2/: every number of the two papers (JSON, CSV)
 tests/          1090 tests (surface, Paper 1, Paper 2)
 data/           trade tape, spot, live recording, depth snapshot (parquet; schema in data/README.md)
-docs/           API findings, media; paper1/ and paper2/: pre-registrations, findings, audit, checks
+docs/           API notes, media; paper1/ and paper2/: pre-registrations and the records they cite
 scripts/        render_media.sh, readme_numbers.py; p1_* and p2_*: builds, number and figure checks
 ```
 

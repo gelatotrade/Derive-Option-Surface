@@ -21,3 +21,13 @@ paper2/main.pdf
 # operating system and editor artefacts
 .DS_Store
 .Rhistory
+
+# reports the scripts write (regenerate them locally)
+docs/paper1/DATA_STATUS.md
+docs/paper1/feed_check.md
+docs/paper1/FIGURE_CHECKS.md
+docs/paper1/NUMBERS.md
+docs/paper2/NUMBERS.md
+docs/paper2/NUMBER_CHECK.md
+docs/paper2/FIGURE_CHECKS.md
+docs/paper2/status/
