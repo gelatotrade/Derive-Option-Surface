@@ -41,10 +41,15 @@ def main() -> int:
     print("overfull boxes  {}".format(len(overfull)))
     print("missing parts   {}".format(", ".join(missing) if missing else "none"))
     print("over budget     {}".format(", ".join(r["section"] for r in over) if over else "none"))
+    # every number of the text against its declared source (scripts/p2_number_check.py --paper 1)
+    check = subprocess.run([sys.executable, str(PAPER.parent / "scripts" / "p2_number_check.py"), "--paper", "1",
+                            "--no-report"], cwd=PAPER.parent, capture_output=True, text=True)
+    number_errors = next((ln.split()[-1] for ln in check.stdout.splitlines() if ln.startswith("errors")), "?")
+    print("number errors   {}".format(number_errors))
     if missing:
         print("\nA part of the paper did not make it into the PDF. A recoverable LaTeX error stops output "
               "without stopping the build; read the log before trusting the page count.")
-    return 1 if (missing or over) else 0
+    return 1 if (missing or over or check.returncode != 0) else 0
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # Pre-registration Paper 2: Capital-adjusted edge on Derive (English translation)
 
 > **Translation, not part of the registration.** This English text was made on 25 September 2026, after all
-> registered results had been computed and after the audit of the paper (`docs/paper2/AUDIT.md`, finding A64);
+> registered results on the pilot cut had been computed and after the audit of the paper (`docs/paper2/AUDIT.md`, finding A64);
 > Addendum 5 was translated on 27 September 2026, Addendum 6 on 30 September 2026 and Addendum 7 on 5 October
 > 2026. It translates `docs/paper2/PRAEREGISTRIERUNG.md` as it stands with Addenda 1 to 7, git blob `f492585cf4a3308154ba764ef4616e09d3d68621`
 > (`git hash-object docs/paper2/PRAEREGISTRIERUNG.md`). **The German original is binding**; where the two texts

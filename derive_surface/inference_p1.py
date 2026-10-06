@@ -32,6 +32,8 @@ MIN_CELL_FILLS = 200
 SALT_PATH = Path("data/p1/secret_salt.txt")  # git-ignored; the Lorenz file stores wallets only as pseudonyms
 PERP_HALF_SPREAD_BP = (0.0, 1.0, 3.0)
 NEAR_LAG_S = 300  # path agreement where the next fill comes within this many seconds
+FUNDING_END_MS = 1_790_755_200_000  # registered cut-off 2026-09-30 08:00 UTC: funding median of the 30 days before
+FUNDING_DAYS = 30
 PERP_TAKER_FEE = 3e-4
 CLASSES = ["vault", "rfq", "dominant_maker", "mm_programme", "large", "other"]
 
@@ -237,15 +239,27 @@ def hedge_cost(abs_delta: np.ndarray, forward: np.ndarray, tau_s: float, funding
     return notional * (taker_fee + half_spread_bp / 10_000.0) + notional * np.asarray(funding_per_hour, dtype=float) * (tau_s / 3600.0)
 
 
+def funding_window(funding: pd.DataFrame, end_ms: int = FUNDING_END_MS, days: int = FUNDING_DAYS) -> pd.DataFrame:
+    """The hourly funding rates of the last ``days`` before ``end_ms`` (Addendum 2, point 2: the median of the
+    absolute hourly value over the last 30 days per underlying), so the hedge cost does not depend on the day the
+    funding history was downloaded.  A file without timestamps is returned unchanged."""
+    if "timestamp" not in funding or not len(funding):
+        return funding
+    ts = funding["timestamp"].to_numpy("int64")
+    return funding[(ts > int(end_ms) - days * 86_400_000) & (ts <= int(end_ms))]
+
+
 def analysis_frame(markouts: pd.DataFrame, funding: pd.DataFrame, horizon: str = HORIZON,
-                   half_spread_bp: float = 1.0) -> pd.DataFrame:
+                   half_spread_bp: float = 1.0, funding_end_ms: int = FUNDING_END_MS) -> pd.DataFrame:
     """Analysis columns for one horizon: markout units, half spread, adverse selection, net edge, FE key, cluster.
 
     Every component of the net edge is in USDC per contract: ``fee_pc`` and ``rebate_pc`` are the maker
     fee and rebate of the fill divided by its amount.  The edge of the whole fill is ``net_edge * amount``.
+    The funding rate of the hedge cost is the median absolute hourly rate of the 30 days to ``funding_end_ms``.
     """
     tau = HORIZON_SECONDS[horizon]
     f = markouts.copy()
+    funding = funding_window(funding, funding_end_ms)
     rates = (funding.assign(ccy=funding["instrument_name"].str.split("-").str[0])
                     .groupby("ccy")["funding_rate"].apply(lambda x: float(np.median(np.abs(x)))))
     f["funding_per_hour"] = f["currency"].map(rates).fillna(float(np.median(np.abs(funding["funding_rate"]))) if len(funding) else 0.0)
@@ -277,20 +291,24 @@ def did(frame: pd.DataFrame, y_col: str, event_ms: int = HYPE_EVENT_MS, treated:
     """Difference in differences around the listing of the treated underlying, with placebo event dates."""
     day = 86_400_000
     win = frame[(frame["ts"] >= event_ms - window_days * day) & (frame["ts"] <= event_ms + window_days * day)]
+    n_no_vol = int((~np.isfinite(win[y_col].to_numpy())).sum())       # fills without a fill IV (Addendum 2, point 5)
     win = win[np.isfinite(win[y_col].to_numpy())]
     is_treated = (win["currency"] == treated).to_numpy(float)
     post = (win["ts"] >= event_ms).to_numpy(float)
     X = np.column_stack([is_treated * post, is_treated])
     out = wild_cluster_p(win[y_col].to_numpy(), X, win["day"].to_numpy(), win["cluster"].to_numpy(), 0, b=b, seed=seed)
-    pre = frame[(frame["ts"] < event_ms) & (frame["ts"] >= event_ms - 2 * window_days * day)]
-    pre = pre[np.isfinite(pre[y_col].to_numpy())]
+    # placebo dates (registered): 100 random dates whose windows have the same length and lie wholly before the
+    # listing, within the history of the treated underlying; the estimate is compared by the size of the coefficient
+    pool = frame[frame["ts"] < event_ms]
+    pool = pool[np.isfinite(pool[y_col].to_numpy())]
     rng = np.random.default_rng(seed)
     placebo_t, placebo_beta = [], []
-    if len(pre) and placebos:
-        lo, hi = int(pre["ts"].min()) + 10 * day, int(pre["ts"].max()) - 10 * day
-        fakes = rng.integers(lo, hi, placebos) if hi > lo else np.array([], dtype="int64")
-        for fake in fakes:
-            sub = pre[(pre["ts"] >= fake - window_days * day) & (pre["ts"] <= fake + window_days * day)]
+    first = pool.loc[pool["currency"] == treated, "ts"]
+    lo = int(first.min()) + window_days * day if len(first) else 0
+    hi = int(event_ms) - window_days * day
+    if len(pool) and placebos and hi > lo:
+        for fake in rng.integers(lo, hi, placebos):
+            sub = pool[(pool["ts"] >= fake - window_days * day) & (pool["ts"] <= fake + window_days * day)]
             if sub["currency"].nunique() < 2 or len(sub) < 100:
                 continue
             tr = (sub["currency"] == treated).to_numpy(float)
@@ -300,10 +318,12 @@ def did(frame: pd.DataFrame, y_col: str, event_ms: int = HYPE_EVENT_MS, treated:
             if np.isfinite(res["t"]):
                 placebo_t.append(abs(res["t"]))
                 placebo_beta.append(float(res["beta"]))
-    share = float(np.mean([pt >= abs(out["t"]) for pt in placebo_t])) if placebo_t else np.nan
+    share = float(np.mean([abs(pb) >= abs(out["beta"]) for pb in placebo_beta])) if placebo_beta else np.nan
+    share_t = float(np.mean([pt >= abs(out["t"]) for pt in placebo_t])) if placebo_t else np.nan
     out.update({"event_ms": int(event_ms), "treated": treated, "y": y_col, "window_days": window_days,
-                "placebos": len(placebo_t), "placebo_share_more_extreme": share,
-                "placebo_beta": placebo_beta, "placebo_t": [float(t) for t in placebo_t]})
+                "placebos": len(placebo_t), "placebo_share_more_extreme": share, "placebo_share_more_extreme_t": share_t,
+                "placebo_first_ms": int(lo), "placebo_last_ms": int(hi), "n_window": int(len(win)),
+                "n_window_no_vol": int(n_no_vol), "placebo_beta": placebo_beta, "placebo_t": [float(t) for t in placebo_t]})
     return out
 
 
@@ -372,6 +392,14 @@ def run_all(root: Path, out_dir: Path, half_spread_bp: float = 1.0, b: int = B, 
     summary["H1"] = {"top10_share": h1_share, "size_coefficient": h1_size, "sweep_coefficient": h1_sweep,
                      "rejected": bool(h1_share["hi"] < 0.5 or not (h1_size["beta"] < 0 and abs(h1_size["t"]) >= 1.96)
                                       or not (h1_sweep["beta"] < 0 and abs(h1_sweep["t"]) >= 1.96))}
+    # the coded test reads the delta-neutral markout; the same regression in USDC per contract and in vol points
+    by_unit = {}
+    for unit, col in (("usd", "y_usd"), ("vol", "y_vol")):
+        ok = np.isfinite(frame[col].to_numpy(float))
+        by_unit[unit] = {name: wild_cluster_p(frame[col].to_numpy()[ok], X[ok], frame["fe_key"].to_numpy()[ok],
+                                              frame["cluster"].to_numpy()[ok], k, b=b, seed=seed)
+                         for name, k in (("size", 0), ("sweep", 1))}
+    summary["H1"]["by_unit"] = by_unit
     curve = lorenz(frame["y_usd"].to_numpy(), frame["cluster"].to_numpy())
     curve["wallet"] = wallet_pseudonym(curve["wallet"], load_salt(create=True))   # no raw addresses in results/
     curve.to_csv(out_dir / "h1_lorenz.csv", index=False)

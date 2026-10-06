@@ -38,7 +38,8 @@ def fills(n=4, amount=(1.0, 4.0, 0.5, 2.0), fee=(0.4, 8.0, 1.0, 0.0), rebate=(0.
     return f
 
 
-FUNDING = pd.DataFrame({"instrument_name": ["BTC-PERP", "ETH-PERP"], "timestamp": [1, 1],
+# inside the 30 days before the registered cut-off, the window that inference_p1.analysis_frame reads
+FUNDING = pd.DataFrame({"instrument_name": ["BTC-PERP", "ETH-PERP"], "timestamp": [inf.FUNDING_END_MS - 3_600_000] * 2,
                         "funding_rate": [1e-5, 2e-5]})
 
 

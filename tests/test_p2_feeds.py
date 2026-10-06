@@ -48,8 +48,9 @@ def test_feed_addresses():
     for ccy in ("BTC", "ETH", "HYPE"):
         for kind in ("spot", "forward", "rate_pm2", "perp"):
             assert pf.FEEDS[ccy]["deploy"][kind] > 800_000
-    # 17.09.2026 12:00 UTC is block 44 812 392; the load reaches past it
-    assert pf.TO_BLOCK >= 44_812_392
+    # the load reaches the end of the Paper 1 load, cut-off 30.09.2026 08:00 UTC + 25 h (block 45 411 792)
+    from derive_surface import markouts, p2chain
+    assert pf.TO_BLOCK >= p2chain.block_at_ts((markouts.FINAL_CUTOFF_MS + markouts.LOAD_BUFFER_MS) // 1000)
 
 
 # ---------------------------------------------------------------- decoding real logs

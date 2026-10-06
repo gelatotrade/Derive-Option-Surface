@@ -193,6 +193,9 @@ CONSTANTS_P1: Dict[str, Tuple[object, str, str, str]] = {
     "s_maker_sells": (-1, "maker direction s = -1 otherwise", PREREG_P1, "Markout"),
     "horizons": (5, "horizons 1 min, 5 min, 30 min, 4 h, 24 h (and settlement)", PREREG_P1, "Markout"),
     "markout_minutes": (30, "primary horizon 30 min", PREREG_P1, "Markout"),
+    "horizon_5m": (5, "horizon 5 min", PREREG_P1, "Markout"),
+    "horizon_4h": (4, "horizon 4 h", PREREG_P1, "Markout"),
+    "other_underlyings": (9, "the nine remaining underlyings only descriptively in the appendix", PREREG_P1, "Sample"),
     "delta_edge_10": (10, "|Δ| bucket edge 10 %", PREREG_P1, "Cells and classes"),
     "delta_edge_25": (25, "|Δ| bucket edge 25 %", PREREG_P1, "Cells and classes"),
     "delta_edge_40": (40, "|Δ| bucket edge 40 %", PREREG_P1, "Cells and classes"),
@@ -210,7 +213,7 @@ CONSTANTS_P1: Dict[str, Tuple[object, str, str, str]] = {
     "interval_pct": (90, "90 % bootstrap interval (H1, H4)", PREREG_P1, "Hypotheses and rejection rules"),
     "h2_interval_pct": (95, "95 % wild cluster bootstrap interval (H2)", PREREG_P1, "Hypotheses and rejection rules"),
     "h3_tail_pct": (5, "outermost 5 % among the placebo dates (H3)", PREREG_P1, "Hypotheses and rejection rules"),
-    "significance_pct": (5, "|t| ≥ 1.96, the two-sided 5 % level (H1, H3)", PREREG_P1,
+    "significance_pct": (5, "|t| ≥ 1.96 of the registered coefficient tests (H1, H3), the two-sided 5 % level", PREREG_P1,
                          "Hypotheses and rejection rules"),
     "placebo_dates": (100, "100 random placebo dates (H3)", PREREG_P1, "Hypotheses and rejection rules"),
     "cell_min_fills": (200, "occupied cells with at least 200 fills (H4)", PREREG_P1, "Hypotheses and rejection rules"),
@@ -226,6 +229,7 @@ CONSTANTS_P1: Dict[str, Tuple[object, str, str, str]] = {
     "definition_addenda": (2, "two addenda before the first inference (Addenda 1 and 2)", PREREG_P1, "Addendum 2"),
     "addenda": (4, "four dated addenda", PREREG_P1, "Addendum 4"),
 }
+CONSTANTS_P2, PREREG_P2 = CONSTANTS, PREREG
 # The heading of each section in the binding German original, quoted verbatim ("Header" is the text before the
 # first section and has no heading).
 SECTION_ORIGINAL: Dict[str, str] = {
@@ -452,7 +456,8 @@ class Sources:
             summary = self.results / "summary.json"
             if not flags and summary.is_file():          # Paper 1: the verdicts sit in summary.json
                 s = json.loads(summary.read_text())
-                flags = [s[h].get("rejected") for h in ("H1", "H2", "H3", "H4") if isinstance(s.get(h), dict)]
+                flags = [s.get(h, {}).get("rejected") if isinstance(s.get(h), dict) else None
+                         for h in ("H1", "H2", "H3", "H4")]              # all four, or no count at all
             if flags and all(isinstance(f, bool) for f in flags):
                 out["n_rejected"] = float(sum(flags))
                 out["n_not_rejected"] = float(len(flags) - sum(flags))
@@ -1179,8 +1184,7 @@ PAPER_DEFAULTS = {1: ("paper/main.tex", "results/p1", "docs/paper1/NUMBER_CHECK.
 def use_paper(paper: int) -> None:
     """Select the constants of the paper's own pre-registration (Paper 2 is the default)."""
     global CONSTANTS, PREREG
-    if paper == 1:
-        CONSTANTS, PREREG = CONSTANTS_P1, PREREG_P1
+    CONSTANTS, PREREG = (CONSTANTS_P1, PREREG_P1) if paper == 1 else (CONSTANTS_P2, PREREG_P2)
 
 
 def main(argv: Optional[List[str]] = None) -> int:

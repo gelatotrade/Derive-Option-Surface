@@ -412,6 +412,21 @@ def combine_parts(parts_dir: Path = PARTS_DIR, out: Path = REF_CSV) -> Path:
     return out
 
 
+def _part_covers(path: Path, chunk: Sequence[str]) -> bool:
+    """True if the cached quarter part was computed for exactly ``chunk`` (its days file says so); a part without
+    that file counts only if it reaches the last requested day.  A quarter cut at an earlier cut-off is recomputed."""
+    if not Path(path).exists():
+        return False
+    side = Path(path).with_suffix(".days.json")
+    if side.exists():
+        return json.loads(side.read_text()) == list(chunk)
+    try:
+        last = str(pd.read_csv(path, usecols=["day"])["day"].max())
+    except Exception:
+        return False
+    return last >= str(max(chunk))
+
+
 def run_reference_book(ccy: str, *, parts_dir: Path = PARTS_DIR, max_seconds: float = 480.0) -> dict:
     """Resumable run: one part file per quarter under ``parts_dir``; stops after ``max_seconds``."""
     t0 = time.monotonic()
@@ -421,7 +436,7 @@ def run_reference_book(ccy: str, *, parts_dir: Path = PARTS_DIR, max_seconds: fl
     done = 0
     for tag, chunk in chunks.items():
         path = parts_dir / f"{ccy}_{tag}.csv"
-        if path.exists():
+        if _part_covers(path, chunk):
             done += 1
             continue
         if time.monotonic() - t0 > max_seconds:
@@ -431,6 +446,7 @@ def run_reference_book(ccy: str, *, parts_dir: Path = PARTS_DIR, max_seconds: fl
         tmp = path.with_suffix(".tmp")
         df.to_csv(tmp, index=False)
         tmp.replace(path)
+        path.with_suffix(".days.json").write_text(json.dumps(list(chunk)))
         done += 1
         log.info("%s %s: %d of %d days in %.0f s", ccy, tag, len(df), len(chunk), time.monotonic() - t1)
     return {"ccy": ccy, "done": done, "total": len(chunks), "remaining": len(chunks) - done}

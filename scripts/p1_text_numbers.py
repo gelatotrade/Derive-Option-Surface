@@ -5,7 +5,8 @@
 The manuscript binds every number to one source with a ``% src`` declaration, and
 ``scripts/p2_number_check.py --paper 1`` checks each binding, so a run on new data names every sentence whose number
 has changed.  Each quantity is computed the way its figure computes it (``figures_p1``, ``figdata``): the same
-analysis frame, the same cells, the same bootstrap draws and seeds.
+analysis frame, the same cells, the same draws and seeds; intervals quoted in the text that no figure draws use the
+registered B = 9 999 of ``inference_p1``.
 
 Run from the repository root after ``python3 -m derive_surface p1 inference``:
 
@@ -85,6 +86,15 @@ def markout_numbers(frame: pd.DataFrame, b: int, seed: int) -> Dict[str, object]
         "mean_net_edge": float(np.nanmean(frame["net_edge"])),
     }
     out["mean_over_median"] = out["mean_markout"] / out["median_markout"]
+    # exploratory: the same net edge on the delta-neutral markout (the registered one charges the hedge to the USDC
+    # markout, which still carries the move of the underlying)
+    out["mean_net_edge_delta_neutral"] = float(np.nanmean(frame["y_dn"] - frame["fee_pc"] + frame["rebate_pc"]
+                                                          - frame["hedge"]))
+    out["mean_adverse_selection_delta_neutral"] = float(np.nanmean(frame["y_dn"] - frame["hs"]))
+    split = figures_p1.class_vol_split(frame)
+    for name, r in split.iterrows():
+        out[f"class_hs_vol_median_{name}"] = float(r["hs_vol"])
+        out[f"class_as_vol_median_{name}"] = float(r["as_vol"])
     ne = frame["net_edge"].to_numpy(float)
     fine = np.isfinite(ne)
     ci = cluster_mean_ci(ne[fine], frame["cluster"].to_numpy()[fine], b=b, seed=seed, level=INTERVAL_LEVEL)
@@ -135,9 +145,21 @@ def horizon_numbers(frame: pd.DataFrame) -> Dict[str, object]:
     cols = ["mo_usd_{}".format(h) for h in figures_p1.HORIZONS]
     balanced = frame[np.isfinite(frame[cols]).all(axis=1)]
     out: Dict[str, object] = {"balanced_fills": int(len(balanced))}
+    hs_vol = 100.0 * balanced["maker_side"] * (balanced["iv_mark_t"] - balanced["iv_fill"])
+    out["balanced_mean_half_spread"] = float(np.nanmean(balanced["hs"]))
     for h in figures_p1.HORIZONS:
         out[f"balanced_mean_usd_{h}"] = float(np.nanmean(balanced[f"mo_usd_{h}"]))
         out[f"balanced_mean_vol_{h}"] = float(np.nanmean(balanced[f"mo_vol_{h}"]))
+        out[f"balanced_median_usd_{h}"] = float(np.nanmedian(balanced[f"mo_usd_{h}"]))
+        out[f"balanced_median_vol_{h}"] = float(np.nanmedian(balanced[f"mo_vol_{h}"]))
+        out[f"balanced_median_premium_{h}"] = float(np.nanmedian(figdata.premium_share(balanced, f"mo_usd_{h}")))
+        # adverse selection = markout - half spread, in USDC, delta-neutral and vol points
+        out[f"balanced_mean_as_usd_{h}"] = float(np.nanmean(balanced[f"mo_usd_{h}"] - balanced["hs"]))
+        out[f"balanced_mean_as_dn_{h}"] = float(np.nanmean(balanced[f"mo_dn_{h}"] - balanced["hs"]))
+        out[f"balanced_mean_as_vol_{h}"] = float(np.nanmean(balanced[f"mo_vol_{h}"] - hs_vol))
+    last, first = figures_p1.HORIZONS[-1], figures_p1.HORIZONS[0]
+    out["balanced_as_usd_share_after_first_pct"] = float(
+        100.0 * (out[f"balanced_mean_as_usd_{last}"] - out[f"balanced_mean_as_usd_{first}"]) / out[f"balanced_mean_as_usd_{last}"])
     return out
 
 
@@ -184,6 +206,7 @@ def cell_numbers(frame: pd.DataFrame, cells: pd.DataFrame, markouts: pd.DataFram
     atm3 = cells3[cells3["currency"].isin(["BTC", "ETH"]) & (cells3["delta_bucket"] == ATM)
                   & (cells3["tenor_bucket"] == "<=2d")]
     out["atm_short_cells_positive_3bp"] = int(atm3["positive"].sum())
+    out["atm_short_cells_excluding_zero_3bp"] = int((atm3["positive"] | atm3["negative"]).sum())
     out["cells_positive_p10_3bp"] = by_p(cells3)
     out["cells_positive_p10_3bp_pct"] = 100.0 * by_p(cells3) / len(cells3)
 
@@ -219,6 +242,7 @@ def cell_numbers(frame: pd.DataFrame, cells: pd.DataFrame, markouts: pd.DataFram
                 lo, hi = values.loc["<=2d", d], values.loc[">90d", d]
                 if np.isfinite(lo) and np.isfinite(hi) and lo > 0:
                     ratios.append(hi / lo)
+    out["bp_ratio_pairs"] = len(ratios)
     if ratios:
         out["bp_ratio_90d_over_2d_min"] = float(min(ratios))
         out["bp_ratio_90d_over_2d_max"] = float(max(ratios))
@@ -241,7 +265,9 @@ def figure_constants() -> Dict[str, object]:
     """Constants of the figures that their captions print (draws, levels, thresholds of the drawing)."""
     import inspect
     level = inspect.signature(cluster_mean_ci).parameters["level"].default
+    level_f2 = inspect.signature(figdata._median_ci).parameters["level"].default
     return {"figure_draws": figures_p1.BOOTSTRAP, "figure_interval_pct": 100.0 * level,
+            "f2_interval_pct": 100.0 * level_f2,
             "t1_neighbours": figures_p1.NEIGHBOURS, "f3_few_wallets": figures_p1.FEW_WALLETS,
             "f5_shade_lo_pct": figures_p1.SHADE_PERCENTILES[0], "f5_shade_hi_pct": figures_p1.SHADE_PERCENTILES[1],
             "f6_thin_month_fills": figures_p1.THIN_MONTH_FILLS, "path_a_near_s": NEAR_LAG_S}
@@ -261,6 +287,9 @@ def build(root: Path, results: Path, b: int = B, seed: int = SEED) -> Dict[str, 
     out.update(cell_numbers(frame, cells, markouts, funding, b, seed))
     out.update(curve_age_numbers(frame))
     out.update(figure_constants())
+    summary = json.loads((results / "summary.json").read_text())
+    beta = np.asarray(summary["H3"]["did"].get("placebo_beta", []), dtype=float)
+    out["h3_placebo_beta_sd"] = float(np.std(beta, ddof=1)) if len(beta) > 1 else None
     return out
 
 

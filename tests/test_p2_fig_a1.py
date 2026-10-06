@@ -159,7 +159,8 @@ def test_real_data_figure_agrees_with_the_results(tmp_path):
         shutil.copy(REAL / name, rd / name)
     a1.build(out_dir=tmp_path / "figures", results_dir=rd, capital_path=REAL_CAPITAL)
     out = a1.run_checks(rd)
-    bad = out[~out["agrees"]]
+    fixed = {"a_threshold_median", "a_threshold_p95", "feed_age"}   # registered bounds and the appendix sentence
+    bad = out[~out["agrees"] | (out["id"].isin(fixed) & (out["matches_instruction"] == False))]  # noqa: E712
     assert bad.empty, bad.to_string()
 
 

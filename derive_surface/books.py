@@ -1687,6 +1687,21 @@ def _chunk_marginal(fills: pd.DataFrame, hist, ob: "OnchainBooks", snap_g: dict,
     return pd.DataFrame(rows)
 
 
+def _part_holds(path: Path, keys: set, columns: Sequence[str]) -> bool:
+    """True if the cached part at ``path`` holds exactly ``keys`` (tuples over ``columns``, days as YYYY-MM-DD).
+    A part from an earlier sample or draw (another cut-off, another H2 sample) is recomputed, not reused."""
+    if not Path(path).exists():
+        return False
+    try:
+        got = pd.read_parquet(path, columns=list(columns))
+    except Exception:
+        return False
+    for c in columns:
+        if np.issubdtype(got[c].dtype, np.datetime64):
+            got[c] = got[c].dt.strftime("%Y-%m-%d")
+    return set(map(tuple, got.astype(str).to_numpy())) == keys
+
+
 def run_marginal(max_seconds: float = 480.0, parts_dir: Path = MARGINAL_PARTS, log=print) -> dict:
     """Resumable H2 run: one part per (currency, month) of the sampled fills; FeedHistory is loaded per month."""
     import gc
@@ -1697,7 +1712,9 @@ def run_marginal(max_seconds: float = 480.0, parts_dir: Path = MARGINAL_PARTS, l
     top, snaps, pop, sample = _h2_inputs()
     sample = sample.assign(month=pd.to_datetime(sample["ts"], unit="ms").dt.strftime("%Y-%m"))
     chunks = sorted(sample.groupby(["currency", "month"]).groups)
-    todo = [(c, m) for c, m in chunks if not (Path(parts_dir) / f"{c}_{m}.parquet").exists()]
+    want = {k: {(str(x),) for x in g["trade_id"]} for k, g in sample.groupby(["currency", "month"])}
+    todo = [(c, m) for c, m in chunks
+            if not _part_holds(Path(parts_dir) / f"{c}_{m}.parquet", want[(c, m)], ["fill_key"])]
     log(f"population {len(pop)}, sample {len(sample)}, chunks {len(chunks)}, todo {len(todo)}")
     if todo:
         accs = sorted(int(x) for x in sample["maker_sub"].unique())
@@ -1891,7 +1908,9 @@ def run_maker_days(max_seconds: float = 480.0, parts_dir: Path = MAKER_DAY_PARTS
     days = maker_day_list(m, top)
     days = days.assign(month=days["day"].dt.strftime("%Y-%m"))
     months = sorted(days["month"].unique())
-    todo = [mo for mo in months if not (Path(parts_dir) / f"{mo}.parquet").exists()]
+    want = {mo: {(str(int(a)), pd.Timestamp(d).strftime("%Y-%m-%d")) for a, d in zip(g["subaccount"], g["day"])}
+            for mo, g in days.groupby("month")}
+    todo = [mo for mo in months if not _part_holds(Path(parts_dir) / f"{mo}.parquet", want[mo], ["subaccount", "day"])]
     log(f"maker days {len(days)}, months {len(months)}, todo {len(todo)}")
     if todo:
         snaps = pd.read_parquet(BOOKS_DIR / "snapshots.parquet")

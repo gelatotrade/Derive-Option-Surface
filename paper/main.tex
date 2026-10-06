@@ -59,8 +59,11 @@
 \title[mode=title]{Who trades against the maker? Adverse selection with counterparty identity on an on-chain options order book}
 \tnotemark[1]
 \tnotetext[1]{First version 19 September 2026, revised 25 September 2026, both on pilot data to
-17 September 2026; this version is computed on the registered sample to 30 September 2026, and every
-number in it is recomputed. The four verdicts are those of the pilot. The revision of 25 September corrected the
+17 September 2026; this version is computed on the registered sample to 30 September 2026, 08:00 UTC, and
+every number in it is recomputed. The four verdicts are those of the pilot, which held 97 per cent of these
+fills, so they are no independent replication. This version also reports the test of H1 in all three units,
+draws the placebo windows of H3 as registered and keeps the funding rate and the settlement markouts to the
+registered windows. The revision of 25 September corrected the
 unit of the maker fee and rebate, which the tape books as sums over the whole fill: the first version
 subtracted them from a markout per contract, divided the net edge per contract by the notional of the whole
 fill in its map, and mixed the same units in the markout as a share of the premium. On the pilot data the
@@ -78,11 +81,12 @@ A market maker on an options book loses to counterparties who know something and
 not, but on an anonymous venue the two can only be told apart by proxy. Derive settles on chain, so its
 public tape names both wallets. On 621\,508 fills in BTC, ETH and HYPE options between January 2024 and
 September 2026, the maker's mean markout thirty minutes after the fill is $+12.79$ USDC per contract: a half
-spread of $+15.45$ plus adverse selection of $-2.66$. Fees, rebates and delta hedging leave a net edge of
-$+9.34$. The loss is extremely concentrated, with ten taker wallets carrying 90.1 per cent of it, and those
-ten are almost the entirety of the two professional counterparty classes. Trade size and sweeps, the
-standard proxies for toxic flow, explain none of it once instrument-by-day fixed effects are included. Four
-hypotheses were registered before any markout was computed; three are rejected.
+spread of $+15.45$ plus adverse selection of $-2.66$. Fees, rebates and a modelled hedge cost leave a net
+edge of $+9.34$. The loss is extremely concentrated: ten taker wallets, almost the entirety of the two
+professional counterparty classes, carry 90.1 per cent of it. Trade size, the standard proxy for toxic flow,
+explains none of it once instrument-by-day fixed effects are included, and sweeps only the move of the
+underlying, which hedging removes. Four hypotheses were registered before any markout was computed; three
+are rejected.
 % src text:two_kinds two
 % src text_numbers.json:fills 621\,508
 % src const:sample_start January 2024
@@ -93,9 +97,8 @@ hypotheses were registered before any markout was computed; three are rejected.
 % src text_numbers.json:mean_adverse_selection -2.66
 % src text_numbers.json:mean_net_edge +9.34
 % src const:top_wallets ten
-% src summary.json:H1.top10_share.share~pct 90.1
-% src const:top_wallets ten
 % src text:professional_classes two
+% src summary.json:H1.top10_share.share~pct 90.1
 % src const:hypotheses Four
 % src derived:n_rejected three
 \end{abstract}
@@ -146,9 +149,9 @@ The loss is carried by very few of them. Ten taker wallets account for 90.1 per 
 aggregate loss, and a single address for 38.0 per cent. The same ten wallets supply 98.8 per cent of the
 fills of the dominant-maker class and 92.0 per cent of those of the market-maker programme, so the
 concentration result and the counterparty result are one finding seen twice. What does not follow is the
-usual explanation. Neither trade size above the ninetieth percentile nor sweeps across several price levels
-carry a coefficient distinguishable from zero once instrument-by-day fixed effects absorb the composition of
-the flow. On this venue the standard observables do not find the informed trader; the identity does.
+usual explanation. Once instrument-by-day fixed effects absorb the composition of the flow, trade size above the
+ninetieth percentile carries no coefficient distinguishable from zero, and sweeps across several strikes carry
+one only in USDC, through the next move of the underlying, which a delta hedge removes. On this venue the standard observables do not find the informed trader; the identity does.
 % src const:top_wallets Ten
 % src summary.json:H1.top10_share.share~pct 90.1
 % src text_numbers.json:top1_loss_share_pct 38.0
@@ -160,7 +163,7 @@ Three contributions follow. The first is a measurement. Section~\ref{sec:measure
 result into a half spread, adverse selection, the fee, the rebate and the cost of delta hedging, marked
 against the volatility surface that the venue itself writes on chain rather than against a mark of my own
 construction. The second is the counterparty fact above, together with its negative half: the observables
-that the literature uses in place of identity do not reproduce it. The third is a map. Section~\ref{sec:maker}
+that the literature uses in place of identity do not reproduce it. The third, exploratory, is a map. Section~\ref{sec:maker}
 reports the net edge per unit of notional across moneyness and tenor for three underlyings, which is the
 form in which a quoting decision is actually taken.
 % src text:contributions Three
@@ -191,8 +194,8 @@ each side, and the realised profit. Where a trade came from a request for quote,
 identifier that ties its legs together; 20.7 per cent of fills arrive this way.
 % src text_numbers.json:rfq_share_pct 20.7
 
-The sample runs from 11 January 2024 to 30 September 2026 and covers every option fill on BTC, ETH and HYPE:
-621\,508 fills across 43\,495 instruments, 12\,019 taker wallets and 7\,264 maker wallets. ETH carries
+The sample runs from 11 January 2024 to 30 September 2026 and covers the option fills on BTC, ETH and HYPE
+that pass the registered exclusions: 621\,508 fills across 43\,495 instruments, 12\,019 taker wallets and 7\,264 maker wallets. ETH carries
 414\,707 fills, BTC 159\,467 and HYPE 47\,334. Liquidations do not appear: they are settled outside the
 trade tape, so the liquidation class defined in the pre-registration is empty throughout.
 % src const:sample_start 11 January 2024
@@ -243,21 +246,24 @@ Three marks are available and they answer different questions. The primary one i
 evaluated at the last curve pushed at or before the horizon, because it is the number the venue itself uses
 for margin and settlement. The second is the mark attached to the next fill in the same instrument, which is
 a genuine transaction but arrives at a median distance of 15\,011 seconds and is therefore no control at a
-thirty-minute horizon. The third is the settlement payoff, which is exact but only available once. Their
-agreement is examined in Figure~\ref{fig:a1}.
+thirty-minute horizon. The third is the settlement payoff, which is exact but only available once. The
+first two are compared in Figure~\ref{fig:a1}; the settlement payoff enters the secondary test of H2.
 % src text:marks Three
 % src summary.json:path_agreement.0.median_lag_a_s 15\,011
 % src const:markout_minutes thirty
+% src text:marks_compared two
 
 Subtracting the maker fee, adding the maker rebate and subtracting a modelled cost of holding the resulting
 delta to the horizon turns the markout into a net edge. The tape books the fee and the rebate for the whole
 fill, so both are divided by its number of contracts before they enter. For a multi-leg request for quote
-the fee is booked on one leg; spreading it over the package leaves the net edge at $9.34$ and changes no cell
+the fee is almost always booked on one leg; spreading it over the package leaves the net edge at $9.34$ and changes no cell
 verdict. Over the sample the fee costs $1.07$
 USDC per contract, the rebate returns $0.77$ and the hedge costs $3.15$, which takes the markout of $+12.79$
-to a net edge of $+9.34$, with a 95 per cent interval from $1.21$ to $17.95$. Figure~\ref{fig:t2} shows the
+to a net edge of $+9.34$, with a 95 per cent interval from $1.22$ to $17.95$. Figure~\ref{fig:t2} shows the
 whole identity with an interval on every component. The hedge is the only component that is not observed,
-and the figure marks it as such; its assumed cost is varied in Section~\ref{sec:results}.
+and the figure marks it as such; its assumed cost is varied in Section~\ref{sec:results}. The registered net
+edge charges the hedge to the markout in USDC, which still carries the move of the underlying; on the
+delta-neutral markout the same net edge is $+11.75$ (exploratory).
 % src text_numbers.json:net_edge_package_fee 9.34
 % src text_numbers.json:mean_fee 1.07
 % src text_numbers.json:mean_rebate 0.77
@@ -265,8 +271,9 @@ and the figure marks it as such; its assumed cost is varied in Section~\ref{sec:
 % src text_numbers.json:mean_markout +12.79
 % src text_numbers.json:mean_net_edge +9.34
 % src text_numbers.json:net_edge_interval_pct 95
-% src text_numbers.json:net_edge_lo95 1.21
+% src text_numbers.json:net_edge_lo95 1.22
 % src text_numbers.json:net_edge_hi95 17.95
+% src text_numbers.json:mean_net_edge_delta_neutral +11.75
 
 \begin{figure*}[t]
   \centering
@@ -278,8 +285,8 @@ and the figure marks it as such; its assumed cost is varied in Section~\ref{sec:
 \end{figure*}
 
 Four units are used and none of them is redundant. USDC per contract is the quantity the pre-registration
-fixed. Vol points are the only unit that pools across underlyings whose contracts differ in size by three
-orders of magnitude. The share of the premium is what a maker books. Basis points of notional is what a
+fixed. Vol points remove the move of the underlying and pool across underlyings whose contracts differ in size by
+three orders of magnitude. The share of the premium is what a maker books. Basis points of notional is what a
 quoting decision compares against a perpetual spread. Figure~\ref{fig:f1} shows why reading the result in
 only one of them is misleading.
 % src text:units Four
@@ -294,10 +301,9 @@ with the fills it assigns.
 \section{Pre-registration and inference}\label{sec:prereg}
 Four hypotheses were committed, with their rejection rules, on 17 September 2026 before any markout existed.
 Two dated addenda resolved questions of definition while the data were being built; a third, written after
-the first version, corrects the unit of fee and rebate and changes no hypothesis, threshold or
-sample. H1 holds that toxic flow is concentrated in few wallets \emph{and} identifiable from trade size and
+the first version, corrects the unit of fee and rebate and changes no hypothesis, threshold or sample. H1 holds that toxic flow is concentrated in few wallets \emph{and} identifiable from trade size and
 sweeps; it is rejected unless the upper bound of its interval reaches one half and both coefficients are negative and
-significant. H2 holds that vault flow is uninformed; it is rejected if the mean markout against vaults is
+significant; its coded test reads the delta-neutral markout. H2 holds that vault flow is uninformed; it is rejected if the mean markout against vaults is
 significantly negative. H3 holds that HYPE flow on Derive was more toxic before HYPE options were listed on a
 centralised venue on 23 June 2026 than after; it is rejected unless the difference-in-differences estimate is
 positive, significant, and extreme against a placebo distribution. H4 holds that the net edge is positive in
@@ -312,8 +318,8 @@ All inference clusters on the taker wallet, the level at which the sampling here
 \citep{abadie2023}. Coefficients are tested with a wild cluster bootstrap using restricted residuals and
 Rademacher weights \citep{cameron2008,mackinnon2017}, with $B = 9\,999$ draws and a fixed seed
 \citep{roodman2019}; means and cell averages carry percentile intervals from a cluster pairs bootstrap with
-the same $B$. Fixed effects are instrument by day and are applied as a within transformation. Error bars and
-bands that appear only in a figure use 999 draws or fewer.
+the same $B$. Fixed effects, applied as a within transformation, are instrument by day with delta-bucket dummies for H1
+and day for H3. Error bars and bands that appear only in a figure use 999 draws or fewer.
 % src const:bootstrap_draws 9\,999
 % src text_numbers.json:figure_draws 999
 
@@ -352,44 +358,59 @@ follows is reported in the unit that makes it comparable, and the pre-registered
 
 \subsection{Adverse selection is small, and it does not grow}
 Restricting the sample to the 526\,230 fills that have every horizon, so that a falling line cannot be a
-shrinking sample, the maker's median result is almost flat from one minute to one day.
-Figure~\ref{fig:f2} shows it in three units. In vol points the mean moves from $2.07$ to $1.86$ across the
-five horizons; in USDC per contract it moves from $15.66$ to $12.43$. Whatever the counterparty
-learns, it is priced within the first minute and does not continue to accrue against the maker afterwards.
+shrinking sample, the maker's median result in vol points is almost flat from one minute to one day, from
+$1.22$ to $1.09$, while in USDC per contract it falls from $1.33$ to $0.79$; Figure~\ref{fig:f2} shows it in
+three units. Adverse selection, the markout less the half spread of $+16.15$, deepens in USDC from $-0.48$ at
+one minute to $-2.48$ at five minutes and $-3.72$ at one day. Delta-neutral it is $-0.15$ at thirty minutes,
+and in vol points it stays within $0.05$ of zero up to four hours. What the counterparty learns is the next
+move of the underlying, most of it within five minutes, not the volatility.
 Splitting the flow makes the point sharper: the professional classes sit below zero at every horizon and the
 remaining flow above it, and the two curves are already separated at one minute. This is the first sign that
-the maker's problem is not information arriving after the trade.
+the maker's problem is not information about volatility arriving after the trade.
 % src text_numbers.json:balanced_fills 526\,230
+% src text_numbers.json:balanced_median_vol_1m 1.22
+% src text_numbers.json:balanced_median_vol_24h 1.09
+% src text_numbers.json:balanced_median_usd_1m 1.33
+% src text_numbers.json:balanced_median_usd_24h 0.79
 % src text:units three
-% src text_numbers.json:balanced_mean_vol_1m 2.07
-% src text_numbers.json:balanced_mean_vol_24h 1.86
-% src const:horizons five
-% src text_numbers.json:balanced_mean_usd_1m 15.66
-% src text_numbers.json:balanced_mean_usd_24h 12.43
+% src text_numbers.json:balanced_mean_half_spread +16.15
+% src text_numbers.json:balanced_mean_as_usd_1m -0.48
+% src text_numbers.json:balanced_mean_as_usd_5m -2.48
+% src const:horizon_5m five
+% src text_numbers.json:balanced_mean_as_usd_24h -3.72
+% src text_numbers.json:balanced_mean_as_dn_30m -0.15
+% src const:markout_minutes thirty
+% src text_numbers.json:balanced_mean_as_vol_1m,balanced_mean_as_vol_5m,balanced_mean_as_vol_30m,balanced_mean_as_vol_4h~abs~max <=0.05
+% src const:horizon_4h four
+% src const:horizon_5m five
 % src text:curves two
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/f2.pdf}
-  \caption{\textbf{How long adverse selection lasts.} The subsample is restricted to fills that have every horizon, so a falling line cannot be a shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. The share of the premium in panel c is taken per contract.}
-% src text_numbers.json:figure_interval_pct 95
+  \caption{\textbf{How long adverse selection lasts.} The subsample is restricted to fills that have every horizon, so a falling line cannot be a shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. The share of the premium in panel c is taken per contract. Professional flow is that of dominant makers, the market-maker programme and large wallets.}
+% src text_numbers.json:f2_interval_pct 95
   \label{fig:f2}
 \end{figure*}
 
 \subsection{The counterparty, not the option}
 Figure~\ref{fig:f3} reports the six classes with the number of wallets behind each. The ordering is stark,
 from $+24.46$ USDC per contract against ordinary takers and $+14.85$ against request-for-quote flow down to
-$-20.47$ against the market-maker programme and $-25.40$ against dominant makers. The decomposition explains
-where the difference comes from, and it is not where the literature would look. Against dominant makers the
+$-20.47$ against the market-maker programme and $-25.40$ against dominant makers. Against dominant makers the
 maker's half spread is already $-16.59$ before anything happens: the fill is struck on the wrong side of the
 mark. Adverse selection adds a further $-8.80$. Against the market-maker programme the split is
 $-4.94$ and $-15.53$. Against ordinary takers the half spread is $+25.30$ and adverse selection only
-$-0.84$. The professional counterparties are not principally trading on information the maker lacks; they
-are getting a better entry price. That is a different claim, and it points at quoting policy rather than at
-information. After fees, rebate and hedge the net edge per class runs from $+21.79$ USDC per contract against
+$-0.84$. In vol points, which remove the move of the
+underlying, the median adverse selection is within $0.06$ of zero for every class, and the classes differ in
+the half spread alone: $-0.70$ vol points against dominant makers, $-0.55$ against the market-maker programme
+and $+2.04$ against ordinary takers. The adverse selection in USDC against the programme is the next move of
+the underlying, which a delta hedge removes. The professional counterparties get a better entry price; they
+do not trade on information about volatility. After fees, rebate and hedge the net edge per class runs from $+21.79$ USDC per contract against
 ordinary takers to $-31.97$ against dominant makers. Against vault flow the markout is $+4.21$, with an
 interval from $1.64$ to $8.53$ over eight wallets, so H2 is not rejected; the net edge is $+2.08$, given
-without an interval.
+without an interval. The registered secondary test, on the settlement markout less its cell-month mean, does
+not reject either, at $-6.37$ with an interval from $-17.78$ to $5.11$ ($p = 0.304$); its point estimate is
+negative.
 % src class_means.csv:class~count six
 % src class_means.csv:mean@class=other +24.46
 % src class_means.csv:mean@class=rfq +14.85
@@ -401,6 +422,10 @@ without an interval.
 % src class_means.csv:mean_as@class=mm_programme -15.53
 % src class_means.csv:mean_hs@class=other +25.30
 % src class_means.csv:mean_as@class=other -0.84
+% src text_numbers.json:class_as_vol_median_dominant_maker,class_as_vol_median_large,class_as_vol_median_mm_programme,class_as_vol_median_other,class_as_vol_median_rfq,class_as_vol_median_vault~abs~max <=0.06
+% src text_numbers.json:class_hs_vol_median_dominant_maker -0.70
+% src text_numbers.json:class_hs_vol_median_mm_programme -0.55
+% src text_numbers.json:class_hs_vol_median_other +2.04
 % src class_means.csv:mean_ne@class=other +21.79
 % src class_means.csv:mean_ne@class=dominant_maker -31.97
 % src summary.json:H2.markout_30m.mean +4.21
@@ -408,10 +433,14 @@ without an interval.
 % src summary.json:H2.markout_30m.hi 8.53
 % src summary.json:H2.markout_30m.clusters eight
 % src class_means.csv:mean_ne@class=vault +2.08
+% src summary.json:H2.settlement_vrp.mean -6.37
+% src summary.json:H2.settlement_vrp.lo -17.78
+% src summary.json:H2.settlement_vrp.hi 5.11
+% src summary.json:H2.settlement_vrp.p 0.304
 
 Two cautions belong here. The two classes with negative markouts rest on seventeen and thirty-six
 wallets, and their wild cluster bootstrap $p$-values against zero are $0.102$ and $0.090$, above the five
-per cent the pre-registration demands. The percentile intervals exclude zero and the $p$-values do not, so
+per cent level of the registered tests. The percentile intervals exclude zero and the $p$-values do not, so
 the class result is reported as a description and not as a test.
 % src text:cautions Two
 % src class_means.csv:class@mean<0~count two
@@ -424,22 +453,23 @@ the class result is reported as a description and not as a test.
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/f3.pdf}
-  \caption{\textbf{Who takes back which part of the spread.} G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are not additive, so the mean markout is marked separately.}
+  \caption{\textbf{Who takes back which part of the spread.} G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are not additive, so the mean markout is marked separately. Half spread and adverse selection in vol points are read from the implied vols of the mark and the fill.}
 % src text_numbers.json:f3_few_wallets 40
   \label{fig:f3}
 \end{figure*}
 
 \subsection{Concentration, and the failure of H1}
-Ten wallets carry 90.1 per cent of the maker's aggregate loss, with an interval from 68.8 to 94.0 per cent
+Ten wallets carry 90.1 per cent of the maker's aggregate loss, summed per contract as registered, with an interval from 68.8 to 94.0 per cent
 that is wide because a single address carries 38.0 per cent of it on its own. Only 1\,449 of the 12\,019
 taker wallets are loss-making for the maker at all. Figure~\ref{fig:f4} shows the curve with its interval
 and, beside it, the reason H1 fails. Raw differences look convincing: fills above the ninetieth size
-percentile and sweeps across levels both show a markedly worse result for the maker. Under instrument-by-day
-fixed effects the size coefficient is $-0.74$ with $t = -0.77$ and the sweep coefficient $+0.65$ with
-$t = 0.18$. The raw differences were composition: large and aggressive orders are where the professional
-classes trade, and once the comparison is made within the same instrument on the same day, neither
-observable carries information about the outcome. Concentration is real; the standard proxies for it are
-not. H1 is rejected because it asserted both.
+percentile and sweeps across strikes both show a markedly worse delta-neutral result for the maker. Under
+instrument-by-day fixed effects, on the delta-neutral markout that the registered test reads, the size
+coefficient is $-0.74$ with $t = -0.77$ and the sweep coefficient $+0.65$ with $t = 0.18$; in vol points
+they are $-0.15$ ($t = -1.20$) and $+0.13$ ($t = 0.16$). In USDC per contract size is again insignificant, at
+$-1.58$ with $t = -0.93$, but a sweep costs the maker $13.54$ ($t = -4.42$): it predicts the next move of the
+underlying, which a delta hedge removes. Concentration is real; the standard proxies
+for it are not. H1 is rejected because size fails in every unit and the hypothesis asserted both.
 % src const:top_wallets Ten
 % src summary.json:H1.top10_share.share~pct 90.1
 % src summary.json:H1.top10_share.lo~pct 68.8
@@ -451,27 +481,35 @@ not. H1 is rejected because it asserted both.
 % src summary.json:H1.size_coefficient.t -0.77
 % src summary.json:H1.sweep_coefficient.beta +0.65
 % src summary.json:H1.sweep_coefficient.t 0.18
+% src summary.json:H1.by_unit.vol.size.beta -0.15
+% src summary.json:H1.by_unit.vol.size.t -1.20
+% src summary.json:H1.by_unit.vol.sweep.beta +0.13
+% src summary.json:H1.by_unit.vol.sweep.t 0.16
+% src summary.json:H1.by_unit.usd.size.beta -1.58
+% src summary.json:H1.by_unit.usd.size.t -0.93
+% src summary.json:H1.by_unit.usd.sweep.beta~neg 13.54
+% src summary.json:H1.by_unit.usd.sweep.t -4.42
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/f4.pdf}
-  \caption{\textbf{Concentration, and why size and sweeps explain nothing.} The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the loss. Panel b sets the raw difference against the coefficient under instrument by day fixed effects, which is where the hypothesis fails.}
+  \caption{\textbf{Concentration, and why size and sweeps explain nothing.} The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the loss. Panel b sets the raw difference of the delta-neutral markout against its coefficient under instrument by day fixed effects, the registered test, which is where the hypothesis fails.}
 % src const:top_wallets ten
   \label{fig:f4}
 \end{figure}
 
 \subsection{Where an edge survives, and the failure of H4}
-Of the 99 moneyness-by-tenor cells with at least 200 fills, 71 carry a net edge whose 90 per cent
+Of the 99 cells of underlying, moneyness and tenor with at least 200 fills, 71 carry a net edge whose 90 per cent
 interval lies above zero, none lies below it, and 28 are inconclusive. Twenty-three of those 28 sit in the rows
 with an absolute delta of 60 per cent or more, which carry 13 per cent of the fills. Figure~\ref{fig:f5}
 shows them. H4 asserted the opposite on both of its branches, and both fail. The share of positive cells is
 71.7 per cent against a registered threshold of one half, and 76.8 and 56.6 per cent at an assumed perpetual
-half spread of zero and three basis points. Short-dated at-the-money options are positive in BTC at $+24.23$ USDC per contract, with an interval from
-$6.59$ to $47.18$, and in ETH at $+1.04$, from $0.19$ to $2.11$. At three basis points neither interval
+half spread of zero and three basis points. Short-dated at-the-money options are positive in BTC at $+24.24$ USDC per contract, with an interval from
+$6.60$ to $47.19$, and in ETH at $+1.04$, from $0.19$ to $2.11$. At three basis points neither interval
 excludes zero, so there the rejection rests on the majority alone. One qualification remains. The rule reads percentile intervals, and the
 wild cluster bootstrap $p$-values of the two at-the-money cells are $0.117$ and $0.169$; counting only cells
-with a positive mean and $p$ below $0.10$ gives 55 cells, 55.6 per cent, but at three basis points only 47,
-47.5 per cent, below the threshold. Read per unit of notional, the edge is 2.5 to 9.6 times higher
+with a positive mean and $p$ below $0.10$ (exploratory) gives 55 cells, 55.6 per cent, but at three basis points only 47,
+47.5 per cent, below the threshold. Read per unit of notional (exploratory), the edge is 2.5 to 9.6 times higher
 beyond ninety days than within two days in every underlying and every delta row below 75 per cent. That is the form
 Section~\ref{sec:maker} uses, and it is where the illiquidity premium documented for equity options would
 lead one to look \citep{christoffersen2018}.
@@ -488,9 +526,9 @@ lead one to look \citep{christoffersen2018}.
 % src h4_sensitivity.csv:share_positive@half_spread_bp=0~pct 76.8
 % src h4_sensitivity.csv:share_positive@half_spread_bp=3~pct 56.6
 % src const:perp_half_spread_high_bp three
-% src summary.json:H4.atm_short.0.mean +24.23
-% src summary.json:H4.atm_short.0.lo 6.59
-% src summary.json:H4.atm_short.0.hi 47.18
+% src summary.json:H4.atm_short.0.mean +24.24
+% src summary.json:H4.atm_short.0.lo 6.60
+% src summary.json:H4.atm_short.0.hi 47.19
 % src summary.json:H4.atm_short.1.mean +1.04
 % src summary.json:H4.atm_short.1.lo 0.19
 % src summary.json:H4.atm_short.1.hi 2.11
@@ -523,19 +561,23 @@ lead one to look \citep{christoffersen2018}.
 \subsection{One sample or two, and the failure of H3}
 The sample is not homogeneous and Figure~\ref{fig:f6} makes that checkable rather than assumed. HYPE enters
 only in November 2025 and the market-maker programme class cannot be assigned before November 2024, so
-every pooled average in this paper spans a market that changed composition underneath it. Against that
-background the event study has no power. The difference-in-differences estimate for the listing of HYPE
-options on a centralised venue is $-1.10$ vol points with $t = -1.27$, and 41 per cent of 100 placebo
-windows produce a more extreme estimate. The sign is wrong for the hypothesis and the magnitude is
+every pooled average in this paper spans a market that changed composition underneath it. The difference-in-differences estimate for the listing of HYPE options on a centralised
+venue, over 90~days on either side, is $-1.10$ vol points with $t = -1.27$; 2\,400 fills of the window have
+no vol unit and are left out. Of 100 placebo windows of the same length, all before the listing, 52 per cent
+give a larger estimate in absolute value; the placebo estimates spread with a standard deviation of $0.50$
+vol points. The sign is wrong for the hypothesis and the magnitude is
 indistinguishable from noise drawn before the event; H3 is rejected for want of discrimination, not because
 the effect was shown to be absent.
 % src text:samples two
 % src text_numbers.json:hype_first_day November 2025
 % src text_numbers.json:mm_programme_first_day November 2024
+% src summary.json:H3.did.window_days 90
 % src summary.json:H3.did.beta -1.10
 % src summary.json:H3.did.t -1.27
-% src summary.json:H3.did.placebo_share_more_extreme~pct 41
+% src summary.json:H3.did.n_window_no_vol 2\,400
 % src summary.json:H3.did.placebos 100
+% src summary.json:H3.did.placebo_share_more_extreme~pct 52
+% src text_numbers.json:h3_placebo_beta_sd 0.50
 
 \begin{figure*}[t]
   \centering
@@ -550,7 +592,7 @@ the effect was shown to be absent.
 \section{What this means for a maker}\label{sec:maker}
 A quoting decision is not taken in USDC per contract. It is taken per unit of risk, against the alternative
 of quoting the same notional somewhere else. Measured that way, net of fees, rebate and hedge, Figure~\ref{fig:f5}
-reads differently. At the money the median rises from 2.8 basis points at two days or less to 5.5 at thirty
+reads differently (exploratory). At the money the median rises from 2.8 basis points at two days or less to 5.6 at thirty
 to ninety days in BTC, from 3.8 to 10.0 in ETH and from 5.7 to 24.4 in HYPE. BTC, which pays most per contract, pays least per notional: its median over the cells is 3.2
 basis points, against 5.7 in ETH and 15.6 in HYPE. The first consequence is that the margin is thinnest
 where the flow is. Options of up to seven days and an absolute delta below 60 per cent carry close to half
@@ -559,7 +601,7 @@ room for costs the model does not see: at a perpetual half spread of three basis
 positive cells falls to 56.6 per cent.
 % src text_numbers.json:bp_atm_le2d_BTC 2.8
 % src const:tenor_edge_2d two
-% src text_numbers.json:bp_atm_30to90d_BTC 5.5
+% src text_numbers.json:bp_atm_30to90d_BTC 5.6
 % src const:tenor_edge_30d thirty
 % src const:tenor_edge_90d ninety
 % src text_numbers.json:bp_atm_le2d_ETH 3.8
@@ -596,13 +638,15 @@ would mistake selection for opportunity.
 \section{What this cannot show}\label{sec:limits}
 Seven limits bound the reading of the results, and each is stated once. First, the mark is the venue's own
 surface, so the maker is measured against the number the venue uses rather than against an independent
-valuation; Figure~\ref{fig:a1} shows the markout is flat across eight classes of curve age, from $11.30$ to
-$16.83$ USDC per contract, so the lag of the curve does not drive the result. Second, the alternative mark
+valuation; Figure~\ref{fig:a1} shows no trend in the mean markout across eight classes of curve age, from
+$11.30$ to $16.83$ USDC per contract within wide intervals (exploratory), so the lag of the curve does not
+drive the result. Second, the alternative mark
 taken from the next fill in the same instrument arrives at a median distance of 15\,011 seconds and is
 therefore not a control at a thirty-minute horizon; where the comparison is fair, with a next fill inside
-300 seconds, the two paths correlate at $0.898$. Third, one trader may hold several addresses, so
-every concentration figure in this paper is a lower bound. Fourth, the vault class rests on eight wallets,
-which is why H2 is reported as a hint that vault flow is not toxic and not as a demonstration. Fifth,
+300 seconds, the two paths correlate at $0.898$ (exploratory). Third, one trader may hold several addresses, so
+the concentration figures in this paper likely understate it. Fourth, the vault class rests on eight wallets,
+so few that the bootstrap itself is fragile, which is why H2 is reported as a hint that vault flow is not
+toxic and not as a demonstration. Fifth,
 liquidations settle outside the trade tape, so the paper says nothing about the flow that a maker probably
 fears most. Sixth, the volatility unit is undefined for 11\,059 fills whose traded price sits outside the
 arbitrage bounds, and those fills are excluded from every vol-point statement. Seventh, and most
@@ -630,22 +674,22 @@ the outcome of trading.
 
 \section{Conclusion}\label{sec:conclusion}
 On a venue where the counterparty is an address rather than an inference, the maker's result is mostly a
-statement about who was on the other side. Adverse selection after the fill is small, stable across
-horizons and a minor part of the decomposition; the difference between a good and a bad counterparty shows
-up at the moment of the fill, in the half spread, not in what the mark does afterwards. The loss is carried
+statement about who was on the other side. Adverse selection after the fill is close to zero in vol points
+for every class; in USDC it is the underlying's next move, which a hedge removes. The difference between a good
+and a bad counterparty shows up at the fill, in the half spread. The loss is carried
 by ten wallets, and the observables that the literature uses in place of identity do not find them.
 % src const:top_wallets ten
 
 Three of four pre-registered hypotheses are rejected, and the rejections are informative rather than empty.
-Toxicity is concentrated but not identifiable from trade characteristics; under the registered rule, a
+Toxicity is concentrated but not identifiable from trade size, and from sweeps only through the move of the
+underlying; under the registered rule, a
 net edge survives in 71.7 per cent of the cells and in short-dated at-the-money options, where H4 expected it to vanish; and an event
-study on a thirty-three month panel whose composition changes underneath it has no power. What remains is a
+study around the listing cannot tell an effect of this size from noise. What remains is a
 measurement, a fact about identity, and a map that says where on this surface a maker is paid, and how
 thinly.
 % src derived:n_rejected Three
 % src derived:n_hypotheses four
 % src summary.json:H4.share_positive~pct 71.7
-% src text_numbers.json:months thirty-three
 
 
 \section*{Data, code and pre-registration}
@@ -656,15 +700,20 @@ computes the markouts, runs the inference and draws every figure is at
 four hypotheses, their rejection rules and the inference were committed in
 \texttt{docs/paper1/PRAEREGISTRIERUNG.md} on 17 September 2026 at 15:47 UTC+2, in commit
 \texttt{cf1f432}, before any markout had been computed. Two dated addenda resolved definitional questions
-that arose while the sample was being built, a third records the correction described on the first page, and
-a fourth the new commit hashes of 5 October 2026 (the registration was commit 3fd9caa before); all four are in
+that arose while the sample was being built, the second after the first markouts and before the first
+inference; a third records the correction described on the first page, and a fourth the new commit hashes of
+5 October 2026 (the registration was commit 3fd9caa before); all four are in
 the history of the same file. A reader who wants to
-check the order of events can read that history rather than take this paragraph on trust.
+check the order of events can read that history rather than take this paragraph on trust. Two registered
+robustness checks, a Deribit mark and a descriptive appendix on the nine other underlyings, are not reported
+in this version; every result the registration does not name is labelled exploratory.
 % src const:hypotheses four
 % src git:cf1f432 17 September 2026 15:47
 % src const:definition_addenda Two
 % src git:9d37c19 5 October 2026
 % src const:addenda four
+% src text:robustness_checks Two
+% src const:other_underlyings nine
 
 \section*{Competing interest}
 I am building a market-making bot for the venue studied here and have been in contact with its team about

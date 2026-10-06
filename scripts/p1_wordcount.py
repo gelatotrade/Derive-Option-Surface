@@ -17,8 +17,10 @@ BUDGET = {
     "Introduction": 550,
     "The venue and the tape": 450,
     "What a markout measures": 550,
-    "Pre-registration and inference": 250,
-    "Results": 1100,
+    # raised on 6 October 2026 for what the audit of the final run asked to report: the test of H1 in all three
+    # units, the secondary test of H2 and the registered placebo design of H3, and the units of the inference
+    "Pre-registration and inference": 260,
+    "Results": 1250,
     "What this means for a maker": 350,
     "What this cannot show": 250,
     "Conclusion": 180,

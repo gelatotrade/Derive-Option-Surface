@@ -1,7 +1,7 @@
 key,value,printed,source
 h1_stat,0.8904296440208043,"ρ 0.89 [0.88, 0.91]",h1.json:stat
-h1_lo,0.8828241555865866,"ρ 0.89 [0.88, 0.91]",h1.json:lo
-h1_hi,0.9060577176046789,"ρ 0.89 [0.88, 0.91]",h1.json:hi
+h1_lo,0.8828350838848077,"ρ 0.89 [0.88, 0.91]",h1.json:lo
+h1_hi,0.9060650031368264,"ρ 0.89 [0.88, 0.91]",h1.json:hi
 h1_threshold,0.5,"ρ 0.89 [0.88, 0.91]",h1.json:threshold
 h1_rejected,1.0,rejected,h1.json:rejected
 h2_stat,0.03462959609392485,"median 0.035 [0.031, 0.039]",h2.json:stat

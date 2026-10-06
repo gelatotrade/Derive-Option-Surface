@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 CORE = ("BTC", "ETH", "HYPE")
 SAMPLE_START_MS = 1_704_931_200_000   # 2024-01-11 00:00 UTC
 FINAL_CUTOFF_MS = 1_790_755_200_000   # 2026-09-30 08:00 UTC
-PILOT_CUTOFF_MS = 1_789_646_400_000   # 2026-09-17 12:00 UTC
+LOAD_BUFFER_MS = 25 * 3_600_000       # tape and SVI history to cut-off + 25 h (Addendum 1, point 2)
 EXPIRY_BUFFER_MS = 30 * 60_000
 HORIZONS_S: Dict[str, int] = {"1m": 60, "5m": 300, "30m": 1_800, "4h": 14_400, "24h": 86_400}
 DELTA_EDGES = [0.0, 10.0, 25.0, 40.0, 60.0, 75.0, 90.0, 100.0 + 1e-9]
@@ -164,6 +164,8 @@ def build_markouts(root: Path, cutoff_ms: int, out_path: Path) -> dict:
     fills["is_sweep"] = flag_sweeps(fills).to_numpy()
     sample, steps = sample_fills(fills, cutoff_ms=cutoff_ms)
     settle = pd.read_parquet(root / "ref" / "settlement_prices.parquet")
+    # settlement markouts exist only for expiries up to the end of the loaded data (Addendum 1, point 2)
+    settle = settle[settle["expiry"].astype("int64") * 1000 <= int(cutoff_ms) + LOAD_BUFFER_MS]
     parts, missing = [], {}
     for ccy in CORE:
         rows = sample[sample["currency"] == ccy]

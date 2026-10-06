@@ -59,7 +59,7 @@ CAPTION = (
     r"estimate $\beta$, whose interval is descriptive because the registered $p$ comes from restricted residuals. "
     r"That day-cluster interval is too narrow, as the placebo dates show; calibrated on them, the 90~per~cent range "
     r"runs from \PH{h4-cal-lo} to \PH{h4-cal-hi} (Section~\ref{sec:h4}). Panel c "
-    r"places $\beta$ among the estimates at 100 placebo dates and lists both registered criteria. Panel d gives "
+    r"places $\beta$ among the estimates of 100 placebo replications and lists both registered criteria. Panel d gives "
     r"$\beta$ per underlying, for exploration; in the registered row, hatching marks the values of $\beta$ at which "
     r"the rule rejects H4 whatever its $p$, up to the 95th placebo percentile (P95) or zero, whichever is larger. "
     r"Most doses are close to zero or negative, so $\beta$ is identified from parameter changes that made capital "

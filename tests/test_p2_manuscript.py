@@ -147,7 +147,7 @@ def missing_disclosures(tex: str) -> list:
         ("A03 appendix of post hoc results", flat, r"\\section\{Post hoc and exploratory results\}"),
         ("A02 commit times are local", back, r"local times of the author's machine"),
         ("A02 public timestamp after the pilot, before the final run", back,
-         r"after the results on the pilot cut, but before the final data run"),
+         r"after the results on the pilot cut, .{0,120}before the final data run"),
         ("A64 German original binding", back, r"German original is binding"),
         ("A64 translation named", back, r"docs/paper2/PREREGISTRATION\.md"),
         ("A37 addendum 4 after doses and panel", back, r"Addendum[ ~]4 was written after .*doses and the H4 panel"),
@@ -155,7 +155,7 @@ def missing_disclosures(tex: str) -> list:
         ("A18 correction of the companion paper", data, r"companion paper was corrected on 25[ ~]September 2026"),
         ("A18 same unit as the companion paper", data, r"uses the same unit per contract"),
         ("A01 history rewrite disclosed", back, r"history was rewritten twice, the first\s+time to remove account identifiers"),
-        ("A01 map of old and new hashes", back, r"Addendum[ ~]7 lists the old and the new hash of every registration commit"),
+        ("A01 map of old and new hashes", back, r"Addenda[ ~]5 and[ ~]7 list the old and the new hashes of every registration commit"),
         ("A01 Addenda 5 and 7 record the rewrites", back,
          r"Addendum[ ~]5 of 27[ ~]September 2026 \(\\texttt\{[0-9a-f]{7,40}\}\) and Addendum[ ~]7 of 5[ ~]October 2026 "
          r"\(\\texttt\{[0-9a-f]{7,40}\}\), both\s+written after the results on the pilot cut"),

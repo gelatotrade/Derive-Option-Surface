@@ -43,7 +43,7 @@ CAPTION = (
     r"\textbf{What netting is worth (H3).} Panel a is $K_{\mathrm{SM}}/K_{\mathrm{PM2}}$ for the opening books of "
     r"\PH{h3-days} maker-days against the number of option legs, as the median per bin with the interquartile band; "
     r"the grey numbers above the axis are the maker-days per bin. Beyond 63 legs, the most the endpoint accepted "
-    r"for a standard-margin subaccount in probes of September 2026, $K_{\mathrm{SM}}$ is counterfactual (hatched); "
+    r"for a standard-margin subaccount in the probes, $K_{\mathrm{SM}}$ is counterfactual (hatched); "
     r"this is the case on \PH{h3-over63} maker-days. The dashed line is the registered threshold of two. Panel b is "
     r"the registered median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC "
     r"and ETH legs, and, on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by "

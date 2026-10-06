@@ -614,7 +614,7 @@ CHECKS = [
     kit.check("f5.c.hype_last", "HYPE reference straddle on the last day (CSV only)",
               lambda rd: _fig_ref(rd, "HYPE"), lambda rd: _src_ref(rd, "HYPE"),
               expected=[59.36, float("nan"), 20.19], expected_tol=0.005),
-    kit.check("f5.c.last_day", "direct labels are the values of 17 Sep 2026",
+    kit.check("f5.c.last_day", "direct labels are the values of the last day of the sample",
               lambda rd: pd.read_csv(rd / "fig_f5_c.csv").query("ccy == 'BTC'")["day"].max(),
               lambda rd: pd.read_csv(rd / "reference_book.csv").query("ccy == 'BTC'")["day"].max(), expected=REF_DAY),
     kit.check("f5.c.printed", "printed direct labels",

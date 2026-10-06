@@ -93,9 +93,12 @@ def test_did_finds_a_treatment_effect_and_ranks_placebos():
     frame = pd.DataFrame(rows)
     frame["fe_key"] = frame["instrument_name"] + "|" + frame["day"].astype(str)
     frame["cluster"] = frame["taker_wallet"]
-    out = inf.did(frame, "y_vol", event, placebos=20, seed=inf.SEED, b=199)
+    out = inf.did(frame, "y_vol", event, placebos=20, seed=inf.SEED, b=199, window_days=10)
     assert out["beta"] == pytest.approx(0.8, abs=0.1) and out["p"] < 0.05
     assert out["placebo_share_more_extreme"] <= 0.05 and out["placebos"] == 20
+    # registered design: placebo windows of the same length, wholly before the listing and inside the history
+    assert out["placebo_last_ms"] + 10 * day <= event
+    assert out["placebo_first_ms"] - 10 * day >= frame["ts"].min()
 
 
 def test_cell_table_respects_the_minimum_and_marks_positive_cells():
@@ -344,3 +347,20 @@ def test_load_salt_creates_once_and_never_overwrites(tmp_path):
         inf.load_salt(path)
     first = inf.load_salt(path, create=True)
     assert len(first) == 32 and inf.load_salt(path, create=True) == first
+
+
+def test_hedge_cost_reads_only_the_funding_of_the_30_days_before_the_cut_off():
+    """Addendum 2, point 2: the median absolute hourly funding rate over the last 30 days.  Rows after the
+    cut-off (a later download appends them) or more than 30 days before it do not enter."""
+    end, hour = inf.FUNDING_END_MS, 3_600_000
+    funding = pd.DataFrame({"instrument_name": ["BTC-PERP"] * 4,
+                            "timestamp": [end - 31 * 24 * hour, end - 2 * hour, end - hour, end + hour],
+                            "funding_rate": [9e-4, 1e-5, -3e-5, 9e-4]})
+    kept = inf.funding_window(funding)
+    assert list(kept["timestamp"]) == [end - 2 * hour, end - hour]
+    one = pd.DataFrame({"currency": ["BTC"], "maker_side": [1.0], "mark_b_t": [10.0], "price": [9.0],
+                        "mo_usd_30m": [1.0], "mo_dn_30m": [1.0], "mo_vol_30m": [0.1], "delta_t": [0.5],
+                        "fwd_t": [100_000.0], "amount": [1.0], "fee_maker": [0.0], "rebate_maker": [0.0],
+                        "ts": [end - hour], "instrument_name": ["BTC-X"], "taker_wallet": ["w"]})
+    f = inf.analysis_frame(one, funding)
+    assert f["funding_per_hour"].iloc[0] == pytest.approx(2e-5)          # median of |1e-5| and |-3e-5|

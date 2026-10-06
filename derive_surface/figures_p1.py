@@ -26,7 +26,7 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
 from . import figdata, figstyle  # noqa: E402
-from .inference_p1 import HORIZON_SECONDS, cluster_mean_ci  # noqa: E402
+from .inference_p1 import NEAR_LAG_S, HORIZON_SECONDS, cluster_mean_ci  # noqa: E402
 from .markouts import DELTA_LABELS, TENOR_LABELS  # noqa: E402
 
 HORIZONS = list(HORIZON_SECONDS)
@@ -101,13 +101,15 @@ CAPTIONS = {
           "contract by the price per contract.",
     "F2": "The subsample is restricted to fills that have every horizon, so a falling line cannot be a "
           "shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. "
-          "The share of the premium in panel c is taken per contract.",
+          "The share of the premium in panel c is taken per contract. Professional flow is that of dominant makers, "
+          "the market-maker programme and large wallets.",
     "F3": "G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value "
           "against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are "
-          "not additive, so the mean markout is marked separately.",
+          "not additive, so the mean markout is marked separately. Half spread and adverse selection in vol points "
+          "are read from the implied vols of the mark and the fill.",
     "F4": "The horizontal axis of panel a is logarithmic because the first ten wallets carry most of the "
-          "loss. Panel b sets the raw difference against the coefficient under instrument by day fixed "
-          "effects, which is where the hypothesis fails.",
+          "loss. Panel b sets the raw difference of the delta-neutral markout against its coefficient under "
+          "instrument by day fixed effects, the registered test, which is where the hypothesis fails.",
     "F5": "The upper row is the median net edge in basis points of notional, the edge of a fill over its "
           "notional and the unit a quoting decision uses, shaded within each panel only, between its 5th and "
           "95th percentile. The lower row is the registered quantity in USDC and its verdict per "
@@ -420,18 +422,21 @@ def _top10_mask(wallets: pd.Series, top10: set) -> pd.Series:
     return wallets.isin(top10)
 
 
+def class_vol_split(frame: pd.DataFrame) -> pd.DataFrame:
+    """Median half spread and adverse selection in vol points per taker class, read directly from the implied
+    vols: the half spread is s (IV of the mark at the fill - IV of the fill), adverse selection the rest of the
+    vol-point markout.  (A ratio y_vol / y_usd per fill has the wrong sign whenever the two units disagree.)"""
+    hs_vol = 100.0 * frame["maker_side"] * (frame["iv_mark_t"] - frame["iv_fill"])
+    work = frame.assign(hs_vol=hs_vol, as_vol=frame["y_vol"] - hs_vol)
+    return work.groupby("taker_class").agg(hs_vol=("hs_vol", "median"), as_vol=("as_vol", "median"),
+                                           mean_vol=("y_vol", "mean"))
+
+
 def fig_f3(inputs: dict, out_dir: Path) -> List[Path]:
     """F3: who takes back which part of the spread, and how few wallets that is."""
     frame, results = inputs["frame"], inputs["results"]
     classes = _class_rows(results)
-    stats = frame.groupby("taker_class").agg(hs_vol=("hs_vol", "median"), as_vol=("as_vol", "median"),
-                                             mean_vol=("y_vol", "mean")) \
-        if "hs_vol" in frame else None
-    if stats is None:                                   # half spread and adverse selection in vol points
-        scale = (frame["y_vol"] / frame["y_usd"].replace(0, np.nan)).replace([np.inf, -np.inf], np.nan)
-        work = frame.assign(hs_vol=frame["hs"] * scale, as_vol=frame["as_usd"] * scale)
-        stats = work.groupby("taker_class").agg(hs_vol=("hs_vol", "median"), as_vol=("as_vol", "median"),
-                                                mean_vol=("y_vol", "mean"))
+    stats = class_vol_split(frame)
     lorenz = results.get("lorenz", pd.DataFrame())
     top10 = set(lorenz.nsmallest(10, "loss")["wallet"]) if {"wallet", "loss"} <= set(lorenz.columns) else set()
 
@@ -813,10 +818,11 @@ def fig_a1(inputs: dict, out_dir: Path) -> List[Path]:
     _panel_tag(c, "c")
 
     paths = results.get("paths", pd.DataFrame())
-    if len(paths) and (paths["group"] == "lag_a <= 300 s").any() and (paths["group"] == "all").any():
+    near = "lag_a <= {} s".format(NEAR_LAG_S)
+    if len(paths) and (paths["group"] == near).any() and (paths["group"] == "all").any():
         # three short lines right of the 30 minute line and above the bars: nothing runs through them
-        a.annotate("correlation {:.3f}\nwithin 300 s,\n{:.3f} overall".format(
-            float(paths.loc[paths["group"] == "lag_a <= 300 s", "correlation"].iloc[0]),
+        a.annotate("correlation {:.3f}\nwithin {} s,\n{:.3f} overall".format(
+            float(paths.loc[paths["group"] == near, "correlation"].iloc[0]), NEAR_LAG_S,
             float(paths.loc[paths["group"] == "all", "correlation"].iloc[0])), xy=(0.98, 0.52),
             xycoords="axes fraction", ha="right", va="center", fontsize=6.0)
     return figstyle.save(fig, "a1", out_dir)

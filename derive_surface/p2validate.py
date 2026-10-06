@@ -705,7 +705,9 @@ def run_chain(max_seconds: float = 500.0, out_dir: Path = OUT_DIR, rpc: Optional
     done = _load_chain(out_dir)
     if retry_failed:
         done = {k: v for k, v in done.items() if v.get("status") == "ok"}
-    todo = [c for c in _load_plans(out_dir) if c["id"] not in done and (only is None or c["id"].startswith(only))]
+    # a result counts only for the block it was computed at: ids repeat across draws (another cut-off moves the blocks)
+    todo = [c for c in _load_plans(out_dir)
+            if done.get(c["id"], {}).get("block") != c["block"] and (only is None or c["id"].startswith(only))]
     t0 = time.monotonic()
     n = 0
     path = Path(out_dir) / "chain.jsonl"
@@ -717,6 +719,7 @@ def run_chain(max_seconds: float = 500.0, out_dir: Path = OUT_DIR, rpc: Optional
             res = chain_single(rpc, case) if case["kind"] == "single" else chain_book(rpc, case)
         except RpcError as err:
             res = {"id": case["id"], "status": "rpc_error", "IM": None, "MM": None, "note": str(err)[:200]}
+        res["block"] = int(case["block"])
         with path.open("a") as fh:
             fh.write(json.dumps(res, default=float) + "\n")
         n += 1
@@ -764,6 +767,8 @@ def build_rows(cases: Sequence[dict], chain: Mapping[str, dict], label=None) -> 
         r = chain.get(c["id"])
         if r is None:
             continue
+        if "block" in r and int(r["block"]) != int(c["block"]):
+            raise ValueError(f"chain result of {c['id']} is for block {r['block']}, the plan draws {c['block']}")
         diag = r.get("diag") or {}
         feeds = c.get("feeds") or {}
         for key, is_initial in (("IM", True), ("MM", False)):

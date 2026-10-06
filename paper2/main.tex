@@ -121,15 +121,15 @@
 \begin{abstract}
 A market maker quotes against a budget of capital, not contracts, yet its edge is reported per contract. On
 Derive, a crypto options exchange, the margin rules are public smart contracts, and its off-chain engine quotes
-margin for any book. Capital is what its three margin managers require for positions, not account balances; it is
-measured on one contract per option fill of a companion paper and on the actual books of dominant maker
+margin for any book. Capital is what its three margin managers require for positions, not balances; it is
+measured on one contract per fill of a companion paper and on the actual books of dominant maker
 subaccounts. Four hypotheses were registered before any registered capital figure existed. Contrary to H1, capital
-does not reorder the moneyness-by-tenor map of the edge (rank correlation 0.890); post hoc, much of that
+does not reorder the moneyness-by-tenor map of the edge in the registered sense (rank correlation 0.890); post hoc, much of that
 correlation comes from the sign of the edge. In the books of the four subaccounts under the second-generation
 portfolio manager (PM2), trading only ETH and HYPE, the median fill binds 3.5~per~cent of its stand-alone
 capital (H2 not rejected). On the opening books of nine dominant subaccounts, standard margin needs 4.73 times
 the PM2 capital (H3 not rejected), mostly for books too large for a standard-margin subaccount. Contrary to H4,
-cheaper capital did not detectably narrow the half spread; the test has little power. The registered sample ends on
+cheaper capital did not detectably narrow the half spread; the test has little power. The sample ends on
 30~September 2026.
 % src const:managers three
 % src derived:n_hypotheses Four
@@ -238,7 +238,7 @@ H1 and H4 are rejected; H2 and H3 are not. The capital denominator does not reor
 sense: the rank correlation is 0.890, with an interval from 0.883 to 0.906 against a threshold of 0.5 (H1).
 Post hoc, much of this correlation comes from the sign of the edge: among profitable cells it is 0.630 (0.585
 to 0.700). In the books of the four subaccounts under PM2, which trade ETH and HYPE only, the median fill binds
-3.5~per~cent of its stand-alone capital (H2); maker buys there mostly release capital and sells mostly bind it.
+3.5~per~cent of its stand-alone capital (H2); maker buys there mostly release capital, sells mostly bind it (post hoc).
 Standard margin needs 4.73 times the PM2 capital for the opening books of nine dominant subaccounts (H3), most
 of these books larger than a standard-margin subaccount accepts. I find no evidence that the half spread fell when
 capital got cheaper (H4): the estimate has the wrong sign and a one-sided $p$ of 0.62, but the test cannot
@@ -289,7 +289,7 @@ margins each position at a percentage of its notional \citep{soska2021}.
   to scale. PM2 charges the worst scenario of the whole book plus contingencies (solid line), which is less than
   the sum of the legs margined one by one (dash dot); standard margin is dashed.}
   \label{fig:t2}
-% src semantics/box_discount.json:box_*.api_ts~all 24 September 2026
+% src semantics/factors.csv:measurement@book=b24,case=B,F_Cnet=1.19 24 September 2026
 % src fig_t2_b.csv:block@row=1 45\,110\,142
 % src fig_t2_b.csv:row~count four
 % src const:h3_threshold two
@@ -379,13 +379,13 @@ books, probed at random, showed larger gaps.
 
 \section{Data and measurement}\label{sec:data}
 The fills are those of \citet{albiez2026}: all 621\,508 BTC, ETH and HYPE option fills from 11~January 2024 to the
-registered cut-off of 30~September 2026. Each carries the maker's side, price, size and net edge in USDC per contract: the
+cut-off of 30~September 2026. Each carries the maker's side, price, size and net edge in USDC per contract: the
 markout against the mark thirty~minutes after the fill, less fee net of rebate and a hedging cost. Fee and rebate,
-reported per fill, are divided by the fill's size (Addendum~2). On a multi-leg request for quote (RFQ) the
+booked per fill, are divided by its size (Addendum~2). On a multi-leg request for quote (RFQ) the
 venue books the package fee on one leg, where it stays (Addendum~6). The companion paper was corrected on
 25~September 2026 and uses the same unit per contract. SM covers the whole sample (HYPE from 11~November 2025; six
-earlier HYPE fills have no manager), the legacy manager BTC and ETH throughout. The PM2 window is the span in
-which PM2 covers an underlying: BTC and ETH from 12~June 2025 23:00~UTC, HYPE from 11~November 2025. Only H4 uses
+earlier HYPE fills have no manager), the legacy manager BTC and ETH throughout. The PM2 window is where
+PM2 covers an underlying: BTC and ETH from 12~June 2025 23:00~UTC, HYPE from 11~November 2025. Only H4 uses
 events before it.
 
 A fill's market state is rebuilt from the parameter timelines and the last feed values pushed by its
@@ -449,7 +449,7 @@ fills on each side.
 
 Intervals are 90~per~cent percentile intervals of a cluster bootstrap over UTC days with 9\,999 draws
 \citep{cameron2008}. H4 uses a wild cluster bootstrap with Rademacher weights and restricted residuals
-\citep{mackinnon2017,roodman2019}. It uses 100 placebo dates, each at least 28~days from every change of the
+\citep{mackinnon2017,roodman2019}. Its 100 placebo replications draw for each event a date at least 28~days from every change of the
 underlying's legacy-manager parameters and default PM2 parameter set (subaccounts may carry their own;
 Addendum~4). Replicas were validated
 against the chain's evaluation (\texttt{eth\_call}) before any capital entered a test
@@ -514,7 +514,7 @@ sells.
   \caption{\textbf{What netting is worth (H3).} Panel a is $K_{\mathrm{SM}}/K_{\mathrm{PM2}}$ for the opening
   books of 1\,982 maker-days against the number of option legs, as the median per bin with the interquartile band;
   the grey numbers above the axis are the maker-days per bin. Beyond 63 legs, the most the endpoint accepted for a
-  standard-margin subaccount in probes of September 2026, $K_{\mathrm{SM}}$ is counterfactual (hatched); this is
+  standard-margin subaccount in the probes, $K_{\mathrm{SM}}$ is counterfactual (hatched); this is
   the case on 1\,470 maker-days. The dashed line is the registered threshold of two. Panel b is the registered
   median with its 90~per~cent interval, the sensitivities including the legacy manager on BTC and ETH legs, and,
   on grey, exploratory rows: SM against PM2 on the same BTC and ETH legs, by book size, by the manager of the
@@ -523,7 +523,6 @@ sells.
   \label{fig:f4}
 % src summary.json:h3_n 1\,982
 % src const:sm_max_options 63
-% src const:addenda_day September 2026
 % src summary.json:h3_days_over_63_options 1\,470
 % src const:h3_threshold two
 % src const:interval_pct 90
@@ -617,15 +616,15 @@ wing (post hoc). The 27 fills with non-positive PM2 capital stay in the sums (Ad
 
 \subsection{A fill in a maker's book (H2)}
 Of the ten dominant subaccounts, four were margined under PM2 at the start of a day in the window
-(Addendum~1); they trade ETH and HYPE only. The registered random sample draws 20\,000 of their 103\,961 fills. None of
-them has non-positive stand-alone capital, the registered exclusion, so all 20\,000 enter, on 385~days.
+(Addendum~1); they trade ETH and HYPE only. The registered sample draws 20\,000 of their 103\,961 maker fills. None has
+non-positive stand-alone capital, the registered exclusion, so all 20\,000 enter, on 385~days.
 Figure~\ref{fig:f3} shows the distribution of $\Delta K / K_{\text{single}}$, the marginal capital of the whole
 fill per contract. The median ratio is 0.0346, with a 90~per~cent interval from 0.0309 to 0.0386, far below
 the registered threshold of one half, and 42.1~per~cent of the fills leave the book's capital unchanged or
 reduce it. H2 is not rejected: in these books the median fill costs 3.5~per~cent of what it would cost alone.
 
 The median hides a wide spread and mixes the sides: maker buys mostly release capital and maker sells mostly
-bind it. About a quarter of the fills release more than 0.28 of their stand-alone capital;
+bind it (post hoc). About a quarter of the fills release more than 0.28 of their stand-alone capital;
 a quarter bind more than 0.65 of it. From the 95th percentile on, a fill binds about its full stand-alone
 capital and almost never more. Fills that offset the loss in the book's worst scenario release capital; fills
 that add to it cost about what they cost alone. Per subaccount (exploratory) the median runs from 0.0264 to 0.0471,
@@ -664,10 +663,9 @@ The factor comes from large books and from the subaccounts that hold them. On 1\
 book holds more than 63 option legs, the most an SM subaccount can hold, so its SM capital is counterfactual
 (Addendum~4). On those days the median ratio is 5.428. On the 512~days with at most 63 legs it is 1.590 (exploratory,
 interval 1.532 to 1.662), a value the registered rule would reject. But 328 of those days belong to M2, the one SM
-subaccount. Its books net little (1.076), while the portfolio-margin subaccounts of its wallet hold large books.
+subaccount. Its books net little (1.076), while its wallet-mates M1 and M8 hold large books.
 Without M2, the small books give 3.780 (post hoc); books of 32 to 63 legs, M2 included, give 3.43
-(Figure~\ref{fig:f4}, panel a). Whether a large book could be split across standard-margin subaccounts, as
-operators split books across managers, is not examined.
+(Figure~\ref{fig:f4}, panel a). Whether a large book could be split across standard-margin subaccounts is not examined.
 % src summary.json:h3_n 1\,982
 % src summary.json:h3_n_accounts nine
 % src summary.json:h3_accounts_pm2 four
@@ -710,7 +708,7 @@ operators split books across managers, is not examined.
   of that dose over the rows of the H4 panel, one per fill and event; the line shows the estimate $\beta$, whose
   interval is descriptive because the registered $p$ comes from restricted residuals. That day-cluster interval is
   too narrow, as the placebo dates show; calibrated on them, the 90~per~cent range runs from $-41.6$ to 29.7
-  (Section~\ref{sec:h4}). Panel c places $\beta$ among the estimates at 100 placebo dates and lists both
+  (Section~\ref{sec:h4}). Panel c places $\beta$ among the estimates of 100 placebo replications and lists both
   registered criteria. Panel d gives $\beta$ per underlying, for exploration; in the registered row, hatching
   marks the values of $\beta$ at which the rule rejects H4 whatever its $p$, up to the 95th placebo percentile
   (P95) or zero, whichever is larger. Most doses are close to zero or negative, so $\beta$ is identified from
@@ -759,7 +757,7 @@ lies above the 95th placebo percentile, here 23.41. The estimate fails both crit
 sign is the opposite of the hypothesis, and with a cluster standard error of 13.09 the estimate cannot be told
 apart from zero.
 
-The test has little power. Its standard error holds the event dates fixed, and at the 100 placebo dates the
+The test has little power. Its standard error holds the event dates fixed, and over the 100 placebo replications the
 $t$ statistic has a standard deviation of 1.82 instead of one (post hoc). Calibrated on those placebo
 statistics, the 90~per~cent range for $\beta$ runs from $-41.6$ to 29.7. For capital ten~per~cent cheaper,
 the change in the half spread ranges from $-3.13$ to $+4.39$~basis points of the index, against a
@@ -806,7 +804,7 @@ and no variant in Appendix~\ref{app:inference} meets the registered rule.
 % src summary.json:h4_clusters 141
 
 \subsection{Sensitivities}
-No sensitivity named in the pre-registration or its addenda changes a verdict. Under maintenance margin, $\rho$
+No sensitivity the registration names changes a verdict; maintenance margin is computed for H1 to H3 only. Under maintenance margin, $\rho$
 is 0.890 and the netting ratio 5.713. The median marginal cost is then 0.0298 on 19\,663 fills with each
 subaccount's own PM2 parameter set (some carry a lower maintenance factor) and 0.0278 with the default set; using
 one set for both capitals of a ratio was decided after the first results. With the net edge as defined in the
@@ -830,7 +828,7 @@ order of the map largely intact (H1), but from an empty or small book the side m
 long option far out of the money binds about its premium, and a short one binds scenario capital. The same
 edge per notional is therefore a large edge per unit of capital when the maker buys a cheap wing and a small
 one when it sells. The top cells per unit of capital owe their edge mostly to RFQ legs and to the SVI mark
-extrapolated in the far wing (post hoc). Buys mostly release capital in the dominant PM2 books, where
+extrapolated in the far wing (post hoc). Buys mostly release capital in the dominant PM2 books (post hoc), where
 marginal capital orders the sides differently from stand-alone capital.
 
 Second, the book, not the contract, decides the cost of a quote. In four large PM2 books the median fill binds
@@ -838,14 +836,15 @@ Second, the book, not the contract, decides the cost of a quote. In four large P
 median cost of a quote many times over. The endpoint instead returns the marginal capital
 against the maker's own book in one request.
 
-Third, netting pays for books of a few dozen legs or more held under the portfolio managers (H3). The one
+Third, netting pays for books of a few dozen legs or more held under the portfolio managers (H3; by book size
+exploratory). The one
 standard-margin subaccount holds small books that net little; its operator keeps the large books under
 portfolio margin.
 
 Fourth, parameters are a risk the maker does not control: a single change cut the PM2 capital of the BTC
 reference straddle by 22.9~per~cent, and the half spread showed no detectable response (H4). Capital may have
 been slack, makers may have been bound by something else, or the test lacked power: for capital ten~per~cent
-cheaper, a narrowing by up to 39~per~cent is not excluded (Section~\ref{sec:h4}).
+cheaper, a narrowing by up to 39~per~cent is not excluded (post hoc, Section~\ref{sec:h4}).
 
 Several limits bound these readings. Capital is what the engine would require for the positions, not what makers
 deposited. Initial margin is assumed to bind. Margin for open orders, charged by the venue but not returned by the
@@ -899,9 +898,9 @@ any capital figure of the registered analysis had been computed \citep{burlig201
 written in German, and its addenda are headed \emph{Nachtrag}; an English translation made after the analysis is
 in \path{docs/paper2/PREREGISTRATION.md}, and the German original is binding. Seven dated addenda follow in the same
 file; the first four are of 25~September 2026 (UTC+2). Addendum~1 (\texttt{b5c905c}) fixes the exact on-chain book
-for H2, with zero cash, before the first capital figure of the registered form. Addendum~2 (\texttt{60896fe})
+for H2 before the first capital figure of the registered form. Addendum~2 (\texttt{60896fe})
 fixes the unit of fee and rebate, and Addendum~3 (\texttt{2416902}) the details of bootstrap and placebo, both
-before the first inference. Addendum~4 (\texttt{a02058a}) records the readings of H2 to H4. Addenda~1 to~3 were
+before the first inference. Addendum~4 (\texttt{a02058a}) records the readings of H1 to H4. Addenda~1 to~3 were
 each committed before the step they govern. Addendum~4 was written after stand-alone capital, marginal costs, netting
 ratios, the doses and the H4 panel with its half spreads had been computed; it records readings already
 implemented, but precedes any test statistic. The validation fixtures committed just before Addendum~1 had already
@@ -915,14 +914,18 @@ paper before registration; the registration fixes the doses, the events and the 
 
 All commit times are local times of the author's machine. Before publication the history was rewritten twice, the first
 time to remove account identifiers. The registered texts are byte-identical to those of the original commits and the commit
-times are unchanged; Addendum~7 lists the old and the new hash of every registration commit.
+times are unchanged; Addenda~5 and~7 list the old and the new hashes of every registration commit, and the counts that
+Addenda~1 to~4 quote refer to the pilot cut.
 Addendum~5 of 27~September 2026 (\texttt{8c066a7}) and Addendum~7 of 5~October 2026 (\texttt{7c01e85}), both
 written after the results on the pilot cut (an earlier cut of the same data, to 17~September 2026), record the rewrites and change no rule, test statistic or result. Addendum~6 of
 30~September 2026 (\texttt{6f2436e}), written after the results on
 the pilot cut and before the final data run, keeps the fee of a multi-leg RFQ package on the leg on which the
 venue books it, as the companion paper does, and adds the fee spread over the package as a sensitivity of H1,
 under which $\rho$ is 0.890 (Figure~\ref{fig:f2}, panel c). The pre-registration became public with the push of
-this history on 5~October 2026: after the results on the pilot cut, but before the final data run that produced every number reported here. The history shows the order
+this history on 5~October 2026 (UTC): after the results on the pilot cut, which already held most of the
+sample and every window of H4, but before the final data run behind every number of the registered analysis.
+No public timestamp precedes the results on the pilot cut, and the byte identity of the registered texts
+across the rewrites can be checked only in the author's local repository. The history shows the order
 of the commits, not what was computed locally between them.
 % src const:managers three
 % src derived:n_hypotheses four
