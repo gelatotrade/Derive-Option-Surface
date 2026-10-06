@@ -20,7 +20,8 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+import numpy as np
+from matplotlib.ticker import FuncFormatter  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
@@ -102,7 +103,7 @@ CAPTIONS = {
     "F2": "The subsample is restricted to fills that have every horizon, so a falling line cannot be a "
           "shrinking sample. Bands are 95 per cent cluster bootstrap intervals of the median, not dispersion. "
           "The share of the premium in panel c is taken per contract. Professional flow is that of dominant makers, "
-          "the market-maker programme and large wallets.",
+          "the MM programme and large wallets (the dashed line).",
     "F3": "G is the number of taker wallets behind a class and p is the wild cluster bootstrap p-value "
           "against zero; shaded rows carry fewer than 40 wallets. Medians are shown per component and are "
           "not additive, so the mean markout is marked separately. Half spread and adverse selection in vol points "
@@ -130,6 +131,12 @@ def _class_rows(results: dict) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------------------------------ the figures
+
+def _thousands(ax, axis: str = "y") -> None:
+    """Counts with a space as thousands separator, as in the text ("140 000", not "140000")."""
+    fmt = FuncFormatter(lambda v, _pos: "{:,.0f}".format(v).replace(",", " "))
+    (ax.yaxis if axis == "y" else ax.xaxis).set_major_formatter(fmt)
+
 
 def fig_t1(inputs: dict, out_dir: Path) -> List[Path]:
     """T1: one fill, three mark paths, three units -- the definition of everything that follows."""
@@ -164,8 +171,8 @@ def fig_t1(inputs: dict, out_dir: Path) -> List[Path]:
     a.set_ylim(lo - 0.62 * span, hi + 0.22 * span)   # room under the path, so the legend covers no point
     xb = len(short) + 0.30                          # two brackets side by side, never stacked on one line
     a.annotate("", xy=(xb, marks[0]), xytext=(xb, price), arrowprops=dict(arrowstyle="<->", lw=0.7, color="black"))
-    a.text(xb + 0.10, marks[0] if half > 0 else price, minus("half spread\n{:+.2f}".format(half)), fontsize=6.5,
-           va="bottom")
+    a.text(xb, min(marks[0], price) - 0.03 * span, minus("half spread\n{:+.2f}".format(half)), fontsize=6.5,
+           ha="center", va="top")                   # under its bracket: beside it, it ran into the second one
     xc = xb + 1.05
     a.annotate("", xy=(xc, marks[3]), xytext=(xc, marks[0]),
                arrowprops=dict(arrowstyle="<->", lw=0.7, color=figstyle.PALETTE[2]))
@@ -337,6 +344,7 @@ def fig_f1(inputs: dict, out_dir: Path) -> List[Path]:
     a.set_xticks([-1e3, -1e1, 0, 1e1, 1e3])       # every decade labelled would run the minus signs together
     a.set_xlabel("markout after 30 min, USDC per contract\nsymlog, shaded core linear, equal area per decade")
     a.set_ylabel("fills")
+    _thousands(a)
     _panel_tag(a, "a")
 
     agg = (frame.assign(dollar=frame["y_usd"] * frame["amount"])
@@ -365,6 +373,7 @@ def fig_f1(inputs: dict, out_dir: Path) -> List[Path]:
     c.legend(handles=handles, loc="upper right", fontsize=6.0, handlelength=1.8)
     c.set_xlabel("markout as a share\nof the premium, %")
     c.set_ylabel("fills")
+    _thousands(c)
     _panel_tag(c, "c")
     return figstyle.save(fig, "f1", out_dir)
 
@@ -384,7 +393,7 @@ def fig_f2(inputs: dict, out_dir: Path) -> List[Path]:
              ("vol points", lambda h, f: f["mo_vol_{}".format(h)]),
              ("share of premium, %", lambda h, f: figdata.premium_share(f, "mo_usd_{}".format(h)))]
     for ax, (label, getter) in zip(axes, units):
-        for name, mask, color, style in (("professional flow", professional, figstyle.PALETTE[1], "--"),
+        for name, mask, color, style in (("dominant, MM programme, large", professional, figstyle.PALETTE[1], "--"),
                                          ("other flow", ~professional, figstyle.PALETTE[0], "-")):
             sub = balanced[mask]
             med, lo, hi = [], [], []
@@ -494,7 +503,7 @@ def fig_f3(inputs: dict, out_dir: Path) -> List[Path]:
         c.set_yticks([0, 1])
         c.set_yticklabels([figstyle.CLASS_LABELS[n] for n in names[::-1]], fontsize=6.5)
         c.set_xlim(0, 100)
-    c.set_xlabel("share of the class' fills\nfrom the ten loss wallets, %", fontsize=6.5)
+    c.set_xlabel("share of the class's fills\nfrom the ten loss wallets, %", fontsize=6.5)
     _panel_tag(c, "c")
     return figstyle.save(fig, "f3", out_dir)
 
@@ -518,8 +527,8 @@ def fig_f4(inputs: dict, out_dir: Path) -> List[Path]:
     a.plot(share, loss, color=figstyle.PALETTE[0])
     a.set_xscale("log")
     a.axhline(0.5, color="black", lw=0.8, ls="--")
-    a.annotate("H1 threshold, 50 %", xy=(0.02, 0.5), xycoords=("axes fraction", "data"),
-               xytext=(0, 4), textcoords="offset points", fontsize=6.5)
+    a.annotate("H1 threshold, 50 %", xy=(0.98, 0.5), xycoords=("axes fraction", "data"),
+               xytext=(0, 4), textcoords="offset points", ha="right", fontsize=6.5)   # at the left the curve crosses it
     n_wallets = max(len(lorenz), 1)
     top_x = 10.0 / n_wallets
     top_share = float(h1["top10_share"]["share"])
@@ -567,7 +576,8 @@ def fig_f4(inputs: dict, out_dir: Path) -> List[Path]:
         b.plot([raw], [i], "o", mfc="none", color=figstyle.PALETTE[1], ms=5)
         b.plot([controlled], [i], "o", color=figstyle.PALETTE[0], ms=5)
         b.annotate(minus("t {:.2f}".format(t)), xy=(1.0, i), xycoords=("axes fraction", "data"),
-                   xytext=(-2, 7), textcoords="offset points", ha="right", fontsize=6.5)
+                   xytext=(-2, 7), textcoords="offset points", ha="right", fontsize=6.5, zorder=3,
+                   bbox=dict(boxstyle="square,pad=0.15", fc="white", ec="none"))    # covers the zero line
     b.axvline(0, color="black", lw=0.6)
     b.set_yticks(range(len(pairs)))
     b.set_yticklabels([p[0] for p in pairs], fontsize=7)
@@ -575,7 +585,7 @@ def fig_f4(inputs: dict, out_dir: Path) -> List[Path]:
     b.set_xlabel("difference in delta-neutral markout,\nUSDC per contract")
     b.legend(handles=[Line2D([], [], marker="o", mfc="none", color=figstyle.PALETTE[1], ls="none", label="raw"),
                       Line2D([], [], marker="o", color=figstyle.PALETTE[0], ls="none",
-                             label="instrument x day fixed effects")],
+                             label="instrument \u00d7 day fixed effects")],
              loc="upper left", ncol=2, fontsize=6.0)    # inside the axes: below it sat on the axis label
     _panel_tag(b, "b")
     return figstyle.save(fig, "f4", out_dir)
@@ -613,7 +623,7 @@ def fig_f5(inputs: dict, out_dir: Path) -> List[Path]:
         ax.set_yticklabels(values.columns if col == 0 else [], fontsize=6)
         ax.tick_params(length=0 if col else 2)
         finite = grid[np.isfinite(grid)]
-        _panel_tag(ax, minus("{}  {:.1f} to {:.0f} bp".format(ccy, finite.min(), finite.max())) if finite.size else ccy)
+        _panel_tag(ax, minus("{}  {:.1f} to {:.1f} bp".format(ccy, finite.min(), finite.max())) if finite.size else ccy)
         if col == 0:
             ax.set_ylabel("|delta|, %")
 
@@ -780,6 +790,7 @@ def fig_a1(inputs: dict, out_dir: Path) -> List[Path]:
     a.set_xscale("log")
     a.set_xlabel("seconds, log scale")
     a.set_ylabel("fills")
+    _thousands(a)
     a.legend(loc="upper left", fontsize=5.8)
     _panel_tag(a, "a")
 

@@ -236,7 +236,7 @@ def tables(data: dict) -> Dict[str, pd.DataFrame]:
         ("vol_age_max_s", fa["vol_age_max_s"]), ("fwd_age_max_s", fa["fwd_age_max_s"]),
         ("vol_limit_s", fa["vol_limit_s"]), ("fwd_limit_s", fa["fwd_limit_s"]), ("pm2_window_fills", fa["fills"]),
         ("spot_age_max_s", fa["spot_age_max_s"]), ("spot_limit_s", fa["spot_limit_s"]),
-        ("spot_stale_fills", fa["spot_stale_fills"]),
+        ("spot_stale_fills", fa["spot_stale_fills"]), ("books", data["books"]), ("maker_days", data["maker_days"]),
         ("feed_sentence_holds", fa["holds"]), ("capital_path", fa["capital_path"]))])
     meta["printed"] = np.where(meta["key"] == "feed_sentence_holds", feed_sentence(fa), "")
     return {"fig_a1_a.csv": a[cols], "fig_a1_b.csv": b[cols], "fig_a1_meta.csv": meta}

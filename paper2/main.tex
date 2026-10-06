@@ -97,6 +97,18 @@
 % cas-common sets "Page 1 of n" on the first page outside the \sffamily\small of every later page, so only
 % page 1 showed its number in the serif body font. The first page takes the footer of the others.
 \cs_set_eq:NN \__first_foot: \__cas_foot:
+% cas-common labels the ORCID footnote "ORCID(s):", a plural meant for several authors; this paper has one.
+\RenewDocumentCommand \printorcid { }
+{
+  \group_begin:
+    \tex_let:D \thefootnote \relax \footnotetext
+    {
+      \raggedright
+      \textsc{orcid}:\c_space_token
+      \seq_use:Nn \g_stm_orcid_seq { ;~ }
+    }
+  \group_end:
+}
 \ExplSyntaxOff
 
 % Placeholder for a number or a sentence that the registered analysis has not produced yet. None is left;
@@ -122,9 +134,9 @@
 A market maker quotes against a budget of capital, not contracts, yet its edge is reported per contract. On
 Derive, a crypto options exchange, the margin rules are public smart contracts, and its off-chain engine quotes
 margin for any book. Capital is what its three margin managers require for positions, not balances; it is
-measured on one contract per fill of a companion paper and on the actual books of dominant maker
-subaccounts. Four hypotheses were registered before any registered capital figure existed. Contrary to H1, capital
-does not reorder the moneyness-by-tenor map of the edge in the registered sense (rank correlation 0.890); post hoc, much of that
+measured on one contract for each fill of a companion paper and on the books of dominant maker
+subaccounts. Four hypotheses were registered before the analysis's capital figures existed. Contrary to H1, capital
+does not reorder the moneyness-by-tenor map of the edge in the registered sense (rank correlation 0.890); post hoc, much of the
 correlation comes from the sign of the edge. In the books of the four subaccounts under the second-generation
 portfolio manager (PM2), trading only ETH and HYPE, the median fill binds 3.5~per~cent of its stand-alone
 capital (H2 not rejected). On the opening books of nine dominant subaccounts, standard margin needs 4.73 times
@@ -362,7 +374,7 @@ books, probed at random, showed larger gaps.
   \caption{\textbf{What one contract costs.} Panel a is PM2 capital per contract in per cent of notional over the
   absolute delta of the traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a
   ratio of sums over the fills of the PM2 window, which the parameter changes of 23~January, 24~May and 20~August
-  2026 split into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and an empty cross
+  2026 split into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and a cross
   marks a cell with fewer than 200 fills. Panel b gives, for every occupied cell, the capital of the same fills
   under standard margin (squares) and under the legacy manager (diamonds) divided by PM2 capital, with the median
   cell as a bar and the number of cells under n; the hollow squares of the rows R4 use only the fills after the
@@ -399,7 +411,8 @@ cell with at least 200 fills is occupied. Its edge per unit of capital is a rati
 with $\mathit{NE}$ the net edge and $a$ the size; its edge per unit of notional has the index price in place of
 $K$.
 
-The maker books are those of the ten subaccounts with the most maker fills, M1 to M10 by rank. Their opening books
+The maker books are those of the ten subaccounts with the most maker fills, M1 to M10 by rank (not the taker
+class of dominant makers in \citet{albiez2026}). Their opening books
 are read on chain, with their manager, at the first block of each UTC day. Some share a wallet: M3 with M5, M4
 with M10, and M2, the one SM subaccount, with M1, M6 and M8. The book before a fill is the opening book plus the
 subaccount's balance changes up to the fill's transaction (Addendum~1). The marginal cost of a fill is
@@ -413,7 +426,7 @@ underlyings, with positions at the companion paper's mark.
   \includegraphics[width=\linewidth]{figures/f2.pdf}
   \caption{\textbf{The map in two denominators (H1).} Panel a is net edge per unit of PM2 capital, per fill, for
   every cell of the PM2 window by underlying and maker side, in basis points for maker sells and in per cent for
-  maker buys; negative cells are hatched and an empty cross marks fewer than 200 fills. For a maker buy the
+  maker buys; negative cells are hatched and a cross marks fewer than 200 fills. For a maker buy the
   denominator is about the premium when the option is out of the money and less in the money. Darker grey marks a
   larger absolute value on a log scale, each row on its own. The map per notional is not drawn; its ranks enter
   panel b. Panel b ranks the 181 occupied cells by edge per notional and by edge per PM2 capital; because capital
@@ -836,8 +849,8 @@ Second, the book, not the contract, decides the cost of a quote. In four large P
 median cost of a quote many times over. The endpoint instead returns the marginal capital
 against the maker's own book in one request.
 
-Third, netting pays for books of a few dozen legs or more held under the portfolio managers (H3; by book size
-exploratory). The one
+Third, netting pays for books of a few dozen legs or more held under the portfolio managers (H3; the split by book size
+is exploratory). The one
 standard-margin subaccount holds small books that net little; its operator keeps the large books under
 portfolio margin.
 
@@ -955,7 +968,7 @@ underlying and manager (registered: at least 48) and on 20 maker-days. The 877 c
 13~January 2024 to 30~September 2026, and none reverted on chain. All 32 cells of underlying, manager, kind
 and margin meet both registered thresholds. For single contracts under initial margin the median absolute
 relative deviation is ${6.8\times10^{-10}}$ and the 95th percentile ${1.5\times10^{-8}}$; over all 800 contracts the
-largest is ${8.3\times10^{-8}}$. For 77 evaluations of the books of 20 maker-days under the available managers,
+largest is ${8.3\times10^{-8}}$. For 77 evaluations of 26 books from 20 maker-days under the available managers,
 with 2 to 303 legs, the median is ${1.9\times10^{-9}}$ and the largest absolute deviation 0.110~USDC. In H3, 10
 maker-days hold more legs than the largest validated book, up to 317; for these the replica is extrapolated
 in size but not in rule. For HYPE a single maker-day is validated. H2 also prices books larger than any
@@ -994,6 +1007,7 @@ spot feed (180~seconds) and stay in the sample.
 % src summary.json:validation_single_n 800
 % src summary.json:validation_single_max_rel 8.3\times10^{-8}
 % src summary.json:validation_book_n 77
+% src fig_a1_meta.csv:value@key=books 26
 % src validation.csv:book@kind=book~distinct 20
 % src summary.json:validation_book_legs_min 2
 % src summary.json:validation_book_legs_max 303

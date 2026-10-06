@@ -387,7 +387,7 @@ def _panel_c(fig, c: pd.DataFrame) -> None:
                     ha="left" if right else "right", va="center", fontsize=kit.FS_MIN, linespacing=1.0,
                     path_effects=HALO, zorder=4)
     ax.set_ylabel("placebo dates")
-    ax.set_xlabel("β at 100 placebo dates, bp of index per log unit")
+    ax.set_xlabel("β over 100 placebo replications, bp of index per log unit")
     days = c.loc[c["kind"] == "placebo_days", "printed"].iloc[0]
     kit.fig_text(fig, BL - 0.25, C_TOP + C_H + 0.30, days, ha="left", color=kit.GREY)
 

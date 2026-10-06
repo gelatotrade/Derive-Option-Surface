@@ -90,7 +90,7 @@ CAPTION = (
     "What one contract costs. Panel a is PM2 capital per contract in per cent of notional over the absolute delta "
     "of the traded option and tenor, for maker sells (upper row) and maker buys (lower row), as a ratio of sums "
     "over the fills of the PM2 window, which the parameter changes of 23~January, 24~May and 20~August 2026 split "
-    "into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and an empty cross marks a "
+    "into four regimes, R1 to R4. Each row is shaded on one logarithmic grey scale, and a cross marks a "
     "cell with fewer than 200 fills. Panel b gives, for every occupied cell, the capital of the same fills under "
     "standard margin (squares) and under the legacy manager (diamonds) divided by PM2 capital, with the median "
     "cell as a bar and the number of cells under n; the hollow squares of the rows R4 use only the fills after the "

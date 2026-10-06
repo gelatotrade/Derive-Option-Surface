@@ -85,8 +85,8 @@ PDF in this repository: [`paper/Derive Orderbook Adverse Selection.pdf`](paper/D
 > −2.66. Fees, rebates and a modelled hedge cost leave a net edge of +9.34. The loss is extremely concentrated: ten
 > taker wallets, almost the entirety of the two professional counterparty classes, carry 90.1 per cent of it. Trade
 > size, the standard proxy for toxic flow, explains none of it once instrument-by-day fixed effects are included, and
-> sweeps only the move of the underlying, which hedging removes. Four hypotheses were registered before any markout
-> was computed; three are rejected.
+> sweeps predict only the move of the underlying, which hedging removes. Four hypotheses were registered before any
+> markout was computed; three are rejected.
 
 Pre-registration: [`docs/paper1/PRAEREGISTRIERUNG.md`](docs/paper1/PRAEREGISTRIERUNG.md) (binding) ·
 [English translation](docs/paper1/PREREGISTRATION.md) · manuscript: [`paper/main.tex`](paper/main.tex) · code:
@@ -103,17 +103,17 @@ PDF in this repository: [`paper2/Derive Capital-Adjusted Market Making.pdf`](pap
 by week from June 2025 to September 2026; below, the capital of a short straddle under the three margin managers and
 the parameter changes that moved it.*
 
-> A market maker quotes against a budget of capital, not contracts, yet its edge is reported per contract. On Derive,
-> a crypto options exchange, the margin rules are public smart contracts, and its off-chain engine quotes margin for
-> any book. Capital is what its three margin managers require for positions, not balances; it is measured on one
-> contract per fill of a companion paper and on the actual books of dominant maker subaccounts. Four hypotheses were
-> registered before any registered capital figure existed. Contrary to H1, capital does not reorder the moneyness-by-
-> tenor map of the edge in the registered sense (rank correlation 0.890); post hoc, much of that correlation comes
-> from the sign of the edge. In the books of the four subaccounts under the second-generation portfolio manager (PM2),
-> trading only ETH and HYPE, the median fill binds 3.5 per cent of its stand-alone capital (H2 not rejected). On the
-> opening books of nine dominant subaccounts, standard margin needs 4.73 times the PM2 capital (H3 not rejected),
-> mostly for books too large for a standard-margin subaccount. Contrary to H4, cheaper capital did not detectably
-> narrow the half spread; the test has little power. The sample ends on 30 September 2026.
+> A market maker quotes against a budget of capital, not contracts, yet its edge is reported per contract. On Derive, a
+> crypto options exchange, the margin rules are public smart contracts, and its off-chain engine quotes margin for any
+> book. Capital is what its three margin managers require for positions, not balances; it is measured on one contract
+> for each fill of a companion paper and on the books of dominant maker subaccounts. Four hypotheses were registered
+> before the analysis's capital figures existed. Contrary to H1, capital does not reorder the moneyness-by-tenor map of
+> the edge in the registered sense (rank correlation 0.890); post hoc, much of the correlation comes from the sign of
+> the edge. In the books of the four subaccounts under the second-generation portfolio manager (PM2), trading only ETH
+> and HYPE, the median fill binds 3.5 per cent of its stand-alone capital (H2 not rejected). On the opening books of
+> nine dominant subaccounts, standard margin needs 4.73 times the PM2 capital (H3 not rejected), mostly for books too
+> large for a standard-margin subaccount. Contrary to H4, cheaper capital did not detectably narrow the half spread; the
+> test has little power. The sample ends on 30 September 2026.
 
 Pre-registration: [`docs/paper2/PRAEREGISTRIERUNG.md`](docs/paper2/PRAEREGISTRIERUNG.md) (binding, Addenda 1 to 7) ·
 [English translation](docs/paper2/PREREGISTRATION.md) ·

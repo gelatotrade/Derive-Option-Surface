@@ -100,7 +100,7 @@ BAND_LABEL = "sign pattern alone"
 CAPTION = (
     "The map in two denominators (H1). Panel a is net edge per unit of PM2 capital, per fill, for every cell of "
     "the PM2 window by underlying and maker side, in basis points for maker sells and in per cent for maker buys; "
-    "negative cells are hatched and an empty cross marks fewer than 200 fills. For a maker buy the denominator is "
+    "negative cells are hatched and a cross marks fewer than 200 fills. For a maker buy the denominator is "
     "about the premium when the option is out of the money and less in the money. Darker grey marks a larger "
     "absolute value on a log scale, each row on its own. The map per notional is Figure~\\PH{p1-map-fig} of the companion paper. Panel b ranks the "
     "\\PH{h1-cells} occupied cells by edge per notional and by edge per PM2 capital; because capital is positive in "

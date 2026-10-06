@@ -24,7 +24,8 @@ BUDGET: Dict[str, int] = {
     "abstract": 200,
     "Introduction": 600,
     "The engine and what it returns": 600,
-    "Data and measurement": 600,
+    "Data and measurement": 610,     # 6 October 2026: the maker books are told apart from the taker class of
+                                     # dominant makers in the companion paper (audit of the final run)
     "Results": 1400,
     "Discussion": 400,
     "Conclusion": 200,
