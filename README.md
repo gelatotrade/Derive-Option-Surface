@@ -94,7 +94,7 @@ Pre-registration: [`docs/paper1/PRAEREGISTRIERUNG.md`](docs/paper1/PRAEREGISTRIE
 
 ### Paper 2 · What does the edge cost? Capital-adjusted market making under a public portfolio-margin engine
 
-Working paper, 5 October 2026 ·
+Working paper, 6 October 2026 ·
 PDF in this repository: [`paper2/Derive Capital-Adjusted Market Making.pdf`](paper2/Derive%20Capital-Adjusted%20Market%20Making.pdf)
 
 ![BTC: capital of one short contract under PM2 over the surface, weekly from June 2025](docs/media/p2_btc_capital_surface.gif)

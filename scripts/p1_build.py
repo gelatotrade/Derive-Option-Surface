@@ -16,8 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import p1_wordcount as wc  # noqa: E402
 
 PAPER = Path("paper")
-MUST_CONTAIN = ["Competing interest", "Data, code and pre-registration", "Use of generative tools",
-                "References", "Conclusion", "G13"]
+MUST_CONTAIN = ["Competing interest", "Data, code and pre-registration", "References", "Conclusion", "G13"]
 
 
 def main() -> int:

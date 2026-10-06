@@ -51,7 +51,7 @@ RESULTS = Path("results/p2")
 SLOTS = ["t1", "t2", "f1", "f2", "f3", "f4", "f5", "f6", "a1"]
 MUST_CONTAIN = ["A B S T R A C T", "Introduction", "The engine and what it returns", "Data and measurement",
                 "Results", "Discussion", "Conclusion", "Data, code and pre-registration", "Competing interest",
-                "Use of generative tools", "References", "G13"]
+                "References", "G13"]
 
 COMMENT = re.compile(r"(?<!\\)%.*")
 

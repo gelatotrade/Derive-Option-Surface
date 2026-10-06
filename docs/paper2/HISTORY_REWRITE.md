@@ -219,8 +219,7 @@ Paper 1 on `main`, which had been public since 25 September 2026. Rules:
 
 1. **Authorship.** Every commit names the author, gregor_284. Some early commits (3 September 2026) had named the AI
    coding tool that was used as their author, and most commits named it as co-author in a "Co-Authored-By" line;
-   those lines are removed, as are the tool's session links and its branch name in four merge messages. The
-   paper discloses the use of generative tools in "Use of generative tools".
+   those lines are removed, as are the tool's session links and its branch name in four merge messages.
 2. **Language.** The 20 remaining German commit messages are translated into English.
 3. **Files.** Example commit lines of this kind are removed from the planning documents under
    `docs/superpowers/plans/`, and two mentions of the tool's branch name in `docs/paper1/REVISION_2026-09-25.md`

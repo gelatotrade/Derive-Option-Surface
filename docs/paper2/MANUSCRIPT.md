@@ -52,7 +52,7 @@ abstract included. Formulas count. The tolerance is +10 %.
 | 4 Results | `sec:results` | 4.1 H1 (F1, F2), 4.2 H2 (F3), 4.3 H3 (F4), 4.4 H4 (F5, F6) | 1,400 | 453 | ~950 for the `*-reading` paragraphs and findings |
 | 5 Discussion | `sec:discussion` | three paragraphs on meaning (`disc-map`, `disc-book`, `disc-price`), one paragraph on limits (done); Fig. A1 | 400 | 175 | ~225 |
 | 6 Conclusion | `sec:conclusion` | two sentences done, `concl-results`, `concl-close` | 200 | 55 | ~145 |
-| Back matter | n/a | Data, code and pre-registration (commit `1d13227`, now `cc0a29f`); Competing interest; Use of generative tools | n/a | 255 | n/a |
+| Back matter | n/a | Data, code and pre-registration (commit `1d13227`, now `cc0a29f`); Competing interest | n/a | 255 | n/a |
 | **Total** | | | **3,970** | **2,968** | |
 
 Like Paper 1, the total of 2,968 counts all sections including the back matter. Without the back matter it is

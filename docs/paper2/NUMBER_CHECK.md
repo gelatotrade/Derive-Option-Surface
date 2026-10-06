@@ -1,6 +1,6 @@
 # Number check Paper 2
 
-Generated 2026-10-05 21:56 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
+Generated 2026-10-06 07:23 UTC with `scripts/p2_number_check.py` from `paper2/main.tex` against `results/p2` and the list of constants of the pre-registration. Rules in the header of the script.
 
 Checked are the abstract, the prose of all sections and subsections including their titles, and all figure captions; not checked are the title, keywords, cross-references, citations, URLs, display formulas and the bibliography. Every number, date and clock time is bound by `% src source printed` in its unit to exactly one source, in the order of the text; nothing is searched. "Text count": a count word that the sentence itself makes evident (`text:`), without a data source.
 

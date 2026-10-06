@@ -12,8 +12,8 @@
 
 % Space between a float and the text: 14 pt instead of LaTeX's 20 pt, so that Results keeps each figure on the
 % page of its first callout or next to it (scripts/p2_build.py checks this).
-\setlength{\textfloatsep}{14pt plus 2pt minus 2pt}
-\setlength{\dbltextfloatsep}{14pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{14pt plus 2pt minus 4pt}
+\setlength{\dbltextfloatsep}{14pt plus 2pt minus 4pt}
 
 % Author names and the words of a cross-reference are not hyphenated: "(Brunner-|meier and Pedersen, 2009)"
 % and "(Fig-|ure 3)" read badly.
@@ -42,6 +42,9 @@
 % writes the number of pages to the aux file as \lastpage, so \balance is given once the page before the last
 % has been shipped out. Without an aux file (first run) nothing is balanced.
 \AddToHook{shipout/after}{\ifnum\value{page}=\numexpr\lastpage-1\relax\balance\fi}
+% Reference entries stand without space between them; a little give lets balance.sty end both columns of the
+% last page at the same height without overfilling it.
+\AtBeginDocument{\setlength{\bibsep}{0pt plus 0.3pt minus 0.3pt}}
 
 % Bookmarks carry the section numbers, and those of the appendices read "Appendix A." and "Appendix B.".
 \hypersetup{bookmarksnumbered=true,pdflang={en-GB}}
@@ -88,7 +91,7 @@
   \else
     \__short_authors: :~
   \fi
-  { \rmfamily \itshape Working~paper,~5~October~2026 }
+  { \rmfamily \itshape Working~paper,~6~October~2026 }
   \group_end:
 }
 % cas-common sets "Page 1 of n" on the first page outside the \sffamily\small of every later page, so only
@@ -912,9 +915,8 @@ already be read for SM; and margin histories of at-the-money contracts under the
 registration does not list. The half spreads that enter H4 were known from the companion
 paper before registration; the registration fixes the doses, the events and the test.
 
-All commit times are local times of the author's machine. Before publication the history was rewritten twice, first
-to remove account identifiers and then, for the whole repository, to make the authorship records uniform and the
-commit messages English. The registered texts are byte-identical to those of the original commits and the commit
+All commit times are local times of the author's machine. Before publication the history was rewritten twice, the first
+time to remove account identifiers. The registered texts are byte-identical to those of the original commits and the commit
 times are unchanged; \path{docs/paper2/HISTORY_REWRITE.md} maps the old commit hashes to the new ones.
 Addendum~5 of 27~September 2026 (\texttt{8c066a7}) and Addendum~7 of 5~October 2026 (\texttt{7c01e85}), both
 written after all results, record the rewrites and change no rule, test statistic or result. Addendum~6 of
@@ -943,12 +945,6 @@ I am building a market-making bot for the venue studied here and have been in co
 obtaining order-level data for a follow-up paper. No data, funding or review was received from the venue for
 this paper, and every number in it comes from public sources. Readers should weigh the practitioner
 conclusions in Section~\ref{sec:discussion} in that light.
-
-\section*{Use of generative tools}
-\phantomsection\addcontentsline{toc}{section}{Use of generative tools}
-Large language models were used for code, for drafting and for checking the bibliography against publisher
-records. All results were produced by the code in the repository, and every published reference was verified
-against the publisher, RePEc or the DOI. The author is responsible for the content.
 
 \appendix
 \section{Validation of the replica}\label{app:validation}

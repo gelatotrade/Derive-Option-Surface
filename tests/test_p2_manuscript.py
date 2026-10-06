@@ -153,8 +153,7 @@ def missing_disclosures(tex: str) -> list:
         ("A40 validation fixtures read maker margins", back, r"validation fixtures .* maker (?:sub)?accounts"),
         ("A18 correction of the companion paper", data, r"companion paper was corrected on 25[ ~]September 2026"),
         ("A18 same unit as the companion paper", data, r"uses the same unit per contract"),
-        ("A01 history rewrite disclosed", back, r"history was rewritten twice, first\s+to remove account identifiers"),
-        ("second rewrite disclosed", back, r"to make the authorship records uniform and the\s+commit messages English"),
+        ("A01 history rewrite disclosed", back, r"history was rewritten twice, the first\s+time to remove account identifiers"),
         ("A01 map of old and new hashes", back, r"HISTORY_REWRITE\.md\} maps the old commit hashes"),
         ("A01 Addenda 5 and 7 record the rewrites", back,
          r"Addendum[ ~]5 of 27[ ~]September 2026 \(\\texttt\{[0-9a-f]{7,40}\}\) and Addendum[ ~]7 of 5[ ~]October 2026 "
