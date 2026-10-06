@@ -67,8 +67,8 @@ because of the skew (section 6): blue where the skew lowers the delta, red where
 
 Two working papers use the trade tape behind these surfaces. Both were pre-registered in this repository before their
 main numbers existed. The binding pre-registrations (in German, with English translations), the manuscripts, the code
-and tests, and every number in the papers are in the repository. The numbers come from a pilot cut of the data to
-17 September 2026; a final run on the registered sample to 30 September 2026 follows.
+and tests, and every number in the papers are in the repository. The numbers use the registered sample to
+30 September 2026.
 
 ### Paper 1 · Who trades against the maker? Adverse selection with counterparty identity on an on-chain options order book
 
@@ -78,15 +78,14 @@ PDF in this repository: [`paper/Derive Orderbook Adverse Selection.pdf`](paper/D
 
 ![Where an options maker's edge goes](paper/social/s1_decomposition.png)
 
-> A market maker on an options book loses to counterparties who know something and earns from those who do not, but
-> on an anonymous venue the two can only be told apart by proxy. Derive settles on chain, so its public tape names
-> both wallets. On 603,940 fills in BTC, ETH and HYPE options between January 2024 and September 2026, the maker's
-> mean markout thirty minutes after the fill is +13.05 USDC per contract: a half spread of +15.70 plus adverse
-> selection of −2.65. Fees, rebates and delta hedging leave a net edge of +9.58. The loss is extremely concentrated,
-> with ten taker wallets carrying 90.5 per cent of it, and those ten are almost the entirety of the two professional
-> counterparty classes. Trade size and sweeps, the standard proxies for toxic flow, explain none of it once
-> instrument-by-day fixed effects are included. Four hypotheses were registered before any markout was computed;
-> three are rejected.
+> A market maker on an options book loses to counterparties who know something and earns from those who do not, but on
+> an anonymous venue the two can only be told apart by proxy. Derive settles on chain, so its public tape names both
+> wallets. On 621,508 fills in BTC, ETH and HYPE options between January 2024 and September 2026, the maker's mean
+> markout thirty minutes after the fill is +12.79 USDC per contract: a half spread of +15.45 plus adverse selection of
+> −2.66. Fees, rebates and delta hedging leave a net edge of +9.34. The loss is extremely concentrated, with ten taker
+> wallets carrying 90.1 per cent of it, and those ten are almost the entirety of the two professional counterparty
+> classes. Trade size and sweeps, the standard proxies for toxic flow, explain none of it once instrument-by-day fixed
+> effects are included. Four hypotheses were registered before any markout was computed; three are rejected.
 
 Pre-registration: [`docs/paper1/PRAEREGISTRIERUNG.md`](docs/paper1/PRAEREGISTRIERUNG.md) (binding) ·
 [English translation](docs/paper1/PREREGISTRATION.md) · manuscript: [`paper/main.tex`](paper/main.tex) · code:
@@ -108,12 +107,12 @@ the parameter changes that moved it.*
 > any book. Capital is what its three margin managers require for positions, not account balances; it is measured on
 > one contract per option fill of a companion paper and on the actual books of dominant maker subaccounts. Four
 > hypotheses were registered before any registered capital figure existed. Contrary to H1, capital does not reorder
-> the moneyness-by-tenor map of the edge (rank correlation 0.903); post hoc, much of that correlation comes from the
+> the moneyness-by-tenor map of the edge (rank correlation 0.890); post hoc, much of that correlation comes from the
 > sign of the edge. In the books of the four subaccounts under the second-generation portfolio manager (PM2), trading
 > only ETH and HYPE, the median fill binds 3.5 per cent of its stand-alone capital (H2 not rejected). On the opening
-> books of nine dominant subaccounts, standard margin needs 4.75 times the PM2 capital (H3 not rejected), mostly for
-> books too large for a standard-margin subaccount. Contrary to H4, cheaper capital did not detectably narrow the
-> half spread; the test has little power. All numbers use pilot data to 17 September 2026.
+> books of nine dominant subaccounts, standard margin needs 4.73 times the PM2 capital (H3 not rejected), mostly for
+> books too large for a standard-margin subaccount. Contrary to H4, cheaper capital did not detectably narrow the half
+> spread; the test has little power. The registered sample ends on 30 September 2026.
 
 Pre-registration: [`docs/paper2/PRAEREGISTRIERUNG.md`](docs/paper2/PRAEREGISTRIERUNG.md) (binding, Addenda 1 to 7) ·
 [English translation](docs/paper2/PREREGISTRATION.md) ·
@@ -279,7 +278,7 @@ derive_surface/
 paper/          Paper 1: manuscript, figures, cards, PDF
 paper2/         Paper 2: manuscript, figures, cards, PDF
 results/        p1/, p2/: every number of the two papers (JSON, CSV)
-tests/          1090 tests (surface, Paper 1, Paper 2)
+tests/          1091 tests (surface, Paper 1, Paper 2)
 data/           trade tape, spot, live recording, depth snapshot (parquet; schema in data/README.md)
 docs/           API notes, media; paper1/ and paper2/: pre-registrations and the records they cite
 scripts/        render_media.sh, readme_numbers.py; p1_* and p2_*: builds, number and figure checks

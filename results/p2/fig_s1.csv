@@ -1,8 +1,8 @@
 key,value,printed,source
-last_sm,29.61088639637225,30 %,"fig_f5_c.csv:K_sm_pct@ccy=BTC,day=2026-09-17"
-last_pm,19.679443505897975,20 %,"fig_f5_c.csv:K_pm_pct@ccy=BTC,day=2026-09-17"
-last_pm2,10.033886816480704,10 %,"fig_f5_c.csv:K_pm2_pct@ccy=BTC,day=2026-09-17"
-tenor_days,22.0,22 d,"fig_f5_c.csv:tenor_days@ccy=BTC,day=2026-09-17"
+last_sm,29.578827349139907,30 %,"fig_f5_c.csv:K_sm_pct@ccy=BTC,day=2026-09-30"
+last_pm,19.096387348914348,19 %,"fig_f5_c.csv:K_pm_pct@ccy=BTC,day=2026-09-30"
+last_pm2,9.843256976565316,10 %,"fig_f5_c.csv:K_pm2_pct@ccy=BTC,day=2026-09-30"
+tenor_days,30.0,30 d,"fig_f5_c.csv:tenor_days@ccy=BTC,day=2026-09-30"
 step_BTC-pm-20250222,-16.942478624227586,−17 %,step BTC-pm-20250222
 step_BTC-pm2-20260108,1.6107592894864853,+2 %,step BTC-pm2-20260108
 step_BTC-pm2-20260123,-9.956225175004418,−10 %,step BTC-pm2-20260123

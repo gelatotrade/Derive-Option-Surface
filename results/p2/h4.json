@@ -28,10 +28,10 @@
  "placebo": {
   "n": 100,
   "finite": 100,
-  "p95": 23.40989788852172,
+  "p95": 23.41047279353948,
   "share_ge_beta": 0.64,
   "median": 1.1466574070270905,
-  "mean": -7.558420868933679,
+  "mean": -7.558325718899701,
   "min": -101.29622411562887,
   "max": 42.37651017927329,
   "timelines": "legacy PM and PM2 standard lib of the currency, every row",
@@ -127,7 +127,7 @@
  },
  "sample": [
   "2024-01-11T00:00:00+00:00",
-  "2026-09-17T11:51:53+00:00"
+  "2026-09-30T07:57:40+00:00"
  ],
  "readings": [
   "fixed effects alpha per (cell, event) and gamma per (UTC day, currency), removed by alternating projections",

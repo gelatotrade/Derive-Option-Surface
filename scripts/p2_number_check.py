@@ -814,7 +814,7 @@ def _fits_number(tok: Token, v: float) -> bool:
     x = tok.value
     if tok.rel:
         return {">": v > x, ">=": v >= x, "<": v < x, "<=": v <= x}[tok.rel]
-    return abs(v - x) <= _tolerance(tok) + 1e-9 * max(1.0, abs(x))
+    return abs(v - x) <= _tolerance(tok) + 1e-9 * abs(x)    # relative slack only: 8.7e-10 must not match 6.8e-10
 
 
 def _fits_moment(tok: Token, value) -> Tuple[bool, str]:

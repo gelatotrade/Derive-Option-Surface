@@ -1,17 +1,17 @@
 row,label,kind,printed,source,variant,group,stat,lo,hi,n,n_days,y,arrow_lo,arrow_hi,stat_drawn,printed_n
--3,,header,"registered: 4.75 [4.66, 4.82] → not rejected",,,,,,,,,,,,,
--2,,header,9 subaccounts · 1 943 maker-days,,,,,,,,,,,,,
--1,,header,"462 day clusters (UTC days, not subaccounts)",,,,,,,,,,,,,
-0,registered,registered,registered,h3.json,sm_pm2,all,4.7467261022171625,4.661926808686567,4.823628547372672,1943.0,462.0,-0.0,False,False,True,1 943
-1,maintenance margin,sensitivity,maintenance margin,sens_h3.csv,sm_pm2_mm,all,5.614276930370074,5.471317757717981,5.802400610478436,1943.0,462.0,-1.0,False,False,True,1 943
-2,legacy PM / PM2,sensitivity,legacy PM / PM2,sens_h3.csv,pm_pm2_be,all,1.5451135524837536,1.5352643655826934,1.5537379906102742,1640.0,462.0,-2.0,False,False,True,1 640
-3,SM / PM2 same legs,exploratory,SM / PM2 same legs,sens_h3.csv,sm_pm2_be,all,4.825809177221613,4.745833746341058,4.925575374601207,1640.0,462.0,-3.0,False,False,True,1 640
+-3,,header,"registered: 4.73 [4.65, 4.82] → not rejected",,,,,,,,,,,,,
+-2,,header,9 subaccounts · 1 982 maker-days,,,,,,,,,,,,,
+-1,,header,"475 day clusters (UTC days, not subaccounts)",,,,,,,,,,,,,
+0,registered,registered,registered,h3.json,sm_pm2,all,4.73483821611619,4.645588127287416,4.818592741673885,1982.0,475.0,-0.0,False,False,True,1 982
+1,maintenance margin,sensitivity,maintenance margin,sens_h3.csv,sm_pm2_mm,all,5.713029865054887,5.5257448920635905,5.857364381565377,1982.0,475.0,-1.0,False,False,True,1 982
+2,legacy PM / PM2,sensitivity,legacy PM / PM2,sens_h3.csv,pm_pm2_be,all,1.549523860063094,1.5407772475215276,1.5577426978455406,1666.0,475.0,-2.0,False,False,True,1 666
+3,SM / PM2 same legs,exploratory,SM / PM2 same legs,sens_h3.csv,sm_pm2_be,all,4.830339230690891,4.7467261022171625,4.931494650693146,1666.0,475.0,-3.0,False,False,True,1 666
 4,≤ 63 legs,exploratory,≤ 63 legs,sens_h3.csv,sm_pm2_le63,all,1.5898670551451004,1.531751779118101,1.661543592723782,512.0,331.0,-4.0,False,False,True,512
-5,> 63 legs,exploratory,> 63 legs,sens_h3.csv,sm_pm2_gt63,all,5.465414015410679,5.345470182192261,5.605588235550167,1431.0,459.0,-5.0,False,False,True,1 431
+5,> 63 legs,exploratory,> 63 legs,sens_h3.csv,sm_pm2_gt63,all,5.428340241637013,5.313528550159271,5.584794169807733,1470.0,472.0,-5.0,False,False,True,1 470
 6,SM books (M2),exploratory,SM books (M2),sens_h3.csv,sm_pm2,account_manager=SM,1.0757082498385966,1.0488892569419566,1.1114752928089873,328.0,328.0,-6.0,False,False,True,328
 7,legacy PM books,exploratory,legacy PM books,sens_h3.csv,sm_pm2,account_manager=PM,5.456760094214518,5.290565967765404,5.718827876272226,452.0,212.0,-7.0,False,False,True,452
-8,PM2 books,exploratory,PM2 books,sens_h3.csv,sm_pm2,account_manager=PM2,5.160634056590312,5.068347501263018,5.262139924026919,1163.0,376.0,-8.0,False,False,True,1 163
+8,PM2 books,exploratory,PM2 books,sens_h3.csv,sm_pm2,account_manager=PM2,5.139947065471525,5.0274295101436,5.2443461387390595,1202.0,389.0,-8.0,False,False,True,1 202
 9,R1 to 23 Jan,exploratory,R1 to 23 Jan,sens_h3.csv,sm_pm2,regime=R1,4.440202242947631,4.271912605934295,4.592227208776959,990.0,225.0,-9.0,False,False,True,990
 10,R2 to 24 May,exploratory,R2 to 24 May,sens_h3.csv,sm_pm2,regime=R2,4.674693112840632,4.49596107486631,4.78785417224637,590.0,121.0,-10.0,False,False,True,590
 11,R3 to 20 Aug,exploratory,R3 to 20 Aug,sens_h3.csv,sm_pm2,regime=R3,5.719821300166856,5.447490873770944,5.939855271148255,279.0,88.0,-11.0,False,False,True,279
-12,R4 since 20 Aug,exploratory,R4 since 20 Aug,sens_h3.csv,sm_pm2,regime=R4,6.001311717620847,5.756178620462709,6.620122415336331,84.0,28.0,-12.0,False,False,True,84
+12,R4 since 20 Aug,exploratory,R4 since 20 Aug,sens_h3.csv,sm_pm2,regime=R4,5.760082941663495,4.980246153203744,5.991250631912944,123.0,41.0,-12.0,False,False,True,123

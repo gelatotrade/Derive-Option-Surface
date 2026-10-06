@@ -45,7 +45,7 @@ from ..p2types import YEAR  # noqa: E402
 
 SLOT = "t1"
 CCY = "BTC"
-TS = 1_789_632_000                      # 17 Sep 2026 08:00:00 UTC, last pilot day, no parameter event within +-1 day
+TS = 1_789_632_000                      # 17 Sep 2026 08:00:00 UTC, day of the probes, no parameter event within +-1 day
 DAY = 86_400
 MANAGERS = ("pm2", "sm")
 WIDTH, HEIGHT = figstyle.DOUBLE, 4.2

@@ -146,7 +146,8 @@ def missing_disclosures(tex: str) -> list:
         ("A03 convention exploratory / post hoc", data, r"exploratory, those added after the first results post hoc"),
         ("A03 appendix of post hoc results", flat, r"\\section\{Post hoc and exploratory results\}"),
         ("A02 commit times are local", back, r"local times of the author's machine"),
-        ("A02 no public timestamp before the results", back, r"no public timestamp precedes the results"),
+        ("A02 public timestamp after the pilot, before the final run", back,
+         r"after the results on the pilot cut, but before the final data run"),
         ("A64 German original binding", back, r"German original is binding"),
         ("A64 translation named", back, r"docs/paper2/PREREGISTRATION\.md"),
         ("A37 addendum 4 after doses and panel", back, r"Addendum[ ~]4 was written after .*doses and the H4 panel"),
@@ -157,7 +158,7 @@ def missing_disclosures(tex: str) -> list:
         ("A01 map of old and new hashes", back, r"Addendum[ ~]7 lists the old and the new hash of every registration commit"),
         ("A01 Addenda 5 and 7 record the rewrites", back,
          r"Addendum[ ~]5 of 27[ ~]September 2026 \(\\texttt\{[0-9a-f]{7,40}\}\) and Addendum[ ~]7 of 5[ ~]October 2026 "
-         r"\(\\texttt\{[0-9a-f]{7,40}\}\), both\s+written after all results"),
+         r"\(\\texttt\{[0-9a-f]{7,40}\}\), both\s+written after the results on the pilot cut"),
         ("A09 wallets of the subaccounts", data, r"share a wallet"),
         ("A05 power of H4", flat, r"The test has little power"),
         ("A05 placebo-calibrated range", flat, r"Calibrated on those placebo statistics"),

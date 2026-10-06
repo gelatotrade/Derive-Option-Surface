@@ -384,7 +384,7 @@ def card_verdicts(data: dict, out_dir: Path, *, keep: bool = False):
     """Card 3: the four registered tests and their verdicts; title and layout independent of the outcome."""
     v = verdicts(data)
     title = "Four pre-registered tests. Four verdicts."
-    take = ["Registered before the capital figures of the analysis; numbers from a pilot cut.",
+    take = ["Registered before the capital figures of the analysis; sample to 30 September 2026.",
             "[ ]: 90 % interval. Hatched: an interval (H4: the estimate) reaching it rejects."]
     fig = _card(title, take)
     rows = []

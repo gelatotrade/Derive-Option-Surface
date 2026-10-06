@@ -86,7 +86,7 @@ CAPTION = (
     r"Exact matches sit in the strip on the left of panel a and at the bottom of panel b; deviations below "
     r"$10^{-13}$ sit on the edge of the axis. Thick ticks mark the median of a row, thin ticks its 95th percentile "
     r"(P95). The lines are the registered bounds for the median (0.1~per~cent) and the 95th percentile "
-    r"(1~per~cent). One single HYPE contract under PM2 hit a reverting call and is left out."
+    r"(1~per~cent)."
 )
 
 

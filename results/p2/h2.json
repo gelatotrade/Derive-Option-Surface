@@ -4,19 +4,19 @@
  "variant": "ratio",
  "numerator": "dK_per_contract",
  "denominator": "K_single_pm2",
- "stat": 0.034540122450644445,
- "lo": 0.03070183757603388,
- "hi": 0.03855716844133305,
+ "stat": 0.03462959609392485,
+ "lo": 0.030867847264113533,
+ "hi": 0.038621743227830775,
  "rejected": false,
  "rule": "rejected if the upper bound of the 90% day-cluster bootstrap percentile interval of the median of (dK / amount) / K_pm2_single is >= 0.5; fills with K_pm2_single <= 0 excluded and counted",
  "threshold": 0.5,
- "n": 19999,
- "n_days": 372,
+ "n": 20000,
+ "n_days": 385,
  "n_sample": 20000,
  "n_not_ok": 0,
- "n_excluded": 1,
+ "n_excluded": 0,
  "n_nonfinite": 0,
- "share_nonpositive": 0.41962098104905243,
+ "share_nonpositive": 0.42105,
  "b": 9999,
  "seed": 20260924,
  "level": 0.9,
@@ -27,11 +27,11 @@
   "M8"
  ],
  "fills_by_ccy": {
-  "ETH": 13594,
-  "HYPE": 6405
+  "ETH": 13530,
+  "HYPE": 6470
  },
  "first_day": "2025-09-04",
- "last_day": "2026-09-17",
+ "last_day": "2026-09-30",
  "check_stored_ratio_max_abs": 0.0,
  "check_stored_ratio_nan_mismatch": 0
 }

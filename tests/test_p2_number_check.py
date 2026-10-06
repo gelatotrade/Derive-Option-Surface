@@ -792,3 +792,12 @@ def test_the_swaps_of_the_audit_fail(results, old, new):
     assert old in t
     assert _all_ok(results, t)
     assert not _all_ok(results, t.replace(old, new, 1))
+
+
+def test_scientific_notation_is_checked_at_its_own_scale():
+    """A tolerance of 1e-9 in absolute terms let 8.7e-10 stand for 6.8e-10; the slack is relative."""
+    tok = nc.Token("number", "8.7e-10", value=8.7e-10, decimals=1, exponent=-10)
+    assert nc._fits_number(tok, 8.72e-10)
+    assert not nc._fits_number(tok, 6.82e-10)
+    big = nc.Token("number", "0.903", value=0.903, decimals=3)
+    assert nc._fits_number(big, 0.9034) and not nc._fits_number(big, 0.9036)
