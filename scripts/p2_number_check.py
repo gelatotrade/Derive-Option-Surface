@@ -216,6 +216,8 @@ CONSTANTS_P1: Dict[str, Tuple[object, str, str, str]] = {
     "significance_pct": (5, "|t| ≥ 1.96 of the registered coefficient tests (H1, H3), the two-sided 5 % level", PREREG_P1,
                          "Hypotheses and rejection rules"),
     "placebo_dates": (100, "100 random placebo dates (H3)", PREREG_P1, "Hypotheses and rejection rules"),
+    "t_threshold": (1.96, "coefficient not negative with |t| ≥ 1.96 (H1), expected sign with |t| ≥ 1.96 (H3)", PREREG_P1,
+                    "Hypotheses and rejection rules"),
     "cell_min_fills": (200, "occupied cells with at least 200 fills (H4)", PREREG_P1, "Hypotheses and rejection rules"),
     "hypotheses": (4, "four hypotheses H1 to H4", PREREG_P1, "Hypotheses and rejection rules"),
     "bootstrap_draws": (9_999, "B = 9 999 draws", PREREG_P1, "Inference"),

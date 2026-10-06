@@ -381,12 +381,13 @@ rejected if half of the cells, or either of those, carry a positive interval.
 % src const:interval_pct 90
 % src const:hype_event 23 June 2026
 
-All inference clusters on the taker wallet, the level at which the sampling here is plausibly independent
-\citep{abadie2023}. Coefficients are tested with a wild cluster bootstrap using restricted residuals and
-Rademacher weights \citep{cameron2008,mackinnon2017}, with $B = 9\,999$ draws and a fixed seed
-\citep{roodman2019}; means and cell averages carry percentile intervals from a cluster pairs bootstrap with
+All inference clusters on the taker wallet, the level at which sampling is plausibly independent
+\citep{abadie2023}. A coefficient meets a rule at $|t| \geq 1.96$ with the cluster-robust $t$, and its wild cluster bootstrap
+$p$-value, with restricted residuals, Rademacher weights \citep{cameron2008,mackinnon2017}, $B = 9\,999$ draws
+and a fixed seed \citep{roodman2019}, always agrees; means and cell averages carry percentile intervals from a cluster pairs bootstrap with
 the same $B$. Fixed effects, applied as a within transformation, are instrument by day with delta-bucket dummies for H1
-and day for H3. Error bars and bands that appear only in a figure use 999 draws or fewer.
+and day for H3. Error bars and bands drawn only in a figure use 999 draws or fewer.
+% src const:t_threshold 1.96
 % src const:bootstrap_draws 9\,999
 % src text_numbers.json:figure_draws 999
 
@@ -608,9 +609,9 @@ shows them. H4 asserted the opposite on both of its branches, and both fail. The
 71.7 per cent against a registered threshold of one half, and 76.8 and 56.6 per cent at an assumed half spread of the
 perpetual future of zero and three basis points. Short-dated at-the-money options are positive in BTC at $+24.24$ USDC per contract, with an interval from
 $6.60$ to $47.19$, and in ETH at $+1.04$, from $0.19$ to $2.11$. At three basis points neither interval
-excludes zero, so there the rejection rests on the majority alone. One qualification remains (exploratory). The rule reads percentile intervals, and the
+excludes zero, so there the rejection rests on the majority alone. One qualification remains. The rule reads percentile intervals, and the
 wild cluster bootstrap $p$-values of the two at-the-money cells are $0.117$ and $0.169$; counting only cells
-with a positive mean and $p$ below $0.10$ gives 55 cells, 55.6 per cent, but at three basis points only 47,
+with a positive mean and $p$ below $0.10$ (exploratory) gives 55 cells, 55.6 per cent, but at three basis points only 47,
 47.5 per cent, below the threshold. Read per unit of notional (exploratory), the edge is 2.5 to 9.6 times higher
 beyond ninety days than within two days in every underlying and every delta row below 75 per cent. That is the form
 Section~\ref{sec:maker} uses, and it is where the illiquidity premium documented for equity options would
