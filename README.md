@@ -72,7 +72,7 @@ and tests, and every number in the papers are in the repository. The numbers com
 
 ### Paper 1 · Who trades against the maker? Adverse selection with counterparty identity on an on-chain options order book
 
-Working paper, revised 25 September 2026 ·
+Working paper, revised 6 October 2026 ·
 [SSRN 7496818](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7496818) (doi:10.2139/ssrn.7496818) ·
 PDF in this repository: [`paper/Derive Orderbook Adverse Selection.pdf`](paper/Derive%20Orderbook%20Adverse%20Selection.pdf)
 
