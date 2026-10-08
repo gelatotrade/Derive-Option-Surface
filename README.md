@@ -296,3 +296,7 @@ scripts/        render_media.sh, readme_numbers.py; p1_* and p2_*: builds, numbe
   parameterisation and temporal smoothing of the parameters would further reduce frame-to-frame jitter.
 * With an 8-vol-point spread (HYPE) the mid is a convention, not a measurement; the bid/ask surfaces
   (`analysis.surface_from_side`) give the band.
+
+## Use of AI tools
+
+AI assistants (Claude, Anthropic) supported this project: in searching the literature, in writing and testing code, in cross-checking results and in drafting and editing the text. The research question, the design of the study and the interpretation of the results are the author's; the author directed the work, reviewed its results and takes full responsibility for the papers and this repository.
